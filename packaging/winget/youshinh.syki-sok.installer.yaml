@@ -19,6 +19,6 @@ ReleaseDate: 2026-10-07
 Installers:
 - Architecture: x64
   InstallerUrl: https://github.com/youshinh/syki-sok/releases/download/v2.0.14/syki-windows-x64.zip
-  InstallerSha256: 0000000000000000000000000000000000000000000000000000000000000000
+  InstallerSha256: 8EE8E88ADAF4A570A5465565394E48CAF26040DE564DB6B843688B7F1AD0178C
 ManifestType: installer
 ManifestVersion: 1.12.0
