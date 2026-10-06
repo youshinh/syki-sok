@@ -126,27 +126,27 @@ jobs:
       - name: go test
         run: go test ./...
 
-      - name: Build MD-Memo.app (universal, with graceful native-only fallback)
+      - name: Build syki-sok.app (universal, with graceful native-only fallback)
         run: |
           chmod +x build_mac.sh
           ./build_mac.sh
 
       - name: Verify app bundle
         run: |
-          test -x "MD-Memo.app/Contents/MacOS/MD-Memo"
-          plutil -lint "MD-Memo.app/Contents/Info.plist"
+          test -x "syki-sok.app/Contents/MacOS/syki-sok"
+          plutil -lint "syki-sok.app/Contents/Info.plist"
           echo "Architectures in binary:"
-          lipo -archs "MD-Memo.app/Contents/MacOS/MD-Memo"
+          lipo -archs "syki-sok.app/Contents/MacOS/syki-sok"
 
       - name: Smoke-test the app binary (no GUI)
         # --version and --help return before any window, lock or listener is
         # created (main.go), so this proves the bundled binary loads its
         # frameworks and starts on a real Mac without opening anything.
         run: |
-          out="$(MD-Memo.app/Contents/MacOS/MD-Memo --version)"
+          out="$(syki-sok.app/Contents/MacOS/syki-sok --version)"
           echo "$out"
           echo "$out" | grep -q '^md-memo [0-9]'
-          MD-Memo.app/Contents/MacOS/MD-Memo --help | head -5
+          syki-sok.app/Contents/MacOS/syki-sok --help | head -5
 
       - name: Set up Node.js
         uses: actions/setup-node@v4
@@ -159,18 +159,18 @@ jobs:
       - name: Verify code signature
         # Ad-hoc signing is best-effort (see build_mac.sh); warn rather than
         # fail the whole CI run on a signature-verification quirk.
-        run: codesign --verify --deep --strict "MD-Memo.app"
+        run: codesign --verify --deep --strict "syki-sok.app"
         continue-on-error: true
 
       - name: Package app bundle
         # ditto (not zip, and not upload-artifact zipping the raw directory)
         # preserves the ad-hoc code signature, symlinks and executable bits.
-        run: ditto -c -k --sequesterRsrc --keepParent "MD-Memo.app" md-memo-macos.zip
+        run: ditto -c -k --sequesterRsrc --keepParent "syki-sok.app" syki-macos.zip
 
       - name: Upload macOS build artifact
         uses: actions/upload-artifact@v4
         with:
-          name: md-memo-macos-${{ github.sha }}
-          path: md-memo-macos.zip
+          name: syki-macos-${{ github.sha }}
+          path: syki-macos.zip
           if-no-files-found: error
           retention-days: 14

@@ -185,14 +185,14 @@ def main():
         if missing:
             failed = True
             print(f'== coverage: {name} does not document these JSON-RPC methods: {", ".join(missing)}')
-        absent = [w for w in cli_words() if f'md-memo {w}' not in text]
+        absent = [w for w in cli_words() if f'syki {w}' not in text and f'syki-cli {w}' not in text and f'md-memo {w}' not in text]
         if absent:
             failed = True
-            print(f'== coverage: {name} never shows the commands: {", ".join("md-memo " + w for w in absent)}')
-        for needle in ('md-memo tab pdf', 'md-memo scrap index', '--semantic'):
-            if needle not in text:
+            print(f'== coverage: {name} never shows the commands: {", ".join("syki " + w for w in absent)}')
+        for needles in (('syki tab pdf', 'md-memo tab pdf'), ('syki scrap index', 'md-memo scrap index'), ('--semantic',)):
+            if not any(n in text for n in needles):
                 failed = True
-                print(f'== coverage: {name} never mentions "{needle}"')
+                print(f'== coverage: {name} never mentions "{needles[0]}"')
     print('FAILED' if failed else 'clean')
     return 1 if failed else 0
 

@@ -85,14 +85,14 @@
 
 **Windows** (PowerShell):
 ```powershell
-Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile md-memo.zip
-Expand-Archive md-memo.zip -DestinationPath md-memo
-md-memo\syki.exe
+Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile syki-windows-x64.zip
+Expand-Archive syki-windows-x64.zip -DestinationPath syki
+syki\syki.exe
 ```
 
 **macOS** (Homebrew):
 ```bash
-brew install --cask youshinh/tap/md-memo
+brew install --cask youshinh/tap/syki
 ```
 *(macOS版は初回起動時のみ「システム設定 → プライバシーとセキュリティ → このまま開く」が必要です)*
 
@@ -104,9 +104,9 @@ brew install --cask youshinh/tap/md-memo
 
 ```bash
 cat build.log | syki                 # ターミナルの出力をそのままアプリへ流し込む
-md-memo buffer get                      # 開いているノートを読む
+syki-cli buffer get                  # 開いているノートを読む
 echo "- [ ] 次にやること" | syki buffer append  # ノート末尾に追記
-md-memo agent install-skill             # Claude Code や Codex に syki::sok 操作スキルを教える
+syki-cli agent install-skill         # Claude Code や Codex に syki::sok 操作スキルを教える
 ```
 
 ---

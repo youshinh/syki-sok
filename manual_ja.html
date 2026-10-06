@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -1088,11 +1088,11 @@
 
         <details class="more"><summary>開く・保存する・閉じる：守られること</summary><div class="more-body">
           <ul>
-            <li><strong>同じファイルを2つのタブで開くことはありません。</strong> すでにタブがあるファイルを開いたとき（<span class="kbd">Ctrl + O</span>、コマンドパレット、ドロップ、エクスプローラー / Finder でのダブルクリック、<code>md-memo file.md</code>）は、そのタブに切り替わり、ステータスバーにも表示されます。そのタブの文章は、未保存の変更も含めて、そのまま残ります。ほかのタブが開いているファイルへ「名前を付けて保存」すると、そのタブは、未保存の変更がなければ閉じます。あれば、ファイルを持たない別のメモとして、文章と未保存の点を残します。</li>
+            <li><strong>同じファイルを2つのタブで開くことはありません。</strong> すでにタブがあるファイルを開いたとき（<span class="kbd">Ctrl + O</span>、コマンドパレット、ドロップ、エクスプローラー / Finder でのダブルクリック、<code>syki file.md</code>）は、そのタブに切り替わり、ステータスバーにも表示されます。そのタブの文章は、未保存の変更も含めて、そのまま残ります。ほかのタブが開いているファイルへ「名前を付けて保存」すると、そのタブは、未保存の変更がなければ閉じます。あれば、ファイルを持たない別のメモとして、文章と未保存の点を残します。</li>
             <li><strong>保存の最中に打った文字。</strong> 保存を始めたあとに打った文字はまだファイルに入っていないので、タブは未保存のままになり、次に保存されます。1つのノートの保存は、1回ずつ順に書き込まれます。</li>
             <li><strong>未保存のノートを閉じるときの確認</strong>は、1回だけ表示されます。<span class="kbd">Enter</span> はフォーカスのあるボタン（最初は「保存」）、<span class="kbd">S</span> は保存、<span class="kbd">D</span> と <span class="kbd">N</span> は保存しない、<span class="kbd">Esc</span> はキャンセルです。Ctrl・Alt・Cmd を押した組み合わせ、押しっぱなしのキー、日本語入力のキーは答えになりません。表示中にもう一度 <span class="kbd">Ctrl + W</span> を押しても、何も起きません。</li>
             <li><strong>外から今日のスクラップに追記された文章</strong>（パイプ、クイックキャプチャ、ホットフォルダ、Discord）は、そのタブに未保存の変更がなければ、タブに反映されます。そこで文字を打って保存していないときは、タブをそのままにして、ステータスバーに「スクラップのファイルが更新された」と出します。追記された文章はファイルに入っています。そのタブを保存すると、あなたの文章でファイルが上書きされます。反映の対象は、ファイルのパスが同じタブだけです。別のフォルダにある同じ名前のノート（<code>2026-09-30.md</code>）は、別のノートです。</li>
-            <li><strong>起動時に渡されたファイル</strong>（ダブルクリック、「プログラムから開く」、<code>md-memo file.md</code>）は、前回のタブ・フォルダ・設定が戻ったあとに、タブをもう1つ足して開きます。読み込めないときは、どのファイルがなぜ読めなかったかをステータスバーに表示します。</li>
+            <li><strong>起動時に渡されたファイル</strong>（ダブルクリック、「プログラムから開く」、<code>syki file.md</code>）は、前回のタブ・フォルダ・設定が戻ったあとに、タブをもう1つ足して開きます。読み込めないときは、どのファイルがなぜ読めなかったかをステータスバーに表示します。</li>
           </ul>
         </div></details>
 
@@ -1213,7 +1213,7 @@
             </ul>
           </div>
           <div class="compare-card"><div class="compare-head">macOS (Homebrew)</div>
-            <pre class="code-block" style="margin: 6px 0 10px;"><code>brew install --cask youshinh/tap/md-memo</code></pre>
+            <pre class="code-block" style="margin: 6px 0 10px;"><code>brew install --cask youshinh/tap/syki</code></pre>
             <ul>
               <li>macOS 10.15 以降</li>
               <li>初回だけ、下の「初回起動について」の操作が必要です</li>
@@ -1230,17 +1230,17 @@
             </svg>
             <span>macOS初回起動について</span>
           </div>
-          <p>配布物はアドホック署名のみでApple公証を受けていないため、<code>syki::sok.app</code> は初回にGatekeeperにブロックされます。「…マルウェアが含まれていないことを検証できませんでした」というダイアログが出ます。</p>
+          <p>配布物はアドホック署名のみでApple公証を受けていないため、<code>syki-sok.app</code> は初回にGatekeeperにブロックされます。「…マルウェアが含まれていないことを検証できませんでした」というダイアログが出ます。</p>
           <p><strong>macOS 15（Sequoia）以降:</strong> ダイアログの「完了」を押します（「ゴミ箱に入れる」は押さないでください）。次に、<strong>システム設定 → プライバシーとセキュリティ</strong> を開き、下の「セキュリティ」までスクロールして、syki::sok がブロックされたという表示の <strong>「このまま開く」</strong> を押し、ログインパスワードを入力します。このボタンは、アプリを開こうとしてから約1時間だけ表示されます。</p>
           <p><strong>macOS 14 以前:</strong> Finderでアプリを右クリック（Controlクリック）して「開く」を選びます。</p>
-          <p style="margin-bottom: 0;"><strong>どのバージョンでも:</strong> アプリのあるフォルダでターミナルを開き、<code>xattr -dr com.apple.quarantine "syki::sok.app"</code> を一度実行しても開けます。</p>
+          <p style="margin-bottom: 0;"><strong>どのバージョンでも:</strong> アプリのあるフォルダでターミナルを開き、<code>xattr -dr com.apple.quarantine "syki-sok.app"</code> を一度実行しても開けます。</p>
         </div>
 
         <details class="more"><summary>制限・詳しい仕様（ほかの入手方法・アップデートの確認）</summary><div class="more-body">
           <ul>
             <li><strong>zip で入れる:</strong> <a href="https://github.com/youshinh/syki-sok/releases" target="_blank" style="color: var(--accent);">Releases ページ</a> から zip をダウンロードして、任意のフォルダに展開します。</li>
             <li><strong>ユニバーサルバイナリ:</strong> 次回リリースからmacOSビルドはユニバーサルバイナリになり、Apple SiliconとIntel Macの両方に対応します。</li>
-            <li><strong>Macがなくても試せます:</strong> このリポジトリへのプッシュのたびに、GitHub上のmacOSランナーが <code>syki::sok.app</code> をビルドします。<strong>Actions</strong> タブを開く（または <strong>CI</strong> ワークフローを <strong>Run workflow</strong> で手動実行する）→ 最新の <strong>CI</strong> 実行を開く → Artifactsから <code>syki-macos-&lt;commit-sha&gt;</code> をダウンロードします。これもアドホック署名なので、上記と同じ初回起動の操作が必要です。</li>
+            <li><strong>Macがなくても試せます:</strong> このリポジトリへのプッシュのたびに、GitHub上のmacOSランナーが <code>syki-sok.app</code> をビルドします。<strong>Actions</strong> タブを開く（または <strong>CI</strong> ワークフローを <strong>Run workflow</strong> で手動実行する）→ 最新の <strong>CI</strong> 実行を開く → Artifactsから <code>syki-macos-&lt;commit-sha&gt;</code> をダウンロードします。これもアドホック署名なので、上記と同じ初回起動の操作が必要です。</li>
             <li><strong>アップデートの確認:</strong> 起動してしばらくすると、GitHub に新しいリリースがないかを確認します（<code>api.github.com</code> への1回のリクエストのみで、ノートの内容は送信されません）。新しいバージョンがあると、ヘルプ（<strong>?</strong>）ボタンに小さなバッジが表示され、ヘルプメニューにバージョンとリリースノートへのリンクが出ます。オフにもできます（設定 → 一般 →「起動時に更新を確認する」）。詳しくは<a href="#about-md-memo" style="color: var(--accent);">syki::sok について・更新の確認・文章の送り先</a>を参照してください。</li>
           </ul>
         </div></details>
@@ -2343,9 +2343,9 @@
         </ul>
 
         <p><strong>規則は、どこに、どんな形で残るか</strong></p>
-        <p>エージェントごとに、ふつうの Markdown のファイルが 1 つできます。場所は、<code>config.json</code> のあるフォルダ（<code>md-memo info</code> の <code>config_dir</code>。Windows: <code>%APPDATA%\md-memo\</code>、macOS: <code>~/Library/Application Support/md-memo/</code>）の中の <code>lessons/&lt;エージェント&gt;.md</code> です（たとえば <code>lessons/claude-code.md</code>）。コマンドパレット（<span class="kbd">Ctrl + Shift + P</span>）の「教訓のファイルを開く」で、ふつうのタブとして開けます（ファイルが 1 つならそのまま開き、複数あれば選ぶ小さな一覧が出て、まだなければ、その旨が出ます）。</p>
+        <p>エージェントごとに、ふつうの Markdown のファイルが 1 つできます。場所は、<code>config.json</code> のあるフォルダ（<code>syki info</code> の <code>config_dir</code>。Windows: <code>%APPDATA%\syki-sok\</code>、macOS: <code>~/Library/Application Support/syki-sok/</code>）の中の <code>lessons/&lt;エージェント&gt;.md</code> です（たとえば <code>lessons/claude-code.md</code>）。コマンドパレット（<span class="kbd">Ctrl + Shift + P</span>）の「教訓のファイルを開く」で、ふつうのタブとして開けます（ファイルが 1 つならそのまま開き、複数あれば選ぶ小さな一覧が出て、まだなければ、その旨が出ます）。</p>
         <pre class="code-block"><code># Lessons for claude-code
-&lt;!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. --&gt;
+&lt;!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. --&gt;
 - このパソコンでは、テストを pytest -p no:cacheprovider で動かす。既定のキャッシュのフォルダが読み取り専用のため。 &lt;!-- 2026-10-04 --&gt;
 - ADF.h は取り込まない。このパソコンではビルドが失敗するため。 &lt;!-- 2026-10-04 --&gt;</code></pre>
         <ul>
@@ -2371,7 +2371,7 @@
     lessons: false</code></pre>
 
         <p><strong>コマンドや JSON-RPC から</strong></p>
-        <p>読むだけのものがあります。<code>md-memo lessons list [--agent &lt;キー&gt;] [--json|--text]</code> と、JSON-RPC の <code>lessons.list</code>（トークンが必要）で、教訓のファイルごとに、規則の数と、次の実行で付く数などが分かります（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。<strong>規則を書くコマンドやメソッドは、わざと作っていません。</strong>あると、エージェントが、あなたの承認なしに、自分の将来の指示を書き換えられるからです。規則を残せるのは、この画面で承認したときと、あなたがファイルを直接直したときだけです。エージェントに頼んだ作業でも、教訓のファイルは書かせないでください。</p>
+        <p>読むだけのものがあります。<code>syki lessons list [--agent &lt;キー&gt;] [--json|--text]</code> と、JSON-RPC の <code>lessons.list</code>（トークンが必要）で、教訓のファイルごとに、規則の数と、次の実行で付く数などが分かります（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。<strong>規則を書くコマンドやメソッドは、わざと作っていません。</strong>あると、エージェントが、あなたの承認なしに、自分の将来の指示を書き換えられるからです。規則を残せるのは、この画面で承認したときと、あなたがファイルを直接直したときだけです。エージェントに頼んだ作業でも、教訓のファイルは書かせないでください。</p>
 
         <div class="callout">
           <div class="callout-title">
@@ -2458,8 +2458,8 @@
         </ol>
         <p>読み込まれる場所は、上から順に最初に見つかったものです（<code>.yaml</code> / <code>.yml</code> / <code>.md</code> / <code>.json</code> のいずれでも構いません）。</p>
         <ol>
-          <li><code>&lt;スクラップフォルダ&gt;/.md-memo/agents.yaml</code>（プロジェクトごとの設定）</li>
-          <li><code>%APPDATA%\md-memo\agents.yaml</code>（macOS: <code>~/Library/Application Support/md-memo/agents.yaml</code>）</li>
+          <li><code>&lt;スクラップフォルダ&gt;/.syki-sok/agents.yaml</code>（プロジェクトごとの設定）</li>
+          <li><code>%APPDATA%\syki-sok\agents.yaml</code>（macOS: <code>~/Library/Application Support/syki-sok/agents.yaml</code>）</li>
         </ol>
 
         <details class="more"><summary>v1.8.0 より後の組み込みエージェントの変更（手元の agents.yaml は書き換えません）</summary><div class="more-body">
@@ -2827,7 +2827,7 @@ recipes:
 
         <details class="more"><summary>制限・詳しい仕様（保存先・自動で閉じる・AI校正が使えないとき）</summary><div class="more-body">
           <ul>
-            <li><strong>保存先:</strong> <code>&lt;スクラップフォルダ&gt;/YYYY-MM-DD.md</code> に追記されます（スクラップフォルダの既定は <code>~/Documents/md-memo/scraps</code>）。追記のたびに、前の内容とのあいだに空行が入ります。そのノートを開いていれば、すぐに表示が更新されます。</li>
+            <li><strong>保存先:</strong> <code>&lt;スクラップフォルダ&gt;/YYYY-MM-DD.md</code> に追記されます（スクラップフォルダの既定は <code>~/Documents/syki-sok/scraps</code>）。追記のたびに、前の内容とのあいだに空行が入ります。そのノートを開いていれば、すぐに表示が更新されます。</li>
             <li><strong>自動で閉じる:</strong> ポップアップは、フォーカスを失って1秒たつと、自分で閉じます。1秒以内にフォーカスが戻れば、そのまま残ります。</li>
             <li><strong>AI Send の途中で閉じても:</strong> 「Working...」の間にポップアップを閉じても、メモは失われず、校正が終わったあとに追記されます。</li>
             <li><strong>AI校正が使えないとき:</strong> AI校正がオフのとき（設定 → 一般）や、テキストモデルが未設定のときは、入力したとおりに追記します。</li>
@@ -2996,7 +2996,7 @@ recipes:
                 <td>あります（オンのとき）</td>
               </tr>
               <tr>
-                <td><code>md-memo ocr</code> コマンド</td>
+                <td><code>syki ocr</code> コマンド</td>
                 <td>使えます</td>
                 <td>使えます（クラウドの画像モデルだけ）</td>
               </tr>
@@ -3006,7 +3006,7 @@ recipes:
 
         <ol class="steps">
           <li><strong>オンにする</strong><span>設定 → 同期 タブの下のほうにある「ホットフォルダ」で、「フォルダを監視し、画像はOCR・音声は文字起こしして今日のスクラップに追記する」にチェックを入れます（最初はオフです）</span></li>
-          <li><strong>フォルダを決める</strong><span>「監視するフォルダのパス」に入れます。既定は <code>~/Documents/md-memo/inbox</code> です。「参照...」で選べます</span></li>
+          <li><strong>フォルダを決める</strong><span>「監視するフォルダのパス」に入れます。既定は <code>~/Documents/syki-sok/inbox</code> です。「参照...」で選べます</span></li>
           <li><strong>ファイルを入れる</strong><span>そのフォルダに、画像か音声のファイルを入れます。書き込みが終わるのを待ってから、処理が始まります</span></li>
           <li><strong>ノートに追記される</strong><span>読み取った文字や文字起こしが、今日のスクラップに追記されます。処理したファイルは、スクラップフォルダの <code>assets</code> に移されます</span></li>
         </ol>
@@ -3044,7 +3044,7 @@ recipes:
             </ul>
           </div>
         </div>
-        <p>この設定は、ホットフォルダのほか、<a href="#screen-capture" style="color: var(--accent);">画面キャプチャ</a>、エクスプローラーの「送る」、<code>md-memo ocr</code> コマンドにも効きます。Ctrl + V で貼り付けた画像の OCR（<a href="#vision-ocr" style="color: var(--accent);">画像貼り付け OCR</a>）は、画像解析で設定したモデルが読み取ります。この設定は関係しません。</p>
+        <p>この設定は、ホットフォルダのほか、<a href="#screen-capture" style="color: var(--accent);">画面キャプチャ</a>、エクスプローラーの「送る」、<code>syki ocr</code> コマンドにも効きます。Ctrl + V で貼り付けた画像の OCR（<a href="#vision-ocr" style="color: var(--accent);">画像貼り付け OCR</a>）は、画像解析で設定したモデルが読み取ります。この設定は関係しません。</p>
 
         <p><strong>音声は、どう文字起こしされるか</strong></p>
         <p>エンジンは、設定 → AIモデル の「音声認識エンジン(フォルダ監視・Discord)」（音声入力の設定の下）にある「エンジン:」で選びます。</p>
@@ -3144,14 +3144,14 @@ recipes:
           <li><strong>ノートに追記される</strong><span>読み取った文字が、今日のスクラップに追記されます</span></li>
         </ol>
 
-        <p><strong>コマンドラインから、画像を読み取る: <code>md-memo ocr</code></strong></p>
-        <p>「送る」の中身は、<code>md-memo ocr &lt;画像のパス&gt;</code> というコマンドです。ターミナルから、そのまま使えます（Windows と macOS。macOS ではクラウドのOCRだけです）。画像解析 (OCR) の設定と、スクラップフォルダは、<code>config.json</code> から読みます。ノートに追記されるのは、読み取った文字だけです。画像ファイルは、そのまま残ります。</p>
-        <pre class="code-block"><code>md-memo ocr memo.png
+        <p><strong>コマンドラインから、画像を読み取る: <code>syki ocr</code></strong></p>
+        <p>「送る」の中身は、<code>syki ocr &lt;画像のパス&gt;</code> というコマンドです。ターミナルから、そのまま使えます（Windows と macOS。macOS ではクラウドのOCRだけです）。画像解析 (OCR) の設定と、スクラップフォルダは、<code>config.json</code> から読みます。ノートに追記されるのは、読み取った文字だけです。画像ファイルは、そのまま残ります。</p>
+        <pre class="code-block"><code>syki ocr memo.png
 # OCR text appended to C:\Users\me\Documents\md-memo\scraps\2026-09-24.md
 # 文字が見つからなかったときは (no text recognized)
 
 # JSON で受け取る（--json は画像のパスの前に付けます）
-md-memo ocr --json memo.png</code></pre>
+syki ocr --json memo.png</code></pre>
         <p>出力をリダイレクトやパイプに流したときも、JSON になります。</p>
 
         <details class="more"><summary>制限・詳しい仕様（設定ファイルのキー）</summary><div class="more-body">
@@ -3189,7 +3189,7 @@ md-memo ocr --json memo.png</code></pre>
             <li>モデル・アスペクト比・解像度は、設定 → AIモデル の「画像生成」で選びます。</li>
             <li>Gemini APIキーの欄が空のときは、Visionのキー、次にテキストのキーの順に引き継がれます。</li>
             <li>画像は <code>assets/diagram_&lt;数字&gt;.png</code> に保存され、<code>![Generated Diagram](assets/diagram_...png)</code> が挿入されます。先にノートを保存しておくと、相対リンクになります。</li>
-            <li>まだ保存していないノートにはフォルダがないので、リンクにはアプリ専用の <code>assets</code> フォルダのフルパスが入ります（macOS では <code>~/Library/Application Support/md-memo</code> の下）。パスの中の空白は <code>%20</code> と書かれ、プレビューが元のパスに戻して読み込みます。</li>
+            <li>まだ保存していないノートにはフォルダがないので、リンクにはアプリ専用の <code>assets</code> フォルダのフルパスが入ります（macOS では <code>~/Library/Application Support/syki-sok</code> の下）。パスの中の空白は <code>%20</code> と書かれ、プレビューが元のパスに戻して読み込みます。</li>
             <li>図の配色: 各図のボタンでダークとライトを切り替えます。設定 → 一般 の「図 (Mermaid) の配色」では、グレーとグリーンも選べます（どちらも白い背景）。</li>
           </ul>
         </div></details>
@@ -3223,7 +3223,7 @@ md-memo ocr --json memo.png</code></pre>
             <li><strong>メモリ:</strong> 使うまでは負担がありません。スタイルシートは印刷のときだけ効き、スクリプトは、最初にボタンを押したときに読み込みます。パネルを開いているあいだは、PDF ビューアーが作業メモリを約170 MB 使い（WebView2 のプロセスが2つ増えます）、パネルを閉じると返します。PDF は残しません。</li>
             <li><strong>HTML ページ:</strong> HTML のページは印刷できません（プリンターのボタンも出ません）。印刷できるのは、Markdown のプレビューです。</li>
             <li><strong>macOS:</strong> 同じボタンが、パネルの代わりに、macOS の印刷画面を開きます（macOS 11 以降）。左下の「PDF ▾ → PDF として保存」で PDF にでき（ファイル名の初期値はノートの名前）、プリンターを選んで印刷もできます。用紙、向き、拡大率は、その画面で選びます。余白は20 mm で、ヘッダーとフッターは付きません。実際の Mac での確認は、まだです。</li>
-            <li><strong>コマンドラインから（Windows のみ）:</strong> <code>md-memo tab pdf notes.md -o notes.pdf</code> で、起動中の syki::sok が、そのノートの PDF を作ります（「PDF に保存」と同じページです）。<code>--paper a3</code>、<code>--landscape</code>、<code>--margin narrow</code>、<code>--scale</code>、<code>--pages 1-3,5</code>、<code>--header-footer</code> が使えます。ファイルを渡して <code>-o</code> を省くと、そのファイルの隣に PDF を出します。<strong><code>--overwrite</code> を付けない限り、すでにある PDF は置き換えません</strong>。ファイルを渡さなければ、アクティブなタブを印刷します（<code>--tab &lt;id&gt;</code> で別のタブ。このときは <code>-o</code> が必要です）。ファイルを渡したときのノートは、裏のタブで一瞬だけ開いて、閉じます。プレビューを出すあいだ、ウィンドウが一瞬ちらつきます。詳しくは <a href="#headless-cli" style="color: var(--accent);">Headless CLI</a> をご覧ください。</li>
+            <li><strong>コマンドラインから（Windows のみ）:</strong> <code>syki tab pdf notes.md -o notes.pdf</code> で、起動中の syki::sok が、そのノートの PDF を作ります（「PDF に保存」と同じページです）。<code>--paper a3</code>、<code>--landscape</code>、<code>--margin narrow</code>、<code>--scale</code>、<code>--pages 1-3,5</code>、<code>--header-footer</code> が使えます。ファイルを渡して <code>-o</code> を省くと、そのファイルの隣に PDF を出します。<strong><code>--overwrite</code> を付けない限り、すでにある PDF は置き換えません</strong>。ファイルを渡さなければ、アクティブなタブを印刷します（<code>--tab &lt;id&gt;</code> で別のタブ。このときは <code>-o</code> が必要です）。ファイルを渡したときのノートは、裏のタブで一瞬だけ開いて、閉じます。プレビューを出すあいだ、ウィンドウが一瞬ちらつきます。詳しくは <a href="#headless-cli" style="color: var(--accent);">Headless CLI</a> をご覧ください。</li>
             <li><strong>JSON-RPC から:</strong> メソッドは <code>print.pdf</code> です（Windows のみ。<code>out</code> は <code>.pdf</code> で終わる絶対パスで、<code>overwrite</code> なしでは、既存のファイルを置き換えません）。詳しくは <a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a> をご覧ください。</li>
           </ul>
         </div></details>
@@ -3315,7 +3315,7 @@ md-memo ocr --json memo.png</code></pre>
             <li><strong>覚えておく範囲:</strong> 選んだ期間とタグは、syki::sok を開いているあいだ、覚えています（検索を閉じても残ります）。保存はしないので、終了すると「すべて」に戻ります。「絞り込み」の領域は、検索を開くたびに、閉じた状態から始まります。</li>
             <li><strong>キー操作:</strong> 絞り込みのボタンは、<span class="kbd">Tab</span> の移動に入りません（<span class="kbd">Tab</span> は、これまでどおり、結果の行の引用です）。マウスで押します。</li>
             <li><strong>軽さ:</strong> 絞り込みを使わない検索は、これまでと同じ経路・同じ速さです。タグで絞り込んだ検索では、タグのコメント（<code>&lt;!--</code>）もフロントマターもないファイルを、すぐに対象から外します。</li>
-            <li><strong>ほかの使い方:</strong> 同じ絞り込みは、<code>md-memo scrap search --tag 仕事,急ぎ</code>（<code>--ranked</code>、<code>--semantic</code> とも組めます）と、JSON-RPC の <code>scrap.search</code> の <code>tag</code> でも使えます。タグの一覧は、<code>md-memo scrap tags</code> と <code>scrap.tags</code> です（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。検索の結果に出る前後の行から、タグのコメントの行は除かれます。</li>
+            <li><strong>ほかの使い方:</strong> 同じ絞り込みは、<code>syki scrap search --tag 仕事,急ぎ</code>（<code>--ranked</code>、<code>--semantic</code> とも組めます）と、JSON-RPC の <code>scrap.search</code> の <code>tag</code> でも使えます。タグの一覧は、<code>syki scrap tags</code> と <code>scrap.tags</code> です（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。検索の結果に出る前後の行から、タグのコメントの行は除かれます。</li>
             <li><strong>確かめていないこと:</strong> macOS の実機（コードは Windows と同じです）と、スクリーンリーダーでの操作は、まだ確かめていません。</li>
           </ul>
         </div></details>
@@ -3394,7 +3394,7 @@ md-memo ocr --json memo.png</code></pre>
             <li><strong>途中でノートが変わったとき:</strong> コマンドが答えを待っている間にノートを書き換えたときは、何も適用せず、「その間にノートが変わったため、タグは変えていません」と伝えます。もう一度お試しください。</li>
             <li><strong>一覧のタグ:</strong> ノートのフォルダのタグは、パネルを開いたときに 1 度だけ読みます。一覧は 8 行までで、あふれた分は「ほか N 個」と数だけ出ます（打つと絞り込めます）。</li>
             <li><strong><span class="kbd">Ctrl + /</span> との関係:</strong> <a href="#comment-toggle" style="color: var(--accent);">行をコメントにする</a>は、タグの行に触れません。コメントを外してタグが見えるようになることも、二重にコメントにすることもありません。タグの行だけを選んでいるときは何も変えず、「タグの行はそのままにします」と伝えます。ほかの行がまじっているときは、ほかの行だけが切り替わります（「複数行をまとめて 1 つのコメント」の設定では、タグの行を含む選択はコメントにしません）。</li>
-            <li><strong>ほかの使い方:</strong> コマンドラインの <code>md-memo scrap tag add|remove|show</code> と、JSON-RPC の <code>scrap.tag_edit</code> でも、同じ規則でタグを付け外しできます。コマンドラインは、新しい本文を標準出力に出し、<code>--write</code> を付けたときだけファイルを書き換えます。<code>--line</code> には、その節のどの行を渡してもよく、貼った記事の全体に付けるときは、記事の先頭の見出しの行を渡します。<code>scrap.tag_edit</code> は計算だけで、ファイルにも画面にも触れません（開いているノートには、<code>buffer.get</code> → <code>scrap.tag_edit</code>（<code>return_text</code> つき）→ <code>buffer.set</code>（<code>expected_hash</code> つき）の順に使います。<code>buffer.replace_all</code> は検索と置換なので使えません）。くわしくは、<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a> と <a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a> をご覧ください。AI にタグを付けさせるコマンドは、まだありません。</li>
+            <li><strong>ほかの使い方:</strong> コマンドラインの <code>syki scrap tag add|remove|show</code> と、JSON-RPC の <code>scrap.tag_edit</code> でも、同じ規則でタグを付け外しできます。コマンドラインは、新しい本文を標準出力に出し、<code>--write</code> を付けたときだけファイルを書き換えます。<code>--line</code> には、その節のどの行を渡してもよく、貼った記事の全体に付けるときは、記事の先頭の見出しの行を渡します。<code>scrap.tag_edit</code> は計算だけで、ファイルにも画面にも触れません（開いているノートには、<code>buffer.get</code> → <code>scrap.tag_edit</code>（<code>return_text</code> つき）→ <code>buffer.set</code>（<code>expected_hash</code> つき）の順に使います。<code>buffer.replace_all</code> は検索と置換なので使えません）。くわしくは、<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a> と <a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a> をご覧ください。AI にタグを付けさせるコマンドは、まだありません。</li>
             <li><strong>できないこと:</strong> AI によるタグの提案、たくさんのノートへのまとめ付け、フロントマターへの書き込み、タグを別の見出しへ付け替えること（外してから付け直します）は、できません。</li>
             <li><strong>確かめていないこと:</strong> macOS の実機（コードは Windows と同じです）と、スクリーンリーダーでの操作は、まだ確かめていません。Mac では <span class="kbd">Ctrl + ↑</span> が Mission Control のショートカットなので、「付ける場所」の見出しはクリックで選んでください。</li>
           </ul>
@@ -3419,7 +3419,7 @@ md-memo ocr --json memo.png</code></pre>
           <li><strong>「今すぐ更新」を押す</strong><span>ノートの文章を埋め込みモデルに送って、索引を作ります。進み具合が出て、「中止」で止められます（ここまでの分は残ります）。次からの更新は、新しいノートと変わったノートだけを読みます。「保存」の前でも動きます</span></li>
           <li><strong>「保存」を押す</strong><span>ノート検索に「完全一致 | 意味」の切り替えが出ます。再起動は要りません</span></li>
         </ol>
-        <p>同じ索引は、コマンドの <code>md-memo scrap index</code> でも作れます。<code>config.json</code> に手で書くこともできます（syki::sok を終了してから）。</p>
+        <p>同じ索引は、コマンドの <code>syki scrap index</code> でも作れます。<code>config.json</code> に手で書くこともできます（syki::sok を終了してから）。</p>
         <pre class="code-block"><code>"semantic": {
   "enabled": true,
   "model": {"baseUrl": "http://localhost:11434", "model": "bge-m3"}
@@ -3443,11 +3443,11 @@ md-memo ocr --json memo.png</code></pre>
           <ul>
             <li><strong>件数と点数:</strong> 表示は10件です。「さらに表示」を押すと、30件を探します。点数は表示しません（点数はモデルによって幅が違い、パーセントではないためです）。</li>
             <li><strong>表示しないノート:</strong> 最良のものより、一致の度合いがかなり低いノートは、表示から除きます。その件数は、一覧に一言（「一致の度合いがかなり低い n 件は表示していません。」）出ます。</li>
-            <li><strong>索引にまだないノート:</strong> 最後に <code>md-memo scrap index</code> を実行したあとに書いたノートは、もう一度実行するまで、単語で探します（「n 件のノートは索引にまだありません（単語で探しました）。」と出ます）。意味検索そのものが使えないとき（索引が空、別のモデルで作った索引、モデルに届かない）も、単語でノートを選び、その旨が一言出ます。</li>
+            <li><strong>索引にまだないノート:</strong> 最後に <code>syki scrap index</code> を実行したあとに書いたノートは、もう一度実行するまで、単語で探します（「n 件のノートは索引にまだありません（単語で探しました）。」と出ます）。意味検索そのものが使えないとき（索引が空、別のモデルで作った索引、モデルに届かない）も、単語でノートを選び、その旨が一言出ます。</li>
             <li><strong>このパソコンにないモデル:</strong> クラウドなどのモデルは、そのホストを許可するまで、何も送りません（設定で、モデルの下に出るチェックで許可します。許可は <code>config.json</code> の <code>semantic.privacy.cloudConsent</code> に残ります）。許可するまで、「今すぐ更新」も押せません。</li>
-            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>md-memo scrap index</code> で作り直せます）。<code>.md-memo-ignore</code> に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
+            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>syki scrap index</code> で作り直せます）。<code>.md-memo-ignore</code> に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
             <li><strong>オンにしないとき:</strong> ノート検索は、これまでどおりのパネルです。意味検索のために、起動時に何かをすることもありません。</li>
-            <li><strong>ほかの使い方:</strong> 同じ検索は、<code>md-memo scrap search --semantic</code> と、JSON-RPC の <code>scrap.search</code> でも使えます（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。</li>
+            <li><strong>ほかの使い方:</strong> 同じ検索は、<code>syki scrap search --semantic</code> と、JSON-RPC の <code>scrap.search</code> でも使えます（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。</li>
             <li><strong>macOS:</strong> Windows と同じコードなので、動く見込みですが、実際の Mac では、まだ確かめていません。</li>
           </ul>
         </div></details>
@@ -3863,7 +3863,7 @@ md-memo ocr --json memo.png</code></pre>
 
         <ul>
           <li><strong>オフにする:</strong> 設定 → 一般 →「更新とプライバシー」→「起動時に更新を確認する」。オフにすると、起動時には何も問い合わせません。「syki::sok について」の「今すぐ確認」は、押したときにいつでも使えます。</li>
-          <li><strong>管理者向け:</strong> この設定は <code>config.json</code> の <code>general.checkUpdates</code> です（Windows: <code>%APPDATA%\md-memo\</code>、macOS: <code>~/Library/Application Support/md-memo/</code>。正確なフォルダは「syki::sok について」に表示されます）。<code>false</code> にすると起動時の確認をしません。キーがない場合や、ほかの値の場合はオンのままなので、古い版の設定ファイルは今までどおり動きます。<code>{"general":{"checkUpdates":false}}</code> だけのファイルで足ります。この設定は<a href="#cfg-pack" style="color: var(--accent);">書き出すパッケージ</a>の「一般」に含まれるので、1 つのパッケージで多くの PC に配れます。設定ファイルがすでにある PC は、最初の短いツールバーやウェルカムノートについては「既存のインストール」として扱われます。</li>
+          <li><strong>管理者向け:</strong> この設定は <code>config.json</code> の <code>general.checkUpdates</code> です（Windows: <code>%APPDATA%\syki-sok\</code>、macOS: <code>~/Library/Application Support/syki-sok/</code>。正確なフォルダは「syki::sok について」に表示されます）。<code>false</code> にすると起動時の確認をしません。キーがない場合や、ほかの値の場合はオンのままなので、古い版の設定ファイルは今までどおり動きます。<code>{"general":{"checkUpdates":false}}</code> だけのファイルで足ります。この設定は<a href="#cfg-pack" style="color: var(--accent);">書き出すパッケージ</a>の「一般」に含まれるので、1 つのパッケージで多くの PC に配れます。設定ファイルがすでにある PC は、最初の短いツールバーやウェルカムノートについては「既存のインストール」として扱われます。</li>
         </ul>
 
         <p><strong>文章の送り先</strong></p>
@@ -4266,7 +4266,7 @@ md-memo ocr --json memo.png</code></pre>
         <ul>
           <li><strong>「送る」メニュー（画像→OCR）:</strong> 状態が「設置済み」か「未設置」かで表示されます。「追加」を押すと、エクスプローラーの「送る」メニューに <strong>syki::sok (OCR)</strong> が入ります。「解除」で、元に戻ります。</li>
           <li><strong>使い方:</strong> エクスプローラーで画像ファイルを右クリックして、送る → syki::sok (OCR) を選びます。画像の文字が読み取られて、今日のスクラップに追記されます。ウィンドウは開きません。</li>
-          <li><strong>中身:</strong> 実際に動くのは、<code>md-memo ocr &lt;画像のパス&gt;</code> というコマンドです。読み取りの方法は、設定 → AIモデル の「画像解析 (OCR)」と、設定 → 同期 の「画像をこのPCの外に出さない」に従います。詳しくは <a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a> をご覧ください。</li>
+          <li><strong>中身:</strong> 実際に動くのは、<code>syki ocr &lt;画像のパス&gt;</code> というコマンドです。読み取りの方法は、設定 → AIモデル の「画像解析 (OCR)」と、設定 → 同期 の「画像をこのPCの外に出さない」に従います。詳しくは <a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a> をご覧ください。</li>
         </ul>
       </section>
 
@@ -4294,8 +4294,8 @@ md-memo ocr --json memo.png</code></pre>
           <li><strong>ホットフォルダ:</strong> Discord の設定のさらに下にあります。使い方は<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照してください。
             <ul>
               <li><strong>フォルダを監視し、画像はOCR・音声は文字起こしして今日のスクラップに追記する:</strong> オン / オフです。最初はオフです。</li>
-              <li><strong>監視するフォルダのパス:</strong> 既定は <code>~/Documents/md-memo/inbox</code> です。「参照...」で選べます。処理したファイルは、スクラップフォルダの <code>assets</code> に移されます（削除はされません）。</li>
-              <li><strong>画像をこのPCの外に出さない: 端末内OCRだけで読み取る(精度は下がります):</strong> オフ（既定）のときは、「画像解析 (OCR)」で設定した画像モデルが先に読み取り、失敗したときだけ端末内OCRを使います。オンにすると、端末内OCRだけを使い、画像は PC の外に出ません。ホットフォルダ・<a href="#screen-capture" style="color: var(--accent);">画面キャプチャ</a>・「送る」・<code>md-memo ocr</code> に効きます。<strong>macOS では、この項目は表示されません</strong>（端末内OCRがないためです）。</li>
+              <li><strong>監視するフォルダのパス:</strong> 既定は <code>~/Documents/syki-sok/inbox</code> です。「参照...」で選べます。処理したファイルは、スクラップフォルダの <code>assets</code> に移されます（削除はされません）。</li>
+              <li><strong>画像をこのPCの外に出さない: 端末内OCRだけで読み取る(精度は下がります):</strong> オフ（既定）のときは、「画像解析 (OCR)」で設定した画像モデルが先に読み取り、失敗したときだけ端末内OCRを使います。オンにすると、端末内OCRだけを使い、画像は PC の外に出ません。ホットフォルダ・<a href="#screen-capture" style="color: var(--accent);">画面キャプチャ</a>・「送る」・<code>syki ocr</code> に効きます。<strong>macOS では、この項目は表示されません</strong>（端末内OCRがないためです）。</li>
             </ul>
           </li>
         </ul>
@@ -4309,7 +4309,7 @@ md-memo ocr --json memo.png</code></pre>
             <span>注意: スクラップフォルダの中身はすべてコミットされます</span>
           </div>
           <p style="margin-bottom: 0;">
-            Git同期は、スクラップフォルダで <code>git add .</code>・commit・push を実行します。そこに置いた <code>.env</code> や <code>.md-memo/agents.yaml</code> もコミットされるので、秘密の情報は置かないでください。
+            Git同期は、スクラップフォルダで <code>git add .</code>・commit・push を実行します。そこに置いた <code>.env</code> や <code>.syki-sok/agents.yaml</code> もコミットされるので、秘密の情報は置かないでください。
           </p>
         </div>
       </section>
@@ -4597,8 +4597,8 @@ md-memo ocr --json memo.png</code></pre>
             <li>パッケージには、どの OS で作ったかの記録がありません。ショートカットに Command キーが使われている（Mac で作った）パッケージは、Windows では反映されません。このパソコンのショートカットはそのままで、読み込み後の画面にそう出ます。</li>
             <li><code>config.json</code> に書き込めないときは、読み込み後の画面とステータスバーに出ます。その設定は、終了するまでしか使われません。</li>
             <li>エージェント定義とスキルは、syki::sok 自身が書き込みます。<code>config.json</code> を直接書き換えて取り込むことはできません（起動中のアプリが、設定ファイルを持っているためです）。</li>
-            <li>書き込み先は、アプリ共通のエージェント定義が <code>%APPDATA%\md-memo\agents.yaml</code>（macOS は <code>~/Library/Application Support/md-memo/agents.yaml</code>）、プロジェクトのものが <code>&lt;プロジェクト&gt;/.md-memo/agents.yaml</code>、スキルが <code>&lt;プロジェクト&gt;/&lt;フォルダ&gt;/&lt;名前&gt;</code> です。構文エラーのあるエージェント定義は、理由つきで読み飛ばします。</li>
-            <li>上書きされるエージェント定義とスキルは、先に <code>%APPDATA%\md-memo\pack_backups\&lt;日時&gt;\</code>（macOS は <code>~/Library/Application Support/md-memo/pack_backups/</code>）へ退避されます。プロジェクトの外なので、スキルのフォルダに余計なファイルは増えません。場所は、読み込み後の画面にも出ます。</li>
+            <li>書き込み先は、アプリ共通のエージェント定義が <code>%APPDATA%\syki-sok\agents.yaml</code>（macOS は <code>~/Library/Application Support/syki-sok/agents.yaml</code>）、プロジェクトのものが <code>&lt;プロジェクト&gt;/.syki-sok/agents.yaml</code>、スキルが <code>&lt;プロジェクト&gt;/&lt;フォルダ&gt;/&lt;名前&gt;</code> です。構文エラーのあるエージェント定義は、理由つきで読み飛ばします。</li>
+            <li>上書きされるエージェント定義とスキルは、先に <code>%APPDATA%\syki-sok\pack_backups\&lt;日時&gt;\</code>（macOS は <code>~/Library/Application Support/syki-sok/pack_backups/</code>）へ退避されます。プロジェクトの外なので、スキルのフォルダに余計なファイルは増えません。場所は、読み込み後の画面にも出ます。</li>
             <li>以前の設定 JSON（1 ファイルに全設定）も読み込めます。対象は設定だけで、API キーが入っていることがあります。書き出しの形式で「JSON（設定のみ）」を選ぶと、同じ形式のファイルができます。</li>
             <li>設定の一部は、syki::sok を再起動すると反映されます。読み込み後の画面に案内が出ます。</li>
           </ul>
@@ -4641,12 +4641,12 @@ ping 128.1.33.254 | syki</code></pre>
         <h3>JSON-RPC 2.0 TCP IPC 仕様</h3>
         <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 任意の言語から <code>127.0.0.1</code> のTCPソケットを開き、改行区切りの JSON-RPC 2.0 リクエストを送るだけで、syki::sokを操作できます。</div></div>
         <ol class="steps">
-          <li><strong>接続情報を読む</strong><span>起動時に <code>ipc-session.json</code> が書き込まれます（Windows: <code>%AppData%\md-memo\</code>、macOS: <code>~/Library/Application Support/md-memo/</code>）。中身は <code>{pid, port, token, started_at}</code> です</span></li>
+          <li><strong>接続情報を読む</strong><span>起動時に <code>ipc-session.json</code> が書き込まれます（Windows: <code>%APPDATA%\syki-sok\</code>、macOS: <code>~/Library/Application Support/syki-sok/</code>）。中身は <code>{pid, port, token, started_at}</code> です</span></li>
           <li><strong>ソケットを開く</strong><span>ポートは 49152 が優先されますが、使用中なら空いているランダムなポートが使われます。ポート番号は必ずこのファイルから読み取ってください</span></li>
           <li><strong>リクエストを送る</strong><span>改行区切りの JSON-RPC 2.0 リクエストを送信します</span></li>
           <li><strong>トークンを付ける</strong><span>そのファイルの <code>token</code> を、リクエストごとの <code>"auth"</code> フィールドに入れます。<code>buffer.get</code>・<code>buffer.get_selection</code>・<code>tab.list</code> の3つの読み取り<strong>以外のメソッドでは必須</strong>で、付いていない（または違う）場合はエラー <code>-32000</code> で拒否され、何も実行されません。トークンはsyki::sokを起動するたびに変わるので、再起動したらファイルを読み直してください</span></li>
         </ol>
-        <p><strong>トークンを送っていなかったRPCクライアントにとって、互換性のない変更です。</strong>以前の版（1.9.0まで）は、<code>auth</code> を付けなくてもすべてのメソッドが実行されました。今は <code>buffer.set</code>・<code>buffer.append</code>・<code>buffer.replace</code>・<code>buffer.replace_selection</code>・<code>buffer.save</code>・<code>tab.switch</code>・<code>tab.new</code>・<code>tab.close</code>・<code>ui.activate</code>・<code>ui.toggle_split</code>・<code>ui.eval</code>（と、そのほかのすべてのメソッド）で必要です。<code>md-memo buffer|tab|ui</code> は最初から送っています。ポートに直接書き込んでいたエディタのプラグインやスクリプトは修正が必要です。<code>cmd | syki</code> と <code>md-memo &lt;ファイル&gt;</code> の1行メッセージは別の経路で、これまでどおり認証はありません。</p>
+        <p><strong>トークンを送っていなかったRPCクライアントにとって、互換性のない変更です。</strong>以前の版（1.9.0まで）は、<code>auth</code> を付けなくてもすべてのメソッドが実行されました。今は <code>buffer.set</code>・<code>buffer.append</code>・<code>buffer.replace</code>・<code>buffer.replace_selection</code>・<code>buffer.save</code>・<code>tab.switch</code>・<code>tab.new</code>・<code>tab.close</code>・<code>ui.activate</code>・<code>ui.toggle_split</code>・<code>ui.eval</code>（と、そのほかのすべてのメソッド）で必要です。<code>syki buffer|tab|ui</code> は最初から送っています。ポートに直接書き込んでいたエディタのプラグインやスクリプトは修正が必要です。<code>cmd | syki</code> と <code>md-memo &lt;ファイル&gt;</code> の1行メッセージは別の経路で、これまでどおり認証はありません。</p>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
@@ -4776,37 +4776,37 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>app.info</code></td>
                 <td><code>{}</code></td>
-                <td><code>md-memo info</code> と同じ答え（<code>{version, config_dir, config_file, scrap_dir, today_scrap_path, today_scrap_exists, inbox_dir, inbox_enabled, autosave, gui_running}</code>）を返します。キーやトークンは入りません。トークンが必要です。</td>
+                <td><code>syki info</code> と同じ答え（<code>{version, config_dir, config_file, scrap_dir, today_scrap_path, today_scrap_exists, inbox_dir, inbox_enabled, autosave, gui_running}</code>）を返します。キーやトークンは入りません。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>config.get</code></td>
                 <td><code>{"key": "scraps.scrapDir"}</code></td>
-                <td><code>md-memo config get</code> と同じ答え（<code>{key, value}</code>）を返します。キー・トークン・パスワードは、<code>&lt;set&gt;</code> か <code>&lt;unset&gt;</code> に置き換わります。<code>key</code> はドットでつないだパスで（数字は配列の項目）、省略すると全体です。存在しないキーは <code>-32602</code>。トークンが必要です。</td>
+                <td><code>syki config get</code> と同じ答え（<code>{key, value}</code>）を返します。キー・トークン・パスワードは、<code>&lt;set&gt;</code> か <code>&lt;unset&gt;</code> に置き換わります。<code>key</code> はドットでつないだパスで（数字は配列の項目）、省略すると全体です。存在しないキーは <code>-32602</code>。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.path</code></td>
                 <td><code>{"date": "2026-09-24"}</code></td>
-                <td>その日のスクラップファイルのパスを、<code>{date, path, exists}</code> で返します。ファイルがなくても返ります。<code>date</code> を省くと今日で、日付が不正なら <code>-32602</code>。<code>md-memo scrap path</code> と同じです。トークンが必要です。</td>
+                <td>その日のスクラップファイルのパスを、<code>{date, path, exists}</code> で返します。ファイルがなくても返ります。<code>date</code> を省くと今日で、日付が不正なら <code>-32602</code>。<code>syki scrap path</code> と同じです。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.list</code></td>
                 <td><code>{"from": "2026-09-01", "to": "2026-09-30", "lines": true}</code></td>
-                <td>日付のスクラップファイルを、新しい順に <code>[{date, path, size, modified, lines?}]</code> で返します。<code>md-memo scrap list</code> と同じです。トークンが必要です。</td>
+                <td>日付のスクラップファイルを、新しい順に <code>[{date, path, size, modified, lines?}]</code> で返します。<code>syki scrap list</code> と同じです。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.search</code></td>
                 <td><code>{"text": "deploy", "ranked": true, "limit": 20, "tag": "仕事,急ぎ"}</code></td>
-                <td><code>md-memo scrap search</code> と同じ関数で、試験的な意味検索も含みます。パラメータは、そのフラグです（<code>text</code>、<code>from</code>、<code>to</code>、<code>limit</code>、<code>ranked</code>、<code>semantic</code>、<code>kind</code>、<code>path</code>、<code>update</code>、<code>cutoff</code>、<code>tag</code>）。<code>tag</code> は <code>"a,b"</code> の文字列か配列で、そのタグをすべて持つ 1 件（見出しか区切り線で分かれる単位）だけに絞ります（8個までで、超えると <code>-32602</code>）。見出しの下に付けたタグは、その下の 1 件にも効きます。各ヒットには、リンクとして引用する材料（<code>rel</code>・<code>url</code>・<code>label</code>・<code>link</code>）が付きます。不正なパラメータは <code>-32602</code> で、<code>semantic</code> は、機能がオフのときと、クラウドのホストを許可していないときも <code>-32602</code> です。1回の呼び出しは5秒までなので、<code>from</code>・<code>to</code>・<code>limit</code> で絞ってください。トークンが必要です。</td>
+                <td><code>syki scrap search</code> と同じ関数で、試験的な意味検索も含みます。パラメータは、そのフラグです（<code>text</code>、<code>from</code>、<code>to</code>、<code>limit</code>、<code>ranked</code>、<code>semantic</code>、<code>kind</code>、<code>path</code>、<code>update</code>、<code>cutoff</code>、<code>tag</code>）。<code>tag</code> は <code>"a,b"</code> の文字列か配列で、そのタグをすべて持つ 1 件（見出しか区切り線で分かれる単位）だけに絞ります（8個までで、超えると <code>-32602</code>）。見出しの下に付けたタグは、その下の 1 件にも効きます。各ヒットには、リンクとして引用する材料（<code>rel</code>・<code>url</code>・<code>label</code>・<code>link</code>）が付きます。不正なパラメータは <code>-32602</code> で、<code>semantic</code> は、機能がオフのときと、クラウドのホストを許可していないときも <code>-32602</code> です。1回の呼び出しは5秒までなので、<code>from</code>・<code>to</code>・<code>limit</code> で絞ってください。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.tags</code></td>
                 <td>（なし）</td>
-                <td>ノートに書かれた<a href="#search-filter" style="color: var(--accent);">タグ</a>（<code>&lt;!-- tags: 仕事, 急ぎ --&gt;</code> のような1行）を、使っているファイルが多い順に <code>{tags: [{tag, files, entries}], files, undated}</code> で返します。<code>md-memo scrap tags</code> と同じ答えです。外側の <code>files</code> は読んだファイルの数、<code>undated</code> はそのうち名前に日付がないものの数で、<code>from</code>・<code>to</code> の範囲にそれらは入りません。タグがなければ <code>tags</code> は空の配列です。コメントかフロントマターのあるファイルを読むので、必要なときに呼んでください。トークンが必要です。</td>
+                <td>ノートに書かれた<a href="#search-filter" style="color: var(--accent);">タグ</a>（<code>&lt;!-- tags: 仕事, 急ぎ --&gt;</code> のような1行）を、使っているファイルが多い順に <code>{tags: [{tag, files, entries}], files, undated}</code> で返します。<code>syki scrap tags</code> と同じ答えです。外側の <code>files</code> は読んだファイルの数、<code>undated</code> はそのうち名前に日付がないものの数で、<code>from</code>・<code>to</code> の範囲にそれらは入りません。タグがなければ <code>tags</code> は空の配列です。コメントかフロントマターのあるファイルを読むので、必要なときに呼んでください。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.tag_edit</code></td>
                 <td><code>{"text": "...", "op": "add", "scope": "entry", "line": 12, "tags": "仕事, 急ぎ", "return_text": false}</code></td>
-                <td>送ったテキストから、ノートのタグがどう変わるかを計算します（<code>md-memo scrap tag</code> と同じ規則）。<code>op</code> は <code>add</code>、<code>remove</code>、<code>show</code>。<code>scope</code> は <code>note</code>（省略時）か <code>entry</code>（<code>line</code> が必要）です。ファイルは読み書きせず、タブにも触れません。答えは、送ったテキストのどの行をどの行に差し替えるか（<code>start_line</code>、<code>end_line</code>、<code>new_lines</code>、<code>eol</code>）、付けた・外した・そのままのタグ（<code>added</code>、<code>removed</code>、<code>unchanged</code>）、変更後に効いているタグ（<code>note_tags</code>、<code>entry_tags</code>）、範囲が古い本文のどこにあるか（<code>range_start</code>、<code>range_end</code>。書き込みと、その見出しの下すべてを含みます。見出しのある書き込みなら <code>heading</code> と <code>heading_line</code> も）、その下にある書き込みの数（<code>descendants</code>）、上の見出しから受け取っているタグ（<code>inherited_tags</code>、遠い見出しから順）、タグを付けられる場所の一覧（<code>path</code>。その書き込み自身が先頭で、続けて上の見出しを近い順に並べ、各要素は <code>{line, level, heading, range_start, range_end, descendants, tags}</code>）、何かができなかったときの理由 <code>message_code</code>（<code>already</code>、<code>none_found</code>、<code>front_matter</code>、<code>front_matter_tag</code>、<code>on_note</code>、<code>on_entry</code>、<code>on_parent</code>。<code>on_parent</code> のときは <code>parent_heading</code> と <code>parent_line</code> も入ります）です。見出しの下に付けたタグは、その下の小さい見出しにも効きます。記事の全体に付けるには、先頭の見出しの <code>line</code> を渡します。ある書き込みが上からしか受け取っていないタグを外すには、<code>on_parent</code> が返した <code>parent_line</code> で、もう一度呼びます。ノート全体では <code>path</code> は <code>[]</code>、<code>descendants</code> は 0 で、行番号はすべて古い本文のものです。<code>return_text</code> を付けると、新しいテキスト全体を <code>text</code> で返します。<code>tags</code> は <code>"a, b"</code> の文字列か配列で、8個までです（<code>show</code> では省けます）。不正なパラメータは <code>-32602</code> です。開いているノートに使うには、<code>buffer.get</code> で本文を読み、<code>scrap.tag_edit</code>（<code>return_text</code> 付き）に送り、返った <code>text</code> を、読んだときのハッシュを <code>expected_hash</code> にして <code>buffer.set</code> で書き戻します（<code>buffer.replace_all</code> は検索と置換なので、使えません）。AI にタグを付けさせるメソッドは、まだありません。トークンが必要です。</td>
+                <td>送ったテキストから、ノートのタグがどう変わるかを計算します（<code>syki scrap tag</code> と同じ規則）。<code>op</code> は <code>add</code>、<code>remove</code>、<code>show</code>。<code>scope</code> は <code>note</code>（省略時）か <code>entry</code>（<code>line</code> が必要）です。ファイルは読み書きせず、タブにも触れません。答えは、送ったテキストのどの行をどの行に差し替えるか（<code>start_line</code>、<code>end_line</code>、<code>new_lines</code>、<code>eol</code>）、付けた・外した・そのままのタグ（<code>added</code>、<code>removed</code>、<code>unchanged</code>）、変更後に効いているタグ（<code>note_tags</code>、<code>entry_tags</code>）、範囲が古い本文のどこにあるか（<code>range_start</code>、<code>range_end</code>。書き込みと、その見出しの下すべてを含みます。見出しのある書き込みなら <code>heading</code> と <code>heading_line</code> も）、その下にある書き込みの数（<code>descendants</code>）、上の見出しから受け取っているタグ（<code>inherited_tags</code>、遠い見出しから順）、タグを付けられる場所の一覧（<code>path</code>。その書き込み自身が先頭で、続けて上の見出しを近い順に並べ、各要素は <code>{line, level, heading, range_start, range_end, descendants, tags}</code>）、何かができなかったときの理由 <code>message_code</code>（<code>already</code>、<code>none_found</code>、<code>front_matter</code>、<code>front_matter_tag</code>、<code>on_note</code>、<code>on_entry</code>、<code>on_parent</code>。<code>on_parent</code> のときは <code>parent_heading</code> と <code>parent_line</code> も入ります）です。見出しの下に付けたタグは、その下の小さい見出しにも効きます。記事の全体に付けるには、先頭の見出しの <code>line</code> を渡します。ある書き込みが上からしか受け取っていないタグを外すには、<code>on_parent</code> が返した <code>parent_line</code> で、もう一度呼びます。ノート全体では <code>path</code> は <code>[]</code>、<code>descendants</code> は 0 で、行番号はすべて古い本文のものです。<code>return_text</code> を付けると、新しいテキスト全体を <code>text</code> で返します。<code>tags</code> は <code>"a, b"</code> の文字列か配列で、8個までです（<code>show</code> では省けます）。不正なパラメータは <code>-32602</code> です。開いているノートに使うには、<code>buffer.get</code> で本文を読み、<code>scrap.tag_edit</code>（<code>return_text</code> 付き）に送り、返った <code>text</code> を、読んだときのハッシュを <code>expected_hash</code> にして <code>buffer.set</code> で書き戻します（<code>buffer.replace_all</code> は検索と置換なので、使えません）。AI にタグを付けさせるメソッドは、まだありません。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>scrap.open</code></td>
@@ -4831,7 +4831,7 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>filter.validate</code></td>
                 <td><code>{"command": "git status"}</code></td>
-                <td>コマンドバーのガード（<code>md-memo jev verify</code> と同じ reviewed モード）の判定を、<code>{safe, warning, blocked, risk_level, reason}</code> で返します。コマンドは実行しません。トークンが必要です。</td>
+                <td>コマンドバーのガード（<code>syki jev verify</code> と同じ reviewed モード）の判定を、<code>{safe, warning, blocked, risk_level, reason}</code> で返します。コマンドは実行しません。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>filter.run</code></td>
@@ -4841,7 +4841,7 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>print.pdf</code></td>
                 <td><code>{"out": "C:\\notes\\a.pdf", "tab_id": "...", "paper": "a4", "landscape": false, "margin": "normal", "scale": 100, "pages": "1-3, 5", "header_footer": false, "overwrite": false}</code></td>
-                <td>ノートを PDF として保存します（<strong>Windows のみ</strong>。Mac では <code>-32603</code> で、プレビューのプリンターのボタンが macOS の印刷画面を開きます）。ページが、そのタブ（既定はアクティブなタブ）の Markdown プレビューを出し、画像と図を紙向きに整えて印刷するので、印刷パネルの「PDF に保存」と同じ PDF ができます。元のタブとプレビューの状態は、終わると戻るため、ウィンドウが一瞬ちらつきます。<code>out</code> は <code>.pdf</code> で終わる絶対パスで、フォルダが存在すること（そうでなければ <code>-32602</code>）。すでにあるファイルは、<code>overwrite: true</code> がない限り <code>-32001</code> です。<code>paper</code> は <code>a4</code>（既定）・<code>a3</code>・<code>b5</code>・<code>letter</code>、<code>margin</code> は <code>normal</code>（20 mm、既定）か <code>narrow</code>（10 mm）、<code>scale</code> は 25 から 200（既定 100）、<code>pages</code> は <code>1-3, 5</code> のように、<code>header_footer</code>（既定は false）は、上にファイル名、下にフォルダとページ番号を入れます。HTML のページは <code>-32602</code>、存在しないタブは <code>-32002</code>、印刷中や印刷パネルが開いているときは <code>-32001</code> です。答えは8秒以内に返り（接続の期限は10秒）、巨大なノートは <code>-32603</code>（<code>timed out</code>）で、ファイルが後から出ることがあります。結果は <code>{path, bytes, pages, tab_id}</code>。コマンドラインでは <code>md-memo tab pdf</code> です。<strong>利用者が名前を決めていないファイルを書く</strong>ので、そのことを伝えてから使ってください。トークンが必要です。</td>
+                <td>ノートを PDF として保存します（<strong>Windows のみ</strong>。Mac では <code>-32603</code> で、プレビューのプリンターのボタンが macOS の印刷画面を開きます）。ページが、そのタブ（既定はアクティブなタブ）の Markdown プレビューを出し、画像と図を紙向きに整えて印刷するので、印刷パネルの「PDF に保存」と同じ PDF ができます。元のタブとプレビューの状態は、終わると戻るため、ウィンドウが一瞬ちらつきます。<code>out</code> は <code>.pdf</code> で終わる絶対パスで、フォルダが存在すること（そうでなければ <code>-32602</code>）。すでにあるファイルは、<code>overwrite: true</code> がない限り <code>-32001</code> です。<code>paper</code> は <code>a4</code>（既定）・<code>a3</code>・<code>b5</code>・<code>letter</code>、<code>margin</code> は <code>normal</code>（20 mm、既定）か <code>narrow</code>（10 mm）、<code>scale</code> は 25 から 200（既定 100）、<code>pages</code> は <code>1-3, 5</code> のように、<code>header_footer</code>（既定は false）は、上にファイル名、下にフォルダとページ番号を入れます。HTML のページは <code>-32602</code>、存在しないタブは <code>-32002</code>、印刷中や印刷パネルが開いているときは <code>-32001</code> です。答えは8秒以内に返り（接続の期限は10秒）、巨大なノートは <code>-32603</code>（<code>timed out</code>）で、ファイルが後から出ることがあります。結果は <code>{path, bytes, pages, tab_id}</code>。コマンドラインでは <code>syki tab pdf</code> です。<strong>利用者が名前を決めていないファイルを書く</strong>ので、そのことを伝えてから使ってください。トークンが必要です。</td>
               </tr>
               <tr>
                 <td><code>deepsearch.plan</code></td>
@@ -4851,12 +4851,12 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>lessons.list</code></td>
                 <td><code>{"agent": "claude"}</code></td>
-                <td>失敗した実行のあとに残した<a href="#lessons" style="color: var(--accent);">教訓</a>（人がアプリで承認した短い規則。次の実行から、そのエージェントへの指示の前に付きます）を返します。<code>agent</code>（キーまたは別名）を渡すと <code>{agent, path, exists, count, applied, skipped, disabled}</code>、渡さないと教訓のフォルダにあるファイルごとの一覧です（なければ <code>[]</code>）。<code>count</code> はファイルにある規則の数、<code>applied</code> は次の実行で付く数（新しいほうから最大30件、合計4000文字）、<code>skipped</code> はそれより古くて付けない数、<code>disabled</code> は <code>agents.yaml</code> の <code>lessons: false</code> です。<code>md-memo lessons list</code> と同じ答えです。<strong>読み取り専用で、規則を書くメソッドはありません</strong>（エージェントが、人の承認なしに、自分の将来の指示を書き換えられてしまうためです）。1回の呼び出しは5秒までです。トークンが必要です。</td>
+                <td>失敗した実行のあとに残した<a href="#lessons" style="color: var(--accent);">教訓</a>（人がアプリで承認した短い規則。次の実行から、そのエージェントへの指示の前に付きます）を返します。<code>agent</code>（キーまたは別名）を渡すと <code>{agent, path, exists, count, applied, skipped, disabled}</code>、渡さないと教訓のフォルダにあるファイルごとの一覧です（なければ <code>[]</code>）。<code>count</code> はファイルにある規則の数、<code>applied</code> は次の実行で付く数（新しいほうから最大30件、合計4000文字）、<code>skipped</code> はそれより古くて付けない数、<code>disabled</code> は <code>agents.yaml</code> の <code>lessons: false</code> です。<code>syki lessons list</code> と同じ答えです。<strong>読み取り専用で、規則を書くメソッドはありません</strong>（エージェントが、人の承認なしに、自分の将来の指示を書き換えられてしまうためです）。1回の呼び出しは5秒までです。トークンが必要です。</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p><strong>表の <code>buffer.find</code> から下は、すべてトークンが必要です</strong>（読み取りだけのメソッドも、ノートの中身や設定に触れるので、トークンなしでは使えません）。1回の呼び出しは5秒までです（<code>print.pdf</code> だけは8秒）。<code>app.info</code>・<code>config.get</code>・<code>scrap.*</code>・<code>git.*</code>・<code>filter.*</code>・<code>lessons.list</code> は、画面がまだ起動中でも答えます。ノート・キャレット・表示を読み書きするメソッドは、画面の準備ができるまで <code>-32603</code> を返します。コマンドラインにも同じ働きがあるのは、<code>scrap.*</code>・<code>app.info</code>・<code>config.get</code>・<code>lessons.list</code>（と、<code>print.pdf</code> の <code>md-memo tab pdf</code>）だけで、ほかは JSON-RPC だけです。<code>scrap.tag_edit</code> は、<code>md-memo scrap tag</code> と同じ編集を計算しますが、ファイルは書きません。</p>
+        <p><strong>表の <code>buffer.find</code> から下は、すべてトークンが必要です</strong>（読み取りだけのメソッドも、ノートの中身や設定に触れるので、トークンなしでは使えません）。1回の呼び出しは5秒までです（<code>print.pdf</code> だけは8秒）。<code>app.info</code>・<code>config.get</code>・<code>scrap.*</code>・<code>git.*</code>・<code>filter.*</code>・<code>lessons.list</code> は、画面がまだ起動中でも答えます。ノート・キャレット・表示を読み書きするメソッドは、画面の準備ができるまで <code>-32603</code> を返します。コマンドラインにも同じ働きがあるのは、<code>scrap.*</code>・<code>app.info</code>・<code>config.get</code>・<code>lessons.list</code>（と、<code>print.pdf</code> の <code>syki tab pdf</code>）だけで、ほかは JSON-RPC だけです。<code>scrap.tag_edit</code> は、<code>syki scrap tag</code> と同じ編集を計算しますが、ファイルは書きません。</p>
         <p>取り返しのつかないもの、利用者の費用や外部への送信が起きるものは、メソッドにしていません。AI への問い合わせ、エージェントやスロットの実行、タスクの起動、深掘りの実行、教訓の提案と保存は、どのメソッドにもなく、人の操作です（<code>task.cancel</code> は止めるだけです）。</p>
 
         <div class="callout">
@@ -4899,21 +4899,21 @@ ping 128.1.33.254 | syki</code></pre>
           </div>
         </div>
         <ul>
-          <li>出力をリダイレクトまたはパイプした場合は、<code>--text</code> を付けない限りJSONになります。プレーンテキストで保存するには <code>md-memo buffer get --text &gt; note.md</code> のようにします。</li>
-          <li><code>md-memo --help</code>（<code>-h</code> でも可）は、全コマンドとそのフラグに加えて、パイプでテキストを渡す方法と、JSON-RPC ポートを直接呼ぶ方法（セッションファイル、メッセージの形式、メソッド、エラーコード）も表示します。<code>md-memo help buffer</code> は1つのコマンドの使い方を、<code>md-memo --version</code> は版を表示します。いずれも標準出力に書いて終了コード0で終わり、ウィンドウの起動も前面化もしないので、スクリプトやAIエージェントが最初に実行できます。</li>
+          <li>出力をリダイレクトまたはパイプした場合は、<code>--text</code> を付けない限りJSONになります。プレーンテキストで保存するには <code>syki buffer get --text &gt; note.md</code> のようにします。</li>
+          <li><code>syki --help</code>（<code>-h</code> でも可）は、全コマンドとそのフラグに加えて、パイプでテキストを渡す方法と、JSON-RPC ポートを直接呼ぶ方法（セッションファイル、メッセージの形式、メソッド、エラーコード）も表示します。<code>syki help buffer</code> は1つのコマンドの使い方を、<code>syki --version</code> は版を表示します。いずれも標準出力に書いて終了コード0で終わり、ウィンドウの起動も前面化もしないので、スクリプトやAIエージェントが最初に実行できます。</li>
           <li><strong>Windows のスクリプト・エージェント・CI では <code>syki-cli.exe</code> を使います。</strong><code>syki.exe</code> はウィンドウ用のプログラムなので、PowerShell やコマンドプロンプトは終了を待たず、終了コードや出力が取れないことがあります。<code>syki-cli.exe</code> が入ったリリースからは、zip に <code>syki.exe</code> と並んで入っています。コンソール用のプログラムで、同じコマンドを実行できます（このページの <code>md-memo</code> を <code>syki-cli</code> に読み替えます）。シェルが終了を待ち、本物の終了コード（<code>jev verify</code> は 0 が安全、1 がブロック、2 が警告）と出力が得られます。アプリを起動することはありません。引数なし・ファイル名・パイプで渡した文字列の場合は、起動中の syki::sok に依頼を渡し、起動していなければ <code>md-memo is not running</code> と表示して終了コード 1 で終わります。syki::sok を起動するのは、これまでどおり <code>syki.exe</code> です。macOS の <code>md-memo</code> コマンドは最初から終了を待つので、2つ目のプログラムは要りません。</li>
           <li><code>--json</code> は、<code>buffer</code> のすべてのサブコマンドで使えます。</li>
-          <li><code>md-memo buffer get --out note.md</code> は、ノートをUTF-8のファイルに書き出し、そのパス・サイズ・ハッシュだけを表示します（<code>--bom</code> を付けない限り、バイトオーダーマークは付きません）。日本語のテキストでは、<code>&gt;</code> や <code>| Set-Content</code> の代わりにこれを使ってください。Windows PowerShell 5.1 は、パイプで渡したテキストをコンソールのコードページで変換し直すため、文字化けします。ファイルはコマンド自身が書き込み、既存のファイルは1回で置き換えます。保存先のフォルダは、あらかじめ存在している必要があります。</li>
-          <li><code>info</code>・<code>scrap</code>・<code>config</code>・<code>lessons</code> は、フラグを語の前にも後ろにも置けます（<code>md-memo scrap search deploy --limit 5</code>）。何も作成・変更しません。例外は 2 つで、<code>scrap index</code> は検索の索引を（スクラップのフォルダの外に）書き、<code>scrap tag add|remove</code> は <code>--write</code> を付けたときだけ、指定したノートを書き換えます（既存のファイルだけで、新しく作ることはありません）。syki::sokが起動中でも停止中でも動きます。</li>
+          <li><code>syki buffer get --out note.md</code> は、ノートをUTF-8のファイルに書き出し、そのパス・サイズ・ハッシュだけを表示します（<code>--bom</code> を付けない限り、バイトオーダーマークは付きません）。日本語のテキストでは、<code>&gt;</code> や <code>| Set-Content</code> の代わりにこれを使ってください。Windows PowerShell 5.1 は、パイプで渡したテキストをコンソールのコードページで変換し直すため、文字化けします。ファイルはコマンド自身が書き込み、既存のファイルは1回で置き換えます。保存先のフォルダは、あらかじめ存在している必要があります。</li>
+          <li><code>info</code>・<code>scrap</code>・<code>config</code>・<code>lessons</code> は、フラグを語の前にも後ろにも置けます（<code>syki scrap search deploy --limit 5</code>）。何も作成・変更しません。例外は 2 つで、<code>scrap index</code> は検索の索引を（スクラップのフォルダの外に）書き、<code>scrap tag add|remove</code> は <code>--write</code> を付けたときだけ、指定したノートを書き換えます（既存のファイルだけで、新しく作ることはありません）。syki::sokが起動中でも停止中でも動きます。</li>
           <li><code>--tab &lt;id&gt;</code>（<code>tab list</code> のid）は、<code>buffer get</code>・<code>set</code>・<code>append</code>・<code>replace</code>・<code>save</code> で効きます。書き込みは、そのタブに<strong>切り替えずに</strong>、カーソルやフォーカスも動かさずに行われます。存在しないidはエラー（<code>no such tab</code>）です。<code>buffer get --selection</code> と <code>buffer replace-selection</code> は、フォーカスのあるペインに表示中のタブが対象です。この変更の前は、<code>set</code>・<code>append</code>・<code>replace</code> は <code>--tab</code> を無視していました。</li>
-          <li><strong>JSON-RPC ポートは、書き込みのすべてでセッショントークンが必須になりました。</strong><code>md-memo buffer|tab|ui</code> は自動で送ります。ポートに直接つなぐスクリプトやプラグインは、<code>ipc-session.json</code> の <code>token</code> を <code>auth</code> として送る必要があります（上の JSON-RPC の節を参照。これまで送っていなかったクライアントは動かなくなります）。</li>
+          <li><strong>JSON-RPC ポートは、書き込みのすべてでセッショントークンが必須になりました。</strong><code>syki buffer|tab|ui</code> は自動で送ります。ポートに直接つなぐスクリプトやプラグインは、<code>ipc-session.json</code> の <code>token</code> を <code>auth</code> として送る必要があります（上の JSON-RPC の節を参照。これまで送っていなかったクライアントは動かなくなります）。</li>
         </ul>
 
         <pre class="code-block"><code># 1. 現在のバッファを表示（ターミナルではプレーンテキスト、リダイレクト時はJSON）
-md-memo buffer get
+syki buffer get
 
 # 2. メタデータ（ハッシュ、世代番号、文字数、行数など）付きのJSONで取得
-md-memo buffer get --json
+syki buffer get --json
 
 # 3. ターミナルのストリームでバッファを置換
 echo "# 新しいノート" | syki buffer set
@@ -4928,21 +4928,21 @@ echo "- [ ] 新しいタスク" | syki buffer append
 echo "置換テキスト" | syki buffer replace --start 2:1 --end 2:10
 
 # 7. 選択範囲だけを表示。選択がなければ終了コード1、標準エラーに "no active selection"
-md-memo buffer get --selection
-md-memo buffer get --selection --json
+syki buffer get --selection
+syki buffer get --selection --json
 #   -> {"text": "...", "start": 12, "end": 48}
-md-memo buffer get --selection --tab tab_2
+syki buffer get --selection --tab tab_2
 
 # 8. パイプで渡したテキストで選択範囲を置換（1回のUndoにまとまる）
 #    （読み取り後に選択範囲が変わっていた場合はconflictエラーで拒否されます）
 cat formatted.txt | syki buffer replace-selection
 
 # 9. コマンドをASTガードレールで検証（終了コード0 = 安全）
-md-memo jev verify "git status && npm test"
+syki jev verify "git status && npm test"
 # [SAFE] Command passed AST validation: git status && npm test
 
 # 10. ブロックされたコマンドは終了コード1で終了。--json なら判定をJSONで出力
-md-memo jev verify --json "rm -rf /"
+syki jev verify --json "rm -rf /"
 # {
 #   "isSafe": false,
 #   "reason": "破壊的コマンド \"rm\" は安全基準により実行を拒否されました (Destructive command blocked)",
@@ -4954,21 +4954,21 @@ md-memo jev verify --json "rm -rf /"
 
 # 11. ガードの厳しさをモードで選ぶ: strict（既定。誰もレビューしないワンクリック経路向け）、
 #     reviewed（実行前に人が確認）、unattended（フック向け）
-md-memo jev verify --mode strict "sudo rm -rf /"
+syki jev verify --mode strict "sudo rm -rf /"
 # -> ブロック（終了コード 1）。どのモードでも同じ結果です
-md-memo jev verify --mode reviewed "git status"
+syki jev verify --mode reviewed "git status"
 # -> 安全（終了コード 0）
 
 # 12. Markdownファイルを、クエリに関係する部分だけに絞り込む
-md-memo agent prune --query "ログインのバグ" --file notes.md
+syki agent prune --query "ログインのバグ" --file notes.md
 
 # 13. 画像の文字を読み取って、今日のスクラップに追記（Windows・macOS）
-md-memo ocr memo.png
+syki ocr memo.png
 # OCR text appended to C:\Users\me\Documents\md-memo\scraps\2026-09-24.md
 #   文字が見つからなかったときは (no text recognized) と出て、何も追記しません
 
 # 14. 結果をJSONで受け取る（--json は画像のパスの前に付けます）
-md-memo ocr --json memo.png
+syki ocr --json memo.png
 # {
 #   "text": "読み取った文字",
 #   "appended": true,
@@ -4976,83 +4976,83 @@ md-memo ocr --json memo.png
 # }
 
 # 15. ノートをUTF-8のファイルに書き出す（日本語でも安全）。書き出し先だけを表示します
-md-memo buffer get --out note.md
+syki buffer get --out note.md
 #   -> Wrote 1234 bytes to C:\work\note.md (hash 3f2a9c1d5b7e0a44)
-md-memo buffer get --selection --out selection.md --json
+syki buffer get --selection --out selection.md --json
 #   -> {"path": "...", "bytes": 84, "hash": "..."}
 
 # 16. syki::sokが何をどこに置いているか（フォルダ、今日のスクラップ、起動中かどうか）
-md-memo info
-md-memo info --json
+syki info
+syki info --json
 #   -> {"version": "2.0.9", "config_dir": "...", "scrap_dir": "...", "today_scrap_path": "...",
 #       "today_scrap_exists": true, "inbox_dir": "...", "inbox_enabled": false, "autosave": true,
 #       "gui_running": false}
 
 # 17. アプリなしでスクラップを探す・タグを付ける: 日付ごとのファイルのパス、一覧、検索、タグの付け外し
-md-memo scrap path --date 2026-09-24
-md-memo scrap list --from 2026-09-01 --to 2026-09-30
-md-memo scrap search deploy --from 2026-09-01 --limit 20
+syki scrap path --date 2026-09-24
+syki scrap list --from 2026-09-01 --to 2026-09-30
+syki scrap search deploy --from 2026-09-01 --limit 20
 #   -> 各ヒットに、ファイル、日付、行番号、その行の文字、直前の見出し（とその行番号）が付きます
-md-memo scrap search deploy --tag 仕事,急ぎ     # 2 つのタグを両方持つものだけ（--ranked、--semantic とも組めます）
-md-memo scrap tags                              # ノートに書かれたタグと、使っているファイルの数
-md-memo scrap tag show notes.md --line 12       # ノート全体と、12 行目の書き込みのタグ（上の見出しから届いているタグも）
-md-memo scrap tag add 仕事,急ぎ notes.md --line 12   # 12 行目の書き込みと、その見出しの下すべてにタグを付けた新しい本文を表示（ファイルは変えません）
-md-memo scrap tag add 仕事 notes.md --write     # ノート全体にタグを付けて、ファイルを書き換える
-md-memo scrap tag remove 急ぎ notes.md --line 12 --write
+syki scrap search deploy --tag 仕事,急ぎ     # 2 つのタグを両方持つものだけ（--ranked、--semantic とも組めます）
+syki scrap tags                              # ノートに書かれたタグと、使っているファイルの数
+syki scrap tag show notes.md --line 12       # ノート全体と、12 行目の書き込みのタグ（上の見出しから届いているタグも）
+syki scrap tag add 仕事,急ぎ notes.md --line 12   # 12 行目の書き込みと、その見出しの下すべてにタグを付けた新しい本文を表示（ファイルは変えません）
+syki scrap tag add 仕事 notes.md --write     # ノート全体にタグを付けて、ファイルを書き換える
+syki scrap tag remove 急ぎ notes.md --line 12 --write
 cat notes.md | syki scrap tag add 仕事       # ファイルを省くと、標準入力から本文を読みます
 
 # 18. キーを見せずに設定を確認する（AIエージェントに渡しても安全）
-md-memo config get
-md-memo config get scraps.scrapDir --text
-md-memo config get text.apiKey
+syki config get
+syki config get scraps.scrapDir --text
+syki config get text.apiKey
 #   -> "&lt;set&gt;"（空のときは "&lt;unset&gt;"。キーそのものは表示されません）
 
 # 19. 何が使えるか調べる（表示して終了するだけで、ウィンドウは起動も前面化もしません）
-md-memo --help
-md-memo help buffer      # 1つのコマンド（md-memo buffer --help でも可）
-md-memo help rpc         # JSON-RPC ポート: セッションファイル、通信形式、メソッド、エラーコード
-md-memo help pipe        # パイプでテキストを渡す
-md-memo --version
+syki --help
+syki help buffer      # 1つのコマンド（syki buffer --help でも可）
+syki help rpc         # JSON-RPC ポート: セッションファイル、通信形式、メソッド、エラーコード
+syki help pipe        # パイプでテキストを渡す
+syki --version
 
 # 20. プログラムに内蔵されたエージェント用スキルをインストールする（リポジトリも zip も要りません）
-md-memo agent install-skill                # Claude Code: ~/.claude/skills/md-memo
-md-memo agent install-skill --codex        # Codex（$CODEX_HOME/skills。パスは未確認）
-md-memo agent install-skill --dir ~/agent-skills   # &lt;フォルダ&gt;/md-memo
+syki agent install-skill                # Claude Code: ~/.claude/skills/syki
+syki agent install-skill --codex        # Codex（$CODEX_HOME/skills。パスは未確認）
+syki agent install-skill --dir ~/agent-skills   # &lt;フォルダ&gt;/md-memo
 #   -> Installed the md-memo skill: C:\Users\you\.claude\skills\md-memo
 #      （後でもう一度実行すると、同じ内容なら "already up to date"、編集していない古いコピーは更新、編集したフォルダはそのまま残ります）
 
 # 21. 画面に出ていないタブを操作し、ファイルに保存して閉じる（画面は何も動きません）
-md-memo tab list --json                                  # 開いているタブのid
-id=$(md-memo tab new --background --text)                # 新しい作業用タブ。idを表示します
+syki tab list --json                                  # 開いているタブのid
+id=$(syki tab new --background --text)                # 新しい作業用タブ。idを表示します
 echo "# 下書き" | syki buffer set --tab "$id"         # そのタブにそのまま書き込む
-md-memo buffer save --tab "$id" --as ./draft.md          # ファイルに書き出す（ダイアログなし。既存のファイルは置き換えません）
-md-memo tab close "$id" --if-saved                       # タブの内容がファイルと同じときだけ閉じる。違えば終了コード1
+syki buffer save --tab "$id" --as ./draft.md          # ファイルに書き出す（ダイアログなし。既存のファイルは置き換えません）
+syki tab close "$id" --if-saved                       # タブの内容がファイルと同じときだけ閉じる。違えば終了コード1
 
 # 22. 入力した語がそろっているノートを探す（行や語順は問わない）、意味の近いノートを探す（試験的・既定はオフ）
-md-memo scrap search 納期 図面 --ranked
-md-memo scrap search "環境にやさしい建材の話" --semantic
-md-memo scrap search "環境にやさしい建材の話" --semantic --kind note --path "sub/*.md" --update
-md-memo scrap search "環境にやさしい建材の話" --semantic --cutoff 0    # 点数がかなり低いノートも残す
+syki scrap search 納期 図面 --ranked
+syki scrap search "環境にやさしい建材の話" --semantic
+syki scrap search "環境にやさしい建材の話" --semantic --kind note --path "sub/*.md" --update
+syki scrap search "環境にやさしい建材の話" --semantic --cutoff 0    # 点数がかなり低いノートも残す
 
 # 23. 意味検索の索引を作る・更新する（config.json で semantic を有効にしたあと）
-md-memo scrap index --status     # 設定と索引の状態を表示（モデルは呼びません）
-md-memo scrap index --dry-run    # 何件を埋め込むかを数えるだけ（何も書きません）
-md-memo scrap index              # 変わったファイルだけを読んで、索引を作る・更新する
-md-memo scrap index --rebuild    # 索引を作り直す（モデルなどが変わったとき）
+syki scrap index --status     # 設定と索引の状態を表示（モデルは呼びません）
+syki scrap index --dry-run    # 何件を埋め込むかを数えるだけ（何も書きません）
+syki scrap index              # 変わったファイルだけを読んで、索引を作る・更新する
+syki scrap index --rebuild    # 索引を作り直す（モデルなどが変わったとき）
 
 # 24. ノートを PDF にする（起動中のアプリがプレビューから作ります。Windows のみ）
-md-memo tab pdf notes.md -o notes.pdf
-md-memo tab pdf notes.md --paper a3 --landscape --margin narrow --pages 1-3,5 --header-footer
-md-memo tab pdf --tab "$id" -o notes.pdf --overwrite
+syki tab pdf notes.md -o notes.pdf
+syki tab pdf notes.md --paper a3 --landscape --margin narrow --pages 1-3,5 --header-footer
+syki tab pdf --tab "$id" -o notes.pdf --overwrite
 #   -> Wrote &lt;パス&gt; (N page(s), M bytes)
 
 # 25. 失敗した実行のあとに残した「教訓」を見る（読み取り専用。承認して保存するのはアプリで、コマンドでは書けません）
-md-memo lessons list                                     # 教訓のファイルがあるエージェントごとに 1 件
-md-memo lessons list --agent claude --json               # {"agent", "path", "exists", "count", "applied", "skipped", "disabled"}
-md-memo lessons list --agent cc --text                   # 別名でも引けます: "claude-code: 3 rules, 3 applied  &lt;パス&gt;"</code></pre>
+syki lessons list                                     # 教訓のファイルがあるエージェントごとに 1 件
+syki lessons list --agent claude --json               # {"agent", "path", "exists", "count", "applied", "skipped", "disabled"}
+syki lessons list --agent cc --text                   # 別名でも引けます: "claude-code: 3 rules, 3 applied  &lt;パス&gt;"</code></pre>
         <details class="more"><summary>制限・詳しい仕様（<code>ocr</code> コマンド）</summary><div class="more-body">
           <ul>
-            <li><code>md-memo ocr &lt;画像のパス&gt;</code> は、起動中のsyki::sokがなくても動きます。画像解析 (OCR) の設定とスクラップフォルダは、<code>config.json</code> から読みます。エクスプローラーの「送る」（Windows のみ）の中身も、このコマンドです。</li>
+            <li><code>syki ocr &lt;画像のパス&gt;</code> は、起動中のsyki::sokがなくても動きます。画像解析 (OCR) の設定とスクラップフォルダは、<code>config.json</code> から読みます。エクスプローラーの「送る」（Windows のみ）の中身も、このコマンドです。</li>
             <li>読み取りの方法は、クラウドの画像モデルが先、端末内OCR（Windows のみ）が予備です。設定 → 同期 の「画像をこのPCの外に出さない」がオンなら、端末内OCRだけを使います。macOS では、クラウドのOCRだけです。詳しくは <a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a> をご覧ください。</li>
             <li>ノートに追記されるのは、読み取った文字を引用の形（各行の先頭に <code>&gt; </code>）にしたものだけです。画像ファイルは、そのまま残ります。</li>
             <li>出力をリダイレクトまたはパイプしたときは、<code>--json</code> を付けなくても JSON になります。</li>
@@ -5073,7 +5073,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
           <ul>
             <li><code>buffer get --out &lt;ファイル&gt;</code>: パスは、コマンドを実行したフォルダを基準に解釈します。フォルダは拒否され、存在しないフォルダは作りません。既存のファイルは置き換えます。<code>--selection</code> なら選択範囲だけを書き出し、<code>--tab</code> でタブを選べます。JSONの内容は、<code>path</code>、<code>bytes</code>（書き込んだサイズ。バイトオーダーマークを含む）、<code>hash</code>（<code>buffer set --expected-hash</code> に渡す値。選択範囲のときは、その文字のハッシュ）、ノート全体のときは <code>generation</code> です。</li>
             <li><code>info</code> は、<code>version</code>、<code>config_dir</code>、<code>config_file</code>、<code>scrap_dir</code>、<code>today_scrap_path</code>（作成はしません）、<code>today_scrap_exists</code>、<code>inbox_dir</code>、<code>inbox_enabled</code>、<code>autosave</code>、<code>gui_running</code>（セッションファイルのポートで起動中のアプリが待ち受けている）を表示します。キー、トークン、リモートURLは表示しません。</li>
-            <li><code>scrap path [--date YYYY-MM-DD]</code> は、パイプ先でもパスだけを表示するので、<code>$(md-memo scrap path)</code> のように使えます。<code>scrap list [--from D] [--to D] [--lines]</code> は、スクラップフォルダにある <code>YYYY-MM-DD.md</code> のファイルを新しい順に並べます（JSON: <code>date</code>、<code>path</code>、<code>size</code>、<code>modified</code> の配列。<code>--lines</code> で <code>lines</code> も付きます）。<code>scrap search &lt;文字&gt; [--from D] [--to D] [--limit N] [--ranked] [--tag a,b]</code> は、フォルダ以下のすべての <code>.md</code> を、大文字小文字を区別せずに検索します。日付のファイルを新しい順に、そのあとで他のファイルを調べ、<code>--limit</code> 件（既定100）で止まります。<code>--ranked</code> を付けると、入力した<strong>語</strong>がそろっている<strong>ノート</strong>（<code>---</code> の区切りか見出しで分かれる 1 件）を、行や語順を問わず、近い順に探します（<code>納期 図面</code> は、両方に触れているノートを見つけます）。日本語は、漢字・カタカナ・英数字の連なりを 1 つの語とし、その間のひらがな（助詞）で区切ります。語が全部そろうノートがなければ、半分以上の語を含むノートを出します（<code>partial</code>）。ヒットは 1 ノートに 1 件で、<code>--limit</code> はノートの数です。JSON には <code>ranked</code> と、各ヒットの <code>score</code>・<code>partial</code> が付きます。JSON: <code>{query, count, truncated, matches: [{file, date, line, text, heading, heading_line}]}</code>。<code>heading</code> は、その行以前で一番近いMarkdownの見出しで、コードブロック内の <code>#</code> の行は数えません。<code>--from</code> か <code>--to</code> を付けると、名前が日付（<code>YYYY-MM-DD</code>）で始まるファイルだけが対象です（<code>2026-09-27.md</code> のほか、<code>2026-09-27_題名.md</code> も日付のあるノートとして数えます。日付のないノートは、範囲に入りません）。日付の書き方が違うと <code>Error: invalid date ...</code> を出して終了コード1で終わります。結果が空でもエラーではありません。</li>
+            <li><code>scrap path [--date YYYY-MM-DD]</code> は、パイプ先でもパスだけを表示するので、<code>$(syki scrap path)</code> のように使えます。<code>scrap list [--from D] [--to D] [--lines]</code> は、スクラップフォルダにある <code>YYYY-MM-DD.md</code> のファイルを新しい順に並べます（JSON: <code>date</code>、<code>path</code>、<code>size</code>、<code>modified</code> の配列。<code>--lines</code> で <code>lines</code> も付きます）。<code>scrap search &lt;文字&gt; [--from D] [--to D] [--limit N] [--ranked] [--tag a,b]</code> は、フォルダ以下のすべての <code>.md</code> を、大文字小文字を区別せずに検索します。日付のファイルを新しい順に、そのあとで他のファイルを調べ、<code>--limit</code> 件（既定100）で止まります。<code>--ranked</code> を付けると、入力した<strong>語</strong>がそろっている<strong>ノート</strong>（<code>---</code> の区切りか見出しで分かれる 1 件）を、行や語順を問わず、近い順に探します（<code>納期 図面</code> は、両方に触れているノートを見つけます）。日本語は、漢字・カタカナ・英数字の連なりを 1 つの語とし、その間のひらがな（助詞）で区切ります。語が全部そろうノートがなければ、半分以上の語を含むノートを出します（<code>partial</code>）。ヒットは 1 ノートに 1 件で、<code>--limit</code> はノートの数です。JSON には <code>ranked</code> と、各ヒットの <code>score</code>・<code>partial</code> が付きます。JSON: <code>{query, count, truncated, matches: [{file, date, line, text, heading, heading_line}]}</code>。<code>heading</code> は、その行以前で一番近いMarkdownの見出しで、コードブロック内の <code>#</code> の行は数えません。<code>--from</code> か <code>--to</code> を付けると、名前が日付（<code>YYYY-MM-DD</code>）で始まるファイルだけが対象です（<code>2026-09-27.md</code> のほか、<code>2026-09-27_題名.md</code> も日付のあるノートとして数えます。日付のないノートは、範囲に入りません）。日付の書き方が違うと <code>Error: invalid date ...</code> を出して終了コード1で終わります。結果が空でもエラーではありません。</li>
             <li><code>scrap search --tag a,b</code> は、ノートに書かれた<a href="#search-filter" style="color: var(--accent);">タグ</a>（<code>&lt;!-- tags: 仕事, 急ぎ --&gt;</code> のような 1 行）を<strong>すべて</strong>持つものだけに絞ります。<code>,</code> でつないだ書き方も、フラグを繰り返す書き方もでき、8 個までです（9 個目からはエラーで、終了コード1）。先頭の <code>#</code> と、英字の大文字小文字は区別しません。<code>--ranked</code>、<code>--semantic</code> とも、普通の検索とも組めます。誰も使っていないタグは、エラーではなく、結果が 0 件になります。行が見つかる普通の検索は、見つかった行を含む 1 件がそのタグを持つとき、ranked と意味の検索は、ヒットした 1 件がそのタグを持つときに残します（ノート全体のタグと、上の見出しの下に書かれたタグも、その 1 件が持つものに数えます）。<code>scrap tags [--json|--text]</code> は、書かれているタグを、使っているファイルの多い順に、JSON <code>{tags: [{tag, files, entries}], files, undated}</code> で出します。<code>tag</code> は、先頭の <code>#</code> を取り、小文字にした形です。<code>tags</code> の中の <code>files</code> は、そのタグを持つファイルの数、<code>entries</code> は、そのタグが付く 1 件の数（ノート全体のタグは、そのファイルの全部を、見出しの下のタグは、その見出しの下の 1 件も数えます）です。外側の <code>files</code> は、読んだ .md ファイルの数、<code>undated</code> は、そのうち名前に日付がないものの数です（<code>--from</code>・<code>--to</code> の範囲に、それらは入りません）。タグが 1 つもなくても、終了コードは 0 で、<code>"tags": []</code> です。コメントかフロントマターのあるファイルを読むので、必要なときに呼んでください。</li>
             <li><code>scrap tag add|remove &lt;タグ&gt; [&lt;ファイル&gt;] [--line N] [--write] [--json]</code> と <code>scrap tag show [&lt;ファイル&gt;] [--line N] [--json|--text]</code> は、ノートのタグを付け外しし、読みます（画面の<a href="#tag-commands" style="color: var(--accent);">タグを付ける・外す</a>と同じ規則です）。<code>&lt;タグ&gt;</code> は 1 つの引数で、<code>"仕事, 急ぎ"</code> のように区切ります（先頭の <code>#</code> は取り、1 回に 8 個まで）。<code>&lt;ファイル&gt;</code> を省くと、標準入力から本文を読みます（<code>--write</code> はエラーです）。<code>--line</code> を省くとノート全体、<code>--line N</code> を付けると、N 行目を含む書き込みと、その見出しの下すべてが対象です（最初の見出しや区切り線より上の行や、見出しも区切り線もないノートは、ノート全体になります）。N はその節のどの行でもよく、貼った記事の全体に付けるときは、記事の先頭の見出しの行を渡します。タグの行は、書き込みなら見出しのすぐ下、ノート全体ならノートの最初の行に入り、その範囲にタグの行がすでにあれば、そこに足します。</li>
             <li><strong>新しい本文を出すだけで、<code>--write</code> を付けるまで書き込みません。</strong><code>add</code> と <code>remove</code> は、<strong>新しい本文</strong>を標準出力にそのまま出します（余計な改行は付かず、<code>&gt; file</code> やパイプを <code>sed</code> のように使えます。ディスクのノートは変えません）。<code>--write</code> は、本文の代わりに<strong>ファイルをその場で書き換え</strong>、標準エラーに要約を 1 行出します。隣に一時ファイルを書き、置き換える直前にもう一度ファイルを読んで、最初に読んだときと違っていたときは、何も書かずに断ります（もう一度実行してください）。権限・CRLF・BOM はそのままで、ファイルを新しく作ることはありません。UTF-8 でないファイルと、16 MB を超える本文は、文章を失わないように、読む段階で断ります。syki::sok で開いているノートに <code>--write</code> すると、未保存の入力がなければ新しい本文が表示され、未保存の入力があるときは、ディスク上で変わったものとして扱われて、自動保存が止まり、どちらを残すかを選ぶことになります。開いているノートには、画面のコマンドか、<code>scrap.tag_edit</code> で計算してタブを書き換える方法を使ってください。</li>
@@ -5083,7 +5083,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
         </div></details>
         <details class="more"><summary>制限・詳しい仕様（<code>scrap search --semantic</code>、<code>scrap index</code>）</summary><div class="more-body">
           <ul>
-            <li><code>scrap search --semantic</code>（試験的機能。既定はオフ）は、<code>config.json</code> の <code>semantic</code> が有効なときに使えます（有効にする手順は <a href="#meaning-search" style="color: var(--accent);">意味検索</a> をご覧ください。オンかどうかは <code>md-memo scrap index --status</code> で分かります。モデルは呼びません）。入力した文章と<strong>意味の近いノート</strong>を、近い順に、1 ノートに 1 件出します。<code>--ranked</code> とは同時に使えません。<code>--from</code> と <code>--to</code> は日付（日付のファイルだけ）、<code>--kind note,log</code> はノートかパイプのログだけ（AI の結果は索引に入りません）、<code>--path &lt;パターン&gt;</code> はスクラップフォルダの中のパスかファイル名が合うものだけ（<code>sub/*.md</code>）、<code>--update</code> は先に索引を最新にします（最大 3 秒）。</li>
+            <li><code>scrap search --semantic</code>（試験的機能。既定はオフ）は、<code>config.json</code> の <code>semantic</code> が有効なときに使えます（有効にする手順は <a href="#meaning-search" style="color: var(--accent);">意味検索</a> をご覧ください。オンかどうかは <code>syki scrap index --status</code> で分かります。モデルは呼びません）。入力した文章と<strong>意味の近いノート</strong>を、近い順に、1 ノートに 1 件出します。<code>--ranked</code> とは同時に使えません。<code>--from</code> と <code>--to</code> は日付（日付のファイルだけ）、<code>--kind note,log</code> はノートかパイプのログだけ（AI の結果は索引に入りません）、<code>--path &lt;パターン&gt;</code> はスクラップフォルダの中のパスかファイル名が合うものだけ（<code>sub/*.md</code>）、<code>--update</code> は先に索引を最新にします（最大 3 秒）。</li>
             <li>件数: <code>--limit</code> を付けないと 10 件です（単語の検索は 100 件）。最良のノートの点数の <code>--cutoff</code>（既定 0.85）に届かないノートは除き、<code>notes</code> にその件数を書きます（<code>--cutoff 0</code> なら残します。<code>scrap.search</code> も <code>cutoff</code> を同じように受け取ります）。切る基準は、最良の点数に対する割合で、固定の点数ではありません。点数はモデルによって幅が違い、パーセントでもないので、人に「一致率」として見せないでください。</li>
             <li>索引にまだないノート: 新しいファイルや変わったファイルは、索引にありません。そのノートは単語で探して、意味のヒットのあとに並べます（<code>--kind</code> を付けると探しません）。索引が空のとき、別のモデルで作った索引のとき、モデルに届かないときは、<code>--ranked</code> の単語検索の結果になり、<code>notes</code> に理由が入ります（<code>semantic: false</code>）。機能がオフのとき、クラウドのホストを許可していないとき、モデル名やキーがないときは、エラー（終了コード1）です。</li>
             <li>JSON: 普通の <code>scrap search</code> の項目のほかに、<code>semantic</code>（索引が答えたら true）、<code>pending</code>（索引にないファイルの数）、<code>left_out</code>（除いたノートの数）、<code>notes</code>、各ヒットの <code>kind</code>・<code>end_line</code>・<code>cosine</code>・<code>context</code>・<code>source</code>（<code>semantic</code> か、まだ索引にないファイルの <code>words</code>）が付きます。<code>score</code> は、同じ <code>source</code> の中でだけ比べられます。</li>
@@ -5100,7 +5100,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
             <li><code>--margin</code> は、<code>normal</code> が 20 mm（既定）、<code>narrow</code> が 10 mm です。<code>--scale</code> は 25 から 200（既定 100）、<code>--pages</code> は <code>1-3,5</code> のように書きます。<code>--header-footer</code>（既定はオフ）は、上にファイル名、下にフォルダとページ番号を入れます。</li>
             <li>出力は、端末では <code>Wrote &lt;パス&gt; (N page(s), M bytes)</code>、パイプ先では JSON（<code>{path, bytes, pages, tab_id}</code>）です。</li>
             <li>PDF を作るあいだ、ウィンドウが一瞬ちらつきます（タブとプレビューを出して、あとで元に戻すためです）。コマンドは 10 秒、アプリは 8 秒まで待ちます。巨大なノートはエラーになり、ファイルが後から出ることがあります。</li>
-            <li><code>tab pdf</code> は、1.11.0 以降にだけあります。古いものは <code>unknown tab action</code> と答えるので、<code>md-memo help tab</code> で確かめてください。同じ処理の JSON-RPC は <code>print.pdf</code> です（<a href="#json-rpc" style="color: var(--accent);">JSON-RPC の節</a>）。</li>
+            <li><code>tab pdf</code> は、1.11.0 以降にだけあります。古いものは <code>unknown tab action</code> と答えるので、<code>syki help tab</code> で確かめてください。同じ処理の JSON-RPC は <code>print.pdf</code> です（<a href="#json-rpc" style="color: var(--accent);">JSON-RPC の節</a>）。</li>
           </ul>
         </div></details>
         <details class="more"><summary>制限・詳しい仕様（<code>lessons list</code>）</summary><div class="more-body">
@@ -5108,7 +5108,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
             <li><code>lessons list [--agent &lt;キー&gt;] [--json|--text]</code> は、<a href="#lessons" style="color: var(--accent);">教訓</a>（失敗した実行のあとに、あなたが承認して残した短い規則）を見るコマンドです。起動中の syki::sok は要らず、読むだけで、何も作りません。</li>
             <li><code>--agent</code> を付けないと、教訓のフォルダ（<code>&lt;設定フォルダ&gt;/lessons/</code>）にある Markdown のファイルごとに 1 件を返します（ファイルが 1 つもなければ、JSON は <code>[]</code>、端末では「No lessons files in ...」です）。エージェントのキーではないファイル名は、そのファイル名のまま出ます。<code>--agent</code>（キーまたは別名）を付けると、そのエージェントの 1 件だけで、ファイルがまだなくても答えます（<code>exists</code> が false）。</li>
             <li>JSON の項目は <code>agent</code>、<code>path</code>、<code>exists</code>、<code>count</code>（ファイルにある規則の数）、<code>applied</code>（次の実行で付く数。新しいほうから最大 30 件、合計 4000 文字）、<code>skipped</code>（それより古くて付けない数）、<code>disabled</code>（<code>agents.yaml</code> の <code>lessons: false</code>。このときの <code>applied</code> と <code>skipped</code> は 0）です。端末では 1 エージェントが 1 行で、たとえば <code>claude-code: 3 rules, 3 applied  &lt;パス&gt;</code> のように出ます。</li>
-            <li>別名と <code>lessons: false</code> は、スクラップフォルダの <code>.md-memo/agents.yaml</code>、なければ設定フォルダの <code>agents.yaml</code>、それもなければ組み込みの定義から分かります。<code>agents.yaml</code> に書いていないエージェント（アプリの設定だけで足したもの）の別名と、そのエージェントの <code>lessons: false</code> は、このコマンドにも <code>lessons.list</code> にも反映されません。</li>
+            <li>別名と <code>lessons: false</code> は、スクラップフォルダの <code>.syki-sok/agents.yaml</code>、なければ設定フォルダの <code>agents.yaml</code>、それもなければ組み込みの定義から分かります。<code>agents.yaml</code> に書いていないエージェント（アプリの設定だけで足したもの）の別名と、そのエージェントの <code>lessons: false</code> は、このコマンドにも <code>lessons.list</code> にも反映されません。</li>
             <li><strong>書くコマンドはありません。</strong><code>lessons add</code> のような書き込みの語を渡すと、「コマンドラインは教訓を書かない」という旨のエラーで断り、終了コード 1 で終わります。エージェントが、人の承認なしに、自分の将来の指示を書き換えられないようにするためです。JSON-RPC の <code>lessons.list</code> も同じ答えを返す読み取り専用で、書くメソッドはありません。</li>
           </ul>
         </div></details>
@@ -5153,13 +5153,13 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
             <tbody>
               <tr>
                 <td><code>config.json</code><br>アプリの設定（キー・モデル・ショートカットなど）</td>
-                <td>Windows: <code>%APPDATA%\md-memo\</code><br>macOS: <code>~/Library/Application Support/md-memo/</code></td>
+                <td>Windows: <code>%APPDATA%\syki-sok\</code><br>macOS: <code>~/Library/Application Support/syki-sok/</code></td>
                 <td>syki::sokを再起動したとき。起動時に読み込まれ、設定画面の保存のたびに全体が書き直されます</td>
                 <td>エージェント。<strong>syki::sokを完全に終了している間だけ</strong></td>
               </tr>
               <tr>
                 <td><code>agents.yaml</code><br>エージェント・記法・別名（<code>aliases</code>）・ひな形（<code>snippets</code>）の定義</td>
-                <td>プロジェクトごと: <code>&lt;スクラップフォルダ&gt;/.md-memo/agents.yaml</code><br>または、アプリの設定フォルダ</td>
+                <td>プロジェクトごと: <code>&lt;スクラップフォルダ&gt;/.syki-sok/agents.yaml</code><br>または、アプリの設定フォルダ</td>
                 <td>次のスロット実行のとき（記法・別名・ひな形の一覧への反映は、syki::sokの再起動のあと）。構文エラーがあると、エラーは出ずに既定の設定に戻ります</td>
                 <td>エージェント、またはあなた（起動中でも可）</td>
               </tr>
@@ -5167,7 +5167,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
                 <td><code>lessons/&lt;エージェント&gt;.md</code><br>「<a href="#lessons" style="color: var(--accent);">教訓</a>」ボタンで残した規則</td>
                 <td>アプリの設定フォルダの中の <code>lessons</code> フォルダ（<code>config.json</code> と同じ階層）</td>
                 <td>そのエージェントの次の実行のとき</td>
-                <td>あなた（教訓の画面で、または手で）。エージェントは読むだけ（<code>md-memo lessons list</code>）で、書きません。規則は、エージェントへの指示の前に付くからです</td>
+                <td>あなた（教訓の画面で、または手で）。エージェントは読むだけ（<code>syki lessons list</code>）で、書きません。規則は、エージェントへの指示の前に付くからです</td>
               </tr>
               <tr>
                 <td>プロジェクトの <code>.env</code><br>エージェントCLIのキー用</td>
@@ -5189,7 +5189,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
 
         <ol class="steps">
           <li><strong>syki::sokを完全に終了し、ファイルをバックアップする</strong><span>Windowsは、トレイアイコンから終了します（✕で閉じても常駐したままです）。macOSは <span class="kbd">Cmd+Q</span>。バックアップにはAPIキーが入るので、設定フォルダの中に置きます</span></li>
-          <li><strong>下の依頼文を、エージェントに渡す</strong><span>先に <code>skills/md-memo/SKILL.md</code> を読むよう伝えます。スキルは <code>md-memo agent install-skill</code>（1.8.0 より新しいもの）でインストールできます。配布 zip（v1.7.1 以降）や GitHub から入手する方法は、下で説明します</span></li>
+          <li><strong>下の依頼文を、エージェントに渡す</strong><span>先に <code>skills/syki/SKILL.md</code> を読むよう伝えます。スキルは <code>syki agent install-skill</code>（1.8.0 より新しいもの）でインストールできます。配布 zip（v1.7.1 以降）や GitHub から入手する方法は、下で説明します</span></li>
           <li><strong>エージェントが編集して、検証する</strong><span>JSONとYAMLの構文チェックまで行ってもらいます</span></li>
           <li><strong>syki::sokを起動する</strong><span>スタートメニュー、Finder、トレイから、通常どおり起動します</span></li>
           <li><strong>エージェントが、機能ごとに確認する</strong><span>確認できたこと・できなかったことを報告してもらいます</span></li>
@@ -5197,7 +5197,7 @@ md-memo lessons list --agent cc --text                   # 別名でも引けま
 
         <p><strong>依頼文 1: Geminiをまとめて設定する（画像OCR・音声入力・Mermaidの画像化）</strong></p>
         <pre class="code-block" style="white-space: pre-wrap;"><code>syki::sok を Gemini 向けに設定してください（画像 OCR、音声入力、Mermaid の画像化）。
-まず skills/md-memo/SKILL.md と skills/md-memo/references/setup-guide.md を読んでください。
+まず skills/syki/SKILL.md と skills/syki/references/setup-guide.md を読んでください。
 config.json を編集する前に、syki::sok を終了する（トレイ → 終了）ようこちらに依頼し、バックアップを取ってから、渡す Gemini キーは vision.apiKey にだけ入れてください（音声と画像はそれを引き継ぎます）。
 音声は voice.model を gemini-3.5-transcribe、apiStyle は auto、languageCodes は ["ja-JP"] に、画像は image.model を gemini-3.1-flash-lite-image にしてください。
 これらの機能に必要な環境と前提条件（ネットワーク、マイクの許可、general.pasteImageOcr など）も確認し、足りない設定を整えてください。
@@ -5206,8 +5206,8 @@ config.json を編集する前に、syki::sok を終了する（トレイ → �
 再起動後に各機能をチェックリストで確認し、確認できたこと・できなかったことを報告してください。</code></pre>
 
         <p><strong>依頼文 2: エージェントを追加・変更し、APIキーをプロジェクトの .env に入れる</strong></p>
-        <pre class="code-block" style="white-space: pre-wrap;"><code>syki::sok の agents.yaml（設定フォルダ直下のグローバルなもの、またはスクラップフォルダの .md-memo/agents.yaml）に、&lt;エージェント名&gt; を追加してください。
-まず skills/md-memo/SKILL.md と skills/md-memo/references/setup-guide.md を読んでください。
+        <pre class="code-block" style="white-space: pre-wrap;"><code>syki::sok の agents.yaml（設定フォルダ直下のグローバルなもの、またはスクラップフォルダの .syki-sok/agents.yaml）に、&lt;エージェント名&gt; を追加してください。
+まず skills/syki/SKILL.md と skills/syki/references/setup-guide.md を読んでください。
 バックアップを取り、既存のエージェント、記法（slot_profiles / recipes）、別名（aliases）、ひな形（snippets）はすべて残してください。
 &lt;コマンド&gt; --help でフラグを確認し、権限確認をスキップするフラグは付けないでください。
 そのエージェントの API キーは、プロジェクトルートの .env に書いてください（KEY=value の形式、UTF-8 の BOM なし）。キーは表示しないでください。
@@ -5216,7 +5216,7 @@ YAML を検証し、記法（slot_profiles / recipes）を変えた場合は syk
 
         <p><strong>依頼文 3: 全機能の前提条件を点検し、足りない環境変数と設定を整える</strong></p>
         <pre class="code-block" style="white-space: pre-wrap;"><code>syki::sok の各機能の前提条件を確認し、足りない環境変数と設定を設定してください。
-まず skills/md-memo/SKILL.md と skills/md-memo/references/setup-guide.md を読み、setup-guide.md の (e)「機能ごとの前提条件と確認手順」の表にある機能をひとつずつ、必要なもの（インストール、キー、環境変数、設定）が揃っているか確認してください。
+まず skills/syki/SKILL.md と skills/syki/references/setup-guide.md を読み、setup-guide.md の (e)「機能ごとの前提条件と確認手順」の表にある機能をひとつずつ、必要なもの（インストール、キー、環境変数、設定）が揃っているか確認してください。
 足りないものは、適切な場所に設定してください。config.json は syki::sok を終了してから（バックアップ必須）、エージェントの定義は agents.yaml、エージェント CLI のキーはプロジェクトの .env、それ以外は OS の環境変数です。
 syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API_KEY などの環境変数は syki::sok には読まれません）。
 インストールや、OS のプライバシー・ファイアウォールの設定変更が必要なときは、実行する前にコマンドを私に見せて、許可を得てください。
@@ -5224,7 +5224,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
 最後に、機能ごとに「確認できた／できなかった／未確認」を表にして報告してください。</code></pre>
 
         <details class="more"><summary>機能ごとの前提条件と確認方法（一覧表）</summary><div class="more-body">
-          <p>エージェントは、この表を <code>skills/md-memo/references/setup-guide.md</code> の (e) から読みます。人が手で確認するときにも使えます。</p>
+          <p>エージェントは、この表を <code>skills/syki/references/setup-guide.md</code> の (e) から読みます。人が手で確認するときにも使えます。</p>
           <div class="doc-table-wrap">
             <table class="doc-table" style="min-width: 760px;">
               <thead>
@@ -5352,7 +5352,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
                 </tr>
                 <tr>
                   <td>macOSの前提</td>
-                  <td>macOS 10.15 以降。Appleの公証がないビルドの初回は、macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」、14 以前は 右クリック → 開く。どのバージョンでも <code>xattr -dr com.apple.quarantine "syki::sok.app"</code> で開けます</td>
+                  <td>macOS 10.15 以降。Appleの公証がないビルドの初回は、macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」、14 以前は 右クリック → 開く。どのバージョンでも <code>xattr -dr com.apple.quarantine "syki-sok.app"</code> で開けます</td>
                   <td>なし</td>
                   <td>トレイはない設計です。Dockアイコンとホットキーで、ウィンドウを戻します</td>
                 </tr>
@@ -5393,13 +5393,13 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
         </div>
 
         <p>
-          エージェントに読ませるフォルダは <a href="https://github.com/youshinh/syki-sok/tree/main/skills/md-memo" target="_blank" rel="noopener" style="color: var(--accent);"><code>skills/md-memo</code></a> です。依頼するときは、まず <code>SKILL.md</code> を読むよう伝えてください。
+          エージェントに読ませるフォルダは <a href="https://github.com/youshinh/syki-sok/tree/main/skills/syki" target="_blank" rel="noopener" style="color: var(--accent);"><code>skills/syki</code></a> です。依頼するときは、まず <code>SKILL.md</code> を読むよう伝えてください。
         </p>
         <p>
-          <strong>いちばん簡単なのは、syki::sok にスキルをインストールさせることです。</strong>1.8.0 より新しいプログラムは、スキルを内部に持っています。<code>md-memo agent install-skill</code> を実行すると、フォルダが <code>~/.claude/skills/md-memo</code>（Claude Code 用。<code>CLAUDE_CONFIG_DIR</code> も尊重されます）にコピーされます。リポジトリも zip も、起動中の syki::sok も要らないので、Homebrew でインストールした場合もこの方法が使えます。<code>--codex</code> は Codex 用（<code>$CODEX_HOME/skills</code>、なければ <code>~/.codex/skills</code> に入れます。Codex がそこからスキルを読むかどうかは<strong>確認できていない</strong>ので、読まないときは <code>--dir</code> を使ってください）、<code>--dir &lt;フォルダ&gt;</code> は指定したフォルダに入れます（スキルは <code>&lt;フォルダ&gt;/md-memo</code> になります）。何をどこにインストールしたかは表示されます。syki::sok を更新したらもう一度実行してください。内容が同じなら「already up to date」と表示され、あなたが編集していない古いコピーは置き換えられ、あなたが編集したフォルダ（またはこのコマンドが作っていないフォルダ）は、違いのあるファイルを表示したうえで、<code>--force</code> を付けない限りそのまま残されます。1.8.0 までのプログラムにはこのコマンドがないので、以下の方法を使ってください。
+          <strong>いちばん簡単なのは、syki::sok にスキルをインストールさせることです。</strong>1.8.0 より新しいプログラムは、スキルを内部に持っています。<code>syki agent install-skill</code> を実行すると、フォルダが <code>~/.claude/skills/syki</code>（Claude Code 用。<code>CLAUDE_CONFIG_DIR</code> も尊重されます）にコピーされます。リポジトリも zip も、起動中の syki::sok も要らないので、Homebrew でインストールした場合もこの方法が使えます。<code>--codex</code> は Codex 用（<code>$CODEX_HOME/skills</code>、なければ <code>~/.codex/skills</code> に入れます。Codex がそこからスキルを読むかどうかは<strong>確認できていない</strong>ので、読まないときは <code>--dir</code> を使ってください）、<code>--dir &lt;フォルダ&gt;</code> は指定したフォルダに入れます（スキルは <code>&lt;フォルダ&gt;/md-memo</code> になります）。何をどこにインストールしたかは表示されます。syki::sok を更新したらもう一度実行してください。内容が同じなら「already up to date」と表示され、あなたが編集していない古いコピーは置き換えられ、あなたが編集したフォルダ（またはこのコマンドが作っていないフォルダ）は、違いのあるファイルを表示したうえで、<code>--force</code> を付けない限りそのまま残されます。1.8.0 までのプログラムにはこのコマンドがないので、以下の方法を使ってください。
         </p>
         <p>
-          <strong>コマンドを使わない場合、スキルは配布 zip に入っています。</strong>v1.7.1 以降は、Releases ページの zip に、プログラムと並んで <code>skills</code> フォルダが入っています（Windows は <code>syki.exe</code> の隣、macOS は <code>syki::sok.app</code> の隣）。その中の <code>skills/md-memo</code> フォルダを使ってください。それ以前の zip や、別の方法（たとえば Homebrew）でインストールした場合は入っていないので、GitHub から入手してください。上のアドレスをエージェントに渡すか、リポジトリ全体をダウンロード（GitHub のページの <strong>Code → Download ZIP</strong>、または <code>git clone https://github.com/youshinh/syki-sok.git</code>）して、その中の <code>skills/md-memo</code> フォルダを使います。Web ページを読めるエージェントなら、<code>SKILL.md</code> からリンクされた <code>references/</code> の 4 つのファイルも自分で開きます。いつでも使えるようにするには、このフォルダ（Markdown ファイル 5 つ、約 340 KB）を、お使いのエージェントのスキルフォルダにコピーしてください（Claude Code なら <code>~/.claude/skills/md-memo</code>）。
+          <strong>コマンドを使わない場合、スキルは配布 zip に入っています。</strong>v1.7.1 以降は、Releases ページの zip に、プログラムと並んで <code>skills</code> フォルダが入っています（Windows は <code>syki.exe</code> の隣、macOS は <code>syki-sok.app</code> の隣）。その中の <code>skills/syki</code> フォルダを使ってください。それ以前の zip や、別の方法（たとえば Homebrew）でインストールした場合は入っていないので、GitHub から入手してください。上のアドレスをエージェントに渡すか、リポジトリ全体をダウンロード（GitHub のページの <strong>Code → Download ZIP</strong>、または <code>git clone https://github.com/youshinh/syki-sok.git</code>）して、その中の <code>skills/syki</code> フォルダを使います。Web ページを読めるエージェントなら、<code>SKILL.md</code> からリンクされた <code>references/</code> の 4 つのファイルも自分で開きます。いつでも使えるようにするには、このフォルダ（Markdown ファイル 5 つ、約 340 KB）を、お使いのエージェントのスキルフォルダにコピーしてください（Claude Code なら <code>~/.claude/skills/syki</code>）。
         </p>
       </section>
 
@@ -5438,7 +5438,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>Jev</strong></td>
                 <td><a href="#jev-action" style="color: var(--accent);">アクション候補</a></td>
-                <td>TypeSafe AI が提供する外部の判定モデルの名前です（md-memo に内蔵されているものではありません）。設定 → 連携 → 提案 (アクション)で OpenRouter か TypeSafe の API キーを入力したときだけ使われます。文章は書かず、md-memo に内蔵の候補を並べ替えます。それ以外は内蔵のローカル規則で動作します。<code>md-memo jev verify</code> のように CLI のサブコマンド名としても使われていますが、<code>jev verify</code>（AST 検証）は完全にローカルで動きます。</td>
+                <td>TypeSafe AI が提供する外部の判定モデルの名前です（md-memo に内蔵されているものではありません）。設定 → 連携 → 提案 (アクション)で OpenRouter か TypeSafe の API キーを入力したときだけ使われます。文章は書かず、md-memo に内蔵の候補を並べ替えます。それ以外は内蔵のローカル規則で動作します。<code>syki jev verify</code> のように CLI のサブコマンド名としても使われていますが、<code>jev verify</code>（AST 検証）は完全にローカルで動きます。</td>
               </tr>
               <tr>
                 <td><strong>Slot（スロット）</strong></td>
@@ -5482,7 +5482,7 @@ command! MDMemoSend :w !syki</code></pre>
               </tr>
               <tr>
                 <td><strong>AST ガードレール</strong></td>
-                <td>アクション候補 / <code>md-memo jev verify</code></td>
+                <td>アクション候補 / <code>syki jev verify</code></td>
                 <td>シェルコマンドを実行する前に構文として解析し、破壊的コマンドやシステム領域への書き込みなどを検出したら実行を拒否する仕組みです。既知の危険パターンを対象とした防御であり、すべての危険を検知できるわけではありません。</td>
               </tr>
               <tr>
@@ -5513,7 +5513,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>タグ（Tag）</strong></td>
                 <td><a href="#search-filter" style="color: var(--accent);">検索を期間とタグで絞り込む</a></td>
-                <td>ノートの中に <code>&lt;!-- tags: 仕事, 買い物 --&gt;</code> と 1 行で書く、検索の手がかりです（HTML のコメントなので、プレビューにも印刷にも出ません）。ノートの先頭に書けばノート全体のタグ、それ以外の場所に書けばそのコメントがある 1 件と、その見出しの下に続く小見出しのタグになります。ノート検索の「絞り込み」で、選んだタグを<strong>すべて</strong>持つものだけに絞れます。手で書くほか、コマンドパレットの「この書き込みにタグを付ける」「ノート全体にタグを付ける」「タグを外す」（<a href="#tag-commands" style="color: var(--accent);">タグを付ける・外す</a>）と、<code>md-memo scrap tag</code>、<code>scrap.tag_edit</code> でも付け外しできます。AI にタグを提案させる機能は、まだありません。</td>
+                <td>ノートの中に <code>&lt;!-- tags: 仕事, 買い物 --&gt;</code> と 1 行で書く、検索の手がかりです（HTML のコメントなので、プレビューにも印刷にも出ません）。ノートの先頭に書けばノート全体のタグ、それ以外の場所に書けばそのコメントがある 1 件と、その見出しの下に続く小見出しのタグになります。ノート検索の「絞り込み」で、選んだタグを<strong>すべて</strong>持つものだけに絞れます。手で書くほか、コマンドパレットの「この書き込みにタグを付ける」「ノート全体にタグを付ける」「タグを外す」（<a href="#tag-commands" style="color: var(--accent);">タグを付ける・外す</a>）と、<code>syki scrap tag</code>、<code>scrap.tag_edit</code> でも付け外しできます。AI にタグを提案させる機能は、まだありません。</td>
               </tr>
               <tr>
                 <td><strong>印刷パネル（Print panel）</strong></td>

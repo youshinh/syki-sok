@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -1088,11 +1088,11 @@
 
         <details class="more"><summary>Opening, saving and closing notes: what is kept</summary><div class="more-body">
           <ul>
-            <li><strong>A file is never open twice.</strong> Opening a file that already has a tab (<span class="kbd">Ctrl + O</span>, the Command Palette, a drop, double-clicking it in Explorer / Finder, or <code>md-memo file.md</code>) switches to that tab and says so in the status bar. The text in that tab is left alone, unsaved changes included. <strong>Save As</strong> onto a file another tab has open closes the other tab when it has no unsaved changes; otherwise it stays as a note of its own, with no file, your text and its unsaved dot.</li>
+            <li><strong>A file is never open twice.</strong> Opening a file that already has a tab (<span class="kbd">Ctrl + O</span>, the Command Palette, a drop, double-clicking it in Explorer / Finder, or <code>syki file.md</code>) switches to that tab and says so in the status bar. The text in that tab is left alone, unsaved changes included. <strong>Save As</strong> onto a file another tab has open closes the other tab when it has no unsaved changes; otherwise it stays as a note of its own, with no file, your text and its unsaved dot.</li>
             <li><strong>Typing while a save is being written.</strong> Anything typed after a save started is not in the file yet, so the tab stays marked unsaved and is saved next. The saves of one note are written one at a time.</li>
             <li><strong>The question when you close a note with unsaved changes</strong> appears once. <span class="kbd">Enter</span> presses the button that has the focus (Save to begin with), <span class="kbd">S</span> saves, <span class="kbd">D</span> or <span class="kbd">N</span> does not save, and <span class="kbd">Esc</span> cancels. Keys with Ctrl, Alt or Cmd, a key held down and the keys of an input method are never an answer, and pressing <span class="kbd">Ctrl + W</span> again while the question is up does nothing.</li>
             <li><strong>Text added to a scrap from outside</strong> (a piped command, Quick Capture, the hot folder, Discord) shows up in the scrap's tab when that tab has no unsaved changes. If you have typed there without saving, the tab is left exactly as it is and the status bar says the scrap changed on disk. The added text is in the file, and saving that tab writes your text over it. Only a tab with the same file path counts: a note in another folder that has the same name (<code>2026-09-30.md</code>) is another note.</li>
-            <li><strong>A file given at start</strong> (double-click, Open with, <code>md-memo file.md</code>) opens as one more tab after your previous tabs, folder and settings are back. If it cannot be read, the status bar says which file and why.</li>
+            <li><strong>A file given at start</strong> (double-click, Open with, <code>syki file.md</code>) opens as one more tab after your previous tabs, folder and settings are back. If it cannot be read, the status bar says which file and why.</li>
           </ul>
         </div></details>
 
@@ -1208,7 +1208,7 @@
             </ul>
           </div>
           <div class="compare-card"><div class="compare-head">macOS (Homebrew)</div>
-            <pre class="code-block" style="margin: 6px 0 10px;"><code>brew install --cask youshinh/tap/md-memo</code></pre>
+            <pre class="code-block" style="margin: 6px 0 10px;"><code>brew install --cask youshinh/tap/syki</code></pre>
             <ul>
               <li>macOS 10.15 or later</li>
               <li>The first launch needs the step in "macOS First Launch" below</li>
@@ -1225,17 +1225,17 @@
             </svg>
             <span>macOS First Launch</span>
           </div>
-          <p>Releases are ad-hoc signed and not notarized by Apple, so Gatekeeper blocks <code>syki::sok.app</code> the first time. The dialog says Apple could not verify that it is free of malware.</p>
+          <p>Releases are ad-hoc signed and not notarized by Apple, so Gatekeeper blocks <code>syki-sok.app</code> the first time. The dialog says Apple could not verify that it is free of malware.</p>
           <p><strong>macOS 15 (Sequoia) or later:</strong> click <strong>Done</strong> in the dialog (not Move to Trash). Then open <strong>System Settings → Privacy &amp; Security</strong>, scroll down to <strong>Security</strong>, click <strong>Open Anyway</strong> next to the message that syki::sok was blocked, and enter your login password. The button is shown for about an hour after you try to open the app.</p>
           <p><strong>macOS 14 or earlier:</strong> right-click (Control-click) the app in Finder and choose <strong>Open</strong>.</p>
-          <p style="margin-bottom: 0;"><strong>Any version:</strong> open Terminal in the folder that holds the app and run <code>xattr -dr com.apple.quarantine "syki::sok.app"</code> once.</p>
+          <p style="margin-bottom: 0;"><strong>Any version:</strong> open Terminal in the folder that holds the app and run <code>xattr -dr com.apple.quarantine "syki-sok.app"</code> once.</p>
         </div>
 
         <details class="more"><summary>Limits and details (other ways to get it, update check)</summary><div class="more-body">
           <ul>
             <li><strong>Install from a zip:</strong> Download a zip from the <a href="https://github.com/youshinh/syki-sok/releases" target="_blank" style="color: var(--accent);">Releases page</a> and unpack it into any folder.</li>
             <li><strong>Universal binary:</strong> Starting with the next release, the macOS build is a universal binary and supports both Apple Silicon and Intel Macs.</li>
-            <li><strong>No Mac to test on?</strong> Every push to the repository builds <code>syki::sok.app</code> on GitHub's hosted macOS runners. Open the <strong>Actions</strong> tab (or trigger the <strong>CI</strong> workflow by hand with <strong>Run workflow</strong>), open the latest <strong>CI</strong> run, and download <code>syki-macos-&lt;commit-sha&gt;</code> from Artifacts. It is ad-hoc signed the same way, so the same first-launch step applies.</li>
+            <li><strong>No Mac to test on?</strong> Every push to the repository builds <code>syki-sok.app</code> on GitHub's hosted macOS runners. Open the <strong>Actions</strong> tab (or trigger the <strong>CI</strong> workflow by hand with <strong>Run workflow</strong>), open the latest <strong>CI</strong> run, and download <code>syki-macos-&lt;commit-sha&gt;</code> from Artifacts. It is ad-hoc signed the same way, so the same first-launch step applies.</li>
             <li><strong>Update check:</strong> Shortly after launch, syki::sok asks GitHub whether a newer release exists (a single request to <code>api.github.com</code>; no note content is sent). If there is one, a small badge appears on the Help (<strong>?</strong>) button, and the Help menu shows the version and a link to its release notes. It can be turned off (Settings → General → "Check for updates at start-up"); see <a href="#about-md-memo" style="color: var(--accent);">About syki::sok, Updates and Where Your Text Goes</a>.</li>
           </ul>
         </div></details>
@@ -2307,9 +2307,9 @@ snippets:
         </ul>
 
         <p><strong>Where the rules are kept</strong></p>
-        <p>One plain Markdown file per agent, <code>lessons/&lt;agent&gt;.md</code>, in the folder that holds <code>config.json</code> (Windows: <code>%APPDATA%\md-memo\</code>; macOS: <code>~/Library/Application Support/md-memo/</code>; About syki::sok shows the exact folder). The agent is its key in agents.yaml, and an alias counts as the key, so <code>@cc</code> and <code>@claude</code> share the file of claude-code. The command palette entry <strong>Open the lessons file</strong> opens it as an ordinary tab (it asks which agent when several have one). A rule is a line that starts with <code>- </code>:</p>
+        <p>One plain Markdown file per agent, <code>lessons/&lt;agent&gt;.md</code>, in the folder that holds <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\</code>; macOS: <code>~/Library/Application Support/syki-sok/</code>; About syki::sok shows the exact folder). The agent is its key in agents.yaml, and an alias counts as the key, so <code>@cc</code> and <code>@claude</code> share the file of claude-code. The command palette entry <strong>Open the lessons file</strong> opens it as an ordinary tab (it asks which agent when several have one). A rule is a line that starts with <code>- </code>:</p>
         <pre class="code-block"><code># Lessons for claude-code
-&lt;!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. --&gt;
+&lt;!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. --&gt;
 - Run the tests with `pytest -p no:cacheprovider`; the default cache folder is read-only on this machine. &lt;!-- 2026-10-04 --&gt;
 - Do not include ADF.h: the build fails on this machine. &lt;!-- 2026-10-04 --&gt;</code></pre>
         <p>The date at the end is for you; the agent is not given it. Anything that is not a <code>- </code> line is ignored. Edit, reorder or delete lines whenever you like, or delete the file to take every rule away. The file is read again at each run, so nothing needs a restart.</p>
@@ -2336,7 +2336,7 @@ snippets:
     lessons: false</code></pre>
 
         <p><strong>Reading them from a script, and why nothing writes them</strong></p>
-        <p><code>md-memo lessons list [--agent &lt;key&gt;]</code> and the JSON-RPC method <code>lessons.list</code> list the files: for each agent how many rules it holds, how many its next run is given and whether it is switched off (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). They only read. There is deliberately no command or method that adds, changes or removes a rule. The rules are put in front of an agent's instruction, so a way to write them would let an agent rewrite its own future instructions with nobody approving it. A rule enters the file through the dialog above, or by you editing the file.</p>
+        <p><code>syki lessons list [--agent &lt;key&gt;]</code> and the JSON-RPC method <code>lessons.list</code> list the files: for each agent how many rules it holds, how many its next run is given and whether it is switched off (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). They only read. There is deliberately no command or method that adds, changes or removes a rule. The rules are put in front of an agent's instruction, so a way to write them would let an agent rewrite its own future instructions with nobody approving it. A rule enters the file through the dialog above, or by you editing the file.</p>
 
         <div class="callout">
           <div class="callout-title">
@@ -2409,8 +2409,8 @@ snippets:
         </ol>
         <p>The first file found, from the top, is used (<code>.yaml</code>, <code>.yml</code>, <code>.md</code> and <code>.json</code> are all accepted):</p>
         <ol>
-          <li><code>&lt;scraps folder&gt;/.md-memo/agents.yaml</code> (per-project settings)</li>
-          <li><code>%APPDATA%\md-memo\agents.yaml</code> (macOS: <code>~/Library/Application Support/md-memo/agents.yaml</code>)</li>
+          <li><code>&lt;scraps folder&gt;/.syki-sok/agents.yaml</code> (per-project settings)</li>
+          <li><code>%APPDATA%\syki-sok\agents.yaml</code> (macOS: <code>~/Library/Application Support/syki-sok/agents.yaml</code>)</li>
         </ol>
 
         <details class="more"><summary>The built-in agents changed after v1.8.0, and your agents.yaml is not rewritten</summary><div class="more-body">
@@ -2757,7 +2757,7 @@ recipes:
           </table>
         </div>
 
-        <p><strong>Where the note goes.</strong> Each note is added to the end of today's scrap file, <code>&lt;scrap folder&gt;/YYYY-MM-DD.md</code> (by default <code>~/Documents/md-memo/scraps</code>), and is separated from the entry before it by a blank line. If that note is open in syki::sok, it updates at once. See <a href="#daily-scraps" style="color: var(--accent);">Daily Scraps Model</a>.</p>
+        <p><strong>Where the note goes.</strong> Each note is added to the end of today's scrap file, <code>&lt;scrap folder&gt;/YYYY-MM-DD.md</code> (by default <code>~/Documents/syki-sok/scraps</code>), and is separated from the entry before it by a blank line. If that note is open in syki::sok, it updates at once. See <a href="#daily-scraps" style="color: var(--accent);">Daily Scraps Model</a>.</p>
 
         <details class="more"><summary>Limits and details (hotkey, closing, AI Send)</summary><div class="more-body">
           <ul>
@@ -2857,7 +2857,7 @@ recipes:
               <li>Images: the cloud vision model only. There is no on-device engine, so the "Keep images on this PC" option is hidden</li>
               <li>Audio: Gemini only. Whisper is not available (the settings say "On-device Whisper is only available on Windows (x64) for now.")</li>
               <li>There is no tray and no Send To menu. Open the folder from the command palette</li>
-              <li>The <code>md-memo ocr</code> command works, with cloud OCR only</li>
+              <li>The <code>syki ocr</code> command works, with cloud OCR only</li>
             </ul>
           </div>
         </div>
@@ -2866,7 +2866,7 @@ recipes:
         <ol class="steps">
           <li><strong>Open the setting</strong><span>Settings → Sync tab, the section "Hot folder"</span></li>
           <li><strong>Tick the checkbox</strong><span>"Watch a folder: images are OCR'd, audio is transcribed, both appended to today's scrap"</span></li>
-          <li><strong>Check the folder</strong><span>"Watched Folder Path:" starts as <code>~/Documents/md-memo/inbox</code>. Change it with <strong>Browse...</strong> if you like, then press <strong>Save</strong></span></li>
+          <li><strong>Check the folder</strong><span>"Watched Folder Path:" starts as <code>~/Documents/syki-sok/inbox</code>. Change it with <strong>Browse...</strong> if you like, then press <strong>Save</strong></span></li>
           <li><strong>Drop files in</strong><span>Copy or move a picture or a sound file into that folder. Files that were already waiting are handled once when syki::sok starts. After that, each new file is handled as it arrives, once it has finished copying</span></li>
           <li><strong>Read the result</strong><span>Today's note gets a new entry. The file itself is moved into the assets folder next to your scraps</span></li>
         </ol>
@@ -3012,13 +3012,13 @@ recipes:
           <li><strong>Send an image</strong><span>Right-click an image file in Explorer, then choose Send to → syki::sok (OCR). No window opens</span></li>
           <li><strong>Find the text</strong><span>Its text is appended to today's note</span></li>
         </ol>
-        <p>The entry runs <code>md-memo ocr</code> for you. You can run it yourself in a terminal too, on Windows and macOS:</p>
+        <p>The entry runs <code>syki ocr</code> for you. You can run it yourself in a terminal too, on Windows and macOS:</p>
         <pre class="code-block"><code># Read one image and add its text to today's scrap
-md-memo ocr C:\scans\receipt.png
-# OCR text appended to C:\Users\you\Documents\md-memo\scraps\2026-09-24.md
+syki ocr C:\scans\receipt.png
+# OCR text appended to C:\Users\you\Documents\syki-sok\scraps\2026-09-24.md
 
 # Print JSON instead (put --json before the file name)
-md-memo ocr --json C:\scans\receipt.png</code></pre>
+syki ocr --json C:\scans\receipt.png</code></pre>
         <p>It works while syki::sok is closed. It reads the Image analysis (OCR) settings and the scraps folder from <code>config.json</code>. It prints the path of the note, or <code>(no text recognized)</code> when there was no text. On macOS it uses cloud OCR only, and there is no Send To menu.</p>
       </section>
 
@@ -3048,7 +3048,7 @@ md-memo ocr --json C:\scans\receipt.png</code></pre>
             <li>Choose the model, aspect ratio and resolution under "Image generation" in Settings → AI Models.</li>
             <li>If the Gemini API key field is empty, the Vision key is used, then the Text key, in that order.</li>
             <li>The image is saved as <code>assets/diagram_&lt;number&gt;.png</code>, and <code>![Generated Diagram](assets/diagram_...png)</code> is inserted. Save the note first to get a relative link.</li>
-            <li>A note that is not saved yet has no folder, so the link holds the full path of the app's own <code>assets</code> folder (on macOS, under <code>~/Library/Application Support/md-memo</code>). A space in it is written as <code>%20</code>, and the preview turns it back into the real path.</li>
+            <li>A note that is not saved yet has no folder, so the link holds the full path of the app's own <code>assets</code> folder (on macOS, under <code>~/Library/Application Support/syki-sok</code>). A space in it is written as <code>%20</code>, and the preview turns it back into the real path.</li>
             <li>Diagram colors: the button on each diagram switches dark and light. Settings → General → "Diagram (Mermaid) colors" also offers Gray and Green, both on a white card.</li>
           </ul>
         </div></details>
@@ -3081,7 +3081,7 @@ md-memo ocr --json C:\scans\receipt.png</code></pre>
             <li><strong>Memory:</strong> nothing is loaded or kept until the first press: the print style applies to printing only and the scripts are loaded on the first press. While the panel is open, the PDF viewer takes about 170 MB of working memory; closing the panel gives it back, and the PDF is not kept.</li>
             <li><strong>macOS:</strong> the same button opens macOS's own print dialog instead of the panel. Choose <strong>PDF → Save as PDF</strong> at its lower left to save a PDF (the note's name is offered as the file name), or pick a printer. Paper, orientation and scale are set in that dialog. The margin is 20 mm, and there is no header or footer. It needs macOS 11 or later and has not yet been confirmed on a real Mac.</li>
             <li><strong>HTML pages:</strong> the button is not shown in the editor or over an HTML page; an HTML page cannot be printed this way.</li>
-            <li><strong>From the command line (Windows only):</strong> <code>md-memo tab pdf notes.md -o notes.pdf</code> makes the same PDF with the running app. It never replaces a PDF that is already there unless you add <code>--overwrite</code>, and the window flickers briefly while the preview is shown. See <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a> for the options. The JSON-RPC method is <code>print.pdf</code> (see <a href="#json-rpc" style="color: var(--accent);">JSON-RPC 2.0 API Specification</a>).</li>
+            <li><strong>From the command line (Windows only):</strong> <code>syki tab pdf notes.md -o notes.pdf</code> makes the same PDF with the running app. It never replaces a PDF that is already there unless you add <code>--overwrite</code>, and the window flickers briefly while the preview is shown. See <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a> for the options. The JSON-RPC method is <code>print.pdf</code> (see <a href="#json-rpc" style="color: var(--accent);">JSON-RPC 2.0 API Specification</a>).</li>
           </ul>
         </div></details>
       </section>
@@ -3164,7 +3164,7 @@ Find a good takoyaki place.</code></pre>
             <li><strong>It lasts while the app is open:</strong> the choice is not saved, so after a restart the filter is empty. The area starts closed each time you open the search, and the tag list is read again when you open it, so a tag you have just written appears after you close the search and open it again.</li>
             <li><strong>Costs nothing until used:</strong> a search with no filter works exactly as before, and your notes are not read for tags until you open the Filter area (or search with a tag chosen).</li>
             <li><strong>macOS:</strong> the code is the same, but it has not yet been verified on a real Mac.</li>
-            <li><strong>The same filter elsewhere:</strong> <code>md-memo scrap search --tag work,urgent</code> and <code>md-memo scrap tags</code> on the command line, and the <code>tag</code> parameter of <code>scrap.search</code> and the method <code>scrap.tags</code> in JSON-RPC (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). <code>md-memo scrap tag</code> and <code>scrap.tag_edit</code> add and remove tags the same way as the palette commands.</li>
+            <li><strong>The same filter elsewhere:</strong> <code>syki scrap search --tag work,urgent</code> and <code>syki scrap tags</code> on the command line, and the <code>tag</code> parameter of <code>scrap.search</code> and the method <code>scrap.tags</code> in JSON-RPC (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). <code>syki scrap tag</code> and <code>scrap.tag_edit</code> add and remove tags the same way as the palette commands.</li>
           </ul>
         </div></details>
 
@@ -3230,7 +3230,7 @@ Clipped from a web page.
             <li><strong>A selected word as the tag:</strong> when you add a tag, a single word selected on one line (200 characters or fewer) is filled into the box and selected. A leading <code>#</code>, quotes, brackets and the punctuation around it are trimmed first. Two words, a selection over several lines or a word that cannot be a tag (over 64 characters, or holding <code>--&gt;</code>) are not filled in, and the box starts empty. Removing never fills it.</li>
             <li><strong>Not available:</strong> AI suggestions of tags, tagging many notes at once, writing into a front matter, and moving a tag from one heading to another (take it off, then add it again).</li>
             <li><strong>macOS:</strong> the code is the same, but it has not yet been verified on a real Mac. <span class="kbd">Ctrl + Up</span> is a Mission Control shortcut there, so click the heading in the Attach to row instead.</li>
-            <li><strong>The same from a script:</strong> <code>md-memo scrap tag add|remove &lt;tags&gt; [&lt;file&gt;] [--line N] [--write]</code> and <code>scrap tag show</code> on the command line, and the method <code>scrap.tag_edit</code> in JSON-RPC, which works the edit out from the text you send and touches no file and no tab (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). <code>--line</code> may be any line of the section; to tag a whole pasted article, give a line of its top heading.</li>
+            <li><strong>The same from a script:</strong> <code>syki scrap tag add|remove &lt;tags&gt; [&lt;file&gt;] [--line N] [--write]</code> and <code>scrap tag show</code> on the command line, and the method <code>scrap.tag_edit</code> in JSON-RPC, which works the edit out from the text you send and touches no file and no tab (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>). <code>--line</code> may be any line of the section; to tag a whole pasted article, give a line of its top heading.</li>
           </ul>
         </div></details>
 
@@ -3253,7 +3253,7 @@ Clipped from a web page.
           <li><strong>Press Update now</strong><span>syki::sok sends the text of your notes to the embedding model and makes the index; you see the progress and can <strong>Stop</strong> it (what was done is kept). Later updates read only the notes that are new or changed. It works before you press Save</span></li>
           <li><strong>Press Save</strong><span>The notes search now has an <strong>Exact | Meaning</strong> switch. No restart is needed</span></li>
         </ol>
-        <p>The same index is made by <code>md-memo scrap index</code> on the command line, and you can still write the setting by hand in <code>config.json</code> (with syki::sok closed):</p>
+        <p>The same index is made by <code>syki scrap index</code> on the command line, and you can still write the setting by hand in <code>config.json</code> (with syki::sok closed):</p>
         <pre class="code-block"><code>"semantic": {
   "enabled": true,
   "model": { "baseUrl": "http://localhost:11434", "model": "bge-m3" }
@@ -3277,13 +3277,13 @@ Clipped from a web page.
         <details class="more"><summary>Limits and details (how many notes, what is left out, where the model runs, the index)</summary><div class="more-body">
           <ul>
             <li><strong>10 notes:</strong> the list shows 10 notes; <strong>Show more</strong> asks for 30. No score is shown. Notes that score far below the best one are left out, and a quiet line under the list says how many.</li>
-            <li><strong>Notes not in the index yet:</strong> notes written after the last <code>md-memo scrap index</code> are searched by their words, and a line under the list says how many. Run the command again to bring them in.</li>
+            <li><strong>Notes not in the index yet:</strong> notes written after the last <code>syki scrap index</code> are searched by their words, and a line under the list says how many. Run the command again to bring them in.</li>
             <li><strong>When Meaning cannot be used</strong> (for example the model cannot be reached), the notes are picked by their words and a line says so.</li>
             <li><strong>Where the model runs:</strong> on this PC by default. A model that is not on this PC is used only for a host you have allowed (the box that appears under the model in Settings; it is kept in <code>semantic.privacy.cloudConsent</code> in <code>config.json</code>); until then nothing is sent to it, and Update now stays disabled.</li>
-            <li><strong>The index:</strong> it is kept on this PC, outside the scraps folder, is never Git-synced and may be deleted at any time (<code>md-memo scrap index</code> makes it again). An exported settings package never carries the <code>semantic</code> section.</li>
+            <li><strong>The index:</strong> it is kept on this PC, outside the scraps folder, is never Git-synced and may be deleted at any time (<code>syki scrap index</code> makes it again). An exported settings package never carries the <code>semantic</code> section.</li>
             <li><strong>Costs nothing while it is off:</strong> with the switch off (or no <code>semantic</code> section in <code>config.json</code>) the notes search is the plain panel.</li>
             <li><strong>macOS:</strong> it is expected to work, because the code is the same, but it has not yet been verified on a real Mac.</li>
-            <li><strong>The same search elsewhere:</strong> <code>md-memo scrap search --semantic</code> on the command line and the JSON-RPC method <code>scrap.search</code> (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>).</li>
+            <li><strong>The same search elsewhere:</strong> <code>syki scrap search --semantic</code> on the command line and the JSON-RPC method <code>scrap.search</code> (see <a href="#headless-cli" style="color: var(--accent);">Headless CLI Commands</a>).</li>
           </ul>
         </div></details>
 
@@ -3700,7 +3700,7 @@ Clipped from a web page.
 
         <ul>
           <li><strong>Turn it off:</strong> Settings → General → "Updates &amp; Privacy" → "Check for updates at start-up". With it off, syki::sok makes no request at start-up. <strong>Check now</strong> in About syki::sok still works whenever you press it.</li>
-          <li><strong>For administrators:</strong> the switch is <code>general.checkUpdates</code> in <code>config.json</code> (Windows: <code>%APPDATA%\md-memo\</code>; macOS: <code>~/Library/Application Support/md-memo/</code>; About syki::sok shows the exact folder). <code>false</code> turns the start-up check off. A missing key, or any other value, leaves it on, so settings files from older versions keep today's behaviour. A file that holds only <code>{"general":{"checkUpdates":false}}</code> is enough, and the setting is part of the "General" section of an <a href="#cfg-pack" style="color: var(--accent);">exported package</a>, so one package can carry it to many PCs. Note that a PC that already has a settings file counts as an existing installation for the short first toolbar and the Welcome note.</li>
+          <li><strong>For administrators:</strong> the switch is <code>general.checkUpdates</code> in <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\</code>; macOS: <code>~/Library/Application Support/syki-sok/</code>; About syki::sok shows the exact folder). <code>false</code> turns the start-up check off. A missing key, or any other value, leaves it on, so settings files from older versions keep today's behaviour. A file that holds only <code>{"general":{"checkUpdates":false}}</code> is enough, and the setting is part of the "General" section of an <a href="#cfg-pack" style="color: var(--accent);">exported package</a>, so one package can carry it to many PCs. Note that a PC that already has a settings file counts as an existing installation for the short first toolbar and the Welcome note.</li>
         </ul>
 
         <p><strong>Where your text goes</strong></p>
@@ -3723,7 +3723,7 @@ Clipped from a web page.
         <p><strong>Meaning search, Deep search, Lessons and printing</strong></p>
         <p>These work as follows. See <a href="#meaning-search" style="color: var(--accent);">Meaning Search</a>, <a href="#deep-search" style="color: var(--accent);">Deep Search</a>, <a href="#lessons" style="color: var(--accent);">Lessons</a> and <a href="#print-pdf" style="color: var(--accent);">Print or Save as PDF</a>.</p>
         <ul>
-          <li><strong>Meaning search</strong> (experimental, off by default): the text of your notes goes to the embedding model set in <code>semantic.model</code> when the index is built or updated (<code>md-memo scrap index</code>), and the text you search for goes to the same model. By default that is a model on this PC (Ollama). A cloud host is used only after you have allowed it (<code>semantic.privacy.cloudConsent</code> in <code>config.json</code>). The index stays on this PC, outside the scraps folder, and is never Git-synced.</li>
+          <li><strong>Meaning search</strong> (experimental, off by default): the text of your notes goes to the embedding model set in <code>semantic.model</code> when the index is built or updated (<code>syki scrap index</code>), and the text you search for goes to the same model. By default that is a model on this PC (Ollama). A cloud host is used only after you have allowed it (<code>semantic.privacy.cloudConsent</code> in <code>config.json</code>). The index stays on this PC, outside the scraps folder, and is never Git-synced.</li>
           <li><strong>Deep search:</strong> excerpts of the notes it found go to the Text LLM, and only when you press <strong>Run</strong> in its confirmation dialog, which first shows what goes and where. With a <a href="#search-filter" style="color: var(--accent);">filter</a> on, it uses only what the filtered list shows: nothing outside the filter is sent, not even an entry next to a short one that was found. A key, token or password in an excerpt is blanked out before sending. A model that is not on this PC (a machine on your local network included) needs your consent once per host, and <strong>Allow and run</strong> remembers it in the same list as the Ask bar (<strong>Forget</strong> is in Settings → General → "Updates &amp; Privacy").</li>
           <li><strong>Lessons:</strong> when you press <strong>Create a proposal</strong> in the Lessons dialog, a cut-down record of that one agent run goes to the Text LLM: the start of the instruction, the end of the agent's output, the error message and your note in the dialog (at most 6,800 characters of it). The rest of your notes does not go. A key, token or password in it is blanked out before sending, and the dialog first shows how many characters go and where. A model that is not on this PC needs your consent once per host, in the same list as the Ask bar, and syki::sok checks it again before it sends. Saved rules stay in a file in the settings folder on this PC, outside the scraps folder, so Git sync does not carry them and an exported settings package does not hold them. They go to a model only as part of an agent's instruction, when that agent runs.</li>
           <li><strong>Printing and saving a PDF</strong> keep everything on this PC.</li>
@@ -4101,7 +4101,7 @@ Clipped from a web page.
 
         <p><strong>OS Integration (Send To)</strong> (Windows only): the last group on the tab.</p>
         <ul>
-          <li><strong>Send To menu (image → OCR):</strong> A badge shows "Installed" or "Not installed". <strong>Add</strong> puts <strong>syki::sok (OCR)</strong> in Explorer's Send To menu, and <strong>Remove</strong> takes it out again. Right-click an image → Send to → syki::sok (OCR), and its text is appended to today's scrap with no window opening. The steps and the matching <code>md-memo ocr</code> command are under <a href="#send-to-ocr" style="color: var(--accent);">Send To menu and the ocr command</a>.</li>
+          <li><strong>Send To menu (image → OCR):</strong> A badge shows "Installed" or "Not installed". <strong>Add</strong> puts <strong>syki::sok (OCR)</strong> in Explorer's Send To menu, and <strong>Remove</strong> takes it out again. Right-click an image → Send to → syki::sok (OCR), and its text is appended to today's scrap with no window opening. The steps and the matching <code>syki ocr</code> command are under <a href="#send-to-ocr" style="color: var(--accent);">Send To menu and the ocr command</a>.</li>
         </ul>
       </section>
 
@@ -4126,7 +4126,7 @@ Clipped from a web page.
           <li><strong>Remote Branch:</strong> The branch to sync with (default <code>main</code>).</li>
           <li><strong>Git Remote URL, Test Connection, and Link / Init:</strong> Enter the URL of an empty GitHub repository (<code>https://github.com/user/scraps.git</code>), click <strong>Test Connection</strong> to check access, then click <strong>Link / Init</strong>. It runs <code>git init</code> if needed, sets <code>origin</code>, makes an initial commit, and pushes with <code>push -u</code>.</li>
           <li><strong>Input from Discord:</strong> further down the same tab. Bot token, Discord user id, check interval, and Test Connection. See <a href="#discord-bridge" style="color: var(--accent);">Discord Bridge</a> for the full walkthrough.</li>
-          <li><strong>Hot folder:</strong> the last section of this tab. Tick "Watch a folder: images are OCR'd, audio is transcribed, both appended to today's scrap" (off by default; config key <code>inbox.enabled</code>) and set "Watched Folder Path:" with <strong>Browse...</strong> (default <code>~/Documents/md-memo/inbox</code>; <code>inbox.dir</code>). Processed files are moved into the <code>assets</code> folder next to your scraps and never deleted. See <a href="#hot-folder" style="color: var(--accent);">Hot Folder</a>.</li>
+          <li><strong>Hot folder:</strong> the last section of this tab. Tick "Watch a folder: images are OCR'd, audio is transcribed, both appended to today's scrap" (off by default; config key <code>inbox.enabled</code>) and set "Watched Folder Path:" with <strong>Browse...</strong> (default <code>~/Documents/syki-sok/inbox</code>; <code>inbox.dir</code>). Processed files are moved into the <code>assets</code> folder next to your scraps and never deleted. See <a href="#hot-folder" style="color: var(--accent);">Hot Folder</a>.</li>
           <li><strong>Keep images on this PC: read them with the on-device OCR only (less accurate):</strong> in the same section, off by default (config key <code>vision.ocrMode</code>: empty, or <code>"on-device"</code>). When on, images are never sent to the vision model. It applies to the hot folder, <a href="#screen-capture" style="color: var(--accent);">Screen Capture</a>, the Send To entry and the <code>ocr</code> command, but not to pasting with <span class="kbd">Ctrl + V</span>. Windows only: the checkbox is hidden on macOS, which has no on-device OCR engine.</li>
         </ul>
         <div class="callout">
@@ -4139,7 +4139,7 @@ Clipped from a web page.
             <span>Caution: everything in the scraps folder gets committed</span>
           </div>
           <p style="margin-bottom: 0;">
-            Git sync runs <code>git add .</code>, commit and push in the scraps folder. An <code>.env</code> or <code>.md-memo/agents.yaml</code> kept there is committed too, so do not keep secrets in that folder.
+            Git sync runs <code>git add .</code>, commit and push in the scraps folder. An <code>.env</code> or <code>.syki-sok/agents.yaml</code> kept there is committed too, so do not keep secrets in that folder.
           </p>
         </div>
       </section>
@@ -4427,8 +4427,8 @@ Clipped from a web page.
             <li>A package does not record which system wrote it. If its shortcuts use the Command key (a package from a Mac), they are not applied on Windows: this PC keeps its own shortcuts and the result screen says so.</li>
             <li>If <code>config.json</code> cannot be written, the result screen and the status bar say so; the settings then apply only until you quit.</li>
             <li>Agent definitions and skills are written by syki::sok itself. A package cannot be imported by editing <code>config.json</code> by hand, because the running app owns that file.</li>
-            <li>Targets: the app-wide agent definitions go to <code>%APPDATA%\md-memo\agents.yaml</code> (macOS: <code>~/Library/Application Support/md-memo/agents.yaml</code>), the project's to <code>&lt;project&gt;/.md-memo/agents.yaml</code>, skills to <code>&lt;project&gt;/&lt;folder&gt;/&lt;name&gt;</code>. An agents file that does not parse is skipped with a reason.</li>
-            <li>Whatever would be overwritten is first copied to <code>%APPDATA%\md-memo\pack_backups\&lt;date-time&gt;\</code> (macOS: <code>~/Library/Application Support/md-memo/pack_backups/</code>). That folder is outside the project, so skill folders stay clean. The result screen shows the location.</li>
+            <li>Targets: the app-wide agent definitions go to <code>%APPDATA%\syki-sok\agents.yaml</code> (macOS: <code>~/Library/Application Support/syki-sok/agents.yaml</code>), the project's to <code>&lt;project&gt;/.syki-sok/agents.yaml</code>, skills to <code>&lt;project&gt;/&lt;folder&gt;/&lt;name&gt;</code>. An agents file that does not parse is skipped with a reason.</li>
+            <li>Whatever would be overwritten is first copied to <code>%APPDATA%\syki-sok\pack_backups\&lt;date-time&gt;\</code> (macOS: <code>~/Library/Application Support/syki-sok/pack_backups/</code>). That folder is outside the project, so skill folders stay clean. The result screen shows the location.</li>
             <li>An older settings JSON (one file with all settings) can be imported too; it covers settings only and may contain API keys. Choosing "JSON (settings only)" as the export format writes the same kind of file.</li>
             <li>Some settings take effect after you restart syki::sok; the result screen says so.</li>
           </ul>
@@ -4471,12 +4471,12 @@ ping 128.1.33.254 | syki</code></pre>
         <h3>JSON-RPC 2.0 API Specification</h3>
         <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> From any language, open a TCP socket to <code>127.0.0.1</code> and send newline-delimited JSON-RPC 2.0 requests to control syki::sok.</div></div>
         <ol class="steps">
-          <li><strong>Read the connection details</strong><span>Startup writes <code>ipc-session.json</code> (Windows: <code>%AppData%\md-memo\</code>, macOS: <code>~/Library/Application Support/md-memo/</code>). It holds <code>{pid, port, token, started_at}</code></span></li>
+          <li><strong>Read the connection details</strong><span>Startup writes <code>ipc-session.json</code> (Windows: <code>%APPDATA%\syki-sok\</code>, macOS: <code>~/Library/Application Support/syki-sok/</code>). It holds <code>{pid, port, token, started_at}</code></span></li>
           <li><strong>Open the socket</strong><span>Port 49152 is preferred, but if it is busy a random free port is used instead. Always read the port from this file</span></li>
           <li><strong>Send requests</strong><span>Send newline-delimited JSON-RPC 2.0 requests</span></li>
           <li><strong>Send the token</strong><span>Put the <code>token</code> from that file in an <code>"auth"</code> field of every request. It is <strong>required for every method except</strong> <code>buffer.get</code>, <code>buffer.get_selection</code> and <code>tab.list</code>; without it (or with a wrong one) the call is refused with error <code>-32000</code> and nothing runs. The token changes every time syki::sok starts, so read the file again after a restart</span></li>
         </ol>
-        <p><strong>Breaking change for RPC clients that never sent the token.</strong> Earlier versions (up to 1.9.0) ran every method when the <code>auth</code> field was left out. Now <code>buffer.set</code>, <code>buffer.append</code>, <code>buffer.replace</code>, <code>buffer.replace_selection</code>, <code>buffer.save</code>, <code>tab.switch</code>, <code>tab.new</code>, <code>tab.close</code>, <code>ui.activate</code>, <code>ui.toggle_split</code> and <code>ui.eval</code> (and any other method) need it. <code>md-memo buffer|tab|ui</code> already send it; an editor plugin or script that wrote to the port itself has to be updated. The one-line messages behind <code>cmd | syki</code> and <code>md-memo &lt;file&gt;</code> are a separate channel and are still not authenticated.</p>
+        <p><strong>Breaking change for RPC clients that never sent the token.</strong> Earlier versions (up to 1.9.0) ran every method when the <code>auth</code> field was left out. Now <code>buffer.set</code>, <code>buffer.append</code>, <code>buffer.replace</code>, <code>buffer.replace_selection</code>, <code>buffer.save</code>, <code>tab.switch</code>, <code>tab.new</code>, <code>tab.close</code>, <code>ui.activate</code>, <code>ui.toggle_split</code> and <code>ui.eval</code> (and any other method) need it. <code>syki buffer|tab|ui</code> already send it; an editor plugin or script that wrote to the port itself has to be updated. The one-line messages behind <code>cmd | syki</code> and <code>md-memo &lt;file&gt;</code> are a separate channel and are still not authenticated.</p>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
@@ -4606,12 +4606,12 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>app.info</code></td>
                 <td><code>{}</code></td>
-                <td>The same answer as <code>md-memo info</code>: version, folders, today's scrap path, hot folder, autosave, and <code>gui_running</code> (true here). No secret. Token required.</td>
+                <td>The same answer as <code>syki info</code>: version, folders, today's scrap path, hot folder, autosave, and <code>gui_running</code> (true here). No secret. Token required.</td>
               </tr>
               <tr>
                 <td><code>config.get</code></td>
                 <td><code>{"key": "scraps.scrapDir"}</code></td>
-                <td>The same answer as <code>md-memo config get</code>: every key, token and password is shown as <code>&lt;set&gt;</code> or <code>&lt;unset&gt;</code>. <code>key</code> is a dotted path (a number picks an array item); without it you get the whole file. An unknown key is <code>-32602</code>. Token required.</td>
+                <td>The same answer as <code>syki config get</code>: every key, token and password is shown as <code>&lt;set&gt;</code> or <code>&lt;unset&gt;</code>. <code>key</code> is a dotted path (a number picks an array item); without it you get the whole file. An unknown key is <code>-32602</code>. Token required.</td>
               </tr>
               <tr>
                 <td><code>scrap.path</code></td>
@@ -4626,17 +4626,17 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>scrap.search</code></td>
                 <td><code>{"text": "deploy", "from": "...", "to": "...", "limit": 20, "ranked": false, "semantic": false, "kind": "note,log", "path": "...", "update": false, "cutoff": 0.85, "tag": "work,urgent"}</code></td>
-                <td>The same function as <code>md-memo scrap search</code>, the experimental Meaning search included; the parameters are its flags. <code>tag</code> (a string <code>"a,b"</code> or a list, at most 8) keeps only entries that carry all of those tags (a tag written under a heading counts for the entries under it too). Each hit carries <code>rel</code>, <code>url</code>, <code>label</code> and <code>link</code> (<code>[label](url)</code>) for citing the note as a link. <code>-32602</code> for bad parameters and, with <code>semantic</code>, when Meaning search is off or a cloud host has not been allowed. The 5 s limit of a call applies: narrow it with <code>from</code> and <code>to</code> or <code>limit</code>. Token required.</td>
+                <td>The same function as <code>syki scrap search</code>, the experimental Meaning search included; the parameters are its flags. <code>tag</code> (a string <code>"a,b"</code> or a list, at most 8) keeps only entries that carry all of those tags (a tag written under a heading counts for the entries under it too). Each hit carries <code>rel</code>, <code>url</code>, <code>label</code> and <code>link</code> (<code>[label](url)</code>) for citing the note as a link. <code>-32602</code> for bad parameters and, with <code>semantic</code>, when Meaning search is off or a cloud host has not been allowed. The 5 s limit of a call applies: narrow it with <code>from</code> and <code>to</code> or <code>limit</code>. Token required.</td>
               </tr>
               <tr>
                 <td><code>scrap.tags</code></td>
                 <td>(none)</td>
-                <td>The tags written in the notes (a whole line such as <code>&lt;!-- tags: work, urgent --&gt;</code>), most notes first: <code>{tags: [{tag, files, entries}], files, undated}</code>. The same answer as <code>md-memo scrap tags</code>. <code>files</code> is how many notes were read and <code>undated</code> how many of them have no day in their name (a <code>from</code>/<code>to</code> range leaves those out). Token required.</td>
+                <td>The tags written in the notes (a whole line such as <code>&lt;!-- tags: work, urgent --&gt;</code>), most notes first: <code>{tags: [{tag, files, entries}], files, undated}</code>. The same answer as <code>syki scrap tags</code>. <code>files</code> is how many notes were read and <code>undated</code> how many of them have no day in their name (a <code>from</code>/<code>to</code> range leaves those out). Token required.</td>
               </tr>
               <tr>
                 <td><code>scrap.tag_edit</code></td>
                 <td><code>{"text": "...", "op": "add", "scope": "entry", "line": 12, "tags": "work, urgent", "return_text": false}</code></td>
-                <td>Works out how the tags of a note change, from the text you send (the same rule as <code>md-memo scrap tag</code>): <code>op</code> is <code>add</code>, <code>remove</code> or <code>show</code>; <code>scope</code> is <code>note</code> (the default) or <code>entry</code>, which needs <code>line</code>. It reads and writes no file and touches no tab. The answer says which lines of your text are replaced by which (<code>start_line</code>, <code>end_line</code>, <code>new_lines</code>, <code>eol</code>), what was added, removed or left as it was (<code>added</code>, <code>removed</code>, <code>unchanged</code>), the tags that apply afterwards (<code>note_tags</code>, <code>entry_tags</code>), where the range is in the old text (<code>range_start</code>, <code>range_end</code>, which cover the entry and everything under its heading, and for an entry with a heading <code>heading</code> and <code>heading_line</code>), how many entries are under it (<code>descendants</code>), the tags it gets from the headings above (<code>inherited_tags</code>, farthest first), the places a tag could be attached to (<code>path</code>: the entry itself first, then each heading above it, nearest first, each <code>{line, level, heading, range_start, range_end, descendants, tags}</code>) and, when something was not done, <code>message_code</code> (<code>already</code>, <code>none_found</code>, <code>front_matter</code>, <code>front_matter_tag</code>, <code>on_note</code>, <code>on_entry</code>, <code>on_parent</code>, which also sets <code>parent_heading</code> and <code>parent_line</code>); <code>return_text</code> adds <code>text</code>, the whole new text. A tag written under a heading also applies to the smaller headings below it: to put a tag on a whole article give the <code>line</code> of its top heading, and to take away a tag an entry only gets from above, ask again with the <code>parent_line</code> that <code>on_parent</code> gave. For the whole note <code>path</code> is <code>[]</code> and <code>descendants</code> is 0; every line number is a line of the old text. <code>tags</code> is a string such as <code>"work, urgent"</code> or a list (at most 8, 64 characters each, none holding <code>&lt;!--</code> or <code>--&gt;</code>; required except for <code>show</code>), and <code>-32602</code> answers a bad <code>op</code>, <code>scope</code>, <code>line</code> or tag. <code>changed: false</code> with <code>already</code> or <code>none_found</code> is not an error. To tag the note that is open: <code>buffer.get</code>, then <code>scrap.tag_edit</code> with its <code>content</code> and <code>return_text: true</code>, then <code>buffer.set</code> with the new <code>text</code> and the <code>hash</code> from <code>buffer.get</code> as <code>expected_hash</code> (if the person typed in between it is <code>-32001</code> and nothing changes). There is deliberately no method that suggests tags with AI. Token required.</td>
+                <td>Works out how the tags of a note change, from the text you send (the same rule as <code>syki scrap tag</code>): <code>op</code> is <code>add</code>, <code>remove</code> or <code>show</code>; <code>scope</code> is <code>note</code> (the default) or <code>entry</code>, which needs <code>line</code>. It reads and writes no file and touches no tab. The answer says which lines of your text are replaced by which (<code>start_line</code>, <code>end_line</code>, <code>new_lines</code>, <code>eol</code>), what was added, removed or left as it was (<code>added</code>, <code>removed</code>, <code>unchanged</code>), the tags that apply afterwards (<code>note_tags</code>, <code>entry_tags</code>), where the range is in the old text (<code>range_start</code>, <code>range_end</code>, which cover the entry and everything under its heading, and for an entry with a heading <code>heading</code> and <code>heading_line</code>), how many entries are under it (<code>descendants</code>), the tags it gets from the headings above (<code>inherited_tags</code>, farthest first), the places a tag could be attached to (<code>path</code>: the entry itself first, then each heading above it, nearest first, each <code>{line, level, heading, range_start, range_end, descendants, tags}</code>) and, when something was not done, <code>message_code</code> (<code>already</code>, <code>none_found</code>, <code>front_matter</code>, <code>front_matter_tag</code>, <code>on_note</code>, <code>on_entry</code>, <code>on_parent</code>, which also sets <code>parent_heading</code> and <code>parent_line</code>); <code>return_text</code> adds <code>text</code>, the whole new text. A tag written under a heading also applies to the smaller headings below it: to put a tag on a whole article give the <code>line</code> of its top heading, and to take away a tag an entry only gets from above, ask again with the <code>parent_line</code> that <code>on_parent</code> gave. For the whole note <code>path</code> is <code>[]</code> and <code>descendants</code> is 0; every line number is a line of the old text. <code>tags</code> is a string such as <code>"work, urgent"</code> or a list (at most 8, 64 characters each, none holding <code>&lt;!--</code> or <code>--&gt;</code>; required except for <code>show</code>), and <code>-32602</code> answers a bad <code>op</code>, <code>scope</code>, <code>line</code> or tag. <code>changed: false</code> with <code>already</code> or <code>none_found</code> is not an error. To tag the note that is open: <code>buffer.get</code>, then <code>scrap.tag_edit</code> with its <code>content</code> and <code>return_text: true</code>, then <code>buffer.set</code> with the new <code>text</code> and the <code>hash</code> from <code>buffer.get</code> as <code>expected_hash</code> (if the person typed in between it is <code>-32001</code> and nothing changes). There is deliberately no method that suggests tags with AI. Token required.</td>
               </tr>
               <tr>
                 <td><code>scrap.open</code></td>
@@ -4661,7 +4661,7 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>filter.validate</code></td>
                 <td><code>{"command": "git status"}</code></td>
-                <td>The verdict of the Command Bar's guard (the <code>reviewed</code> mode, as <code>md-memo jev verify --mode reviewed</code>): <code>{safe, warning, blocked, risk_level, reason}</code>. It runs nothing. Token required.</td>
+                <td>The verdict of the Command Bar's guard (the <code>reviewed</code> mode, as <code>syki jev verify --mode reviewed</code>): <code>{safe, warning, blocked, risk_level, reason}</code>. It runs nothing. Token required.</td>
               </tr>
               <tr>
                 <td><code>filter.run</code></td>
@@ -4681,12 +4681,12 @@ ping 128.1.33.254 | syki</code></pre>
               <tr>
                 <td><code>lessons.list</code></td>
                 <td><code>{"agent": "claude"}</code></td>
-                <td>The <a href="#lessons" style="color: var(--accent);">Lessons</a> kept for agents (rules a person approved in the app after a run went wrong; each time that agent runs a task they are put in front of its instruction). With <code>agent</code> (a key or an alias): <code>{agent, path, exists, count, applied, skipped, disabled}</code>, where <code>count</code> is the rules in the file, <code>applied</code> how many the next run is given (the newest, at most 30 and 4,000 characters in all), <code>skipped</code> the older ones left out for that, and <code>disabled</code> is true for <code>lessons: false</code> in agents.yaml (then <code>applied</code> and <code>skipped</code> are 0). An agent with no file answers <code>exists: false</code>. Without <code>agent</code>: a list of those, one per file of the lessons folder (<code>[]</code> when there is none). The same answer as <code>md-memo lessons list</code>; agents.yaml is read the way the app reads it, and a name that is not in it is used as it is. Read-only: no method writes a rule, because an agent could then rewrite its own future instructions. Token required.</td>
+                <td>The <a href="#lessons" style="color: var(--accent);">Lessons</a> kept for agents (rules a person approved in the app after a run went wrong; each time that agent runs a task they are put in front of its instruction). With <code>agent</code> (a key or an alias): <code>{agent, path, exists, count, applied, skipped, disabled}</code>, where <code>count</code> is the rules in the file, <code>applied</code> how many the next run is given (the newest, at most 30 and 4,000 characters in all), <code>skipped</code> the older ones left out for that, and <code>disabled</code> is true for <code>lessons: false</code> in agents.yaml (then <code>applied</code> and <code>skipped</code> are 0). An agent with no file answers <code>exists: false</code>. Without <code>agent</code>: a list of those, one per file of the lessons folder (<code>[]</code> when there is none). The same answer as <code>syki lessons list</code>; agents.yaml is read the way the app reads it, and a name that is not in it is used as it is. Read-only: no method writes a rule, because an agent could then rewrite its own future instructions. Token required.</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p>Every method from <code>buffer.find</code> down needs the token. A call is limited to 5 seconds (<code>print.pdf</code>: 8 seconds), and writes to a note are done one at a time. <code>app.info</code>, <code>config.get</code>, <code>scrap.*</code>, <code>git.*</code>, <code>filter.*</code> and <code>lessons.list</code> do not need the page and answer while it is still starting; the methods that read or change a note, the caret or the view answer <code>-32603</code> until the page is ready. <code>app.info</code>, <code>config.get</code> and <code>scrap.path</code>, <code>scrap.list</code>, <code>scrap.search</code> and <code>scrap.tags</code> give the same answers as <code>md-memo info</code>, <code>config get</code> and <code>scrap</code>; <code>scrap.tag_edit</code> works out the same edit as <code>md-memo scrap tag</code> but writes no file; and <code>print.pdf</code> is the twin of <code>md-memo tab pdf</code>; <code>lessons.list</code> gives the answer of <code>md-memo lessons list</code>. No method starts an AI request, an agent or a task, and none runs a deep search: those are yours to start. No method writes a lesson either; see <a href="#lessons" style="color: var(--accent);">Lessons</a> for why.</p>
+        <p>Every method from <code>buffer.find</code> down needs the token. A call is limited to 5 seconds (<code>print.pdf</code>: 8 seconds), and writes to a note are done one at a time. <code>app.info</code>, <code>config.get</code>, <code>scrap.*</code>, <code>git.*</code>, <code>filter.*</code> and <code>lessons.list</code> do not need the page and answer while it is still starting; the methods that read or change a note, the caret or the view answer <code>-32603</code> until the page is ready. <code>app.info</code>, <code>config.get</code> and <code>scrap.path</code>, <code>scrap.list</code>, <code>scrap.search</code> and <code>scrap.tags</code> give the same answers as <code>syki info</code>, <code>config get</code> and <code>scrap</code>; <code>scrap.tag_edit</code> works out the same edit as <code>syki scrap tag</code> but writes no file; and <code>print.pdf</code> is the twin of <code>syki tab pdf</code>; <code>lessons.list</code> gives the answer of <code>syki lessons list</code>. No method starts an AI request, an agent or a task, and none runs a deep search: those are yours to start. No method writes a lesson either; see <a href="#lessons" style="color: var(--accent);">Lessons</a> for why.</p>
 
         <div class="callout">
           <div class="callout-title">
@@ -4719,7 +4719,7 @@ ping 128.1.33.254 | syki</code></pre>
             <ul>
               <li><code>jev</code> (such as <code>verify</code>)</li>
               <li><code>agent</code> (<code>prune</code>, <code>install-skill</code>)</li>
-              <li><code>ocr</code> (<code>md-memo ocr &lt;image&gt;</code>)</li>
+              <li><code>ocr</code> (<code>syki ocr &lt;image&gt;</code>)</li>
               <li><code>info</code>: where syki::sok keeps things</li>
               <li><code>scrap</code>: <code>path</code>, <code>list</code>, <code>search</code>, <code>tags</code>, <code>tag</code>, <code>index</code></li>
               <li><code>config get</code>: your settings, with every key and token hidden</li>
@@ -4728,21 +4728,21 @@ ping 128.1.33.254 | syki</code></pre>
           </div>
         </div>
         <ul>
-          <li>When output is redirected or piped, it is JSON unless you pass <code>--text</code>. To save plain text, use <code>md-memo buffer get --text &gt; note.md</code>.</li>
-          <li><code>md-memo --help</code> (or <code>-h</code>) prints every command and its flags, and also how to pipe text in and how to call the JSON-RPC port directly (session file, message format, methods, error codes). <code>md-memo help buffer</code> prints one command's, and <code>md-memo --version</code> prints the version. They write to standard output, exit with code 0 and never start or raise the window, so a script or an AI agent can run them first.</li>
+          <li>When output is redirected or piped, it is JSON unless you pass <code>--text</code>. To save plain text, use <code>syki buffer get --text &gt; note.md</code>.</li>
+          <li><code>syki --help</code> (or <code>-h</code>) prints every command and its flags, and also how to pipe text in and how to call the JSON-RPC port directly (session file, message format, methods, error codes). <code>syki help buffer</code> prints one command's, and <code>syki --version</code> prints the version. They write to standard output, exit with code 0 and never start or raise the window, so a script or an AI agent can run them first.</li>
           <li><strong>Windows scripts, agents and CI: use <code>syki-cli.exe</code>.</strong> <code>syki.exe</code> is a windowed program, so PowerShell and cmd do not wait for it and can lose its exit code and output. From the release that contains <code>syki-cli.exe</code>, the zip holds it next to <code>syki.exe</code>: a console program that runs the same commands (write <code>syki-cli</code> where this page says <code>md-memo</code>), so the shell waits for it and gets the real exit code (<code>jev verify</code>: 0 safe, 1 blocked, 2 warning) and the output. It never starts the app: with no arguments, a file name or piped text it hands the request to the running syki::sok, or exits with 1 and <code>md-memo is not running</code>. <code>syki.exe</code> is still the one that starts syki::sok. macOS needs no second program: the <code>md-memo</code> command there already waits.</li>
           <li><code>--json</code> works on every <code>buffer</code> subcommand.</li>
-          <li><code>md-memo buffer get --out note.md</code> writes the note to a file as UTF-8 (no byte order mark unless you add <code>--bom</code>) and prints only its path, size and hash. Use it instead of <code>&gt;</code> or <code>| Set-Content</code> when the text is Japanese: Windows PowerShell 5.1 re-encodes piped text with the console code page and garbles it. The file is written by the command itself, replaced in one step, and its folder must already exist.</li>
-          <li><code>info</code>, <code>scrap</code>, <code>config</code> and <code>lessons</code> accept their flags before or after their words (<code>md-memo scrap search deploy --limit 5</code>). They read and change nothing, with two exceptions: <code>scrap index</code> writes the search index (outside the scraps folder), and <code>scrap tag add|remove</code> writes a note only when you pass <code>--write</code>. They work whether or not syki::sok is running.</li>
+          <li><code>syki buffer get --out note.md</code> writes the note to a file as UTF-8 (no byte order mark unless you add <code>--bom</code>) and prints only its path, size and hash. Use it instead of <code>&gt;</code> or <code>| Set-Content</code> when the text is Japanese: Windows PowerShell 5.1 re-encodes piped text with the console code page and garbles it. The file is written by the command itself, replaced in one step, and its folder must already exist.</li>
+          <li><code>info</code>, <code>scrap</code>, <code>config</code> and <code>lessons</code> accept their flags before or after their words (<code>syki scrap search deploy --limit 5</code>). They read and change nothing, with two exceptions: <code>scrap index</code> writes the search index (outside the scraps folder), and <code>scrap tag add|remove</code> writes a note only when you pass <code>--write</code>. They work whether or not syki::sok is running.</li>
           <li><code>--tab &lt;id&gt;</code> (an id from <code>tab list</code>) works with <code>buffer get</code>, <code>set</code>, <code>append</code>, <code>replace</code> and <code>save</code>: the write goes to that tab <strong>without switching to it</strong>, without moving your cursor or focus. An unknown id is an error (<code>no such tab</code>). <code>buffer get --selection</code> and <code>buffer replace-selection</code> work on the tab shown in the focused pane. Before this change <code>set</code>, <code>append</code> and <code>replace</code> ignored <code>--tab</code>.</li>
-          <li><strong>The JSON-RPC port now needs the session token for every write.</strong> <code>md-memo buffer|tab|ui</code> send it for you; a script or plugin that talks to the port itself must send the <code>token</code> from <code>ipc-session.json</code> as <code>auth</code> (see the JSON-RPC section above; this breaks clients that never did).</li>
+          <li><strong>The JSON-RPC port now needs the session token for every write.</strong> <code>syki buffer|tab|ui</code> send it for you; a script or plugin that talks to the port itself must send the <code>token</code> from <code>ipc-session.json</code> as <code>auth</code> (see the JSON-RPC section above; this breaks clients that never did).</li>
         </ul>
 
         <pre class="code-block"><code># 1. Print the current buffer (plain text in a terminal; JSON if redirected)
-md-memo buffer get
+syki buffer get
 
 # 2. Print it as JSON with metadata (hash, generation, length, line count, ...)
-md-memo buffer get --json
+syki buffer get --json
 
 # 3. Replace the buffer with text from the terminal stream
 echo "# Updated note" | syki buffer set
@@ -4757,21 +4757,21 @@ echo "- [ ] New task" | syki buffer append
 echo "replacement" | syki buffer replace --start 2:1 --end 2:10
 
 # 7. Print only the current selection; exits 1 with "no active selection" on stderr if none
-md-memo buffer get --selection
-md-memo buffer get --selection --json
+syki buffer get --selection
+syki buffer get --selection --json
 #   -> {"text": "...", "start": 12, "end": 48}
-md-memo buffer get --selection --tab tab_2
+syki buffer get --selection --tab tab_2
 
 # 8. Replace the selection with piped text, as one undo step
 #    (refuses with a conflict error if the selection changed since it was read)
 cat formatted.txt | syki buffer replace-selection
 
 # 9. Check a shell command against the AST guardrail (exit code 0 = safe)
-md-memo jev verify "git status && npm test"
+syki jev verify "git status && npm test"
 # [SAFE] Command passed AST validation: git status && npm test
 
 # 10. A blocked command exits with code 1; --json prints the verdict as JSON
-md-memo jev verify --json "rm -rf /"
+syki jev verify --json "rm -rf /"
 # {
 #   "isSafe": false,
 #   "reason": "破壊的コマンド \"rm\" は安全基準により実行を拒否されました (Destructive command blocked)",
@@ -4783,96 +4783,96 @@ md-memo jev verify --json "rm -rf /"
 
 # 11. Choose how strictly the guard judges: strict (default, for one-click paths
 #     nobody reviews), reviewed (a person confirms before running), or unattended (hooks)
-md-memo jev verify --mode strict "sudo rm -rf /"
+syki jev verify --mode strict "sudo rm -rf /"
 # -> blocked (exit code 1), in every mode
-md-memo jev verify --mode reviewed "git status"
+syki jev verify --mode reviewed "git status"
 # -> safe (exit code 0)
 
 # 12. Prune a Markdown file down to what is relevant to a query
-md-memo agent prune --query "login bug" --file notes.md
+syki agent prune --query "login bug" --file notes.md
 
 # 13. Read the text in an image and add it to today's scrap (no running syki::sok needed)
-md-memo ocr photo.png
-# OCR text appended to C:\Users\you\Documents\md-memo\scraps\2026-09-24.md
-md-memo ocr --json photo.png
+syki ocr photo.png
+# OCR text appended to C:\Users\you\Documents\syki-sok\scraps\2026-09-24.md
+syki ocr --json photo.png
 #   -> {"appended": true, "path": "...", "text": "..."}
 
 # 14. Write the note to a file as UTF-8 (safe for Japanese text); prints only where it went
-md-memo buffer get --out note.md
+syki buffer get --out note.md
 #   -> Wrote 1234 bytes to C:\work\note.md (hash 3f2a9c1d5b7e0a44)
-md-memo buffer get --selection --out selection.md --json
+syki buffer get --selection --out selection.md --json
 #   -> {"path": "...", "bytes": 84, "hash": "..."}
 
 # 15. Where does syki::sok keep things? (folders, today's scrap file, whether the app is running)
-md-memo info
-md-memo info --json
+syki info
+syki info --json
 #   -> {"version": "2.0.9", "config_dir": "...", "scrap_dir": "...", "today_scrap_path": "...",
 #       "today_scrap_exists": true, "inbox_dir": "...", "inbox_enabled": false, "autosave": true,
 #       "gui_running": false}
 
 # 16. Find scraps without the app: the path of a day's file, the list, and a search
-md-memo scrap path --date 2026-09-24
-md-memo scrap list --from 2026-09-01 --to 2026-09-30
-md-memo scrap search deploy --from 2026-09-01 --limit 20
+syki scrap path --date 2026-09-24
+syki scrap list --from 2026-09-01 --to 2026-09-30
+syki scrap search deploy --from 2026-09-01 --limit 20
 #   -> each hit: file, date, line, text, and the nearest heading above it (with its line number)
-md-memo scrap search deploy --tag work,urgent            # only entries that have both tags (see Filter by Period and Tags)
-md-memo scrap tags                                       # the tags in use, with how many notes and entries carry each
+syki scrap search deploy --tag work,urgent            # only entries that have both tags (see Filter by Period and Tags)
+syki scrap tags                                       # the tags in use, with how many notes and entries carry each
 
 # 17. Look at your settings without exposing any key (safe to hand to an AI agent)
-md-memo config get
-md-memo config get scraps.scrapDir --text
-md-memo config get text.apiKey
+syki config get
+syki config get scraps.scrapDir --text
+syki config get text.apiKey
 #   -> "&lt;set&gt;"  (or "&lt;unset&gt;" when empty; the key itself is never printed)
 
 # 18. What can I run? Prints and exits; never starts or raises the window
-md-memo --help
-md-memo help buffer      # one command (also: md-memo buffer --help)
-md-memo help rpc         # the JSON-RPC port: session file, wire format, methods, error codes
-md-memo help pipe        # piping text in
-md-memo --version
+syki --help
+syki help buffer      # one command (also: syki buffer --help)
+syki help rpc         # the JSON-RPC port: session file, wire format, methods, error codes
+syki help pipe        # piping text in
+syki --version
 
 # 19. Install the agent skill that is built into the program (no repository or zip needed)
-md-memo agent install-skill                # Claude Code: ~/.claude/skills/md-memo
-md-memo agent install-skill --codex        # Codex ($CODEX_HOME/skills; the path is not verified)
-md-memo agent install-skill --dir ~/agent-skills   # &lt;folder&gt;/md-memo
+syki agent install-skill                # Claude Code: ~/.claude/skills/syki
+syki agent install-skill --codex        # Codex ($CODEX_HOME/skills; the path is not verified)
+syki agent install-skill --dir ~/agent-skills   # &lt;folder&gt;/syki
 #   -> Installed the md-memo skill: C:\Users\you\.claude\skills\md-memo
 #      (run it again later: "already up to date", an unedited older copy is updated, an edited folder is left alone)
 
 # 20. Work on a tab that is not on screen, save it to a file, and close it (nothing on screen moves)
-md-memo tab list --json                                  # the ids of the open tabs
-id=$(md-memo tab new --background --text)                # a new scratch tab; prints its id
+syki tab list --json                                  # the ids of the open tabs
+id=$(syki tab new --background --text)                # a new scratch tab; prints its id
 echo "# Draft" | syki buffer set --tab "$id"          # write that tab in place
-md-memo buffer save --tab "$id" --as ./draft.md          # write it to a file (no dialog; refuses to replace an existing file)
-md-memo tab close "$id" --if-saved                       # closes only if the tab equals its file; exit code 1 otherwise
+syki buffer save --tab "$id" --as ./draft.md          # write it to a file (no dialog; refuses to replace an existing file)
+syki tab close "$id" --if-saved                       # closes only if the tab equals its file; exit code 1 otherwise
 
 # 21. Search your scraps by words in any order, or by meaning (experimental, see Meaning Search)
-md-memo scrap search --ranked 納期 図面                   # notes that hold both words, best first
-md-memo scrap search --semantic "the idea about sustainable building materials"
-md-memo scrap search --semantic --update --kind note --limit 5 --cutoff 0 "using bamboo as a building material"
+syki scrap search --ranked 納期 図面                   # notes that hold both words, best first
+syki scrap search --semantic "the idea about sustainable building materials"
+syki scrap search --semantic --update --kind note --limit 5 --cutoff 0 "using bamboo as a building material"
 
 # 22. Check, preview and build the index that Meaning search needs
-md-memo scrap index --status                             # settings and index state; calls no model
-md-memo scrap index --dry-run                            # counts what would be embedded; writes nothing
-md-memo scrap index                                      # build or update it
-md-memo scrap index --rebuild                            # make it again (after the model changed)
+syki scrap index --status                             # settings and index state; calls no model
+syki scrap index --dry-run                            # counts what would be embedded; writes nothing
+syki scrap index                                      # build or update it
+syki scrap index --rebuild                            # make it again (after the model changed)
 
 # 23. Save a note as a PDF with the running app (Windows only; never replaces a PDF without --overwrite)
-md-memo tab pdf notes.md -o notes.pdf
-md-memo tab pdf notes.md                                 # -> notes.pdf next to the note
-md-memo tab pdf --paper a3 --landscape --margin narrow --pages 1-3,5 --header-footer -o active-tab.pdf
+syki tab pdf notes.md -o notes.pdf
+syki tab pdf notes.md                                 # -> notes.pdf next to the note
+syki tab pdf --paper a3 --landscape --margin narrow --pages 1-3,5 --header-footer -o active-tab.pdf
 #   -> Wrote &lt;path&gt; (N page(s), M bytes)
 
 # 24. Add or remove a tag in a note file (see Add and Remove Tags). It prints the NEW text and changes nothing, unless you add --write
-md-memo scrap tag show note.md                           # the tags of the whole note (add --line 12 for the entry that holds line 12, and what it gets from the headings above)
-md-memo scrap tag add "work, urgent" note.md             # the whole note: prints the new text on standard output
-md-memo scrap tag add booking note.md --line 12 --write  # the entry that holds line 12 and everything under its heading, written into the file
-md-memo scrap tag remove urgent note.md --write
+syki scrap tag show note.md                           # the tags of the whole note (add --line 12 for the entry that holds line 12, and what it gets from the headings above)
+syki scrap tag add "work, urgent" note.md             # the whole note: prints the new text on standard output
+syki scrap tag add booking note.md --line 12 --write  # the entry that holds line 12 and everything under its heading, written into the file
+syki scrap tag remove urgent note.md --write
 cat note.md | syki scrap tag add work                 # without a file the text comes from standard input
 
 # 25. See the rules kept for agents after failed runs ("lessons", see the Lessons section). Read-only: the app saves them, after you approve; no command does
-md-memo lessons list                                     # one entry per agent that has a lessons file
-md-memo lessons list --agent claude --json               # {"agent", "path", "exists", "count", "applied", "skipped", "disabled"}
-md-memo lessons list --agent cc --text                   # an alias works: "claude-code: 3 rules, 3 applied  &lt;path&gt;"</code></pre>
+syki lessons list                                     # one entry per agent that has a lessons file
+syki lessons list --agent claude --json               # {"agent", "path", "exists", "count", "applied", "skipped", "disabled"}
+syki lessons list --agent cc --text                   # an alias works: "claude-code: 3 rules, 3 applied  &lt;path&gt;"</code></pre>
         <details class="more"><summary>Limits and details (<code>jev verify</code> exit codes and modes)</summary><div class="more-body">
           <ul>
             <li><code>jev verify [--mode strict|reviewed|unattended] &lt;cmd&gt;</code> runs the same deterministic, always-on AST analysis that the GUI's run gate uses. It runs entirely locally, and nothing leaves your machine.</li>
@@ -4896,7 +4896,7 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
           <ul>
             <li><code>buffer get --out &lt;file&gt;</code>: the path is taken from the folder you run the command in, a folder is refused, missing folders are not created, and an existing file is replaced. <code>--selection</code> writes only the selected text and <code>--tab</code> picks a tab. The JSON has <code>path</code>, <code>bytes</code> (the size written, byte order mark included), <code>hash</code> (the value <code>buffer set --expected-hash</code> expects; for a selection, the hash of that text) and, for a whole note, <code>generation</code>.</li>
             <li><code>info</code> prints <code>version</code>, <code>config_dir</code>, <code>config_file</code>, <code>scrap_dir</code>, <code>today_scrap_path</code> (not created), <code>today_scrap_exists</code>, <code>inbox_dir</code>, <code>inbox_enabled</code>, <code>autosave</code> and <code>gui_running</code> (a live app is listening on the port in the session file). It never prints a key, a token or a remote URL.</li>
-            <li><code>scrap path [--date YYYY-MM-DD]</code> prints the bare path even when piped, so <code>$(md-memo scrap path)</code> works. <code>scrap list [--from D] [--to D] [--lines]</code> lists the <code>YYYY-MM-DD.md</code> files of the scraps folder, newest first (JSON: an array of <code>date</code>, <code>path</code>, <code>size</code>, <code>modified</code>, and <code>lines</code> with <code>--lines</code>). <code>scrap search &lt;text&gt; [--from D] [--to D] [--limit N] [--ranked] [--tag a,b]</code> is a case-insensitive search of every <code>.md</code> file under the folder: the notes with a day in their name newest first, then any other file, stopping after <code>--limit</code> hits (default 100). With <code>--ranked</code> it finds <strong>notes</strong> (an entry between two <code>---</code> rules or headings) that hold the <strong>words</strong> of the text, on any lines and in any order, best first (<code>納期 図面</code> finds a note that mentions both); in Japanese a run of kanji, katakana or Latin letters is a word and the hiragana particles between them separate words. When no note holds every word, the notes that hold at least half of them are listed (<code>partial</code>). One hit per note, <code>--limit</code> counts notes; JSON adds <code>ranked</code> and, per match, <code>score</code> and <code>partial</code>. JSON: <code>{query, count, truncated, matches: [{file, date, line, text, heading, heading_line}]}</code>; <code>heading</code> is the nearest Markdown heading at or above the line, ignoring <code>#</code> lines inside code fences. With <code>--from</code> or <code>--to</code> only notes whose file name starts with a day inside the range are searched (<code>2026-09-27.md</code> and <code>2026-09-27_title.md</code> both count; a note with no day in its name is never inside a range). A bad date prints <code>Error: invalid date ...</code> and exits with 1; an empty result is not an error.</li>
+            <li><code>scrap path [--date YYYY-MM-DD]</code> prints the bare path even when piped, so <code>$(syki scrap path)</code> works. <code>scrap list [--from D] [--to D] [--lines]</code> lists the <code>YYYY-MM-DD.md</code> files of the scraps folder, newest first (JSON: an array of <code>date</code>, <code>path</code>, <code>size</code>, <code>modified</code>, and <code>lines</code> with <code>--lines</code>). <code>scrap search &lt;text&gt; [--from D] [--to D] [--limit N] [--ranked] [--tag a,b]</code> is a case-insensitive search of every <code>.md</code> file under the folder: the notes with a day in their name newest first, then any other file, stopping after <code>--limit</code> hits (default 100). With <code>--ranked</code> it finds <strong>notes</strong> (an entry between two <code>---</code> rules or headings) that hold the <strong>words</strong> of the text, on any lines and in any order, best first (<code>納期 図面</code> finds a note that mentions both); in Japanese a run of kanji, katakana or Latin letters is a word and the hiragana particles between them separate words. When no note holds every word, the notes that hold at least half of them are listed (<code>partial</code>). One hit per note, <code>--limit</code> counts notes; JSON adds <code>ranked</code> and, per match, <code>score</code> and <code>partial</code>. JSON: <code>{query, count, truncated, matches: [{file, date, line, text, heading, heading_line}]}</code>; <code>heading</code> is the nearest Markdown heading at or above the line, ignoring <code>#</code> lines inside code fences. With <code>--from</code> or <code>--to</code> only notes whose file name starts with a day inside the range are searched (<code>2026-09-27.md</code> and <code>2026-09-27_title.md</code> both count; a note with no day in its name is never inside a range). A bad date prints <code>Error: invalid date ...</code> and exits with 1; an empty result is not an error.</li>
             <li><code>--tag a,b</code> keeps only what carries <strong>all</strong> of the tags (see <a href="#search-filter" style="color: var(--accent);">Filter by Period and Tags</a> for how a tag is written and what it covers). It can be repeated, takes at most 8 tags in all, works with every kind of search (<code>--ranked</code> and <code>--semantic</code> too), and a leading <code>#</code> and capitals do not matter. A line that matches is kept when the entry that holds it has the tags (counting the whole note's and those written under the headings above it); a ranked or Meaning hit, when its own entry does. A tag nobody uses gives no matches, not an error; more than 8 is an error with exit code 1. <code>scrap tags [--json|--text]</code> lists the tags in use, most notes first: JSON <code>{tags: [{tag, files, entries}], files, undated}</code>, where <code>files</code> counts the notes that carry a tag anywhere, <code>entries</code> the entries it applies to (a tag on a whole note counts all of its entries, and a tag under a heading counts the entries under that heading too), and the top-level <code>files</code> and <code>undated</code> are how many <code>.md</code> files were read and how many of them have no day in their name. It reads your notes only when you run it, writes nothing, and exits with 0 even when there is no tag (<code>"tags": []</code>).</li>
             <li><code>scrap tag add|remove &lt;tags&gt; [&lt;file&gt;] [--line N] [--write] [--json]</code> and <code>scrap tag show [&lt;file&gt;] [--line N] [--json|--text]</code> put a tag into a note, take one out, or list the tags it has: the same rule as the <a href="#tag-commands" style="color: var(--accent);">Add and Remove Tags</a> commands of the window. <code>&lt;tags&gt;</code> is one argument, a list such as <code>"work, urgent"</code> (at most 8; a leading <code>#</code> is dropped). <code>&lt;file&gt;</code> is a path taken from the folder you run the command in; without it the text is read from standard input. Without <code>--line</code> the tag is for the whole note; with <code>--line N</code> it is for the entry that holds line N, and, as in the window, for every entry under that entry's heading (a line above the first heading or rule, or in a note with neither, is the whole note after all). N may be any line of the section; to tag a whole pasted article give a line of its top heading. The line <code>&lt;!-- tags: a, b --&gt;</code> goes under the entry's heading, or on the first line of the note, or into the tag line that is already there.</li>
             <li><strong>It prints the new text and writes nothing, unless you add <code>--write</code>.</strong> Without <code>--write</code> the new text goes to standard output, exactly (no extra line break), so <code>&gt; out.md</code> and pipes work as with <code>sed</code>; the note on disk is not touched. <code>--write</code> replaces the file in place: the new text is written to a temporary file beside it and renamed over it, the file is read again just before, and nothing is written if it changed meanwhile (run the command again). It keeps the file's permissions, line endings and byte order mark, it never creates a file, and it refuses a file over 16 MB or one that is not valid UTF-8. It prints only a one-line summary on standard error. A note that is open in syki::sok with nothing unsaved simply shows the new text, but one with unsaved typing gets the red "!" (autosave pauses and you choose which version to keep), so for an open note use the window's commands, or <code>scrap.tag_edit</code> (below) and write the tab.</li>
@@ -4912,7 +4912,7 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
             <li><code>scrap index [--status] [--rebuild] [--dry-run] [--force] [--settle MIN] [--yes]</code> builds or updates the index. Only files whose size and time changed are read, and only text pieces never embedded before are sent to the model, so a run with nothing new costs nothing and an interrupted run goes on from where it stopped. <code>--status</code> shows the settings, the index and how many files are not in it, and calls no model. <code>--dry-run</code> counts what would be embedded and writes nothing. <code>--rebuild</code> makes the index again (needed after the model or the way notes are cut up changed; the old index is used until the new one is complete). <code>--force</code> reads every file again and <code>--settle MIN</code> leaves files changed less than MIN minutes ago for the next run.</li>
             <li><code>scrap index</code> writes only the index: <code>index/&lt;id&gt;</code> in the settings folder, never inside the scraps folder, and it may be deleted at any time. A model that is not on this PC is used only for a host listed under <code>semantic.privacy.cloudConsent</code> (otherwise it exits with 1 before anything is sent), and a run that would send more than 1000 text pieces needs <code>--yes</code>. Do not add <code>--yes</code> for someone else: it sends their notes to that host.</li>
             <li><code>tab pdf [&lt;file&gt;] [-o|--out &lt;file.pdf&gt;] [--tab &lt;id&gt;] [--paper a4|a3|b5|letter] [--landscape] [--margin normal|narrow] [--scale N] [--pages 1-3,5] [--header-footer] [--overwrite]</code> saves a note as a PDF, made by the <strong>running</strong> app from its preview, the same PDF as <strong>Save as PDF</strong> in the <a href="#print-pdf" style="color: var(--accent);">print panel</a>. <strong>Windows only</strong>: on a Mac it answers an error. Which note: <code>&lt;file&gt;</code> (taken from the folder you run the command in; it is opened in a background tab for the print and closed again, and a file that was already open stays open), <code>--tab &lt;id&gt;</code>, or the active tab. <code>&lt;file&gt;</code> and <code>--tab</code> together are an error.</li>
-            <li><code>tab pdf</code>: <code>--out</code> is required unless you give a <code>&lt;file&gt;</code>; then the PDF goes next to it as <code>&lt;name&gt;.pdf</code>. A PDF that is already there is never replaced unless you add <code>--overwrite</code>. <code>--margin normal</code> is 20 mm and <code>narrow</code> 10 mm; <code>--header-footer</code> (off by default) puts the file's name above and its folder and the page number below. In a terminal it prints <code>Wrote &lt;path&gt; (N page(s), M bytes)</code>; piped, JSON <code>{path, bytes, pages, tab_id}</code>. The window flickers for a moment while the preview is shown. The command waits 10 seconds and the app 8, so a huge note is an error, though the file may still appear. A program older than this command answers <code>unknown tab action</code>; <code>md-memo help tab</code> shows what yours has. The JSON-RPC method behind it is <code>print.pdf</code>.</li>
+            <li><code>tab pdf</code>: <code>--out</code> is required unless you give a <code>&lt;file&gt;</code>; then the PDF goes next to it as <code>&lt;name&gt;.pdf</code>. A PDF that is already there is never replaced unless you add <code>--overwrite</code>. <code>--margin normal</code> is 20 mm and <code>narrow</code> 10 mm; <code>--header-footer</code> (off by default) puts the file's name above and its folder and the page number below. In a terminal it prints <code>Wrote &lt;path&gt; (N page(s), M bytes)</code>; piped, JSON <code>{path, bytes, pages, tab_id}</code>. The window flickers for a moment while the preview is shown. The command waits 10 seconds and the app 8, so a huge note is an error, though the file may still appear. A program older than this command answers <code>unknown tab action</code>; <code>syki help tab</code> shows what yours has. The JSON-RPC method behind it is <code>print.pdf</code>.</li>
           </ul>
         </div></details>
       </section>
@@ -4948,13 +4948,13 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
             <tbody>
               <tr>
                 <td><code>config.json</code><br>App settings (keys, models, shortcuts and more)</td>
-                <td>Windows: <code>%APPDATA%\md-memo\</code><br>macOS: <code>~/Library/Application Support/md-memo/</code></td>
+                <td>Windows: <code>%APPDATA%\syki-sok\</code><br>macOS: <code>~/Library/Application Support/syki-sok/</code></td>
                 <td>When you restart syki::sok. It is read at startup, and the whole file is rewritten every time you save in the settings screen</td>
                 <td>The agent, <strong>only while syki::sok is fully closed</strong></td>
               </tr>
               <tr>
                 <td><code>agents.yaml</code><br>Agent, alias, notation and snippet definitions</td>
-                <td>Per project: <code>&lt;scraps folder&gt;/.md-memo/agents.yaml</code><br>or the app's settings folder</td>
+                <td>Per project: <code>&lt;scraps folder&gt;/.syki-sok/agents.yaml</code><br>or the app's settings folder</td>
                 <td>On the next slot run. If it has a syntax error, syki::sok silently falls back to the defaults</td>
                 <td>The agent, or you (even while syki::sok is running)</td>
               </tr>
@@ -4962,7 +4962,7 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
                 <td><code>lessons/&lt;agent&gt;.md</code><br>Rules kept with the <a href="#lessons" style="color: var(--accent);">Lessons</a> button</td>
                 <td>The app's settings folder, in a <code>lessons</code> folder next to <code>config.json</code></td>
                 <td>On the next run of that agent</td>
-                <td>You, in the Lessons dialog or by hand. The agent only reads them (<code>md-memo lessons list</code>) and does not write them: they are put in front of an agent's instruction</td>
+                <td>You, in the Lessons dialog or by hand. The agent only reads them (<code>syki lessons list</code>) and does not write them: they are put in front of an agent's instruction</td>
               </tr>
               <tr>
                 <td>Project <code>.env</code><br>For agent CLI keys</td>
@@ -4984,7 +4984,7 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
 
         <ol class="steps">
           <li><strong>Quit syki::sok completely and back up the files</strong><span>On Windows, quit from the tray icon (closing with ✕ leaves it in the tray). On macOS, press <span class="kbd">Cmd+Q</span>. The backup will contain API keys, so keep it inside the settings folder</span></li>
-          <li><strong>Give the agent a request from below</strong><span>Tell it to read <code>skills/md-memo/SKILL.md</code> first. Install the skill with <code>md-memo agent install-skill</code> (newer than 1.8.0), or take it from the release zip (v1.7.1 or later) or GitHub, as described below</span></li>
+          <li><strong>Give the agent a request from below</strong><span>Tell it to read <code>skills/syki/SKILL.md</code> first. Install the skill with <code>syki agent install-skill</code> (newer than 1.8.0), or take it from the release zip (v1.7.1 or later) or GitHub, as described below</span></li>
           <li><strong>The agent edits and validates</strong><span>Ask it to check the JSON and YAML syntax too</span></li>
           <li><strong>Start syki::sok</strong><span>Start it as usual, from the Start menu, Finder or the tray</span></li>
           <li><strong>The agent checks each feature</strong><span>Ask it to report what it could and could not confirm</span></li>
@@ -4992,7 +4992,7 @@ md-memo lessons list --agent cc --text                   # an alias works: "clau
 
         <p><strong>Request 1: Set up Gemini in one go (image OCR, voice input, Mermaid image rendering)</strong></p>
         <pre class="code-block" style="white-space: pre-wrap;"><code>Please set up syki::sok for Gemini (image OCR, voice input, and Mermaid image rendering).
-First read skills/md-memo/SKILL.md and skills/md-memo/references/setup-guide.md.
+First read skills/syki/SKILL.md and skills/syki/references/setup-guide.md.
 Before you edit config.json, ask me to quit syki::sok (tray → Quit) and make a backup. Then put the Gemini key I give you only in vision.apiKey (voice and image inherit it).
 For voice, set voice.model to gemini-3.5-transcribe, apiStyle to auto, and languageCodes to ["ja-JP"] (replace it with your language, or leave it empty to auto-detect). For images, set image.model to gemini-3.1-flash-lite-image.
 Also check the environment and prerequisites these features need (network, microphone permission, general.pasteImageOcr and so on), and set up anything that is missing.
@@ -5001,8 +5001,8 @@ Never print or commit the key.
 After the restart, check each feature with a checklist, and report what you could and could not confirm.</code></pre>
 
         <p><strong>Request 2: Add or change an agent, and put its API key in the project's .env</strong></p>
-        <pre class="code-block" style="white-space: pre-wrap;"><code>Please add &lt;agent name&gt; to syki::sok's agents.yaml (the global one directly in the settings folder, or .md-memo/agents.yaml in the scraps folder).
-First read skills/md-memo/SKILL.md and skills/md-memo/references/setup-guide.md.
+        <pre class="code-block" style="white-space: pre-wrap;"><code>Please add &lt;agent name&gt; to syki::sok's agents.yaml (the global one directly in the settings folder, or .syki-sok/agents.yaml in the scraps folder).
+First read skills/syki/SKILL.md and skills/syki/references/setup-guide.md.
 Make a backup, and keep every existing agent and notation (slot_profiles / recipes).
 Check the flags with &lt;command&gt; --help, and do not add any flag that skips permission prompts.
 Put that agent's API key in the .env at the project root (KEY=value format, UTF-8 without a BOM). Do not print the key.
@@ -5011,7 +5011,7 @@ Validate the YAML. If you changed notations (slot_profiles / recipes), tell me t
 
         <p><strong>Request 3: Check every feature's prerequisites and set the missing environment variables and settings</strong></p>
         <pre class="code-block" style="white-space: pre-wrap;"><code>Please check the prerequisites of each syki::sok feature, and set any missing environment variables and settings.
-First read skills/md-memo/SKILL.md and skills/md-memo/references/setup-guide.md. Then, one feature at a time, check every feature in the table in section (e) of setup-guide.md, "Per-feature prerequisites and verification": whether what it needs (installs, keys, environment variables, settings) is in place.
+First read skills/syki/SKILL.md and skills/syki/references/setup-guide.md. Then, one feature at a time, check every feature in the table in section (e) of setup-guide.md, "Per-feature prerequisites and verification": whether what it needs (installs, keys, environment variables, settings) is in place.
 Set whatever is missing in the right place: config.json after syki::sok is quit (backup required), agent definitions in agents.yaml, agent CLI keys in the project's .env, and everything else as OS environment variables.
 syki::sok's own LLM keys go only in config.json (environment variables such as GEMINI_API_KEY are not read by syki::sok).
 If something needs to be installed, or an OS privacy or firewall setting needs to change, show me the command and get my permission before you run it.
@@ -5019,7 +5019,7 @@ Never print or commit keys.
 At the end, report each feature in a table as "confirmed / not confirmed / not checked".</code></pre>
 
         <details class="more"><summary>Prerequisites per feature and how to check them (table)</summary><div class="more-body">
-          <p>The agent reads this table from section (e) of <code>skills/md-memo/references/setup-guide.md</code>. You can also use it to check by hand.</p>
+          <p>The agent reads this table from section (e) of <code>skills/syki/references/setup-guide.md</code>. You can also use it to check by hand.</p>
           <div class="doc-table-wrap">
             <table class="doc-table" style="min-width: 760px;">
               <thead>
@@ -5147,7 +5147,7 @@ At the end, report each feature in a table as "confirmed / not confirmed / not c
                 </tr>
                 <tr>
                   <td>macOS prerequisite</td>
-                  <td>macOS 10.15 or later. For a build without Apple notarization, the first launch needs System Settings → Privacy &amp; Security → Open Anyway (macOS 15 or later) or right-click → Open (macOS 14 or earlier); <code>xattr -dr com.apple.quarantine "syki::sok.app"</code> works on any version</td>
+                  <td>macOS 10.15 or later. For a build without Apple notarization, the first launch needs System Settings → Privacy &amp; Security → Open Anyway (macOS 15 or later) or right-click → Open (macOS 14 or earlier); <code>xattr -dr com.apple.quarantine "syki-sok.app"</code> works on any version</td>
                   <td>None</td>
                   <td>By design there is no tray. Use the Dock icon and the hotkey to bring the window back</td>
                 </tr>
@@ -5188,13 +5188,13 @@ At the end, report each feature in a table as "confirmed / not confirmed / not c
         </div>
 
         <p>
-          The folder to point the agent at is <a href="https://github.com/youshinh/syki-sok/tree/main/skills/md-memo" target="_blank" rel="noopener" style="color: var(--accent);"><code>skills/md-memo</code></a>. When you make a request, tell it to read <code>SKILL.md</code> first.
+          The folder to point the agent at is <a href="https://github.com/youshinh/syki-sok/tree/main/skills/syki" target="_blank" rel="noopener" style="color: var(--accent);"><code>skills/syki</code></a>. When you make a request, tell it to read <code>SKILL.md</code> first.
         </p>
         <p>
-          <strong>Easiest: let syki::sok install the skill.</strong> A program newer than 1.8.0 carries the skill inside it. Run <code>md-memo agent install-skill</code> and it copies the folder to <code>~/.claude/skills/md-memo</code> (Claude Code; <code>CLAUDE_CONFIG_DIR</code> is honored). It needs no repository, no zip and no running syki::sok, so it is also the way for a Homebrew install. <code>--codex</code> installs for Codex (into <code>$CODEX_HOME/skills</code>, else <code>~/.codex/skills</code>; that Codex reads skills from there is <strong>not verified</strong>, so use <code>--dir</code> if it does not), and <code>--dir &lt;folder&gt;</code> installs into any folder you name (the skill lands in <code>&lt;folder&gt;/md-memo</code>). It prints what it installed and where. Run it again after updating syki::sok: an unchanged skill prints "already up to date", an older copy you have not edited is replaced, and a folder you edited (or that this command did not write) is left alone, with the differing files listed, unless you add <code>--force</code>. Programs up to 1.8.0 do not have the command; use one of the ways below.
+          <strong>Easiest: let syki::sok install the skill.</strong> A program newer than 1.8.0 carries the skill inside it. Run <code>syki agent install-skill</code> and it copies the folder to <code>~/.claude/skills/syki</code> (Claude Code; <code>CLAUDE_CONFIG_DIR</code> is honored). It needs no repository, no zip and no running syki::sok, so it is also the way for a Homebrew install. <code>--codex</code> installs for Codex (into <code>$CODEX_HOME/skills</code>, else <code>~/.codex/skills</code>; that Codex reads skills from there is <strong>not verified</strong>, so use <code>--dir</code> if it does not), and <code>--dir &lt;folder&gt;</code> installs into any folder you name (the skill lands in <code>&lt;folder&gt;/syki</code>). It prints what it installed and where. Run it again after updating syki::sok: an unchanged skill prints "already up to date", an older copy you have not edited is replaced, and a folder you edited (or that this command did not write) is left alone, with the differing files listed, unless you add <code>--force</code>. Programs up to 1.8.0 do not have the command; use one of the ways below.
         </p>
         <p>
-          <strong>Without the command, the skill is in the release zip.</strong> From v1.7.1 the zip on the Releases page holds a <code>skills</code> folder next to the program (next to <code>syki.exe</code> on Windows, next to <code>syki::sok.app</code> on macOS), so use the <code>skills/md-memo</code> folder from it. Older zips, and installs made another way (for example Homebrew), do not have it: get the folder from GitHub instead. Either give the agent the address above, or download the whole repository (<strong>Code → Download ZIP</strong> on the GitHub page, or <code>git clone https://github.com/youshinh/syki-sok.git</code>) and use its <code>skills/md-memo</code> folder. An agent that can read web pages opens the four files in <code>references/</code> that <code>SKILL.md</code> links to by itself. To keep the skill always available, copy the folder (five Markdown files, about 340 KB) into your agent's skills folder, for example <code>~/.claude/skills/md-memo</code> for Claude Code.
+          <strong>Without the command, the skill is in the release zip.</strong> From v1.7.1 the zip on the Releases page holds a <code>skills</code> folder next to the program (next to <code>syki.exe</code> on Windows, next to <code>syki-sok.app</code> on macOS), so use the <code>skills/syki</code> folder from it. Older zips, and installs made another way (for example Homebrew), do not have it: get the folder from GitHub instead. Either give the agent the address above, or download the whole repository (<strong>Code → Download ZIP</strong> on the GitHub page, or <code>git clone https://github.com/youshinh/syki-sok.git</code>) and use its <code>skills/syki</code> folder. An agent that can read web pages opens the four files in <code>references/</code> that <code>SKILL.md</code> links to by itself. To keep the skill always available, copy the folder (five Markdown files, about 340 KB) into your agent's skills folder, for example <code>~/.claude/skills/syki</code> for Claude Code.
         </p>
       </section>
 
@@ -5233,7 +5233,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>Jev</strong></td>
                 <td><a href="#jev-action" style="color: var(--accent);">Quick Actions</a></td>
-                <td>An external judging model provided by TypeSafe AI — it is not built into syki::sok. It is used only when you enter an OpenRouter or TypeSafe API key under Settings → Agent → Suggestions (Quick Actions); it does not write text, it ranks syki::sok's built-in candidates. Otherwise syki::sok uses its built-in local rules. The name also survives as a CLI subcommand, as in <code>md-memo jev verify</code>, but <code>jev verify</code> (the AST check) runs entirely locally.</td>
+                <td>An external judging model provided by TypeSafe AI — it is not built into syki::sok. It is used only when you enter an OpenRouter or TypeSafe API key under Settings → Agent → Suggestions (Quick Actions); it does not write text, it ranks syki::sok's built-in candidates. Otherwise syki::sok uses its built-in local rules. The name also survives as a CLI subcommand, as in <code>syki jev verify</code>, but <code>jev verify</code> (the AST check) runs entirely locally.</td>
               </tr>
               <tr>
                 <td><strong>Slot</strong></td>
@@ -5282,7 +5282,7 @@ command! MDMemoSend :w !syki</code></pre>
               </tr>
               <tr>
                 <td><strong>AST guardrail</strong></td>
-                <td>Quick Actions / <code>md-memo jev verify</code></td>
+                <td>Quick Actions / <code>syki jev verify</code></td>
                 <td>Parses a shell command as syntax before running it and refuses it on detecting a destructive command, a write into a protected system directory, and similar patterns. It covers known dangerous patterns, not every possible risk.</td>
               </tr>
               <tr>
@@ -5303,7 +5303,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>Meaning search</strong></td>
                 <td><a href="#meaning-search" style="color: var(--accent);">Parallel Scrap Search</a></td>
-                <td>The <strong>Meaning</strong> side of the Exact | Meaning switch in the notes search: it finds a note by what it says, not by its words. It is experimental and off by default. It shows up as <code>semantic</code> in the config file and as <code>scrap search --semantic</code> on the command line, and the list it builds from your notes is called the index (<code>md-memo scrap index</code>).</td>
+                <td>The <strong>Meaning</strong> side of the Exact | Meaning switch in the notes search: it finds a note by what it says, not by its words. It is experimental and off by default. It shows up as <code>semantic</code> in the config file and as <code>scrap search --semantic</code> on the command line, and the list it builds from your notes is called the index (<code>syki scrap index</code>).</td>
               </tr>
               <tr>
                 <td><strong>Deep search</strong></td>
@@ -5318,7 +5318,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>Print panel</strong></td>
                 <td><a href="#print-pdf" style="color: var(--accent);">Print or Save as PDF</a></td>
-                <td>The panel that the printer button of the preview opens on Windows: the printed pages on the left, the paper settings on the right, <strong>Save as PDF</strong> and <strong>Print...</strong> at the bottom. macOS shows its own print dialog instead. The same PDF is made without the panel by <code>md-memo tab pdf</code> and the JSON-RPC method <code>print.pdf</code>.</td>
+                <td>The panel that the printer button of the preview opens on Windows: the printed pages on the left, the paper settings on the right, <strong>Save as PDF</strong> and <strong>Print...</strong> at the bottom. macOS shows its own print dialog instead. The same PDF is made without the panel by <code>syki tab pdf</code> and the JSON-RPC method <code>print.pdf</code>.</td>
               </tr>
             </tbody>
           </table>

@@ -85,14 +85,14 @@ It is already open when the thought arrives. No chat window, no copy and paste.
 
 **Windows** (PowerShell):
 ```powershell
-Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile md-memo.zip
-Expand-Archive md-memo.zip -DestinationPath md-memo
-md-memo\syki.exe
+Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile syki-windows-x64.zip
+Expand-Archive syki-windows-x64.zip -DestinationPath syki
+syki\syki.exe
 ```
 
 **macOS** (Homebrew):
 ```bash
-brew install --cask youshinh/tap/md-memo
+brew install --cask youshinh/tap/syki
 ```
 *(On first launch on macOS, open System Settings → Privacy & Security and click Open Anyway)*
 
@@ -104,9 +104,9 @@ All release packages are available on [GitHub Releases](https://github.com/yoush
 
 ```bash
 cat build.log | syki                 # Pipe terminal logs directly into active note
-md-memo buffer get                      # Read active note content
+syki-cli buffer get                  # Read active note content
 echo "- [ ] Next task" | syki buffer append # Append text to active note
-md-memo agent install-skill             # Equip Claude Code or Codex with syki::sok agent skills
+syki-cli agent install-skill         # Equip Claude Code or Codex with syki::sok agent skills
 ```
 
 ---

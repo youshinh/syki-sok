@@ -1,7 +1,7 @@
 #!/bin/bash
 set -euo pipefail
 
-APP_NAME="MD-Memo"
+APP_NAME="syki-sok"
 BUNDLE_DIR="$APP_NAME.app"
 CONTENTS_DIR="$BUNDLE_DIR/Contents"
 MACOS_DIR="$CONTENTS_DIR/MacOS"
@@ -117,7 +117,7 @@ cat <<EOF > "$CONTENTS_DIR/Info.plist"
     <key>CFBundleIconFile</key>
     <string>AppIcon</string>
     <key>CFBundleIdentifier</key>
-    <string>com.youshinh.md-memo</string>
+    <string>com.youshinh.syki-sok</string>
     <key>CFBundleName</key>
     <string>$APP_NAME</string>
     <key>CFBundlePackageType</key>
@@ -136,7 +136,7 @@ cat <<EOF > "$CONTENTS_DIR/Info.plist"
         <true/>
     </dict>
     <key>NSMicrophoneUsageDescription</key>
-    <string>MD-Memo uses the microphone only when you start voice input (Cmd+Shift+R) to transcribe your note.</string>
+    <string>syki::sok uses the microphone only when you start voice input (Cmd+Shift+R) to transcribe your note.</string>
     <key>CFBundleDocumentTypes</key>
     <array>
         <dict>

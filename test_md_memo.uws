@@ -1,19 +1,19 @@
-// UWSCR End-to-End Automated Test for MD-Memo
-print "=== MD-Memo UWSCR E2E Test Starting ==="
+﻿// UWSCR End-to-End Automated Test for syki::sok
+print "=== syki::sok UWSCR E2E Test Starting ==="
 
-exe_path = "c:\Users\yoush\Documents\md-memo\md-memo.exe"
+exe_path = "c:\Users\yoush\Documents\syki-sok\syki.exe"
 print "Launching: " + exe_path
 
-// 1. Launch md-memo executable
+// 1. Launch syki::sok executable
 pid = exec(exe_path)
 print "Process launched with PID: " + pid
 
 // 2. Wait for window to appear
 sleep(2.5)
-id = getid("MD-Memo", EMPTY, 5)
+id = getid("syki::sok", EMPTY, 5)
 
 if id < 0 then
-    print "FAILED: Could not find window with title 'MD-Memo'"
+    print "FAILED: Could not find window with title 'syki::sok'"
     exitexit 1
 endif
 
@@ -51,4 +51,4 @@ print "Closing window..."
 ctrlwin(id, CLOSE)
 sleep(1.0)
 
-print "=== MD-Memo UWSCR E2E Test Passed Successfully ==="
+print "=== syki::sok UWSCR E2E Test Passed Successfully ==="

@@ -8,10 +8,10 @@ This directory contains package manager manifests and recipes to distribute **sy
 
 | Target | Manager | Type | Manifest File | Binary / Archive URL | SHA256 Hash |
 |---|---|---|---|---|---|
-| **Windows (x64)** | WinGet | Portable Zip (`.exe`, plus `syki-cli.exe`) | `packaging/winget/` (3 files) | `https://github.com/youshinh/syki-sok/releases/download/v1.12.0/syki-windows-x64.zip` | `136137B581BC740AEAD47E7588E65664888420BA314DD00C0F2157902F2A6496` |
-| **macOS (Intel/ARM)** | Homebrew | Cask (`.app`) | `packaging/homebrew/md-memo.rb` | `https://github.com/youshinh/syki-sok/releases/download/v1.6.0/syki-macos.zip` | `3357f6147c7eb288b9c426c5b62be4f3e7aaf64fbe6be231d358dabcb1092bfb` |
+| **Windows (x64)** | WinGet | Portable Zip (`.exe`, plus `syki-cli.exe`) | `packaging/winget/` (3 files) | `https://github.com/youshinh/syki-sok/releases/download/v2.0.14/syki-windows-x64.zip` | `136137B581BC740AEAD47E7588E65664888420BA314DD00C0F2157902F2A6496` |
+| **macOS (Intel/ARM)** | Homebrew | Cask (`.app`) | `packaging/homebrew/syki.rb` | `https://github.com/youshinh/syki-sok/releases/download/v2.0.14/syki-macos.zip` | `3357f6147c7eb288b9c426c5b62be4f3e7aaf64fbe6be231d358dabcb1092bfb` |
 
-> **Status (2026-10-03):** the Homebrew tap `youshinh/homebrew-tap` is live. The WinGet package is **submitted, not published yet**: [microsoft/winget-pkgs#438694](https://github.com/microsoft/winget-pkgs/pull/438694) is open and was moved from 1.6.0 to 1.12.0 on 2026-10-03; it needs the submitter's CLA comment and a moderator's approval (the README, the manuals and the landing page point Windows users at the release zip until it is merged). Once it is merged, `winget install youshinh.md-memo` works and those pages can advertise it again.
+> **Status (2026-10-07):** the Homebrew tap `youshinh/homebrew-tap` is live. The WinGet package is **submitted, not published yet**: [microsoft/winget-pkgs#438694](https://github.com/microsoft/winget-pkgs/pull/438694) is open; it needs the submitter's CLA comment and a moderator's approval (the README, the manuals and the landing page point Windows users at the release zip until it is merged). Once it is merged, `winget install youshinh.syki-sok` works and those pages can advertise it again.
 
 ---
 
@@ -34,12 +34,12 @@ winget install --manifest packaging/winget
 To test uninstalling:
 
 ```powershell
-winget uninstall youshinh.md-memo
+winget uninstall youshinh.syki-sok
 ```
 
 ### 3. Publishing to `microsoft/winget-pkgs`
 
-winget-pkgs accepts only the **multi-file** form (a `singleton` manifest is not accepted): `youshinh.md-memo.yaml` (version), `youshinh.md-memo.installer.yaml` and `youshinh.md-memo.locale.en-US.yaml`, under `manifests/y/youshinh/syki-sok/<version>/`. The first submission, [#438694](https://github.com/microsoft/winget-pkgs/pull/438694), was opened for 1.6.0 and its branch was later updated in place to 1.12.0 through the GitHub API (new commit on the fork's branch that removes the old version folder and adds the new one; title and body edited). The Microsoft CLA has to be signed once by the submitter.
+winget-pkgs accepts only the **multi-file** form (a `singleton` manifest is not accepted): `youshinh.syki-sok.yaml` (version), `youshinh.syki-sok.installer.yaml` and `youshinh.syki-sok.locale.en-US.yaml`, under `manifests/y/youshinh/syki-sok/<version>/`. The first submission, [#438694](https://github.com/microsoft/winget-pkgs/pull/438694), was opened for 1.6.0 and its branch was later updated in place to 1.12.0 through the GitHub API (new commit on the fork's branch that removes the old version folder and adds the new one; title and body edited). The Microsoft CLA has to be signed once by the submitter.
 
 #### Option A: Using `wingetcreate` (updates once the package exists)
 1. Install `wingetcreate`:
@@ -48,13 +48,13 @@ winget-pkgs accepts only the **multi-file** form (a `singleton` manifest is not 
    ```
 2. Submit an update for a new release:
    ```powershell
-   wingetcreate update youshinh.md-memo --version <X.Y.Z> --urls https://github.com/youshinh/syki-sok/releases/download/v<X.Y.Z>/syki-windows-x64.zip --submit --token <YOUR_GITHUB_PAT>
+   wingetcreate update youshinh.syki-sok --version <X.Y.Z> --urls https://github.com/youshinh/syki-sok/releases/download/v<X.Y.Z>/syki-windows-x64.zip --submit --token <YOUR_GITHUB_PAT>
    ```
 
 #### Option B: Manual GitHub Pull Request (how 1.6.0 was submitted)
 1. Fork [microsoft/winget-pkgs](https://github.com/microsoft/winget-pkgs) (default branch only is enough; the repository is about 900 MB, so avoid cloning it: the three files can be added on a new branch with the GitHub API).
 2. Put the three files from `packaging/winget/` under `manifests/y/youshinh/syki-sok/<version>/`.
-3. Open a Pull Request titled `New package: youshinh.md-memo version X.Y.Z` (later versions: `Update: youshinh.md-memo to X.Y.Z`) and fill in the template.
+3. Open a Pull Request titled `New package: youshinh.syki-sok version X.Y.Z` (later versions: `Update: youshinh.syki-sok to X.Y.Z`) and fill in the template.
 
 ### 4. The console CLI (`syki-cli.exe`)
 From the release that contains it, `syki-windows-x64.zip` holds a second executable, `syki-cli.exe`, next to `syki.exe`: the console-subsystem build of the same commands, for scripts, agents and CI (PowerShell waits for it and gets its exit codes). The manifests here list only `syki.exe`. To put `syki-cli` on `PATH` through winget, a manifest version for that release can add a second `NestedInstallerFiles` entry (`RelativeFilePath: syki-cli.exe`, `PortableCommandAlias: syki-cli`) and the matching `Commands` item. macOS is unchanged: a terminal waits for the app binary itself, and the cask installs no second executable.

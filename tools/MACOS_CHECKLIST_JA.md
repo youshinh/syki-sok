@@ -1,8 +1,8 @@
-# macOS 実機チェックリスト
+﻿# macOS 実機チェックリスト
 
 macOS 向けの修正はすべて Windows 上で書かれており、Objective-C / cgo 部分は一度もコンパイル・実行されていません。
 GitHub に push すると `.github/workflows/ci.yml` が macOS ランナーでビルドし、`syki-macos-<sha>` として .app を成果物に出します。
-初回起動は `xattr -dr com.apple.quarantine syki::sok.app`（macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」、14 以前は右クリック →「開く」）が必要です。
+初回起動は `xattr -dr com.apple.quarantine syki-sok.app`（macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」、14 以前は右クリック →「開く」）が必要です。
 
 ## 0. まず CI が通るか
 
@@ -10,7 +10,7 @@ GitHub に push すると `.github/workflows/ci.yml` が macOS ランナーで�
   - 失敗箇所が `hotkey_darwin.go` の場合: そのファイルを削除し、`window_darwin.go` 側で `updateGlobalHotKeyNative` を `return false` のスタブにすれば他は生きます
   - `window_darwin.go` の場合に疑う順: `-fobjc-exceptions` と `@try/@catch` → `(NSWindow *)nsWindow` のキャスト → `setValue:forKey:@"drawsBackground"`
   - `use of undeclared identifier 'kAEQuitReason'` の場合: `#import <CoreServices/CoreServices.h>` が効いていません。`kAEQuitReason` を整数 `0x7768793F`（`'why?'`）に置き換えれば通ります
-  - `mdmemoGoQuit` の未定義・型不一致の場合: `openfile_darwin.go` の `//export mdmemoGoQuit`（戻り値 `C.int`）と `window_darwin.go` の `extern int mdmemoGoQuit(void);` を突き合わせる
+  - `sykiGoQuit` の未定義・型不一致の場合: `openfile_darwin.go` の `//export sykiGoQuit`（戻り値 `C.int`）と `window_darwin.go` の `extern int sykiGoQuit(void);` を突き合わせる
 - [ ] ログの `lipo -archs` が `x86_64 arm64` になっている（片方だけならユニバーサル化に失敗してフォールバックしています）
 - [ ] `plutil -lint` が OK
 - [ ] `tools/crosscheck.ps1`（相当の手順: `GOOS=darwin GOARCH=arm64 CGO_ENABLED=0 go vet ./...` / `go test -c`)で、cgo を使わない純 Go 部分（`platform_darwin.go` など）は Windows 上でも型チェックできるようになりました。CI の Windows ジョブにも同じクロスチェック手順(`.github/workflows/ci.yml` の "Cross-check macOS build (no cgo)")が入っています。Objective-C / cgo 側(`window_darwin.go`、`hotkey_darwin.go`)は引き続きこの macOS ジョブでしか検証できません
@@ -21,7 +21,7 @@ GitHub に push すると `.github/workflows/ci.yml` が macOS ランナーで�
 - [ ] メニューバーに Window ▸ Minimize (⌘M) / Zoom がある
 - [ ] ⌘M で Dock に格納され、Dock アイコンのクリックで戻る
 - [ ] 赤ボタンで閉じる → プロセスは残り、Dock アイコンで復帰する
-- [ ] 最後のタブを ⌘W で閉じる / ⌘Q → 完全に終了する（`ps aux | grep -i md-memo` が空、`lsof -i :41739` が空、`~/Library/Application Support/md-memo/ipc-session.json` が消えている）
+- [ ] 最後のタブを ⌘W で閉じる / ⌘Q → 完全に終了する（`ps aux | grep -i syki` が空、`lsof -i :41739` が空、`~/Library/Application Support/syki-sok/ipc-session.json` が消えている）
 - [ ] 起動時に白いフラッシュが出ない
 - [ ] Finder / Dock / Spotlight から起動したとき、ウィンドウが前面に出てキー入力をすぐ受け付ける（アプリのデリゲートを `webview.New` より前に設定するよう変えたため、起動直後の前面化の経路が変わっています）
 - [ ] ターミナルから `.app` の中の実行ファイルを直接起動しても、ウィンドウと Dock アイコンが出て前面に来る
@@ -31,7 +31,7 @@ GitHub に push すると `.github/workflows/ci.yml` が macOS ランナーで�
 ⌘Q・メニューの「Quit syki::sok」・Dock の「終了」は、ページにセッションを保存させてから `App.CloseWindow` と同じ経路で終了するようになりました。ログアウト・再起動・システム終了のときだけは止めずに AppKit に終了させます。
 
 - [ ] 何か入力した直後（0.5 秒以内）に ⌘Q → 再起動すると、最後の入力まで残っている（未保存タブ・新規タブの両方）
-- [ ] ⌘Q 後に `~/Library/Application Support/md-memo/ipc-session.json` が消えている。`lsof -i :41739` が空
+- [ ] ⌘Q 後に `~/Library/Application Support/syki-sok/ipc-session.json` が消えている。`lsof -i :41739` が空
 - [ ] メニューバーの「syki::sok ▸ Quit syki::sok」でも同じ（入力が残る・ipc-session.json が消える）
 - [ ] Dock アイコンを右クリック →「終了」でも同じ。消えていなくても（Dock が終了理由を付けて送る場合）終了すること自体は必須
 - [ ] ⌘Q を連打しても 1 回だけ終了し、エラーダイアログやクラッシュレポートが出ない
@@ -47,7 +47,7 @@ GitHub に push すると `.github/workflows/ci.yml` が macOS ランナーで�
 - [ ] 別アプリを前面にして `echo hi | syki` → スクラップに追記され、syki::sok が前面に来る
 - [ ] 起動中にもう一度 `md-memo` → 2つ目は即終了し、1つ目が前面に来る（Dock アイコンが2つにならない）
 - [ ] `kill -9` で落とした後も普通に起動できる（ロックが残らない）
-- [ ] 起動中に `md-memo ~/Documents/メモ 1.md`（空白・日本語入り）→ 既存ウィンドウの新しいタブで開く
+- [ ] 起動中に `syki ~/Documents/メモ 1.md`（空白・日本語入り）→ 既存ウィンドウの新しいタブで開く
 - [ ] `cd /tmp && md-memo ../Users/<you>/note.md`（相対パス）でも開く
 - [ ] syki::sok を終了した状態で、Finder の `.md` を右クリック →「このアプリケーションで開く ▸ syki::sok」→ 起動してそのファイルが最初のタブに出る（「"Markdown Document" 形式のファイルを開けません」が出ない）。同じファイルのタブが 2 つにならない
 - [ ] 終了した状態で `.md` をダブルクリック（syki::sok が既定のアプリの場合）/ Dock アイコンにドロップ → 同上

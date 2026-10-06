@@ -1,6 +1,6 @@
-// ==============================================================================
+﻿// ==============================================================================
 // test_programmable_control.uws
-// E2E Verification Script for Programmable Control & Unix Stream Hub in MD-Memo
+// E2E Verification Script for Programmable Control & Unix Stream Hub in syki::sok
 // ==============================================================================
 
 print "================================================================"

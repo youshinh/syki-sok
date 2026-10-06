@@ -35,7 +35,7 @@ func TestMain(m *testing.M) {
 	// lookPathCached back and use a fake PATH.
 	agentCommandFound = func(string) bool { return true }
 
-	tempRoot, err := os.MkdirTemp("", "md-memo-test-home-")
+	tempRoot, err := os.MkdirTemp("", "syki-sok-test-home-")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "failed to create temp home for tests: %v\n", err)
 		os.Exit(1)

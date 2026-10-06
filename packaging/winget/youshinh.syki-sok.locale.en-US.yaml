@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.defaultLocale.1.12.0.schema.json
 
-PackageIdentifier: youshinh.md-memo
-PackageVersion: 1.12.0
+PackageIdentifier: youshinh.syki-sok
+PackageVersion: 2.0.14
 PackageLocale: en-US
 Publisher: youshinh
 PublisherUrl: https://github.com/youshinh
@@ -17,7 +17,7 @@ Description: |-
   syki::sok is a local-first Markdown scratchpad for instant capture. It sits in the system tray, wakes with a global hotkey and keeps your notes as plain Markdown files in a folder you choose.
   Optional AI features use the models and API keys you configure (for example Ollama, LM Studio, Gemini or any OpenAI-compatible endpoint): ghost-text completion, Ask AI at the caret, OCR for pasted screenshots, voice input, Quick Actions and a meaning search over your notes. With nothing configured, your notes are never sent to any external service.
   You can also run shell commands over your text, hand jobs to agent CLIs, print the preview as PDF, and drive the running app from scripts through syki-cli and a local JSON-RPC port. syki::sok needs the Microsoft Edge WebView2 Runtime, which is installed as a dependency when it is missing.
-Moniker: md-memo
+Moniker: syki
 Tags:
 - markdown
 - editor
@@ -29,7 +29,7 @@ Tags:
 - llm
 - ollama
 - gemini
-ReleaseNotesUrl: https://github.com/youshinh/syki-sok/releases/tag/v1.12.0
+ReleaseNotesUrl: https://github.com/youshinh/syki-sok/releases/tag/v2.0.14
 Documentations:
 - DocumentLabel: Manual
   DocumentUrl: https://youshinh.github.io/syki-sok/manual.html

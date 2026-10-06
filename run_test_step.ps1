@@ -1,16 +1,16 @@
-# Comprehensive CLI & IPC Integration Test
+﻿# Comprehensive CLI & IPC Integration Test
 $ErrorActionPreference = "Stop"
 
 Write-Host "==========================================" -ForegroundColor Cyan
-Write-Host "Starting md-memo CLI & IPC E2E Test Suite" -ForegroundColor Cyan
+Write-Host "Starting syki CLI & IPC E2E Test Suite" -ForegroundColor Cyan
 Write-Host "==========================================" -ForegroundColor Cyan
 
 # Ensure clean state
-Stop-Process -Name md-memo -Force -ErrorAction SilentlyContinue
+Stop-Process -Name syki -Force -ErrorAction SilentlyContinue
 Start-Sleep -Milliseconds 500
 
 # 1. Launch GUI instance
-Write-Host "`n[Step 1] Launching md-memo GUI instance..." -ForegroundColor Yellow
+Write-Host "`n[Step 1] Launching syki GUI instance..." -ForegroundColor Yellow
 $proc = Start-Process .\syki.exe -PassThru
 Start-Sleep -Seconds 2
 

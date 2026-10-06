@@ -1,13 +1,13 @@
-// ==============================================================================
-// MD-Memo x Jev Comprehensive UWSCR E2E Test Suite
+﻿// ==============================================================================
+// syki::sok x Jev Comprehensive UWSCR E2E Test Suite
 // Automated GUI Acceptance & Regression Testing
 // ==============================================================================
 
 print "======================================================="
-print " Starting MD-Memo Full GUI Automated Test Suite"
+print " Starting syki::sok Full GUI Automated Test Suite"
 print "======================================================="
 
-exe_path = "c:\Users\yoush\Documents\md-memo\md-memo.exe"
+exe_path = "c:\Users\yoush\Documents\syki-sok\syki.exe"
 print "[SETUP] Launching binary: " + exe_path
 
 // Launch process
@@ -15,10 +15,10 @@ pid = exec(exe_path)
 print "[SETUP] Process spawned with PID: " + pid
 
 sleep(2.5) // Allow Edge WebView2 runtime initialization
-id = getid("MD-Memo", EMPTY, 5)
+id = getid("syki::sok", EMPTY, 5)
 
 if id < 0 then
-    print "[FATAL] Window 'MD-Memo' not found within timeout!"
+    print "[FATAL] Window 'syki::sok' not found within timeout!"
     exitexit 1
 endif
 
@@ -196,7 +196,7 @@ ctrlwin(id, CLOSE)
 sleep(1.2)
 
 // Check if window is closed or hidden to system tray
-check_id = getid("MD-Memo", EMPTY, 0.5)
+check_id = getid("syki::sok", EMPTY, 0.5)
 if check_id < 0 then
     record_result("TC-10: Window Clean Exit", TRUE)
 else

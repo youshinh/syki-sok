@@ -68,29 +68,29 @@ jobs:
 
       - name: Verify app bundle
         run: |
-          test -x "MD-Memo.app/Contents/MacOS/MD-Memo"
-          plutil -lint "MD-Memo.app/Contents/Info.plist"
+          test -x "syki-sok.app/Contents/MacOS/syki-sok"
+          plutil -lint "syki-sok.app/Contents/Info.plist"
           echo "Architectures in binary:"
-          lipo -archs "MD-Memo.app/Contents/MacOS/MD-Memo"
+          lipo -archs "syki-sok.app/Contents/MacOS/syki-sok"
 
       - name: Verify code signature
         # Ad-hoc signing is best-effort (see build_mac.sh); never block the
         # release on a signature-verification quirk in the runner's toolchain.
-        run: codesign --verify --deep --strict "MD-Memo.app"
+        run: codesign --verify --deep --strict "syki-sok.app"
         continue-on-error: true
 
       - name: Package macOS release archive
         run: |
-          ditto -c -k --sequesterRsrc --keepParent "MD-Memo.app" md-memo-macos.zip
-          zip -j md-memo-macos.zip README.md README_JA.md LICENSE
-          # The agent skill, next to the app (see the Windows job for why). No -j: keep skills/md-memo/... paths.
+          ditto -c -k --sequesterRsrc --keepParent "syki-sok.app" syki-macos.zip
+          zip -j syki-macos.zip README.md README_JA.md LICENSE
+          # The agent skill, next to the app (see the Windows job for why). No -j: keep skills/syki/... paths.
           # (-x: not the Go files next to it that embed it into the program.)
-          zip -r md-memo-macos.zip skills -x "skills/*.go"
+          zip -r syki-macos.zip skills -x "skills/*.go"
 
       - name: Upload macOS Release Asset
         uses: softprops/action-gh-release@v2
         with:
-          files: md-memo-macos.zip
+          files: syki-macos.zip
           fail_on_unmatched_files: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
