@@ -79,7 +79,7 @@ jobs:
           # The point of the binary, checked where it matters: the version, and the exit codes of jev verify
           # (0 safe, 1 blocked) must reach a PowerShell caller.
           $reported = (& ./syki-cli.exe --version) -join ''
-          if ($reported -ne "md-memo $version") { throw "syki-cli.exe reports '$reported', expected 'md-memo $version'" }
+          if ($reported -ne "syki $version") { throw "syki-cli.exe reports '$reported', expected 'syki $version'" }
           & ./syki-cli.exe jev verify --text "ls -la" | Out-Null
           if ($LASTEXITCODE -ne 0) { throw "jev verify (safe command) exited with $LASTEXITCODE, expected 0" }
           & ./syki-cli.exe jev verify --json "rm temp.txt" | Out-Null
@@ -145,7 +145,7 @@ jobs:
         run: |
           out="$(syki-sok.app/Contents/MacOS/syki-sok --version)"
           echo "$out"
-          echo "$out" | grep -q '^md-memo [0-9]'
+          echo "$out" | grep -q '^syki [0-9]'
           syki-sok.app/Contents/MacOS/syki-sok --help | head -5
 
       - name: Set up Node.js

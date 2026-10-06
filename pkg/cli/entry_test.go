@@ -21,7 +21,7 @@ func runMain(t *testing.T, stdin string, args ...string) (stdout, stderr string,
 
 func TestMainVersionAndHelpAreAnsweredWithoutAnythingElse(t *testing.T) {
 	stdout, stderr, code, handled := runMain(t, "", "--version")
-	if !handled || code != 0 || stdout != "md-memo 9.9.9\n" || stderr != "" {
+	if !handled || code != 0 || stdout != "syki 9.9.9\n" || stderr != "" {
 		t.Errorf("--version: handled=%v code=%d stdout=%q stderr=%q", handled, code, stdout, stderr)
 	}
 

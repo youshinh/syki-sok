@@ -330,7 +330,7 @@ func (r *HeadlessRunner) runAgent(args []string) (int, error) {
 }
 
 func (r *HeadlessRunner) printHelp() {
-	fmt.Fprintln(r.stdout, "md-memo --headless <command> [options]")
+	fmt.Fprintln(r.stdout, "syki --headless <command> [options]")
 	fmt.Fprintln(r.stdout, "")
 	fmt.Fprintln(r.stdout, "Commands (they run on their own; syki::sok need not be running):")
 	fmt.Fprintln(r.stdout, "  jev verify [--mode m] <cmd>  Validate command safety with Pure Go AST (m: strict|reviewed|unattended)")
@@ -354,5 +354,5 @@ func (r *HeadlessRunner) printHelp() {
 	fmt.Fprintln(r.stdout, "  --quiet                      Suppress non-error messages (jev)")
 	fmt.Fprintln(r.stdout, "")
 	fmt.Fprintln(r.stdout, "The buffer, tab and ui commands need the running app and are not part of --headless.")
-	fmt.Fprintln(r.stdout, "All commands: md-memo --help    One command: md-memo help <command>")
+	fmt.Fprintln(r.stdout, "All commands: syki --help    One command: syki help <command>")
 }

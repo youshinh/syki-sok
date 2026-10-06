@@ -13,7 +13,7 @@ func TestHelpRequestTopLevel(t *testing.T) {
 			t.Errorf("%v: expected a help request", args)
 			continue
 		}
-		if !strings.HasPrefix(text, "md-memo 9.9.9 ") {
+		if !strings.HasPrefix(text, "syki 9.9.9 ") {
 			t.Errorf("%v: usage should start with the version, got %q", args, firstLine(text))
 		}
 		// Every command word the dispatcher knows must be documented in the top-level help.
@@ -31,7 +31,7 @@ func TestHelpRequestTopLevel(t *testing.T) {
 func TestHelpRequestVersion(t *testing.T) {
 	for _, a := range []string{"--version", "-version", "-v", "-V"} {
 		text, ok := HelpRequest([]string{a}, "1.2.3")
-		if !ok || text != "md-memo 1.2.3\n" {
+		if !ok || text != "syki 1.2.3\n" {
 			t.Errorf("%s: got %q, %v", a, text, ok)
 		}
 	}
@@ -169,7 +169,7 @@ func TestSubcommandUsageCoversAllSubcommands(t *testing.T) {
 			t.Errorf("%s should be a subcommand", name)
 		}
 		text := SubcommandUsage(name)
-		if !strings.HasPrefix(text, "md-memo "+name) {
+		if !strings.HasPrefix(text, "syki "+name) {
 			t.Errorf("%s usage should start with the command line, got %q", name, firstLine(text))
 		}
 		// ... and the top-level help must show every one of them.
@@ -197,7 +197,7 @@ func TestRegistryKinds(t *testing.T) {
 		t.Error("unknown words are not commands")
 	}
 	msg := NotRunningMessage()
-	for _, want := range []string{"md-memo is not running", "buffer, tab and ui need the running app", "(jev, agent, ocr, info, scrap, config and lessons do not)"} {
+	for _, want := range []string{"syki is not running", "buffer, tab and ui need the running app", "(jev, agent, ocr, info, scrap, config and lessons do not)"} {
 		if !strings.Contains(msg, want) {
 			t.Errorf("NotRunningMessage = %q, want it to contain %q", msg, want)
 		}
@@ -226,7 +226,7 @@ func TestHeadlessHelpListsEveryHeadlessCommand(t *testing.T) {
 	if err != nil || code != 0 {
 		t.Fatalf("--headless --help: code %d, err %v", code, err)
 	}
-	for _, want := range []string{"jev verify", "jev score", "jev predict", "jev dispatch", "agent prune", "ocr", "info", "scrap path", "scrap list", "scrap search", "config get", "md-memo --help"} {
+	for _, want := range []string{"jev verify", "jev score", "jev predict", "jev dispatch", "agent prune", "ocr", "info", "scrap path", "scrap list", "scrap search", "config get", "syki --help"} {
 		if !strings.Contains(stdout.String(), want) {
 			t.Errorf("headless help does not mention %q:\n%s", want, stdout.String())
 		}

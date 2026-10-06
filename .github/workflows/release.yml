@@ -30,7 +30,7 @@ jobs:
           $ldflags = "-s -w -X main.version=$version"
           go build "-ldflags=$ldflags" -trimpath -o syki-cli.exe ./cmd/syki
           $reported = (& ./syki-cli.exe --version) -join ''
-          if ($reported -ne "md-memo $version") { throw "syki-cli.exe reports '$reported', expected 'md-memo $version'" }
+          if ($reported -ne "syki $version") { throw "syki-cli.exe reports '$reported', expected 'syki $version'" }
           # skills/syki is the agent skill: a release download is not a clone of the repository,
           # so without it the docs' "read skills/syki/SKILL.md" would point at nothing on an installed PC.
           # Only that folder goes into the zip, not the Go files next to it that embed it into the program.

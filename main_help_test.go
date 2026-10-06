@@ -30,11 +30,11 @@ func TestHelpListsEveryRPCMethod(t *testing.T) {
 
 func TestHelpShowsTheRealVersion(t *testing.T) {
 	text, ok := cli.HelpRequest([]string{"--version"}, AppVersion)
-	if !ok || text != "md-memo "+AppVersion+"\n" {
+	if !ok || text != "syki "+AppVersion+"\n" {
 		t.Errorf("--version printed %q (ok=%v)", text, ok)
 	}
 	usage := cli.TopLevelUsage(AppVersion)
-	if !strings.HasPrefix(usage, "md-memo "+AppVersion+" ") {
+	if !strings.HasPrefix(usage, "syki "+AppVersion+" ") {
 		t.Errorf("usage should start with the app version, got %q", usage[:20])
 	}
 }

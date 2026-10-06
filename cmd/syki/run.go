@@ -15,7 +15,7 @@ import (
 
 // notRunning is the whole error when a request has nobody to go to. The console binary never
 // launches the app: starting it is syki.exe's job.
-const notRunning = "md-memo is not running. Start syki.exe first."
+const notRunning = "syki is not running. Start syki.exe first."
 
 // maxPipeBytes is the limit syki.exe puts on text piped into the scrap.
 const maxPipeBytes = 10 * 1024 * 1024

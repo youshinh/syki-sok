@@ -116,7 +116,7 @@ func (r failingReader) Read([]byte) (int, error) {
 
 func str(s string) *string { return &s }
 
-const notRunningError = "Error: md-memo is not running. Start syki.exe first.\n"
+const notRunningError = "Error: syki is not running. Start syki.exe first.\n"
 
 func TestNoArgumentsActivateTheRunningApp(t *testing.T) {
 	app := startFakeApp(t)
@@ -300,7 +300,7 @@ func TestCommandsRunThroughTheSharedEntryPoint(t *testing.T) {
 	app := startFakeApp(t)
 
 	res := runCLI(t, nil, "--version")
-	if res.code != 0 || res.stdout != "md-memo 1.2.3\n" || res.stderr != "" {
+	if res.code != 0 || res.stdout != "syki 1.2.3\n" || res.stderr != "" {
 		t.Errorf("--version: %+v", res)
 	}
 	res = runCLI(t, nil, "--help")

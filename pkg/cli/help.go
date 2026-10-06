@@ -107,27 +107,27 @@ func HelpRequest(args []string, version string) (string, bool) {
 	return "", false
 }
 
-// VersionLine is what `md-memo --version` prints.
+// VersionLine is what `syki --version` prints.
 func VersionLine(version string) string {
-	return "md-memo " + version + "\n"
+	return "syki " + version + "\n"
 }
 
-// TopLevelUsage is the text of `md-memo --help`. Keep it in step with the real flags and
+// TopLevelUsage is the text of `syki --help`. Keep it in step with the real flags and
 // behaviour in client.go, headless.go and ocr.go; help_test.go pins the command names.
 func TopLevelUsage(version string) string {
-	return `md-memo ` + version + ` - Markdown scratchpad (GUI app with a scriptable command line)
+	return `syki ` + version + ` - Markdown scratchpad (GUI app with a scriptable command line)
 
 Usage:
-  md-memo                              Start syki::sok, or bring the running window to the front
-  md-memo <file.md>                    Open a file in a new tab
+  syki                              Start syki::sok, or bring the running window to the front
+  syki <file.md>                    Open a file in a new tab
   <command> | syki [title words]    Append the piped text (max 10 MB) to today's scrap
-  md-memo <command> [options]          Run one of the commands below
-  md-memo help [command]               Show this help, or the help of one command
-  md-memo --help | -h                  Same as help
-  md-memo --version | -v               Print the version
+  syki <command> [options]          Run one of the commands below
+  syki help [command]               Show this help, or the help of one command
+  syki --help | -h                  Same as help
+  syki --version | -v               Print the version
 
 Commands that read and edit the OPEN NOTE (they talk to the running app; start syki::sok first,
-otherwise: "Error: md-memo is not running", exit 1):
+otherwise: "Error: syki is not running", exit 1):
   buffer get [--selection] [--tab <id>]      Print the note (or only the selected text)
   buffer get --out <file> [--bom] [--selection] [--tab <id>]
                                              Write the note to a file as UTF-8 and print only
@@ -198,43 +198,43 @@ Commands that run on their own (syki::sok need not be running):
 Output and exit codes:
   Text at a terminal; JSON when stdout is piped or redirected. --json or --text overrides.
   Exit code 0 = success, 1 = error (message on stderr as "Error: ..."). jev verify: see above.
-  buffer flags come BEFORE the text: md-memo buffer append --tab 2 "- [ ] task".
+  buffer flags come BEFORE the text: syki buffer append --tab 2 "- [ ] task".
   (info, scrap, config, lessons, buffer save and tab new / close take their flags before or after their words.)
-  Put -- before text that starts with a dash, e.g. md-memo jev verify -- -rf.
+  Put -- before text that starts with a dash, e.g. syki jev verify -- -rf.
   Text may also come from stdin: echo "more" | syki buffer append
   Windows scripts, agents and CI: syki.exe is a windowed program, so PowerShell and cmd do not wait
   for it and may lose its exit code and output. syki-cli.exe (next to it in the zip) runs every
   command above as a console program and never starts the app; use it there.
 
 Safe editing of the open note (optimistic lock):
-  md-memo buffer get --json                              keep "hash" from the result
-  md-memo buffer set --expected-hash <hash> "<new text>" refused with "conflict" if the note changed meanwhile
+  syki buffer get --json                              keep "hash" from the result
+  syki buffer set --expected-hash <hash> "<new text>" refused with "conflict" if the note changed meanwhile
   On a conflict, read again and redo the edit. Never drop --expected-hash to make it work.
 
 ` + pipeHelp + `
 ` + rpcHelp + `
-Help for one command: md-memo help buffer   (also: buffer --help, tab -h, ...)
-Help for the other surfaces: md-memo help pipe | syki help rpc
+Help for one command: syki help buffer   (also: buffer --help, tab -h, ...)
+Help for the other surfaces: syki help pipe | syki help rpc
 Manual: https://youshinh.github.io/syki-sok/manual.html#headless-cli
-Agent skill: md-memo agent install-skill (built in), or skills/syki/SKILL.md (repository, and the release zip from v1.7.1)
+Agent skill: syki agent install-skill (built in), or skills/syki/SKILL.md (repository, and the release zip from v1.7.1)
 `
 }
 
 // pipeHelp is the "text in through a pipe" surface. It is part of the top-level usage and also
-// what `md-memo help pipe` prints.
+// what `syki help pipe` prints.
 const pipeHelp = `Piping text in (appends to today's scrap; the note you have open is not touched):
   <command> | syki [title words]    Max 10 MB. The title words become the heading of the entry.
   The window is brought to the front. If syki::sok is NOT running, this STARTS it (a window
   opens) and then appends: an agent should do that only when the user asked. To edit the open
   note instead, use buffer (above).
-  md-memo <file.md>                    Opens the file in a new tab (running app: no second window).
+  syki <file.md>                    Opens the file in a new tab (running app: no second window).
   From code, with the session token, and without starting the app or raising its window: the
   JSON-RPC method scrap.append {content | content_base64, title?} does the same append (see rpc).
 `
 
 // rpcHelp is the JSON-RPC surface the buffer/tab/ui commands are built on. It is part of the
-// top-level usage and also what `md-memo help rpc` prints. Keep it in step with
-// pkg/ipc and app_rpc.go (skills/md-memo/references/interfaces.md section 2 has the details).
+// top-level usage and also what `syki help rpc` prints. Keep it in step with
+// pkg/ipc and app_rpc.go (skills/syki/references/interfaces.md section 2 has the details).
 const rpcHelp = `JSON-RPC 2.0 over local TCP (what buffer/tab/ui use; call it directly from code):
   Find it:   <config>/syki-sok/ipc-session.json = {"pid", "port", "token", "started_at"}
              Windows: %APPDATA%\syki-sok\   macOS: ~/Library/Application Support/syki-sok/
@@ -246,7 +246,7 @@ const rpcHelp = `JSON-RPC 2.0 over local TCP (what buffer/tab/ui use; call it di
   Token:     "auth" (the "token" of the session file) is REQUIRED for every method except the
              reads buffer.get, buffer.get_selection and tab.list, which accept it or none and
              refuse only a wrong one. Without it: -32000. (Older builds ran writes without a token.)
-             The one-line legacy messages of "cmd | syki" and "md-memo <file>" are a separate
+             The one-line legacy messages of "cmd | syki" and "syki <file>" are a separate
              channel and are not authenticated.
   Methods:   buffer.get {tab_id?}                 buffer.get_selection {tab_id?}
              buffer.set {content, tab_id?, expected_hash?, expected_generation?}
@@ -320,7 +320,7 @@ func SubcommandUsage(name string) string {
 	case "rpc":
 		return rpcHelp
 	case "buffer":
-		return `md-memo buffer <get|set|append|replace|replace-selection|save> [options] [text]
+		return `syki buffer <get|set|append|replace|replace-selection|save> [options] [text]
 
 Reads and edits the note that is open in the RUNNING app (start syki::sok first).
 
@@ -371,7 +371,7 @@ is read if it is piped. Flags go BEFORE the text; put -- first for text that sta
 Output: text at a terminal, JSON when piped; --json / --text override. Exit 0 ok, 1 error.
 `
 	case "tab":
-		return `md-memo tab <list|switch|new|close|pdf> [options]
+		return `syki tab <list|switch|new|close|pdf> [options]
 
 Works on the RUNNING app (start syki::sok first).
 
@@ -414,7 +414,7 @@ Works on the RUNNING app (start syki::sok first).
 Output: text at a terminal, JSON when piped. Exit 0 ok, 1 error (or a tab that stays open).
 `
 	case "ui":
-		return `md-memo ui <activate|toggle-split|eval> [javascript]
+		return `syki ui <activate|toggle-split|eval> [javascript]
 
 Works on the RUNNING app (start syki::sok first).
 
@@ -426,7 +426,7 @@ Works on the RUNNING app (start syki::sok first).
 Exit 0 ok, 1 error.
 `
 	case "jev":
-		return `md-memo jev <verify|score|predict|dispatch> [options] <text>
+		return `syki jev <verify|score|predict|dispatch> [options] <text>
 
 Runs on its own (syki::sok need not be running). Flags: --json, --text, --quiet.
 
@@ -446,7 +446,7 @@ Flags go BEFORE the command text; put -- first for a command that starts with a 
 Output: text at a terminal, JSON when piped; --json / --text override.
 `
 	case "agent":
-		return `md-memo agent <prune|install-skill> [options]
+		return `syki agent <prune|install-skill> [options]
 
 Runs on its own (syki::sok need not be running).
 
@@ -481,7 +481,7 @@ Runs on its own (syki::sok need not be running).
       Exit 0 ok, 1 error.
 `
 	case "ocr":
-		return `md-memo ocr [--json] <imagePath>
+		return `syki ocr [--json] <imagePath>
 
 Runs on its own (syki::sok need not be running; the Windows Send To menu uses it).
 
@@ -492,14 +492,14 @@ Runs on its own (syki::sok need not be running; the Windows Send To menu uses it
   Exit 1 with "Error: ..." on stderr when the file cannot be read or the OCR fails.
 `
 	case "info":
-		return `md-memo info [--json|--text]
+		return `syki info [--json|--text]
 
 Runs on its own (syki::sok need not be running). Reads config.json; creates and changes nothing.
 Says where syki::sok keeps things and how it is set up, so nobody has to guess a path.
 
 JSON (piped, or --json), one object:
   version              the app version
-  config_dir           the md-memo settings folder
+  config_dir           the syki-sok settings folder
   config_file          its config.json (may not exist yet: defaults apply)
   scrap_dir            the folder of the daily scraps (config: scraps.scrapDir)
   today_scrap_path     today's scrap file, YYYY-MM-DD.md inside scrap_dir (never created here)
@@ -513,10 +513,10 @@ No secret is printed: no API key, token, session token or remote URL.
 Exit 0 ok, 1 error.
 `
 	case "scrap":
-		return `md-memo scrap <path|list|search|tags|tag|index> [options]
+		return `syki scrap <path|list|search|tags|tag|index> [options]
 
 Runs on its own (syki::sok need not be running). The scrap folder comes from config.json
-(scraps.scrapDir; default ~/Documents/md-memo/scraps). path, list, search and tags create and change
+(scraps.scrapDir; default ~/Documents/syki-sok/scraps). path, list, search and tags create and change
 nothing; index writes only the semantic index, which is kept outside the scrap folder; tag writes a
 note only when it is given --write.
 Dates are YYYY-MM-DD ("Error: invalid date ..." otherwise). Flags may come before or after the
@@ -524,7 +524,7 @@ words; put -- before a search text that starts with a dash.
 
   scrap path [--date YYYY-MM-DD] [--json]
       The path of that day's scrap file (default: today), whether or not it exists yet. It prints
-      the bare path even when piped, so $(md-memo scrap path) works; --json gives {date, path, exists}.
+      the bare path even when piped, so $(syki scrap path) works; --json gives {date, path, exists}.
   scrap list [--from YYYY-MM-DD] [--to YYYY-MM-DD] [--lines] [--json|--text]
       The daily files (named YYYY-MM-DD.md) directly inside the folder, newest first; other files
       are not listed. JSON: an array of {date, path, size, modified, lines?}; modified is RFC 3339,
@@ -557,7 +557,7 @@ words; put -- before a search text that starts with a dash.
       file is a full path, line is 1-based, date is set when the file name starts with a day, truncated
       says there were more matches than --limit. heading is the nearest Markdown heading at or
       above the line and heading_line its line number (headings inside code fences do not
-      count); text piped in with md-memo is filed under "## [HH:MM:SS] title". Read the
+      count); text piped in with syki is filed under "## [HH:MM:SS] title". Read the
       surrounding lines with the file path and the line numbers.
       With --semantic (experimental): finds notes close in MEANING to the text, best first, one hit
       per note, from the semantic index (see scrap index); "the idea about sustainable building
@@ -646,7 +646,7 @@ Output: text at a terminal, JSON when piped; --json / --text override. Exit 0 ok
 not an error), 1 error.
 `
 	case "config":
-		return `md-memo config get [<key.path>] [--json|--text]
+		return `syki config get [<key.path>] [--json|--text]
 
 Runs on its own (syki::sok need not be running). Shows config.json with every secret hidden, so it
 is the safe way to look at the settings, also for an AI agent (never read config.json itself: it
@@ -666,11 +666,11 @@ bare with --text, which is what a script wants). Exit 0 ok, 1 error (also when c
 not valid JSON).
 `
 	case "lessons":
-		return `md-memo lessons list [--agent <key>] [--json|--text]
+		return `syki lessons list [--agent <key>] [--json|--text]
 
 Runs on its own (syki::sok need not be running), reads only, creates nothing. Shows the lessons kept
 for agents: short rules a person approved after an agent's run failed. They live in one Markdown
-file per agent, <settings folder>/lessons/<agent key>.md (md-memo info shows the settings folder),
+file per agent, <settings folder>/lessons/<agent key>.md (syki info shows the settings folder),
 and are put in front of that agent's instruction when it runs from a {{ }} task. Delete a line or
 the file to take a rule away; "lessons: false" on the agent in agents.yaml keeps them from it.
 

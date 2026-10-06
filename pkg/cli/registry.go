@@ -76,7 +76,7 @@ func CommandNames(standalone bool) []string {
 // NotRunningMessage is the text after "Error: " when a command that needs the app finds none.
 // The words come from the registry, so a new command shows up in it by itself.
 func NotRunningMessage() string {
-	return "md-memo is not running. Start syki::sok first: " + joinWords(CommandNames(false)) +
+	return "syki is not running. Start syki::sok first: " + joinWords(CommandNames(false)) +
 		" need the running app (" + joinWords(CommandNames(true)) + " do not)."
 }
 
