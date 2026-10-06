@@ -89,6 +89,8 @@ func ListAvailableSkills(rootDir string) []SkillInfo {
 			filepath.Join(home, ".gemini", "config", "skills"),
 			filepath.Join(home, ".gemini", "skills"),
 			filepath.Join(home, ".claude", "skills"),
+			filepath.Join(home, ".syki", "skills"),
+			filepath.Join(home, ".syki-sok", "skills"),
 			filepath.Join(home, ".md-memo", "skills"),
 			filepath.Join(home, "skills"),
 		)
@@ -194,8 +196,10 @@ func FindSkillInstruction(rootDir, skillName string) (*SkillInfo, error) {
 			filepath.Join(home, ".gemini", "config", "skills", cleanName, "SKILL.md"),
 			filepath.Join(home, ".gemini", "skills", cleanName, "SKILL.md"),
 			filepath.Join(home, ".claude", "skills", cleanName, "SKILL.md"),
-			filepath.Join(home, "skills", cleanName, "SKILL.md"),
+			filepath.Join(home, ".syki", "skills", cleanName, "SKILL.md"),
+			filepath.Join(home, ".syki-sok", "skills", cleanName, "SKILL.md"),
 			filepath.Join(home, ".md-memo", "skills", cleanName, "SKILL.md"),
+			filepath.Join(home, "skills", cleanName, "SKILL.md"),
 		)
 	}
 

@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -12,7 +12,7 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
       
-      /* Dark Theme (MD-memo Calm Dark Olive) */
+      /* Dark Theme (syki::sok Calm Dark Olive) */
       --bg-canvas: #111413;
       --bg-surface: #181c1a;
       --bg-surface-elevated: #202623;
@@ -964,7 +964,7 @@
           <li><a href="#mobile-drop" class="sidebar-link">Mobile Drop｜スマホから送る (Ctrl+Shift+U)</a></li>
           <li><a href="#discord-bridge" class="sidebar-link">Discord連携｜スマホから送る（閉じていてもOK）</a></li>
           <li><a href="#command-palette" class="sidebar-link">コマンドパレット (Ctrl+Shift+P)</a></li>
-          <li><a href="#about-md-memo" class="sidebar-link">syki::sok について・更新・プライバシー</a></li>
+          <li><a href="#about-syki-sok" class="sidebar-link">syki::sok について・更新・プライバシー</a></li>
         </ul>
       </div>
 
@@ -1241,7 +1241,7 @@
             <li><strong>zip で入れる:</strong> <a href="https://github.com/youshinh/syki-sok/releases" target="_blank" style="color: var(--accent);">Releases ページ</a> から zip をダウンロードして、任意のフォルダに展開します。</li>
             <li><strong>ユニバーサルバイナリ:</strong> 次回リリースからmacOSビルドはユニバーサルバイナリになり、Apple SiliconとIntel Macの両方に対応します。</li>
             <li><strong>Macがなくても試せます:</strong> このリポジトリへのプッシュのたびに、GitHub上のmacOSランナーが <code>syki-sok.app</code> をビルドします。<strong>Actions</strong> タブを開く（または <strong>CI</strong> ワークフローを <strong>Run workflow</strong> で手動実行する）→ 最新の <strong>CI</strong> 実行を開く → Artifactsから <code>syki-macos-&lt;commit-sha&gt;</code> をダウンロードします。これもアドホック署名なので、上記と同じ初回起動の操作が必要です。</li>
-            <li><strong>アップデートの確認:</strong> 起動してしばらくすると、GitHub に新しいリリースがないかを確認します（<code>api.github.com</code> への1回のリクエストのみで、ノートの内容は送信されません）。新しいバージョンがあると、ヘルプ（<strong>?</strong>）ボタンに小さなバッジが表示され、ヘルプメニューにバージョンとリリースノートへのリンクが出ます。オフにもできます（設定 → 一般 →「起動時に更新を確認する」）。詳しくは<a href="#about-md-memo" style="color: var(--accent);">syki::sok について・更新の確認・文章の送り先</a>を参照してください。</li>
+            <li><strong>アップデートの確認:</strong> 起動してしばらくすると、GitHub に新しいリリースがないかを確認します（<code>api.github.com</code> への1回のリクエストのみで、ノートの内容は送信されません）。新しいバージョンがあると、ヘルプ（<strong>?</strong>）ボタンに小さなバッジが表示され、ヘルプメニューにバージョンとリリースノートへのリンクが出ます。オフにもできます（設定 → 一般 →「起動時に更新を確認する」）。詳しくは<a href="#about-syki-sok" style="color: var(--accent);">syki::sok について・更新の確認・文章の送り先</a>を参照してください。</li>
           </ul>
         </div></details>
       </section>
@@ -1475,7 +1475,7 @@
           <li>「箇条書きの議事録に要約して」</li>
         </ul>
         <p>ツールバーのAIボタン、右クリックの「AIに質問...」、コマンドパレットの「AIに質問」でも、同じバーが開きます。</p>
-        <p>入力欄の下の行には、文章の<strong>送り先</strong>も出ます（たとえば<strong>ローカルの Ollama（qwen2.5:latest）</strong>や<strong>gemini-flash-lite-latest（クラウド）</strong>）。ポインターを重ねるとホスト名が見えます。クラウドのホストへの最初の送信では、送る前にバーで一度だけ確認します（<a href="#about-md-memo" style="color: var(--accent);">文章の送り先</a>を参照）。ローカルのモデルには尋ねません。</p>
+        <p>入力欄の下の行には、文章の<strong>送り先</strong>も出ます（たとえば<strong>ローカルの Ollama（qwen2.5:latest）</strong>や<strong>gemini-flash-lite-latest（クラウド）</strong>）。ポインターを重ねるとホスト名が見えます。クラウドのホストへの最初の送信では、送る前にバーで一度だけ確認します（<a href="#about-syki-sok" style="color: var(--accent);">文章の送り先</a>を参照）。ローカルのモデルには尋ねません。</p>
         <p>普通の文章の行で <span class="kbd">Ctrl + Enter</span> を押しても、同じバーが開きます。このときヒントは「指示は [[ @llm ... ]] としてメモに残ります」に変わり、書いた指示が対象の下に残って、答えはその下の結果ブロックに入ります。詳しくは <a href="#auto-selector" style="color: var(--accent);">自動セレクター</a> をご覧ください。</p>
 
         <p><strong>よく使う指示はコマンドパレットに</strong>（<span class="kbd">Ctrl + Shift + P</span>）。次の3つを選ぶと、質問バーに定型の指示が入った状態で開きます。</p>
@@ -2444,7 +2444,7 @@
           </p>
           <pre class="code-block"><code>{{ ⚠ エラー: エージェント起動失敗: ... (再試行: Ctrl+Enter) }}</code></pre>
           <ul>
-            <li><strong>作業ディレクトリ:</strong> ノートのある場所から上へたどって見つかった<strong>プロジェクトルート</strong>です。<code>.md-memo/</code>、<code>agents.yaml</code>（<code>agents.yml</code> / <code>agents.json</code> でも可）、<code>AGENTS.md</code>、<code>skills/</code>、<code>.git/</code> のいずれかがあるフォルダで、どれも見つからなければノートのあるフォルダです。</li>
+            <li><strong>作業ディレクトリ:</strong> ノートのある場所から上へたどって見つかった<strong>プロジェクトルート</strong>です。<code>.syki/</code>、<code>.md-memo/</code>、<code>agents.yaml</code>（<code>agents.yml</code> / <code>agents.json</code> でも可）、<code>AGENTS.md</code>、<code>skills/</code>、<code>.git/</code> のいずれかがあるフォルダで、どれも見つからなければノートのあるフォルダです。</li>
             <li><strong>.env:</strong> プロジェクトルートに <code>.env</code> があれば、その内容が環境変数としてエージェントへ渡されます（読み込まれるのはこのファイルだけです）。</li>
           </ul>
         </div></details>
@@ -3080,7 +3080,7 @@ recipes:
           <li><strong>モデルを選んでダウンロードする</strong><span>「モデル」の一覧から選び、「ダウンロード」を押します。最初に選ばれているのは、日本語に特化した kotoba-whisper の量子化版です</span></li>
           <li><strong>準備ができたことを確かめる</strong><span>「準備完了: 音声はこのPC内で文字起こしされます。」と出れば、完了です</span></li>
         </ol>
-        <p>2つの部品には、それぞれ「ダウンロード」「削除」「中止」のボタンと、進み具合の表示があります。ダウンロードを中止しても、次回は続きから再開します。部品は <code>%LOCALAPPDATA%\md-memo\components</code> に保存されます（設定画面の「保存先:」にも、正確な場所が出ます）。</p>
+        <p>2つの部品には、それぞれ「ダウンロード」「削除」「中止」のボタンと、進み具合の表示があります。ダウンロードを中止しても、次回は続きから再開します。部品は <code>%LOCALAPPDATA%\syki-sok\components</code> に保存されます（設定画面の「保存先:」にも、正確な場所が出ます）。</p>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
@@ -3147,7 +3147,7 @@ recipes:
         <p><strong>コマンドラインから、画像を読み取る: <code>syki ocr</code></strong></p>
         <p>「送る」の中身は、<code>syki ocr &lt;画像のパス&gt;</code> というコマンドです。ターミナルから、そのまま使えます（Windows と macOS。macOS ではクラウドのOCRだけです）。画像解析 (OCR) の設定と、スクラップフォルダは、<code>config.json</code> から読みます。ノートに追記されるのは、読み取った文字だけです。画像ファイルは、そのまま残ります。</p>
         <pre class="code-block"><code>syki ocr memo.png
-# OCR text appended to C:\Users\me\Documents\md-memo\scraps\2026-09-24.md
+# OCR text appended to C:\Users\me\Documents\syki-sok\scraps\2026-09-24.md
 # 文字が見つからなかったときは (no text recognized)
 
 # JSON で受け取る（--json は画像のパスの前に付けます）
@@ -3445,7 +3445,7 @@ syki ocr --json memo.png</code></pre>
             <li><strong>表示しないノート:</strong> 最良のものより、一致の度合いがかなり低いノートは、表示から除きます。その件数は、一覧に一言（「一致の度合いがかなり低い n 件は表示していません。」）出ます。</li>
             <li><strong>索引にまだないノート:</strong> 最後に <code>syki scrap index</code> を実行したあとに書いたノートは、もう一度実行するまで、単語で探します（「n 件のノートは索引にまだありません（単語で探しました）。」と出ます）。意味検索そのものが使えないとき（索引が空、別のモデルで作った索引、モデルに届かない）も、単語でノートを選び、その旨が一言出ます。</li>
             <li><strong>このパソコンにないモデル:</strong> クラウドなどのモデルは、そのホストを許可するまで、何も送りません（設定で、モデルの下に出るチェックで許可します。許可は <code>config.json</code> の <code>semantic.privacy.cloudConsent</code> に残ります）。許可するまで、「今すぐ更新」も押せません。</li>
-            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>syki scrap index</code> で作り直せます）。<code>.md-memo-ignore</code> に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
+            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>syki scrap index</code> で作り直せます）。<code>.syki-ignore</code>（または <code>.md-memo-ignore</code>）に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
             <li><strong>オンにしないとき:</strong> ノート検索は、これまでどおりのパネルです。意味検索のために、起動時に何かをすることもありません。</li>
             <li><strong>ほかの使い方:</strong> 同じ検索は、<code>syki scrap search --semantic</code> と、JSON-RPC の <code>scrap.search</code> でも使えます（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。</li>
             <li><strong>macOS:</strong> Windows と同じコードなので、動く見込みですが、実際の Mac では、まだ確かめていません。</li>
@@ -3483,7 +3483,7 @@ syki ocr --json memo.png</code></pre>
         <details class="more"><summary>制限・詳しい仕様（送るもの・送り先・時間）</summary><div class="more-body">
           <ul>
             <li><strong>送る前:</strong> 「実行」を押すまで、何も送りません。準備した抜粋の有効期限は15分です。切れたあとで「実行」を押すと、「準備した抜粋の有効期限が切れました。もう一度準備します...」と出て、準備し直します。</li>
-            <li><strong>送らないもの:</strong> <code>.md-memo-ignore</code> に書いたファイルと、フォルダの規則で除くもの、AI の結果ブロック、読めないファイル、大きさの上限を超える分、以前の深掘りのノート、隠しフォルダは、送りません。抜粋の中のキー、トークン、パスワードは、伏せ字にしてから送ります。</li>
+            <li><strong>送らないもの:</strong> <code>.syki-ignore</code>（または <code>.md-memo-ignore</code>）に書いたファイルと、フォルダの規則で除くもの、AI の結果ブロック、読めないファイル、大きさの上限を超える分、以前の深掘りのノート、隠しフォルダは、送りません。抜粋の中のキー、トークン、パスワードは、伏せ字にしてから送ります。</li>
             <li><strong>絞り込みをしているとき:</strong> ノート検索で<a href="#search-filter" style="color: var(--accent);">絞り込み</a>（期間・タグ）をしているときは、同じ絞り込みで抜粋を集めます。短い抜粋に足す隣のノートの文章も、絞り込みに合うものだけで、絞り込みの外にあるものは、送る対象になりません。</li>
             <li><strong>送り先:</strong> 設定 → AIモデル → テキスト のモデルです（Base URL とモデル名の、両方が必要です）。設定していないと、「AIモデルがまだ設定されていません。」と出て、「設定する」ボタンが付きます。</li>
             <li><strong>このパソコンと、そのほか:</strong> このパソコンの中（<code>127.0.0.1</code>、<code>localhost</code>、<code>::1</code>）にあるモデルだけが、ローカルです。同じネットワーク内のほかのマシンを含め、それ以外のホストへは、初めて送るときに許可を求めます。「許可して実行」を選ぶと、そのホストを記憶します（「AIに質問」のバーと同じ <code>general.cloudConsent</code> の一覧です）。</li>
@@ -3808,7 +3808,7 @@ syki ocr --json memo.png</code></pre>
             <li>「タスクのひな形を挿入」（説明: Ctrl+Enter で実行できる LLM・エージェント・コマンドのひな形）は、ひな形の一覧を、カーソルの位置に開きます。同じ一覧は、<code>{{</code> を打っても出ます。詳しくは <a href="#auto-selector" style="color: var(--accent);">自動セレクター</a> の「ひな形」をご覧ください。</li>
             <li>「タグ」と打つと、「この書き込みにタグを付ける」「ノート全体にタグを付ける」「タグを外す」の 3 つが出ます。どれも、作業しているペインのノートに働き、専用のショートカットはありません。詳しくは<a href="#tag-commands" style="color: var(--accent);">タグを付ける・外す</a>をご覧ください。</li>
             <li>「教訓のファイルを開く」は、エージェントごとに残した<a href="#lessons" style="color: var(--accent);">教訓</a>のファイルを、ふつうのタブとして開きます（ファイルが 1 つならそのまま開き、複数あれば選ぶ一覧が出ます）。</li>
-            <li>「syki::sok について」は、バージョン、ライセンス、フォルダ、リンクを表示します（<a href="#about-md-memo" style="color: var(--accent);">syki::sok について</a>を参照）。「ヘルプとマニュアル（Web）」は、オンラインマニュアルをすぐに開きます。</li>
+            <li>「syki::sok について」は、バージョン、ライセンス、フォルダ、リンクを表示します（<a href="#about-syki-sok" style="color: var(--accent);">syki::sok について</a>を参照）。「ヘルプとマニュアル（Web）」は、オンラインマニュアルをすぐに開きます。</li>
             <li>照合は単純な部分一致です。曖昧検索（ファジー検索）ではありません。</li>
             <li>2つのペインを開いているときは、作業していたペイン（左か右）にコマンドが働きます。パレットを閉じると、フォーカスもそのペインに戻ります。</li>
             <li>設定項目は検索できません。設定画面は <span class="kbd">Ctrl + ,</span>（macOS: <span class="kbd">Cmd + ,</span>）で開きます。</li>
@@ -3817,7 +3817,7 @@ syki ocr --json memo.png</code></pre>
       </section>
 
       <!-- syki::sok について、更新の確認、文章の送り先 -->
-      <section class="doc-section" id="about-md-memo">
+      <section class="doc-section" id="about-syki-sok">
         <h3>syki::sok について・更新の確認・文章の送り先</h3>
         <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> ヘルプ（<strong>?</strong>）ボタンを押すと小さなメニューが開き、オンラインマニュアルと<strong>syki::sok について</strong>を選べます。「syki::sok について」には、バージョン、ライセンス、設定とノートのフォルダ、リンクがあり、不具合の報告用に詳細をコピーするボタンもあります。「AIに質問」と「書き換え」のバーは文章の送り先を表示し、クラウドへ送る前に一度だけ確認します。</div></div>
 
@@ -3974,7 +3974,7 @@ syki ocr --json memo.png</code></pre>
               <tr>
                 <td>起動時に更新を確認する</td>
                 <td>有効 (ON)</td>
-                <td>起動の約 2.5 秒後に、<code>api.github.com</code> へ最新リリースの番号を問い合わせ（ほかには何も送りません）、新しいものがあるとヘルプボタンに点を出します。オフにすると、起動時には何も問い合わせません。「syki::sok について」の「今すぐ確認」は、どちらでも使えます。保存先は <code>general.checkUpdates</code> です。<a href="#about-md-memo" style="color: var(--accent);">syki::sok について</a>を参照。</td>
+                <td>起動の約 2.5 秒後に、<code>api.github.com</code> へ最新リリースの番号を問い合わせ（ほかには何も送りません）、新しいものがあるとヘルプボタンに点を出します。オフにすると、起動時には何も問い合わせません。「syki::sok について」の「今すぐ確認」は、どちらでも使えます。保存先は <code>general.checkUpdates</code> です。<a href="#about-syki-sok" style="color: var(--accent);">syki::sok について</a>を参照。</td>
               </tr>
               <tr>
                 <td>許可したクラウド AI のホスト</td>
@@ -4532,7 +4532,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>「エクスポート...」を押す</strong><span>設定画面の左下にあります。「パッケージを書き出し」が開きます</span></li>
           <li><strong>入れるものを選ぶ</strong><span>設定の区分、エージェント定義、スキルにチェックを付けます。「同期」とスキルは、最初はオフです</span></li>
           <li><strong>「API キーを含める」はオフのまま</strong><span>人に渡すファイルにキーが入らないようにするためです。自分の別の PC に移すときだけオンにします</span></li>
-          <li><strong>「書き出す」を押す</strong><span>保存先を選ぶと <code>md-memo-年月日.mdmemopack</code> が作られ、内訳が表示されます</span></li>
+          <li><strong>「書き出す」を押す</strong><span>保存先を選ぶと <code>syki-sok-年月日.mdmemopack</code> が作られ、内訳が表示されます</span></li>
         </ol>
 
         <p><strong>読み込む</strong>（設定 → インポート...）</p>
@@ -4603,7 +4603,7 @@ syki ocr --json memo.png</code></pre>
             <li>設定の一部は、syki::sok を再起動すると反映されます。読み込み後の画面に案内が出ます。</li>
           </ul>
           <p><strong>「プロジェクト」とは</strong></p>
-          <p>開いているノートのフォルダ（保存前のノートは、開いているフォルダ、それも無ければスクラップフォルダ）から上へたどり、<wbr><code>.md-memo</code>、<code>agents.yaml</code>、<code>AGENTS.md</code>、<code>skills</code>、<wbr><code>.git</code> のどれかがある最初のフォルダです。ホームフォルダはプロジェクトとして扱いません（全体のスキルを持ち出さないためです）。決まらないときは、プロジェクトの項目に「プロジェクトが必要」と出て、選べません。</p>
+          <p>開いているノートのフォルダ（保存前のノートは、開いているフォルダ、それも無ければスクラップフォルダ）から上へたどり、<wbr><code>.syki</code>、<code>.md-memo</code>、<code>agents.yaml</code>、<code>AGENTS.md</code>、<code>skills</code>、<wbr><code>.git</code> のどれかがある最初のフォルダです。ホームフォルダはプロジェクトとして扱いません（全体のスキルを持ち出さないためです）。決まらないときは、プロジェクトの項目に「プロジェクトが必要」と出て、選べません。</p>
           <p><strong>上限と安全</strong></p>
           <ul>
             <li>パッケージは 50 MB・3000 ファイルまで、1 ファイルは 10 MB まで、展開後の合計は 100 MB までです。設定は 2 MB、エージェント定義は 1 ファイル 1 MB までです。上限を超えるスキルは、注意を出して書き出しから外します。</li>
@@ -4646,7 +4646,7 @@ ping 128.1.33.254 | syki</code></pre>
           <li><strong>リクエストを送る</strong><span>改行区切りの JSON-RPC 2.0 リクエストを送信します</span></li>
           <li><strong>トークンを付ける</strong><span>そのファイルの <code>token</code> を、リクエストごとの <code>"auth"</code> フィールドに入れます。<code>buffer.get</code>・<code>buffer.get_selection</code>・<code>tab.list</code> の3つの読み取り<strong>以外のメソッドでは必須</strong>で、付いていない（または違う）場合はエラー <code>-32000</code> で拒否され、何も実行されません。トークンはsyki::sokを起動するたびに変わるので、再起動したらファイルを読み直してください</span></li>
         </ol>
-        <p><strong>トークンを送っていなかったRPCクライアントにとって、互換性のない変更です。</strong>以前の版（1.9.0まで）は、<code>auth</code> を付けなくてもすべてのメソッドが実行されました。今は <code>buffer.set</code>・<code>buffer.append</code>・<code>buffer.replace</code>・<code>buffer.replace_selection</code>・<code>buffer.save</code>・<code>tab.switch</code>・<code>tab.new</code>・<code>tab.close</code>・<code>ui.activate</code>・<code>ui.toggle_split</code>・<code>ui.eval</code>（と、そのほかのすべてのメソッド）で必要です。<code>syki buffer|tab|ui</code> は最初から送っています。ポートに直接書き込んでいたエディタのプラグインやスクリプトは修正が必要です。<code>cmd | syki</code> と <code>md-memo &lt;ファイル&gt;</code> の1行メッセージは別の経路で、これまでどおり認証はありません。</p>
+        <p><strong>トークンを送っていなかったRPCクライアントにとって、互換性のない変更です。</strong>以前の版（1.9.0まで）は、<code>auth</code> を付けなくてもすべてのメソッドが実行されました。今は <code>buffer.set</code>・<code>buffer.append</code>・<code>buffer.replace</code>・<code>buffer.replace_selection</code>・<code>buffer.save</code>・<code>tab.switch</code>・<code>tab.new</code>・<code>tab.close</code>・<code>ui.activate</code>・<code>ui.toggle_split</code>・<code>ui.eval</code>（と、そのほかのすべてのメソッド）で必要です。<code>syki buffer|tab|ui</code> は最初から送っています。ポートに直接書き込んでいたエディタのプラグインやスクリプトは修正が必要です。<code>cmd | syki</code> と <code>syki &lt;ファイル&gt;</code> の1行メッセージは別の経路で、これまでどおり認証はありません。</p>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
@@ -4869,7 +4869,7 @@ ping 128.1.33.254 | syki</code></pre>
             <span>注意: 読み取りとパイプは、ローカルのどのプログラムにも開かれています</span>
           </div>
           <p style="margin-bottom: 0;">
-            トークンは、何かを変更するメソッドを守りますが、サンドボックスではありません。サーバーは <code>127.0.0.1</code> でのみ待ち受けますが、<code>ipc-session.json</code> を読めるあなたのプログラムなら、アプリ内でJavaScriptを実行する <code>ui.eval</code> を含むすべてのメソッドを呼べます。また <code>buffer.get</code>・<code>buffer.get_selection</code>・<code>tab.list</code>（ノートを読み取ります）はトークンなしで使えます。<code>cmd | syki</code> と <code>md-memo &lt;ファイル&gt;</code> の1行メッセージには、トークンはまったくありません。読み取りについては、このポートをローカルのすべてのプログラムに開かれているものとして扱ってください。
+            トークンは、何かを変更するメソッドを守りますが、サンドボックスではありません。サーバーは <code>127.0.0.1</code> でのみ待ち受けますが、<code>ipc-session.json</code> を読めるあなたのプログラムなら、アプリ内でJavaScriptを実行する <code>ui.eval</code> を含むすべてのメソッドを呼べます。また <code>buffer.get</code>・<code>buffer.get_selection</code>・<code>tab.list</code>（ノートを読み取ります）はトークンなしで使えます。<code>cmd | syki</code> と <code>syki &lt;ファイル&gt;</code> の1行メッセージには、トークンはまったくありません。読み取りについては、このポートをローカルのすべてのプログラムに開かれているものとして扱ってください。
           </p>
         </div>
       </section>
@@ -4901,7 +4901,7 @@ ping 128.1.33.254 | syki</code></pre>
         <ul>
           <li>出力をリダイレクトまたはパイプした場合は、<code>--text</code> を付けない限りJSONになります。プレーンテキストで保存するには <code>syki buffer get --text &gt; note.md</code> のようにします。</li>
           <li><code>syki --help</code>（<code>-h</code> でも可）は、全コマンドとそのフラグに加えて、パイプでテキストを渡す方法と、JSON-RPC ポートを直接呼ぶ方法（セッションファイル、メッセージの形式、メソッド、エラーコード）も表示します。<code>syki help buffer</code> は1つのコマンドの使い方を、<code>syki --version</code> は版を表示します。いずれも標準出力に書いて終了コード0で終わり、ウィンドウの起動も前面化もしないので、スクリプトやAIエージェントが最初に実行できます。</li>
-          <li><strong>Windows のスクリプト・エージェント・CI では <code>syki-cli.exe</code> を使います。</strong><code>syki.exe</code> はウィンドウ用のプログラムなので、PowerShell やコマンドプロンプトは終了を待たず、終了コードや出力が取れないことがあります。<code>syki-cli.exe</code> が入ったリリースからは、zip に <code>syki.exe</code> と並んで入っています。コンソール用のプログラムで、同じコマンドを実行できます（このページの <code>md-memo</code> を <code>syki-cli</code> に読み替えます）。シェルが終了を待ち、本物の終了コード（<code>jev verify</code> は 0 が安全、1 がブロック、2 が警告）と出力が得られます。アプリを起動することはありません。引数なし・ファイル名・パイプで渡した文字列の場合は、起動中の syki::sok に依頼を渡し、起動していなければ <code>md-memo is not running</code> と表示して終了コード 1 で終わります。syki::sok を起動するのは、これまでどおり <code>syki.exe</code> です。macOS の <code>md-memo</code> コマンドは最初から終了を待つので、2つ目のプログラムは要りません。</li>
+          <li><strong>Windows のスクリプト・エージェント・CI では <code>syki-cli.exe</code> を使います。</strong><code>syki.exe</code> はウィンドウ用のプログラムなので、PowerShell やコマンドプロンプトは終了を待たず、終了コードや出力が取れないことがあります。<code>syki-cli.exe</code> が入ったリリースからは、zip に <code>syki.exe</code> と並んで入っています。コンソール用のプログラムで、同じコマンドを実行できます（このページの <code>syki</code> を <code>syki-cli</code> に読み替えます）。シェルが終了を待ち、本物の終了コード（<code>jev verify</code> は 0 が安全、1 がブロック、2 が警告）と出力が得られます。アプリを起動することはありません。引数なし・ファイル名・パイプで渡した文字列の場合は、起動中の syki::sok に依頼を渡し、起動していなければ <code>syki is not running</code> と表示して終了コード 1 で終わります。syki::sok を起動するのは、これまでどおり <code>syki.exe</code> です。macOS の <code>syki</code> コマンドは最初から終了を待つので、2つ目のプログラムは要りません。</li>
           <li><code>--json</code> は、<code>buffer</code> のすべてのサブコマンドで使えます。</li>
           <li><code>syki buffer get --out note.md</code> は、ノートをUTF-8のファイルに書き出し、そのパス・サイズ・ハッシュだけを表示します（<code>--bom</code> を付けない限り、バイトオーダーマークは付きません）。日本語のテキストでは、<code>&gt;</code> や <code>| Set-Content</code> の代わりにこれを使ってください。Windows PowerShell 5.1 は、パイプで渡したテキストをコンソールのコードページで変換し直すため、文字化けします。ファイルはコマンド自身が書き込み、既存のファイルは1回で置き換えます。保存先のフォルダは、あらかじめ存在している必要があります。</li>
           <li><code>info</code>・<code>scrap</code>・<code>config</code>・<code>lessons</code> は、フラグを語の前にも後ろにも置けます（<code>syki scrap search deploy --limit 5</code>）。何も作成・変更しません。例外は 2 つで、<code>scrap index</code> は検索の索引を（スクラップのフォルダの外に）書き、<code>scrap tag add|remove</code> は <code>--write</code> を付けたときだけ、指定したノートを書き換えます（既存のファイルだけで、新しく作ることはありません）。syki::sokが起動中でも停止中でも動きます。</li>
@@ -4964,7 +4964,7 @@ syki agent prune --query "ログインのバグ" --file notes.md
 
 # 13. 画像の文字を読み取って、今日のスクラップに追記（Windows・macOS）
 syki ocr memo.png
-# OCR text appended to C:\Users\me\Documents\md-memo\scraps\2026-09-24.md
+# OCR text appended to C:\Users\me\Documents\syki-sok\scraps\2026-09-24.md
 #   文字が見つからなかったときは (no text recognized) と出て、何も追記しません
 
 # 14. 結果をJSONで受け取る（--json は画像のパスの前に付けます）
@@ -4972,7 +4972,7 @@ syki ocr --json memo.png
 # {
 #   "text": "読み取った文字",
 #   "appended": true,
-#   "path": "C:\\Users\\me\\Documents\\md-memo\\scraps\\2026-09-24.md"
+#   "path": "C:\\Users\\me\\Documents\\syki-sok\\scraps\\2026-09-24.md"
 # }
 
 # 15. ノートをUTF-8のファイルに書き出す（日本語でも安全）。書き出し先だけを表示します
@@ -5017,8 +5017,8 @@ syki --version
 # 20. プログラムに内蔵されたエージェント用スキルをインストールする（リポジトリも zip も要りません）
 syki agent install-skill                # Claude Code: ~/.claude/skills/syki
 syki agent install-skill --codex        # Codex（$CODEX_HOME/skills。パスは未確認）
-syki agent install-skill --dir ~/agent-skills   # &lt;フォルダ&gt;/md-memo
-#   -> Installed the md-memo skill: C:\Users\you\.claude\skills\md-memo
+syki agent install-skill --dir ~/agent-skills   # &lt;フォルダ&gt;/syki
+#   -> Installed the syki skill: C:\Users\you\.claude\skills\syki
 #      （後でもう一度実行すると、同じ内容なら "already up to date"、編集していない古いコピーは更新、編集したフォルダはそのまま残ります）
 
 # 21. 画面に出ていないタブを操作し、ファイルに保存して閉じる（画面は何も動きません）
@@ -5270,7 +5270,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
                   <td>マイクの許可</td>
                   <td>初回の録音で、WebView2が許可を求めます。Windowsは、設定 → プライバシーとセキュリティ → マイク で、デスクトップアプリを許可します。macOSは、システム設定のマイクで許可します（macOSでの動作は未検証）</td>
                   <td>なし</td>
-                  <td>「マイクを使用できませんでした」と出たら、許可が拒否されたか、OSが止めています。<code>%LOCALAPPDATA%\md-memo\webview</code> は、ユーザーの了解なしに消さないでください</td>
+                  <td>「マイクを使用できませんでした」と出たら、許可が拒否されたか、OSが止めています。<code>%LOCALAPPDATA%\syki-sok\webview</code> は、ユーザーの了解なしに消さないでください</td>
                 </tr>
                 <tr>
                   <td>クリップボードの許可</td>
@@ -5384,7 +5384,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
             <li>APIキー、<code>config.json</code>（とそのバックアップ）、<code>.env</code>、<code>session.json</code> を、表示・ログ出力・チャットへの貼り付け・コミットすること。キーは「<code>set (...末尾4文字)</code>」のように伏せます。</li>
             <li>2つ目のsyki::sokを起動すること、プロセスを強制終了すること。終了はあなたがトレイから行います。</li>
             <li>syki::sokの起動中に <code>config.json</code> を編集すること。キーを消して「リセット」せず、明示的な既定値を書きます。</li>
-            <li><code>md-memo ui eval</code> で設定を読んだり、<code>window.backend.*</code> を呼んだりすること。</li>
+            <li><code>syki ui eval</code> で設定を読んだり、<code>window.backend.*</code> を呼んだりすること。</li>
             <li>スクラップフォルダを、リポジトリ・ホームフォルダ・ドライブの直下に向けること。<code>.env</code> を、git-ignore なしでスクラップフォルダに置くこと。</li>
             <li>権限確認をスキップするフラグ（<code>--dangerously-skip-permissions</code> など）をエージェント定義に足すこと。<code>--help</code> で確かめていないCLIを登録すること。</li>
             <li>あなたの依頼なしに、Cloudflareトンネルを開始する、<code>cloudflared</code> をインストールする、OSのマイク・ファイアウォール・プライバシー設定を変える、<code>ollama</code> コマンドを実行すること。</li>
@@ -5396,7 +5396,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
           エージェントに読ませるフォルダは <a href="https://github.com/youshinh/syki-sok/tree/main/skills/syki" target="_blank" rel="noopener" style="color: var(--accent);"><code>skills/syki</code></a> です。依頼するときは、まず <code>SKILL.md</code> を読むよう伝えてください。
         </p>
         <p>
-          <strong>いちばん簡単なのは、syki::sok にスキルをインストールさせることです。</strong>1.8.0 より新しいプログラムは、スキルを内部に持っています。<code>syki agent install-skill</code> を実行すると、フォルダが <code>~/.claude/skills/syki</code>（Claude Code 用。<code>CLAUDE_CONFIG_DIR</code> も尊重されます）にコピーされます。リポジトリも zip も、起動中の syki::sok も要らないので、Homebrew でインストールした場合もこの方法が使えます。<code>--codex</code> は Codex 用（<code>$CODEX_HOME/skills</code>、なければ <code>~/.codex/skills</code> に入れます。Codex がそこからスキルを読むかどうかは<strong>確認できていない</strong>ので、読まないときは <code>--dir</code> を使ってください）、<code>--dir &lt;フォルダ&gt;</code> は指定したフォルダに入れます（スキルは <code>&lt;フォルダ&gt;/md-memo</code> になります）。何をどこにインストールしたかは表示されます。syki::sok を更新したらもう一度実行してください。内容が同じなら「already up to date」と表示され、あなたが編集していない古いコピーは置き換えられ、あなたが編集したフォルダ（またはこのコマンドが作っていないフォルダ）は、違いのあるファイルを表示したうえで、<code>--force</code> を付けない限りそのまま残されます。1.8.0 までのプログラムにはこのコマンドがないので、以下の方法を使ってください。
+          <strong>いちばん簡単なのは、syki::sok にスキルをインストールさせることです。</strong>1.8.0 より新しいプログラムは、スキルを内部に持っています。<code>syki agent install-skill</code> を実行すると、フォルダが <code>~/.claude/skills/syki</code>（Claude Code 用。<code>CLAUDE_CONFIG_DIR</code> も尊重されます）にコピーされます。リポジトリも zip も、起動中の syki::sok も要らないので、Homebrew でインストールした場合もこの方法が使えます。<code>--codex</code> は Codex 用（<code>$CODEX_HOME/skills</code>、なければ <code>~/.codex/skills</code> に入れます。Codex がそこからスキルを読むかどうかは<strong>確認できていない</strong>ので、読まないときは <code>--dir</code> を使ってください）、<code>--dir &lt;フォルダ&gt;</code> は指定したフォルダに入れます（スキルは <code>&lt;フォルダ&gt;/syki</code> になります）。何をどこにインストールしたかは表示されます。syki::sok を更新したらもう一度実行してください。内容が同じなら「already up to date」と表示され、あなたが編集していない古いコピーは置き換えられ、あなたが編集したフォルダ（またはこのコマンドが作っていないフォルダ）は、違いのあるファイルを表示したうえで、<code>--force</code> を付けない限りそのまま残されます。1.8.0 までのプログラムにはこのコマンドがないので、以下の方法を使ってください。
         </p>
         <p>
           <strong>コマンドを使わない場合、スキルは配布 zip に入っています。</strong>v1.7.1 以降は、Releases ページの zip に、プログラムと並んで <code>skills</code> フォルダが入っています（Windows は <code>syki.exe</code> の隣、macOS は <code>syki-sok.app</code> の隣）。その中の <code>skills/syki</code> フォルダを使ってください。それ以前の zip や、別の方法（たとえば Homebrew）でインストールした場合は入っていないので、GitHub から入手してください。上のアドレスをエージェントに渡すか、リポジトリ全体をダウンロード（GitHub のページの <strong>Code → Download ZIP</strong>、または <code>git clone https://github.com/youshinh/syki-sok.git</code>）して、その中の <code>skills/syki</code> フォルダを使います。Web ページを読めるエージェントなら、<code>SKILL.md</code> からリンクされた <code>references/</code> の 4 つのファイルも自分で開きます。いつでも使えるようにするには、このフォルダ（Markdown ファイル 5 つ、約 340 KB）を、お使いのエージェントのスキルフォルダにコピーしてください（Claude Code なら <code>~/.claude/skills/syki</code>）。
@@ -5410,7 +5410,7 @@ syki::sok 自身の LLM キーは config.json にだけ書きます（GEMINI_API
 
         <p><strong>Neovim / Vim から現在のバッファをsyki::sokへ送信:</strong></p>
         <pre class="code-block"><code>" .vimrc / init.vim
-command! MDMemoSend :w !syki</code></pre>
+command! SykiSend :w !syki</code></pre>
 
         <p><strong>PowerShell からクリップボード内容を追記:</strong></p>
         <pre class="code-block"><code>Get-Clipboard | syki buffer append</code></pre>
@@ -5438,7 +5438,7 @@ command! MDMemoSend :w !syki</code></pre>
               <tr>
                 <td><strong>Jev</strong></td>
                 <td><a href="#jev-action" style="color: var(--accent);">アクション候補</a></td>
-                <td>TypeSafe AI が提供する外部の判定モデルの名前です（md-memo に内蔵されているものではありません）。設定 → 連携 → 提案 (アクション)で OpenRouter か TypeSafe の API キーを入力したときだけ使われます。文章は書かず、md-memo に内蔵の候補を並べ替えます。それ以外は内蔵のローカル規則で動作します。<code>syki jev verify</code> のように CLI のサブコマンド名としても使われていますが、<code>jev verify</code>（AST 検証）は完全にローカルで動きます。</td>
+                <td>TypeSafe AI が提供する外部の判定モデルの名前です（syki::sok に内蔵されているものではありません）。設定 → 連携 → 提案 (アクション)で OpenRouter か TypeSafe の API キーを入力したときだけ使われます。文章は書かず、syki::sok に内蔵の候補を並べ替えます。それ以外は内蔵のローカル規則で動作します。<code>syki jev verify</code> のように CLI のサブコマンド名としても使われていますが、<code>jev verify</code>（AST 検証）は完全にローカルで動きます。</td>
               </tr>
               <tr>
                 <td><strong>Slot（スロット）</strong></td>
@@ -5545,7 +5545,7 @@ command! MDMemoSend :w !syki</code></pre>
   <script>
     // Theme toggle
     const themeBtn = document.getElementById('themeToggle');
-    const currentTheme = localStorage.getItem('md-memo-doc-theme') || 'dark';
+    const currentTheme = localStorage.getItem('syki-sok-doc-theme') || 'dark';
     if (currentTheme === 'light') {
       document.body.setAttribute('data-theme', 'light');
     }
@@ -5554,10 +5554,10 @@ command! MDMemoSend :w !syki</code></pre>
       const isLight = document.body.getAttribute('data-theme') === 'light';
       if (isLight) {
         document.body.removeAttribute('data-theme');
-        localStorage.setItem('md-memo-doc-theme', 'dark');
+        localStorage.setItem('syki-sok-doc-theme', 'dark');
       } else {
         document.body.setAttribute('data-theme', 'light');
-        localStorage.setItem('md-memo-doc-theme', 'light');
+        localStorage.setItem('syki-sok-doc-theme', 'light');
       }
     });
 

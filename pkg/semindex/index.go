@@ -82,7 +82,10 @@ type fileInfo struct {
 type ignoreRules struct{ patterns []string }
 
 func loadIgnore(root string) ignoreRules {
-	raw, err := os.ReadFile(filepath.Join(root, ".md-memo-ignore"))
+	raw, err := os.ReadFile(filepath.Join(root, ".syki-ignore"))
+	if err != nil {
+		raw, err = os.ReadFile(filepath.Join(root, ".md-memo-ignore"))
+	}
 	if err != nil {
 		return ignoreRules{}
 	}

@@ -17,7 +17,7 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
       
-      /* Dark Theme (MD-memo Calm Dark Olive) */
+      /* Dark Theme (syki::sok Calm Dark Olive) */
       --bg-canvas: #111413;
       --bg-surface: #181c1a;
       --bg-surface-elevated: #202623;
@@ -29,7 +29,7 @@
       --text-secondary: #97a095;
       --text-tertiary: #656d63;
       
-      /* MD-memo Dark Olive Accent */
+      /* syki::sok Dark Olive Accent */
       --accent: #6b843d;
       --accent-glow: rgba(107, 132, 61, 0.15);
       --accent-emerald: #556b2f;
@@ -1102,7 +1102,7 @@
         </a>
 
         <div class="install-bar">
-          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/md-memo</span></span>
+          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/syki</span></span>
           <button class="copy-btn" id="copyBtn" title="Copy command">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1534,7 +1534,7 @@
             </div>
             <h3>Selection CLI</h3>
             <p>
-              External tools and AI agents can read just the text you have selected with <code>md-memo buffer get --selection</code> and write the result back with <code>md-memo buffer replace-selection</code>. The write is a single undo step, and if the selection moved in the meantime nothing is written.
+              External tools and AI agents can read just the text you have selected with <code>syki buffer get --selection</code> and write the result back with <code>syki buffer replace-selection</code>. The write is a single undo step, and if the selection moved in the meantime nothing is written.
             </p>
           </div>
           <ul class="feature-tag-list">
@@ -1607,11 +1607,11 @@
             </div>
             <h3>Made for AI Agents</h3>
             <p>
-              The repository ships <code>skills/md-memo</code>, a source-verified reference of every interface, config file and setup step, so an AI agent can operate or configure syki::sok for you. It covers the CLI, JSON-RPC and the safety rules: <code>config.json</code> is edited only while the app is closed, and keys are never printed.
+              The repository ships <code>skills/syki</code>, a source-verified reference of every interface, config file and setup step, so an AI agent can operate or configure syki::sok for you. It covers the CLI, JSON-RPC and the safety rules: <code>config.json</code> is edited only while the app is closed, and keys are never printed.
             </p>
           </div>
           <ul class="feature-tag-list">
-            <li>skills/md-memo</li>
+            <li>skills/syki</li>
             <li>CLI</li>
             <li>JSON-RPC</li>
           </ul>
@@ -1733,12 +1733,12 @@
             </div>
             <h3>Send To &amp; the OCR Command</h3>
             <p>
-              On Windows, add <strong>syki::sok (OCR)</strong> to the Explorer Send To menu (Settings &rarr; Agent) and right-click any image to append its text to today's note; no window opens. From a terminal, <code>md-memo ocr &lt;image&gt;</code> does the same on Windows and macOS (add <code>--json</code> for JSON output); on macOS it uses cloud OCR only.
+              On Windows, add <strong>syki::sok (OCR)</strong> to the Explorer Send To menu (Settings &rarr; Agent) and right-click any image to append its text to today's note; no window opens. From a terminal, <code>syki ocr &lt;image&gt;</code> does the same on Windows and macOS (add <code>--json</code> for JSON output); on macOS it uses cloud OCR only.
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>Send To (Windows)</li>
-            <li>md-memo ocr</li>
+            <li>syki ocr</li>
             <li>No window opens</li>
           </ul>
         </div>
@@ -1778,19 +1778,19 @@
             </div>
             <h3>Print or Save the Preview as PDF</h3>
             <p>
-              The printer button on the preview opens a print panel: the page as it will be printed on the left (white paper, black text, pictures in colour, diagrams in light colours, nothing cut), paper, orientation, margins, scale and pages on the right. The header and footer, with the file name and folder, are off until you switch them on. <strong>Save as PDF</strong> writes the file; <code>md-memo tab pdf notes.md -o notes.pdf</code> does it from a script. Nothing is loaded until the first press.
+              The printer button on the preview opens a print panel: the page as it will be printed on the left (white paper, black text, pictures in colour, diagrams in light colours, nothing cut), paper, orientation, margins, scale and pages on the right. The header and footer, with the file name and folder, are off until you switch them on. <strong>Save as PDF</strong> writes the file; <code>syki tab pdf notes.md -o notes.pdf</code> does it from a script. Nothing is loaded until the first press.
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>Save as PDF</li>
             <li>A4 / A3 / B5 / Letter</li>
-            <li>md-memo tab pdf</li>
+            <li>syki tab pdf</li>
           </ul>
         </div>
       </div>
 
       <p class="section-desc" style="max-width: 720px; margin: 32px auto 0; text-align: center; font-size: 14px;">
-        <strong>Windows and macOS.</strong> Quick Capture, Screen Capture, the Send To entry and on-device Whisper are Windows-only for now. The Hot Folder and <code>md-memo ocr</code> also run on macOS, with cloud OCR and Gemini transcription only. Link underlines and line numbers are shared web code, expected to behave the same on macOS but not yet verified on a real Mac. The print panel is Windows-only: on macOS the printer button opens the system print dialog (PDF &gt; Save as PDF), also not yet verified on a real Mac.
+        <strong>Windows and macOS.</strong> Quick Capture, Screen Capture, the Send To entry and on-device Whisper are Windows-only for now. The Hot Folder and <code>syki ocr</code> also run on macOS, with cloud OCR and Gemini transcription only. Link underlines and line numbers are shared web code, expected to behave the same on macOS but not yet verified on a real Mac. The print panel is Windows-only: on macOS the printer button opens the system print dialog (PDF &gt; Save as PDF), also not yet verified on a real Mac.
       </p>
     </div>
   </section>
@@ -1915,7 +1915,7 @@
               <div class="flow-step-num">D</div>
               <div class="flow-step-content">
                 <strong>Selection CLI: Pipe the Editor Selection Itself</strong>
-                <span><code>md-memo buffer get --selection</code> prints the current selection; <code>md-memo buffer replace-selection</code> writes it back as one undo step, keeping the result selected.</span>
+                <span><code>syki buffer get --selection</code> prints the current selection; <code>syki buffer replace-selection</code> writes it back as one undo step, keeping the result selected.</span>
               </div>
             </div>
           </div>
@@ -1924,7 +1924,7 @@
             <span class="terminal-comment"># Destructive command safety guard in action:</span><br>
             <span class="terminal-prompt">!</span> <span style="color:#f87171;">BLOCKED: rm -rf / , format c: , diskpart , :(){ :|:&amp; };:</span><br>
             <span class="terminal-prompt">?</span> <span style="color:#fbbf24;">WARNING: Confirmation required for recursive deletion (rm -r) or shutdown</span><br>
-            <span class="terminal-prompt">$</span> <span class="terminal-cmd">md-memo buffer get --selection | some-formatter | syki buffer replace-selection</span>
+            <span class="terminal-prompt">$</span> <span class="terminal-cmd">syki buffer get --selection | some-formatter | syki buffer replace-selection</span>
           </div>
 
           <ul class="deepdive-pill-list">

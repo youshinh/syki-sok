@@ -423,6 +423,8 @@ func FindProjectRoot(filePath string) string {
 
 	curr := startDir
 	rootMarkers := []string{
+		".syki",
+		".syki-sok",
 		".md-memo",
 		"agents.yaml",
 		"agents.yml",

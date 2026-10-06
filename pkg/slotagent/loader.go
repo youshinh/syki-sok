@@ -182,13 +182,15 @@ func FindAgentConfigFile(scrapDir string) string {
 	candidates := make([]string, 0, 8)
 
 	if scrapDir != "" {
-		memoDir := filepath.Join(scrapDir, ".md-memo")
-		candidates = append(candidates,
-			filepath.Join(memoDir, "agents.yaml"),
-			filepath.Join(memoDir, "agents.yml"),
-			filepath.Join(memoDir, "agents.md"),
-			filepath.Join(memoDir, "agents.json"),
-		)
+		for _, dirName := range []string{".syki", ".syki-sok", ".md-memo"} {
+			memoDir := filepath.Join(scrapDir, dirName)
+			candidates = append(candidates,
+				filepath.Join(memoDir, "agents.yaml"),
+				filepath.Join(memoDir, "agents.yml"),
+				filepath.Join(memoDir, "agents.md"),
+				filepath.Join(memoDir, "agents.json"),
+			)
+		}
 	}
 
 	configDir, err := appdir.ConfigDir()
@@ -405,7 +407,7 @@ func GenerateDefaultAgentsMarkdown() string {
 	sb.WriteString("# syki::sok: 自律AIエージェント設定仕様書 (AGENTS.md)\n\n")
 	sb.WriteString("このドキュメントは、**syki::sok** の自律AIエージェント連携設定ファイル兼マニュアルです。\n")
 	sb.WriteString("本ファイル内の ```yaml コードブロックを編集して syki::sok にインポートするか、\n")
-	sb.WriteString("`.md-memo/agents.yaml` として保存することで、任意のCLIエージェントを追加・カスタマイズできます。\n\n")
+	sb.WriteString("`.syki/agents.yaml`（または `.syki-sok/agents.yaml`、`.md-memo/agents.yaml`）として保存することで、任意のCLIエージェントを追加・カスタマイズできます。\n\n")
 	sb.WriteString("---\n\n")
 	sb.WriteString("## 編集ガイドライン（AIエージェント＆人間共通）\n\n")
 	sb.WriteString("- **エージェント追加**: `agents` 配下にコマンド名と引数を定義します。\n")

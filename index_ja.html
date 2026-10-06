@@ -17,7 +17,7 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
       
-      /* Dark Theme (MD-memo Calm Dark Olive) */
+      /* Dark Theme (syki::sok Calm Dark Olive) */
       --bg-canvas: #111413;
       --bg-surface: #181c1a;
       --bg-surface-elevated: #202623;
@@ -29,7 +29,7 @@
       --text-secondary: #97a095;
       --text-tertiary: #656d63;
       
-      /* MD-memo Dark Olive Accent */
+      /* syki::sok Dark Olive Accent */
       --accent: #6b843d;
       --accent-glow: rgba(107, 132, 61, 0.15);
       --accent-emerald: #556b2f;
@@ -1102,7 +1102,7 @@
         </a>
 
         <div class="install-bar">
-          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/md-memo</span></span>
+          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/syki</span></span>
           <button class="copy-btn" id="copyBtn" title="コマンドをコピー">
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
@@ -1534,7 +1534,7 @@
             </div>
             <h3>選択範囲 CLI</h3>
             <p>
-              外部ツールやAIエージェントは <code>md-memo buffer get --selection</code> で選択中のテキストだけを読み取り、<code>md-memo buffer replace-selection</code> で結果を書き戻せます。書き戻しは1回のUndoで元に戻せ、途中で選択範囲が変わっていた場合は何も書き込みません。
+              外部ツールやAIエージェントは <code>syki buffer get --selection</code> で選択中のテキストだけを読み取り、<code>syki buffer replace-selection</code> で結果を書き戻せます。書き戻しは1回のUndoで元に戻せ、途中で選択範囲が変わっていた場合は何も書き込みません。
             </p>
           </div>
           <ul class="feature-tag-list">
@@ -1607,11 +1607,11 @@
             </div>
             <h3>AIエージェント対応</h3>
             <p>
-              リポジトリには <code>skills/md-memo</code> が同梱されています。すべてのインターフェース・設定ファイル・セットアップ手順をソースで検証してまとめたもので、AIエージェントがあなたの代わりに syki::sok を操作・設定できます。CLI、JSON-RPC、安全ルール（<code>config.json</code> の編集はアプリ終了中のみ、キーは表示しない）を網羅しています。
+              リポジトリには <code>skills/syki</code> が同梱されています。すべてのインターフェース・設定ファイル・セットアップ手順をソースで検証してまとめたもので、AIエージェントがあなたの代わりに syki::sok を操作・設定できます。CLI、JSON-RPC、安全ルール（<code>config.json</code> の編集はアプリ終了中のみ、キーは表示しない）を網羅しています。
             </p>
           </div>
           <ul class="feature-tag-list">
-            <li>skills/md-memo</li>
+            <li>skills/syki</li>
             <li>CLI</li>
             <li>JSON-RPC</li>
           </ul>
@@ -1627,7 +1627,7 @@
             </div>
             <h3>Discord連携</h3>
             <p>
-              自分のDiscord Botへスマホから送ったDMを、次にsyki::sokを起動したときに今日のスクラップへ取り込みます。md-memoが閉じている間に送っても大丈夫です。中継サーバーやCloudflareアカウントは不要で、必要なのは無料のDiscord Botだけ。写真はOCR、音声は文字起こしと、Mobile Dropと同じ処理を通ります。
+              自分のDiscord Botへスマホから送ったDMを、次にsyki::sokを起動したときに今日のスクラップへ取り込みます。syki::sokが閉じている間に送っても大丈夫です。中継サーバーやCloudflareアカウントは不要で、必要なのは無料のDiscord Botだけ。写真はOCR、音声は文字起こしと、Mobile Dropと同じ処理を通ります。
             </p>
           </div>
           <ul class="feature-tag-list">
@@ -1733,12 +1733,12 @@
             </div>
             <h3>「送る」と OCR コマンド</h3>
             <p>
-              Windows では、エクスプローラーの「送る」メニューに <strong>syki::sok (OCR)</strong> を追加（設定 &rarr; 連携）すると、画像を右クリックするだけで文字を今日のノートに追記できます。ウィンドウは開きません。ターミナルからは <code>md-memo ocr &lt;画像&gt;</code> で、WindowsでもmacOSでも同じことができます（<code>--json</code> でJSON出力。macOS ではクラウドOCRのみ）。
+              Windows では、エクスプローラーの「送る」メニューに <strong>syki::sok (OCR)</strong> を追加（設定 &rarr; 連携）すると、画像を右クリックするだけで文字を今日のノートに追記できます。ウィンドウは開きません。ターミナルからは <code>syki ocr &lt;画像&gt;</code> で、WindowsでもmacOSでも同じことができます（<code>--json</code> でJSON出力。macOS ではクラウドOCRのみ）。
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>「送る」(Windows)</li>
-            <li>md-memo ocr</li>
+            <li>syki ocr</li>
             <li>ウィンドウは開かない</li>
           </ul>
         </div>
@@ -1778,19 +1778,19 @@
             </div>
             <h3>プレビューの印刷・PDF保存</h3>
             <p>
-              プレビューのプリンターのボタンで印刷パネルが開きます。左に印刷したときのページ（白い紙、黒い文字、画像はカラー、図は明るい配色、途中で切れない）、右に用紙・向き・余白・拡大率・ページの指定です。ファイル名とフォルダを入れるヘッダーとフッターは、スイッチを入れるまでオフです。<strong>PDFに保存</strong>でファイルに書き出し、スクリプトからは <code>md-memo tab pdf notes.md -o notes.pdf</code> でできます。最初にボタンを押すまで、何も読み込みません。
+              プレビューのプリンターのボタンで印刷パネルが開きます。左に印刷したときのページ（白い紙、黒い文字、画像はカラー、図は明るい配色、途中で切れない）、右に用紙・向き・余白・拡大率・ページの指定です。ファイル名とフォルダを入れるヘッダーとフッターは、スイッチを入れるまでオフです。<strong>PDFに保存</strong>でファイルに書き出し、スクリプトからは <code>syki tab pdf notes.md -o notes.pdf</code> でできます。最初にボタンを押すまで、何も読み込みません。
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>PDFに保存</li>
             <li>A4 / A3 / B5 / Letter</li>
-            <li>md-memo tab pdf</li>
+            <li>syki tab pdf</li>
           </ul>
         </div>
       </div>
 
       <p class="section-desc" style="max-width: 720px; margin: 32px auto 0; text-align: center; font-size: 14px;">
-        <strong>Windows と macOS。</strong>クイックキャプチャ・画面キャプチャ・「送る」・このPC内 Whisper は、いまのところ Windows のみです。ホットフォルダと <code>md-memo ocr</code> は macOS でも動きますが、OCR はクラウド、文字起こしは Gemini のみです。リンクの下線と行番号は共通のWebコードなので macOS でも同様に動く見込みですが、実機の Mac ではまだ確認していません。印刷パネルは Windows のみで、macOS ではプリンターのボタンが標準の印刷画面（PDF ▾ → PDFとして保存）を開きます。こちらも実機の Mac ではまだ確認していません。
+        <strong>Windows と macOS。</strong>クイックキャプチャ・画面キャプチャ・「送る」・このPC内 Whisper は、いまのところ Windows のみです。ホットフォルダと <code>syki ocr</code> は macOS でも動きますが、OCR はクラウド、文字起こしは Gemini のみです。リンクの下線と行番号は共通のWebコードなので macOS でも同様に動く見込みですが、実機の Mac ではまだ確認していません。印刷パネルは Windows のみで、macOS ではプリンターのボタンが標準の印刷画面（PDF ▾ → PDFとして保存）を開きます。こちらも実機の Mac ではまだ確認していません。
       </p>
     </div>
   </section>
@@ -1915,7 +1915,7 @@
               <div class="flow-step-num">D</div>
               <div class="flow-step-content">
                 <strong>Selection CLI: 選択範囲そのものをパイプする</strong>
-                <span><code>md-memo buffer get --selection</code> で選択中のテキストを出力し、<code>md-memo buffer replace-selection</code> で1つのUndoとして書き戻し、結果は選択状態のまま残ります。</span>
+                <span><code>syki buffer get --selection</code> で選択中のテキストを出力し、<code>syki buffer replace-selection</code> で1つのUndoとして書き戻し、結果は選択状態のまま残ります。</span>
               </div>
             </div>
           </div>
@@ -1924,7 +1924,7 @@
             <span class="terminal-comment"># セーフティエンジンによる危険コマンド自動ブロック例:</span><br>
             <span class="terminal-prompt">!</span> <span style="color:#f87171;">BLOCKED: rm -rf / , format c: , diskpart , :(){ :|:&amp; };:</span><br>
             <span class="terminal-prompt">?</span> <span style="color:#fbbf24;">WARNING: 再帰削除 (rm -r) やシャットダウン時は事前承認ダイアログを表示</span><br>
-            <span class="terminal-prompt">$</span> <span class="terminal-cmd">md-memo buffer get --selection | some-formatter | syki buffer replace-selection</span>
+            <span class="terminal-prompt">$</span> <span class="terminal-cmd">syki buffer get --selection | some-formatter | syki buffer replace-selection</span>
           </div>
 
           <ul class="deepdive-pill-list">

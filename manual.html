@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
@@ -12,7 +12,7 @@
       --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
       --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
       
-      /* Dark Theme (MD-memo Calm Dark Olive) */
+      /* Dark Theme (syki::sok Calm Dark Olive) */
       --bg-canvas: #111413;
       --bg-surface: #181c1a;
       --bg-surface-elevated: #202623;
@@ -964,7 +964,7 @@
           <li><a href="#mobile-drop" class="sidebar-link">Mobile Drop · Send from Phone (Ctrl+Shift+U)</a></li>
           <li><a href="#discord-bridge" class="sidebar-link">Discord Bridge · Send from Phone (works while closed)</a></li>
           <li><a href="#command-palette" class="sidebar-link">Command Palette (Ctrl+Shift+P)</a></li>
-          <li><a href="#about-md-memo" class="sidebar-link">About syki::sok · Updates · Privacy</a></li>
+          <li><a href="#about-syki-sok" class="sidebar-link">About syki::sok · Updates · Privacy</a></li>
         </ul>
       </div>
 
@@ -1236,7 +1236,7 @@
             <li><strong>Install from a zip:</strong> Download a zip from the <a href="https://github.com/youshinh/syki-sok/releases" target="_blank" style="color: var(--accent);">Releases page</a> and unpack it into any folder.</li>
             <li><strong>Universal binary:</strong> Starting with the next release, the macOS build is a universal binary and supports both Apple Silicon and Intel Macs.</li>
             <li><strong>No Mac to test on?</strong> Every push to the repository builds <code>syki-sok.app</code> on GitHub's hosted macOS runners. Open the <strong>Actions</strong> tab (or trigger the <strong>CI</strong> workflow by hand with <strong>Run workflow</strong>), open the latest <strong>CI</strong> run, and download <code>syki-macos-&lt;commit-sha&gt;</code> from Artifacts. It is ad-hoc signed the same way, so the same first-launch step applies.</li>
-            <li><strong>Update check:</strong> Shortly after launch, syki::sok asks GitHub whether a newer release exists (a single request to <code>api.github.com</code>; no note content is sent). If there is one, a small badge appears on the Help (<strong>?</strong>) button, and the Help menu shows the version and a link to its release notes. It can be turned off (Settings → General → "Check for updates at start-up"); see <a href="#about-md-memo" style="color: var(--accent);">About syki::sok, Updates and Where Your Text Goes</a>.</li>
+            <li><strong>Update check:</strong> Shortly after launch, syki::sok asks GitHub whether a newer release exists (a single request to <code>api.github.com</code>; no note content is sent). If there is one, a small badge appears on the Help (<strong>?</strong>) button, and the Help menu shows the version and a link to its release notes. It can be turned off (Settings → General → "Check for updates at start-up"); see <a href="#about-syki-sok" style="color: var(--accent);">About syki::sok, Updates and Where Your Text Goes</a>.</li>
           </ul>
         </div></details>
       </section>
@@ -1483,7 +1483,7 @@
             <li><strong>If you change the note meanwhile:</strong> the bar finds the text you asked about again, wherever it has moved (you typed above it, or another answer landed above). If that very text was edited, nothing is sent and a message says so; select it again and retry. A note that ends up exactly as it was (the request failed or was cancelled) is not marked as changed.</li>
             <li><strong>Cancel:</strong> the task panel (<span class="kbd">Alt + T</span>) lists the request. Cancel it there and the placeholder disappears, so the note is back as it was. The request itself is not stopped; an answer that arrives later is discarded.</li>
             <li><strong>Japanese input:</strong> pressing Enter to confirm an IME conversion does not send the instruction. Press Enter once more to run it.</li>
-            <li><strong>Where the text goes:</strong> the row under the field names the destination, for example <strong>Local Ollama (qwen2.5:latest)</strong> or <strong>gemini-flash-lite-latest (cloud)</strong>; hold the pointer over it for the host. The first request to a cloud host asks once, in the bar, before anything is sent (see <a href="#about-md-memo" style="color: var(--accent);">Where Your Text Goes</a>). Local models are never asked.</li>
+            <li><strong>Where the text goes:</strong> the row under the field names the destination, for example <strong>Local Ollama (qwen2.5:latest)</strong> or <strong>gemini-flash-lite-latest (cloud)</strong>; hold the pointer over it for the host. The first request to a cloud host asks once, in the bar, before anything is sent (see <a href="#about-syki-sok" style="color: var(--accent);">Where Your Text Goes</a>). Local models are never asked.</li>
             <li><strong>Other ways in:</strong> the toolbar AI button, the right-click item "Ask AI..." and the palette item "Ask AI" open the same bar. It uses the built-in text LLM (Settings → AI Models).</li>
             <li><strong>Answer fences:</strong> if the model wraps its entire answer in a single <code>```markdown</code> / <code>```md</code> fence, syki::sok removes that fence before inserting. A real code answer (<code>```python</code> and the like), or an answer that merely contains fenced blocks among other text, is inserted exactly as returned.</li>
             <li><strong>Old shortcut:</strong> if you had saved <span class="kbd">Ctrl + K</span> for this bar, syki::sok moves it to <span class="kbd">Ctrl + L</span> once and shows a notice; the separate prompt dialog was merged into this bar.</li>
@@ -2394,7 +2394,7 @@ snippets:
           </p>
           <pre class="code-block"><code>{{ ⚠ エラー: エージェント起動失敗: ... (再試行: Ctrl+Enter) }}</code></pre>
           <ul>
-            <li><strong>Working directory:</strong> The <strong>project root</strong>, found by walking up from the note until a folder that contains <code>.md-memo/</code>, <code>agents.yaml</code> (or <code>agents.yml</code> / <code>agents.json</code>), <code>AGENTS.md</code>, <code>skills/</code> or <code>.git/</code>. If none is found, it is the note's own folder.</li>
+            <li><strong>Working directory:</strong> The <strong>project root</strong>, found by walking up from the note until a folder that contains <code>.syki/</code>, <code>.md-memo/</code>, <code>agents.yaml</code> (or <code>agents.yml</code> / <code>agents.json</code>), <code>AGENTS.md</code>, <code>skills/</code> or <code>.git/</code>. If none is found, it is the note's own folder.</li>
             <li><strong>.env:</strong> If the project root has a <code>.env</code> file, its variables are passed to the agent as environment variables (only that file is read).</li>
             <li><strong>Tasks with a result below:</strong> The error is one line inside the result block, such as <code>[claude-code error: ...]</code>. Fix the cause and press <span class="kbd">Ctrl + Enter</span> on the task line to run it again.</li>
           </ul>
@@ -2992,7 +2992,7 @@ recipes:
             </tbody>
           </table>
         </div>
-        <p>The names in the model list are written in Japanese in every interface language, with the size after each. The parts are stored under <code>%LOCALAPPDATA%\md-memo\components</code>. The settings screen shows the exact path after "Stored in:".</p>
+        <p>The names in the model list are written in Japanese in every interface language, with the size after each. The parts are stored under <code>%LOCALAPPDATA%\syki-sok\components</code>. The settings screen shows the exact path after "Stored in:".</p>
 
         <details class="more"><summary>Advanced settings and details</summary><div class="more-body">
           <ul>
@@ -3320,7 +3320,7 @@ Clipped from a web page.
           <ul>
             <li><strong>No excerpt is sent before Run.</strong> The dialog only shows what would go, and Cancel sends nothing. Enter in the first moments after the dialog opens is ignored, because it is the key that opened it. Prepared excerpts expire after 15 minutes; syki::sok then prepares them again.</li>
             <li><strong>Secrets are blanked out:</strong> a key, token or password found in an excerpt is blanked out before sending, and the dialog counts them.</li>
-            <li><strong>What is never sent:</strong> notes excluded by <code>.md-memo-ignore</code> or the folder rules, hidden folders, AI result blocks, earlier Deep search notes, files that cannot be read and what is over the size limit. The dialog lists what was left out.</li>
+            <li><strong>What is never sent:</strong> notes excluded by <code>.syki-ignore</code>, <code>.md-memo-ignore</code> or the folder rules, hidden folders, AI result blocks, earlier Deep search notes, files that cannot be read and what is over the size limit. The dialog lists what was left out.</li>
             <li><strong>With a filter on:</strong> when a period or tags are chosen in the <a href="#search-filter" style="color: var(--accent);">Filter</a>, Deep search gathers its excerpts under the same filter, and the neighbouring entries it adds to a short excerpt must pass it too. Nothing outside the filter is planned for sending.</li>
             <li><strong>This PC or another host:</strong> only a model on this PC itself (<code>localhost</code>, <code>127.0.0.1</code>) counts as local. A model anywhere else, a machine on your local network included, asks for your consent once per host: <strong>Allow and run</strong> remembers it in the same allowed-hosts list as the Ask bar. syki::sok checks that saved consent again when it runs.</li>
             <li><strong>Which model:</strong> the Text LLM of Settings → AI Models, the one the Ask AI bar uses. Both its address and its model name must be set; otherwise the dialog says "No AI model is set up yet." with a <strong>Set up</strong> button. If Meaning search is not available, the notes are picked by their words and the dialog says so.</li>
@@ -3645,7 +3645,7 @@ Clipped from a web page.
             <li>"Quick Capture" (Windows only) opens the small note popup (see <a href="#quick-capture" style="color: var(--accent);">Quick Capture</a>). "Open inbox folder" (Windows and macOS) shows the folder the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> watches, and is listed only while the hot folder is on.</li>
             <li>Type "tag" for "Add a tag to this entry", "Add a tag to the whole note" and "Remove a tag" (see <a href="#tag-commands" style="color: var(--accent);">Add and Remove Tags</a>). They act on the note in the editor you were working in.</li>
             <li>"Open the lessons file" opens the rules you saved for an agent as an ordinary tab, to edit (it asks which agent when several have one; see <a href="#lessons" style="color: var(--accent);">Lessons</a>).</li>
-            <li>"About syki::sok" opens the version, license, folders and links (see <a href="#about-md-memo" style="color: var(--accent);">About syki::sok</a>). "Help and manual (web)" opens the online manual at once.</li>
+            <li>"About syki::sok" opens the version, license, folders and links (see <a href="#about-syki-sok" style="color: var(--accent);">About syki::sok</a>). "Help and manual (web)" opens the online manual at once.</li>
             <li>Matching is a plain substring match, not a fuzzy search.</li>
             <li>With two panes open, a command runs on the pane you were working in (left or right), and closing the palette gives the focus back to that pane.</li>
             <li>Settings are not searchable. Open the settings screen with <span class="kbd">Ctrl + ,</span> (macOS: <span class="kbd">Cmd + ,</span>).</li>
@@ -3654,7 +3654,7 @@ Clipped from a web page.
       </section>
 
       <!-- About syki::sok, the update check, and where your text goes -->
-      <section class="doc-section" id="about-md-memo">
+      <section class="doc-section" id="about-syki-sok">
         <h3>About syki::sok, Updates and Where Your Text Goes</h3>
         <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> The Help (<strong>?</strong>) button opens a small menu with the online manual and <strong>About syki::sok</strong>: the version, the license, the folders that hold your settings and notes, links, and a button that copies the details for a bug report. The Ask and Rewrite bars say where your text is going, and ask once before it goes to a cloud service.</div></div>
 
@@ -3812,7 +3812,7 @@ Clipped from a web page.
               <tr>
                 <td>Check for updates at start-up</td>
                 <td>Enabled</td>
-                <td>About 2.5 seconds after start-up, asks <code>api.github.com</code> for the number of the latest release (nothing else is sent) and shows a dot on the Help button when a newer one exists. Off means no request at start-up. <strong>Check now</strong> in About syki::sok works either way. Stored as <code>general.checkUpdates</code>. See <a href="#about-md-memo" style="color: var(--accent);">About syki::sok</a>.</td>
+                <td>About 2.5 seconds after start-up, asks <code>api.github.com</code> for the number of the latest release (nothing else is sent) and shows a dot on the Help button when a newer one exists. Off means no request at start-up. <strong>Check now</strong> in About syki::sok works either way. Stored as <code>general.checkUpdates</code>. See <a href="#about-syki-sok" style="color: var(--accent);">About syki::sok</a>.</td>
               </tr>
               <tr>
                 <td>Cloud AI hosts you have allowed</td>
@@ -4002,7 +4002,7 @@ Clipped from a web page.
                 <td>Whisper program, Model</td>
                 <td><code>voice.whisper.model</code></td>
                 <td>kotoba-whisper v2.0 quantized</td>
-                <td>Two parts downloaded on demand, each with Download, Remove and Cancel and a progress display: the Whisper program (about 9 MB) and a model. Stored under <code>%LOCALAPPDATA%\md-memo\components</code>. See <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a> for the model list.</td>
+                <td>Two parts downloaded on demand, each with Download, Remove and Cancel and a progress display: the Whisper program (about 9 MB) and a model. Stored under <code>%LOCALAPPDATA%\syki-sok\components</code>. See <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a> for the model list.</td>
               </tr>
               <tr>
                 <td>Model file (ggml .bin)</td>
@@ -4362,7 +4362,7 @@ Clipped from a web page.
           <li><strong>Click "Export..."</strong><span>At the bottom left of the Settings dialog; "Export package" opens</span></li>
           <li><strong>Choose what goes in</strong><span>Tick settings sections, agent definitions and skills; Sync and the skills start unticked</span></li>
           <li><strong>Leave "Include API keys" off</strong><span>So the file you hand over carries no keys; turn it on only to move to your own other PC</span></li>
-          <li><strong>Click "Export"</strong><span>Pick where to save; <code>md-memo-YYYYMMDD.mdmemopack</code> is written and a summary is shown</span></li>
+          <li><strong>Click "Export"</strong><span>Pick where to save; <code>syki-sok-YYYYMMDD.mdmemopack</code> is written and a summary is shown</span></li>
         </ol>
 
         <p><strong>Import</strong> (Settings → Import...)</p>
@@ -4433,7 +4433,7 @@ Clipped from a web page.
             <li>Some settings take effect after you restart syki::sok; the result screen says so.</li>
           </ul>
           <p><strong>What "project" means</strong></p>
-          <p>Starting from the folder of the open note (for an unsaved note: the opened folder, else the scraps folder), syki::sok walks up to the first folder that contains <code>.md-memo</code>, <code>agents.yaml</code>, <code>AGENTS.md</code>, <code>skills</code> or <code>.git</code>. The home folder is never treated as a project (so global skills are never carried away). If no project is found, project items show "needs a project" and cannot be ticked.</p>
+          <p>Starting from the folder of the open note (for an unsaved note: the opened folder, else the scraps folder), syki::sok walks up to the first folder that contains <code>.syki</code>, <code>.md-memo</code>, <code>agents.yaml</code>, <code>AGENTS.md</code>, <code>skills</code> or <code>.git</code>. The home folder is never treated as a project (so global skills are never carried away). If no project is found, project items show "needs a project" and cannot be ticked.</p>
           <p><strong>Limits and safety</strong></p>
           <ul>
             <li>A package can be up to 50 MB and 3000 files; one file up to 10 MB, 100 MB in total after unpacking. Settings are limited to 2 MB and one agents file to 1 MB. A skill over the limits is left out of the export with a notice.</li>
@@ -4476,7 +4476,7 @@ ping 128.1.33.254 | syki</code></pre>
           <li><strong>Send requests</strong><span>Send newline-delimited JSON-RPC 2.0 requests</span></li>
           <li><strong>Send the token</strong><span>Put the <code>token</code> from that file in an <code>"auth"</code> field of every request. It is <strong>required for every method except</strong> <code>buffer.get</code>, <code>buffer.get_selection</code> and <code>tab.list</code>; without it (or with a wrong one) the call is refused with error <code>-32000</code> and nothing runs. The token changes every time syki::sok starts, so read the file again after a restart</span></li>
         </ol>
-        <p><strong>Breaking change for RPC clients that never sent the token.</strong> Earlier versions (up to 1.9.0) ran every method when the <code>auth</code> field was left out. Now <code>buffer.set</code>, <code>buffer.append</code>, <code>buffer.replace</code>, <code>buffer.replace_selection</code>, <code>buffer.save</code>, <code>tab.switch</code>, <code>tab.new</code>, <code>tab.close</code>, <code>ui.activate</code>, <code>ui.toggle_split</code> and <code>ui.eval</code> (and any other method) need it. <code>syki buffer|tab|ui</code> already send it; an editor plugin or script that wrote to the port itself has to be updated. The one-line messages behind <code>cmd | syki</code> and <code>md-memo &lt;file&gt;</code> are a separate channel and are still not authenticated.</p>
+        <p><strong>Breaking change for RPC clients that never sent the token.</strong> Earlier versions (up to 1.9.0) ran every method when the <code>auth</code> field was left out. Now <code>buffer.set</code>, <code>buffer.append</code>, <code>buffer.replace</code>, <code>buffer.replace_selection</code>, <code>buffer.save</code>, <code>tab.switch</code>, <code>tab.new</code>, <code>tab.close</code>, <code>ui.activate</code>, <code>ui.toggle_split</code> and <code>ui.eval</code> (and any other method) need it. <code>syki buffer|tab|ui</code> already send it; an editor plugin or script that wrote to the port itself has to be updated. The one-line messages behind <code>cmd | syki</code> and <code>syki &lt;file&gt;</code> are a separate channel and are still not authenticated.</p>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
@@ -4698,7 +4698,7 @@ ping 128.1.33.254 | syki</code></pre>
             <span>Caution: the reads and the pipe are open to every local program</span>
           </div>
           <p style="margin-bottom: 0;">
-            The token protects the methods that change something, but it is not a sandbox: the server listens on <code>127.0.0.1</code> only, any program of yours that can read <code>ipc-session.json</code> can call every method, including <code>ui.eval</code>, which runs JavaScript inside the app, and <code>buffer.get</code>, <code>buffer.get_selection</code> and <code>tab.list</code> (which read your notes) work without a token. The one-line messages behind <code>cmd | syki</code> and <code>md-memo &lt;file&gt;</code> carry no token at all. Treat the port as open to every local program for reading.
+            The token protects the methods that change something, but it is not a sandbox: the server listens on <code>127.0.0.1</code> only, any program of yours that can read <code>ipc-session.json</code> can call every method, including <code>ui.eval</code>, which runs JavaScript inside the app, and <code>buffer.get</code>, <code>buffer.get_selection</code> and <code>tab.list</code> (which read your notes) work without a token. The one-line messages behind <code>cmd | syki</code> and <code>syki &lt;file&gt;</code> carry no token at all. Treat the port as open to every local program for reading.
           </p>
         </div>
       </section>
@@ -4730,7 +4730,7 @@ ping 128.1.33.254 | syki</code></pre>
         <ul>
           <li>When output is redirected or piped, it is JSON unless you pass <code>--text</code>. To save plain text, use <code>syki buffer get --text &gt; note.md</code>.</li>
           <li><code>syki --help</code> (or <code>-h</code>) prints every command and its flags, and also how to pipe text in and how to call the JSON-RPC port directly (session file, message format, methods, error codes). <code>syki help buffer</code> prints one command's, and <code>syki --version</code> prints the version. They write to standard output, exit with code 0 and never start or raise the window, so a script or an AI agent can run them first.</li>
-          <li><strong>Windows scripts, agents and CI: use <code>syki-cli.exe</code>.</strong> <code>syki.exe</code> is a windowed program, so PowerShell and cmd do not wait for it and can lose its exit code and output. From the release that contains <code>syki-cli.exe</code>, the zip holds it next to <code>syki.exe</code>: a console program that runs the same commands (write <code>syki-cli</code> where this page says <code>md-memo</code>), so the shell waits for it and gets the real exit code (<code>jev verify</code>: 0 safe, 1 blocked, 2 warning) and the output. It never starts the app: with no arguments, a file name or piped text it hands the request to the running syki::sok, or exits with 1 and <code>md-memo is not running</code>. <code>syki.exe</code> is still the one that starts syki::sok. macOS needs no second program: the <code>md-memo</code> command there already waits.</li>
+          <li><strong>Windows scripts, agents and CI: use <code>syki-cli.exe</code>.</strong> <code>syki.exe</code> is a windowed program, so PowerShell and cmd do not wait for it and can lose its exit code and output. From the release that contains <code>syki-cli.exe</code>, the zip holds it next to <code>syki.exe</code>: a console program that runs the same commands (write <code>syki-cli</code> where this page says <code>syki</code>), so the shell waits for it and gets the real exit code (<code>jev verify</code>: 0 safe, 1 blocked, 2 warning) and the output. It never starts the app: with no arguments, a file name or piped text it hands the request to the running syki::sok, or exits with 1 and <code>syki is not running</code>. <code>syki.exe</code> is still the one that starts syki::sok. macOS needs no second program: the <code>syki</code> command there already waits.</li>
           <li><code>--json</code> works on every <code>buffer</code> subcommand.</li>
           <li><code>syki buffer get --out note.md</code> writes the note to a file as UTF-8 (no byte order mark unless you add <code>--bom</code>) and prints only its path, size and hash. Use it instead of <code>&gt;</code> or <code>| Set-Content</code> when the text is Japanese: Windows PowerShell 5.1 re-encodes piped text with the console code page and garbles it. The file is written by the command itself, replaced in one step, and its folder must already exist.</li>
           <li><code>info</code>, <code>scrap</code>, <code>config</code> and <code>lessons</code> accept their flags before or after their words (<code>syki scrap search deploy --limit 5</code>). They read and change nothing, with two exceptions: <code>scrap index</code> writes the search index (outside the scraps folder), and <code>scrap tag add|remove</code> writes a note only when you pass <code>--write</code>. They work whether or not syki::sok is running.</li>
@@ -4835,7 +4835,7 @@ syki --version
 syki agent install-skill                # Claude Code: ~/.claude/skills/syki
 syki agent install-skill --codex        # Codex ($CODEX_HOME/skills; the path is not verified)
 syki agent install-skill --dir ~/agent-skills   # &lt;folder&gt;/syki
-#   -> Installed the md-memo skill: C:\Users\you\.claude\skills\md-memo
+#   -> Installed the syki skill: C:\Users\you\.claude\skills\syki
 #      (run it again later: "already up to date", an unedited older copy is updated, an edited folder is left alone)
 
 # 20. Work on a tab that is not on screen, save it to a file, and close it (nothing on screen moves)
@@ -5065,7 +5065,7 @@ At the end, report each feature in a table as "confirmed / not confirmed / not c
                   <td>Microphone permission</td>
                   <td>WebView2 asks for permission at the first recording. On Windows, allow desktop apps in Settings → Privacy &amp; security → Microphone. On macOS, allow it in System Settings → Microphone (macOS behavior is not yet verified)</td>
                   <td>None</td>
-                  <td>If you see "Could not use the microphone", permission was denied or the OS blocks it. Do not delete <code>%LOCALAPPDATA%\md-memo\webview</code> without the user's consent</td>
+                  <td>If you see "Could not use the microphone", permission was denied or the OS blocks it. Do not delete <code>%LOCALAPPDATA%\syki-sok\webview</code> without the user's consent</td>
                 </tr>
                 <tr>
                   <td>Clipboard permission</td>
@@ -5179,7 +5179,7 @@ At the end, report each feature in a table as "confirmed / not confirmed / not c
             <li>Show, log, paste into chat or commit API keys, <code>config.json</code> (and its backups), <code>.env</code> or <code>session.json</code>. Keys are masked like "<code>set (...last 4 characters)</code>".</li>
             <li>Start a second syki::sok or force-kill the process. You quit it from the tray.</li>
             <li>Edit <code>config.json</code> while syki::sok is running. Do not delete a key to "reset" it; write an explicit default.</li>
-            <li>Read settings with <code>md-memo ui eval</code>, or call <code>window.backend.*</code>.</li>
+            <li>Read settings with <code>syki ui eval</code>, or call <code>window.backend.*</code>.</li>
             <li>Point the scraps folder at a repository, your home folder or a drive root. Put <code>.env</code> in the scraps folder without git-ignoring it.</li>
             <li>Add a flag that skips permission prompts (such as <code>--dangerously-skip-permissions</code>) to an agent definition, or register a CLI it has not checked with <code>--help</code>.</li>
             <li>Start a Cloudflare tunnel, install <code>cloudflared</code>, change OS microphone, firewall or privacy settings, or run the <code>ollama</code> command without your request.</li>
@@ -5205,7 +5205,7 @@ At the end, report each feature in a table as "confirmed / not confirmed / not c
 
         <p><strong>Neovim / Vim Send Command:</strong></p>
         <pre class="code-block"><code>" .vimrc / init.vim
-command! MDMemoSend :w !syki</code></pre>
+command! SykiSend :w !syki</code></pre>
 
         <p><strong>PowerShell Clipboard Append:</strong></p>
         <pre class="code-block"><code>Get-Clipboard | syki buffer append</code></pre>
@@ -5344,7 +5344,7 @@ command! MDMemoSend :w !syki</code></pre>
 
   <script>
     const themeBtn = document.getElementById('themeToggle');
-    const currentTheme = localStorage.getItem('md-memo-doc-theme') || 'dark';
+    const currentTheme = localStorage.getItem('syki-sok-doc-theme') || 'dark';
     if (currentTheme === 'light') {
       document.body.setAttribute('data-theme', 'light');
     }
@@ -5353,10 +5353,10 @@ command! MDMemoSend :w !syki</code></pre>
       const isLight = document.body.getAttribute('data-theme') === 'light';
       if (isLight) {
         document.body.removeAttribute('data-theme');
-        localStorage.setItem('md-memo-doc-theme', 'dark');
+        localStorage.setItem('syki-sok-doc-theme', 'dark');
       } else {
         document.body.setAttribute('data-theme', 'light');
-        localStorage.setItem('md-memo-doc-theme', 'light');
+        localStorage.setItem('syki-sok-doc-theme', 'light');
       }
     });
 
