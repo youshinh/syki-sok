@@ -74,7 +74,7 @@ const fresh = () => ({ welcomeShown: false, configFileFound: false, localConfigF
 })();
 
 (function theWelcomeNoteIsTheSameDocumentInBothLanguages() {
-  const keys = { ask: 'Cmd+L', palette: 'Cmd+Shift+P', settings: 'Cmd+,', search: 'Cmd+Shift+F', preview: 'Cmd+P', save: 'Cmd+S', scrapDir: '~/Documents/md-memo/scraps' };
+  const keys = { ask: 'Cmd+L', palette: 'Cmd+Shift+P', settings: 'Cmd+,', search: 'Cmd+Shift+F', preview: 'Cmd+P', save: 'Cmd+S', scrapDir: '~/Documents/syki-sok/scraps' };
   const en = FR.welcomeNote('en', keys);
   const ja = FR.welcomeNote('ja', keys);
 
@@ -93,7 +93,7 @@ const fresh = () => ({ welcomeShown: false, configFileFound: false, localConfigF
     assert.ok(/^# /.test(note.content), 'it starts with a heading');
     assert.ok(!/\{(ask|palette|settings|search|preview|save|scrapDir)\}/.test(note.content), 'every placeholder was filled');
     // What the request asks it to say: how to write, ask the AI, the palette, Settings, search, and where notes are.
-    for (const shown of ['`Cmd+L`', '`Cmd+Shift+P`', '`Cmd+,`', '`Cmd+Shift+F`', '`Cmd+P`', '`Cmd+S`', '`~/Documents/md-memo/scraps`']) {
+    for (const shown of ['`Cmd+L`', '`Cmd+Shift+P`', '`Cmd+,`', '`Cmd+Shift+F`', '`Cmd+P`', '`Cmd+S`', '`~/Documents/syki-sok/scraps`']) {
       assert.ok(note.content.indexOf(shown) !== -1, shown + ' is in the note');
     }
     assert.ok(note.content.split('\n').filter((l) => /^## /.test(l)).length >= 4, 'four sections: write, ask, around, where');
@@ -109,7 +109,7 @@ const fresh = () => ({ welcomeShown: false, configFileFound: false, localConfigF
   assert.ok(note.content.indexOf('`Ctrl+Shift+P`') !== -1);
   assert.ok(note.content.indexOf('`Ctrl+,`') !== -1);
   assert.ok(note.content.indexOf('`Ctrl+Shift+F`') !== -1, 'unset -> default');
-  assert.ok(note.content.indexOf('`~/Documents/md-memo/scraps`') !== -1, 'the folder falls back too');
+  assert.ok(note.content.indexOf('`~/Documents/syki-sok/scraps`') !== -1, 'the folder falls back too');
   assert.ok(FR.welcomeNote('fr', {}).title === 'Welcome', 'an unknown language gets English');
   assert.ok(FR.welcomeNote(undefined, undefined).content.length > 300);
   // A shortcut is text to put into the note: it must not be read as a replacement pattern.

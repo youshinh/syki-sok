@@ -248,7 +248,7 @@ check('a fresh install opens one editable Welcome note, at the top, and writes o
   assert.equal(env.editor.selectionStart, 0, 'read from the top');
   assert.equal(env.editor.selectionEnd, 0);
   for (const shown of ['`Ctrl+L`', '`Ctrl+Shift+P`', '`Ctrl+,`', '`Ctrl+Shift+F`']) assert.ok(tab.content.includes(shown), shown + ' is in the note');
-  assert.ok(tab.content.includes('`~/Documents/md-memo/scraps`'), 'where daily notes are stored');
+  assert.ok(tab.content.includes('`~/Documents/syki-sok/scraps`'), 'where daily notes are stored');
   assert.equal(env.config.general.welcomeShown, true, 'remembered in memory');
   assert.equal(env.saved.length, 1, 'one write');
   assert.deepEqual(Object.keys(env.saved[0]), ['general'], 'only the general section');

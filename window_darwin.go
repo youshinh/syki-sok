@@ -865,7 +865,7 @@ func runPlatformWindow(app *App, serverURL string) {
 }
 
 // activatePlatformWindow fronts the window for the "pipe" and "activate" IPC actions. It was
-// an empty function, so `md-memo` launched a second time, or `something | syki`, appended
+// an empty function, so `syki` launched a second time, or `something | syki`, appended
 // the scrap and left the window exactly where it was - usually behind whatever the user was
 // looking at, or miniaturized in the Dock.
 //

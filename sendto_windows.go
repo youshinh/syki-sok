@@ -70,7 +70,7 @@ func sendToShortcutPath() (string, error) {
 }
 
 // InstallSendToShortcut places a "syki::sok (OCR)" entry in the Explorer "Send To" menu that
-// invokes `md-memo ocr <path>` on the right-clicked file: no GUI launch, no standing process.
+// invokes `syki ocr <path>` on the right-clicked file: no GUI launch, no standing process.
 func (a *App) InstallSendToShortcut() error {
 	shortcutPath, err := sendToShortcutPath()
 	if err != nil {
@@ -78,7 +78,7 @@ func (a *App) InstallSendToShortcut() error {
 	}
 	exePath, err := os.Executable()
 	if err != nil {
-		return fmt.Errorf("resolving md-memo's own executable path: %w", err)
+		return fmt.Errorf("resolving syki's own executable path: %w", err)
 	}
 	if resolved, err := filepath.EvalSymlinks(exePath); err == nil {
 		exePath = resolved

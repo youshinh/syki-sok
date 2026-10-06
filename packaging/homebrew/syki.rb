@@ -17,7 +17,6 @@ cask "syki" do
 
   zap trash: [
     "~/Library/Application Support/syki-sok",
-    "~/Library/Application Support/md-memo",
     "~/Library/Saved Application State/com.youshinh.syki-sok.savedState",
     "~/Library/Preferences/com.youshinh.syki-sok.plist",
   ]

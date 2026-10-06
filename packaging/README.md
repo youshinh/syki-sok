@@ -63,61 +63,61 @@ From the release that contains it, `syki-windows-x64.zip` holds a second executa
 
 ## 🍏 macOS: Homebrew Tap (Cask)
 
-The Cask installs `syki::sok.app` directly into `/Applications` and symlinks
-its `md-memo` CLI binary (`syki::sok.app/Contents/MacOS/syki::sok`) onto `PATH`,
-so `cat log | syki` and the `md-memo buffer/tab/ui/jev/agent` subcommands
+The Cask installs `syki-sok.app` directly into `/Applications` and symlinks
+its `syki` CLI binary (`syki-sok.app/Contents/MacOS/syki-sok`) onto `PATH`,
+so `cat log | syki` and the `syki buffer/tab/ui/jev/agent` subcommands
 work the same as on Windows/Linux. The cask installs only the `.app`, not the `skills/`
 folder that the release zips carry; a Homebrew user gets the agent skill with
-`md-memo agent install-skill`, which copies the skill built into the binary (versions after 1.8.0).
+`syki agent install-skill`, which copies the skill built into the binary (versions after 1.8.0).
 
 The released app bundle is ad-hoc signed (not notarized), so on first launch
 Gatekeeper will refuse to open it; the cask's `caveats` block tells users what to
 do (macOS 15 or later: System Settings → Privacy & Security → Open Anyway; macOS 14
 or earlier: right-click → Open) or to run `xattr -dr com.apple.quarantine
-"$(brew --prefix)/Caskroom/md-memo/*/syki::sok.app"` once.
+"$(brew --prefix)/Caskroom/syki/*/syki-sok.app"` once.
 
 ### 1. Local Testing (macOS)
 To test installing the cask locally without publishing to a tap:
 
 ```bash
-brew install --cask ./packaging/homebrew/md-memo.rb
+brew install --cask ./packaging/homebrew/syki.rb
 ```
 
 To audit style and syntax:
 
 ```bash
-brew audit --cask ./packaging/homebrew/md-memo.rb
+brew audit --cask ./packaging/homebrew/syki.rb
 ```
 
 To test uninstallation:
 
 ```bash
-brew uninstall --cask md-memo
+brew uninstall --cask syki
 ```
 
 ### 2. The Homebrew Tap (`youshinh/homebrew-tap`)
-1. The public repository `youshinh/homebrew-tap` exists and holds `Casks/md-memo.rb`, a copy of `packaging/homebrew/md-memo.rb`.
-2. After every release, copy the updated `packaging/homebrew/md-memo.rb` (new `version` and `sha256`) into `Casks/md-memo.rb` there and push. Homebrew reads the tap, not this directory.
+1. The public repository `youshinh/homebrew-tap` exists and holds `Casks/syki.rb`, a copy of `packaging/homebrew/syki.rb`.
+2. After every release, copy the updated `packaging/homebrew/syki.rb` (new `version` and `sha256`) into `Casks/syki.rb` there and push. Homebrew reads the tap, not this directory.
 3. Users install syki::sok using:
    ```bash
    brew tap youshinh/tap
-   brew install --cask md-memo
+   brew install --cask syki
    ```
    Or in a single command:
    ```bash
-   brew install --cask youshinh/tap/md-memo
+   brew install --cask youshinh/tap/syki
    ```
 
 ---
 
 ## 🔄 Release Automation (GitHub Actions)
 
-When creating a new release (e.g., `v1.0.1`), update:
+When creating a new release (e.g., `v2.0.14`), update:
 1. Calculate SHA256 of new archives:
    ```powershell
    (Get-FileHash syki-windows-x64.zip -Algorithm SHA256).Hash
    (Get-FileHash syki-macos.zip -Algorithm SHA256).Hash
    ```
-2. Update `PackageVersion` in all three files of `packaging/winget/`, and `InstallerUrl`, `InstallerSha256` and `ReleaseDate` in `youshinh.md-memo.installer.yaml` (and `ReleaseNotesUrl` in the locale file); validate with `winget validate --manifest packaging/winget`; then submit the new version to `microsoft/winget-pkgs` (see above).
-3. Update `version` and `sha256` in `packaging/homebrew/md-memo.rb`.
-4. Copy that file into `Casks/md-memo.rb` in `youshinh/homebrew-tap` and push (see the Homebrew section above).
+2. Update `PackageVersion` in all three files of `packaging/winget/`, and `InstallerUrl`, `InstallerSha256` and `ReleaseDate` in `youshinh.syki-sok.installer.yaml` (and `ReleaseNotesUrl` in the locale file); validate with `winget validate --manifest packaging/winget`; then submit the new version to `microsoft/winget-pkgs` (see above).
+3. Update `version` and `sha256` in `packaging/homebrew/syki.rb`.
+4. Copy that file into `Casks/syki.rb` in `youshinh/homebrew-tap` and push (see the Homebrew section above).

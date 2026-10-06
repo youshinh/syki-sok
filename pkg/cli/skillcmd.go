@@ -39,9 +39,9 @@ func (r *HeadlessRunner) runInstallSkill(args []string) (int, error) {
 	flags.SetOutput(r.stderr)
 	claude := flags.Bool("claude", false, "Install for Claude Code (~/.claude/skills; CLAUDE_CONFIG_DIR is honoured). The default")
 	codex := flags.Bool("codex", false, "Install for Codex ($CODEX_HOME/skills, else ~/.codex/skills; path unverified)")
-	dir := flags.String("dir", "", "Install into <path>/md-memo")
+	dir := flags.String("dir", "", "Install into <path>/syki")
 	force := flags.Bool("force", false, "Replace a folder that was edited, has no marker, is newer, or is a link")
-	link := flags.Bool("link", false, "Link to the skills/md-memo folder on disk instead of copying (not on Windows)")
+	link := flags.Bool("link", false, "Link to the skills/syki folder on disk instead of copying (not on Windows)")
 	forceJSON := flags.Bool("json", false, "Force JSON output")
 	forceText := flags.Bool("text", false, "Force plain text output")
 	if err := flags.Parse(args); err != nil {
@@ -156,7 +156,7 @@ func skillBase(kind, dir string) (string, error) {
 	return abs, nil
 }
 
-// findSkillSource looks for a real skills/md-memo folder beside the program, then around the
+// findSkillSource looks for a real skills/syki folder beside the program, then around the
 // current folder (a checkout).
 func findSkillSource() string {
 	var starts []string

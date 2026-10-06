@@ -25,7 +25,7 @@ type ScrapSettings struct {
 
 func (a *App) parseScrapConfig(configJSON string) ScrapSettings {
 	cfg := ScrapSettings{
-		ScrapDir:               "~/Documents/md-memo/scraps",
+		ScrapDir:               "~/Documents/syki-sok/scraps",
 		GitSyncEnabled:         true,
 		GitSyncDebounceSeconds: 30,
 		GitRemoteBranch:        "main",
@@ -125,7 +125,7 @@ func (a *App) GetScrapDir() string {
 	a.gitMu.RLock()
 	defer a.gitMu.RUnlock()
 	if a.scrapDir == "" {
-		return scrap.ResolveScrapDir("~/Documents/md-memo/scraps")
+		return scrap.ResolveScrapDir("~/Documents/syki-sok/scraps")
 	}
 	return a.scrapDir
 }

@@ -14,8 +14,8 @@ import (
 //   - Ollama: starting / force-killing the real service (stubbed via the package vars below).
 //   - Config: getConfigFilePath(), getSessionFilePath(), the generated-image assets folder,
 //     and slotagent.FindAgentConfigFile all resolve under os.UserConfigDir(), i.e. the real
-//     %AppData%\md-memo. Tests wrote over the user's config.json.
-//   - Scraps: an unset scrap_dir defaults to "~/Documents/md-memo/scraps", so anything that
+//     %AppData%\syki-sok. Tests wrote over the user's config.json.
+//   - Scraps: an unset scrap_dir defaults to "~/Documents/syki-sok/scraps", so anything that
 //     went through scrap.ResolveScrapDir touched (and InitScrapEngine would git-pull) the
 //     user's real notes repository.
 //   - Network: with a key present in the real config.json, Jev prediction POSTed test text to

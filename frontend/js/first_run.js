@@ -132,7 +132,7 @@
     }
   };
 
-  const FALLBACK_KEYS = { ask: 'Ctrl+L', palette: 'Ctrl+Shift+P', settings: 'Ctrl+,', search: 'Ctrl+Shift+F', preview: 'Ctrl+P', save: 'Ctrl+S', scrapDir: '~/Documents/md-memo/scraps' };
+  const FALLBACK_KEYS = { ask: 'Ctrl+L', palette: 'Ctrl+Shift+P', settings: 'Ctrl+,', search: 'Ctrl+Shift+F', preview: 'Ctrl+P', save: 'Ctrl+S', scrapDir: '~/Documents/syki-sok/scraps' };
 
   // The welcome note for the UI language. keys: what the shortcuts are called on this computer ({ ask, palette, settings, search,
   // preview, save } as shown to the person, e.g. "Cmd+L" on a Mac) and the daily notes folder ({ scrapDir }). A missing value

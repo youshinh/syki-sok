@@ -131,7 +131,7 @@
       contextMenuLayout: { order: [], hidden: [] }
     },
     scraps: {
-      scrapDir: '~/Documents/md-memo/scraps',
+      scrapDir: '~/Documents/syki-sok/scraps',
       gitSyncEnabled: true,
       gitSyncDebounceSeconds: 30,
       gitRemoteBranch: 'main',
@@ -12242,7 +12242,7 @@ STRICT SYNTAX SAFETY RULES:
       const gitRemoteUrlEl = document.getElementById('cfg-git-remote-url');
       const gitBranchEl = document.getElementById('cfg-git-remote-branch');
       const testHintEl = document.getElementById('git-test-result-hint');
-      const dir = (scrapDirEl && scrapDirEl.value.trim()) || '~/Documents/md-memo/scraps';
+      const dir = (scrapDirEl && scrapDirEl.value.trim()) || '~/Documents/syki-sok/scraps';
       const remoteUrl = (gitRemoteUrlEl && gitRemoteUrlEl.value.trim()) || '';
       const branch = (gitBranchEl && gitBranchEl.value.trim()) || 'main';
 
@@ -13714,7 +13714,7 @@ STRICT SYNTAX SAFETY RULES:
     // Scraps & Background Git Sync Settings
     const scrapDirEl = document.getElementById('cfg-scrap-dir');
     if (scrapDirEl) {
-      scrapDirEl.value = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '~/Documents/md-memo/scraps';
+      scrapDirEl.value = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '~/Documents/syki-sok/scraps';
     }
     const gitSyncEnabledEl = document.getElementById('cfg-git-sync-enabled');
     if (gitSyncEnabledEl) {
@@ -14495,7 +14495,7 @@ STRICT SYNTAX SAFETY RULES:
     if (!config.scraps) config.scraps = {};
     const saveScrapDirEl = document.getElementById('cfg-scrap-dir');
     if (saveScrapDirEl) {
-      config.scraps.scrapDir = saveScrapDirEl.value.trim() || '~/Documents/md-memo/scraps';
+      config.scraps.scrapDir = saveScrapDirEl.value.trim() || '~/Documents/syki-sok/scraps';
       config.scrap_dir = config.scraps.scrapDir;
     }
     const saveGitSyncEnabledEl = document.getElementById('cfg-git-sync-enabled');

@@ -19,11 +19,11 @@ import (
 	"syki-sok/pkg/scrap"
 )
 
-// `md-memo scrap path|list|search|tags|tag|index`: access to the scrap folder without the GUI. path, list, search and
+// `syki scrap path|list|search|tags|tag|index`: access to the scrap folder without the GUI. path, list, search and
 // tags are read-only: nothing here creates, moves or writes a file or folder. `index` (semanticcmd.go)
 // writes only the semantic index, which lives outside the scrap folder. `tag` (tagcmd.go) works on a file or on
 // standard input and rewrites a file only when --write is given. The folder comes from config.json through the
-// shared Config (scraps.scrapDir, default ~/Documents/md-memo/scraps).
+// shared Config (scraps.scrapDir, default ~/Documents/syki-sok/scraps).
 
 // defaultSearchLimit is the number of matches `scrap search` stops at unless --limit says otherwise.
 const defaultSearchLimit = 100
