@@ -1,0 +1,13 @@
+{
+  "defaults": { "motion": "no-preference", "steps": "memory,open,scroll" },
+  "configs": [
+    { "name": "S-solid-shown",  "exe": "v2-p2b.exe",    "configPatch": { "appearance": { "bars": "solid", "autoHide": false } }, "barsState": "shown" },
+    { "name": "F-light-shown",  "exe": "v2-p2b.exe",    "configPatch": { "appearance": { "bars": "light", "autoHide": false } }, "barsState": "shown" },
+    { "name": "E-glass-shown",  "exe": "v2-p2b.exe",    "configPatch": { "appearance": { "bars": "glass", "autoHide": false } }, "barsState": "shown" },
+    { "name": "Ew-glass-shown-wc", "exe": "v2-p2b-wc.exe", "configPatch": { "appearance": { "bars": "glass", "autoHide": false } }, "barsState": "shown" },
+    { "name": "C-light",        "exe": "v2-p2b.exe",    "configPatch": { "appearance": { "bars": "light", "autoHide": true } }, "barsState": "natural" },
+    { "name": "Cw-light-wc",    "exe": "v2-p2b-wc.exe", "configPatch": { "appearance": { "bars": "light", "autoHide": true } }, "barsState": "natural" },
+    { "name": "D-glass",        "exe": "v2-p2b.exe",    "configPatch": { "appearance": { "bars": "glass", "autoHide": true } }, "barsState": "natural" },
+    { "name": "Dw-glass-wc",    "exe": "v2-p2b-wc.exe", "configPatch": { "appearance": { "bars": "glass", "autoHide": true } }, "barsState": "natural" }
+  ]
+}

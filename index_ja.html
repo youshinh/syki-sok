@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>syki::sok — Zero-latency, Local-first Markdown Scratchpad</title>
+  <meta name="description" content="一瞬の思考を逃さず捉える、ゼロレイテンシ・ローカルファーストのMarkdownスクラッチパッド。起動15ms、待機メモリ5MB、自律型IMEシールド、ローカル＆Vision AI。">
+  <link rel="icon" type="image/png" href="./app.png">
+  <meta property="og:title" content="syki::sok — Zero-latency, Local-first Markdown Scratchpad">
+  <meta property="og:description" content="ObsidianやNotionの手前に置く、起動15ms・待機メモリ5MBの即時入力バッファ。">
+  <meta property="og:image" content="./img/screen_diagram.png">
+  <meta property="og:url" content="https://youshinh.github.io/syki-sok/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <style>
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+      
+      /* Dark Theme (MD-memo Calm Dark Olive) */
+      --bg-canvas: #111413;
+      --bg-surface: #181c1a;
+      --bg-surface-elevated: #202623;
+      --bg-surface-glass: rgba(24, 28, 26, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      
+      --text-primary: #e8ece5;
+      --text-secondary: #97a095;
+      --text-tertiary: #656d63;
+      
+      /* MD-memo Dark Olive Accent */
+      --accent: #6b843d;
+      --accent-glow: rgba(107, 132, 61, 0.15);
+      --accent-emerald: #556b2f;
+      --accent-emerald-subtle: rgba(85, 107, 47, 0.16);
+      
+      --code-bg: #141715;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+      
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="light"] {
+      --bg-canvas: #f7f9f6;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #eef2eb;
+      --bg-surface-glass: rgba(255, 255, 255, 0.85);
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-focus: rgba(0, 0, 0, 0.2);
+      
+      --text-primary: #181c16;
+      --text-secondary: #4a5447;
+      --text-tertiary: #848e81;
+      
+      --accent: #455a24;
+      --accent-glow: rgba(69, 90, 36, 0.12);
+      --accent-emerald: #3b442b;
+      --accent-emerald-subtle: rgba(59, 68, 43, 0.1);
+      
+      --code-bg: #eef2eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navbar */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--bg-surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s var(--ease);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+    }
+
+    .icon-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: all 0.2s var(--ease);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg-canvas);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-surface);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 96px 0 64px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      background: var(--accent-emerald-subtle);
+      border: 1px solid rgba(85, 107, 47, 0.3);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 24px;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 5.5vw, 64px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .hero h1 span.gradient {
+      background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p.lead {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 36px;
+      line-height: 1.65;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .install-bar {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px 6px 6px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-width: 100%;
+    }
+
+    .install-bar span.cmd {
+      user-select: all;
+      color: var(--text-primary);
+      margin-right: 12px;
+    }
+
+    .install-bar span.os-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-right: 10px;
+      padding-right: 10px;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .install-bar button.copy-btn {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s var(--ease);
+    }
+
+    .install-bar button.copy-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    /* Hero Preview Media */
+    .hero-media-wrapper {
+      position: relative;
+      margin-top: 48px;
+      padding: 10px;
+      border-radius: calc(var(--radius-lg) + 6px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5);
+    }
+
+    .hero-media-inner {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-subtle);
+      line-height: 0;
+    }
+
+    .hero-media-inner img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Metrics Bar */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 48px 0 80px;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 24px 20px;
+      border-radius: var(--radius-md);
+      text-align: left;
+    }
+
+    .metric-val {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    /* Section Styles */
+    .section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 56px;
+    }
+
+    .section-tag {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(26px, 3.5vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Comparison Matrix */
+    .matrix-table-wrap {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 32px;
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--border-focus);
+      border-radius: 3px;
+    }
+
+    .matrix-table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .matrix-table th, .matrix-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .matrix-table th {
+      background: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .matrix-table td.highlight {
+      background: var(--accent-emerald-subtle);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .matrix-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Feature Deep Dive Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s var(--ease);
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .feature-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+      margin-top: auto;
+    }
+
+    .feature-tag-list li {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+    }
+
+    /* Interactive Showcase Tabs */
+    .showcase-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 880px;
+      margin: 0 auto 28px;
+      width: 100%;
+    }
+
+    .showcase-tab {
+      width: 100%;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-full);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s var(--ease);
+    }
+
+    .showcase-tab:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    .showcase-tab.active {
+      background: var(--text-primary);
+      color: var(--bg-canvas);
+      border-color: var(--text-primary);
+    }
+
+    /* Deep Dive: 4 High-Speed Pipelines */
+    .deepdive-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .deepdive-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .deepdive-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0.8;
+    }
+
+    .deepdive-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .deepdive-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      flex-shrink: 0;
+    }
+
+    .deepdive-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .deepdive-lead {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .flow-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+
+    .flow-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-emerald-subtle);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .flow-step-content {
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .flow-step-content strong {
+      color: var(--text-primary);
+    }
+
+    .flow-step-content span {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .deepdive-pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .deepdive-pill-list li {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+    }
+
+    .terminal-demo {
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+
+    .terminal-prompt {
+      color: var(--accent-emerald);
+      user-select: none;
+      margin-right: 6px;
+    }
+
+    .terminal-cmd {
+      color: var(--text-primary);
+    }
+
+    .terminal-comment {
+      color: var(--text-tertiary);
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      margin-bottom: 12px;
+    }
+
+    .showcase-view {
+      position: relative;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      overflow: hidden;
+      box-shadow: 0 24px 60px -15px rgba(0,0,0,0.4);
+    }
+
+    .showcase-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .showcase-caption {
+      padding: 16px 24px;
+      background: var(--bg-surface-elevated);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .showcase-caption-text {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .showcase-caption-key {
+      font-family: var(--font-mono);
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    /* Use Cases Grid */
+    .usecases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .usecase-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .usecase-persona {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .usecase-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(107, 132, 61, 0.25);
+    }
+
+    .usecase-card h3 {
+      font-size: 19px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .usecase-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    .usecase-quote {
+      background: var(--bg-surface-elevated);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 13px;
+      color: var(--text-primary);
+      font-style: normal;
+      font-weight: 500;
+      line-height: 1.5;
+      margin-top: auto;
+    }
+
+    /* Architecture Section */
+    .arch-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-top: 32px;
+    }
+
+    .arch-code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      background: var(--code-bg);
+      padding: 24px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      overflow-x: auto;
+    }
+
+    /* Shortcuts Table */
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+    }
+
+    .shortcut-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .kbd-wrap {
+      display: flex;
+      gap: 6px;
+    }
+
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+
+    /* CTA Section */
+    .cta-banner {
+      background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-canvas) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 64px 32px;
+      text-align: center;
+      margin: 80px 0;
+    }
+
+    .cta-banner h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .cta-banner p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 32px;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 0;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s var(--ease);
+    }
+
+    .footer-links a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .deepdive-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      .showcase-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .usecases-grid {
+        grid-template-columns: 1fr;
+      }
+      .shortcuts-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .matrix-table th, .matrix-table td {
+        padding: 12px 14px;
+      }
+      .matrix-table {
+        min-width: 580px;
+        font-size: 13px;
+      }
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+      .showcase-tabs {
+        grid-template-columns: 1fr;
+      }
+      .hero-cta {
+        flex-direction: column;
+      }
+      .install-bar {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <img src="./app.png" alt="syki::sok Logo" class="brand-icon">
+        <span>syki::sok</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#paradox">思想</a></li>
+        <li><a href="#features">機能一覧</a></li>
+        <li><a href="#pipeline">画像OCR・CLI・Grep</a></li>
+        <li><a href="#showcase">プレビュー</a></li>
+        <li><a href="#usecases">使用事例</a></li>
+        <li><a href="#shortcuts">操作性</a></li>
+        <li><a href="manual_ja.html" style="color: var(--accent); font-weight: 600;">マニュアル ↗</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" title="テーマ切り替え" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="12" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <a href="https://github.com/youshinh/syki-sok" target="_blank" rel="noopener" class="icon-btn" title="GitHub リポジトリ">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+        </a>
+        <a href="index.html" class="icon-btn" title="English" aria-label="Switch to English">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 8 6 6"></path>
+            <path d="m4 14 6-6 2-3"></path>
+            <path d="M2 5h12"></path>
+            <path d="M7 2h1"></path>
+            <path d="m22 22-5-10-5 10"></path>
+            <path d="M14 18h6"></path>
+          </svg>
+        </a>
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">ダウンロード</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <h1>
+        一瞬の思考を、<br>
+        <span class="gradient">ゼロの摩擦で。</span>
+      </h1>
+      <p class="lead">
+        ObsidianやNotionの保管庫の手前に置く、復帰15ms・待機メモリ5MBの即時入力バッファ。<br>
+        自律型IMEシールドとオフラインAIを備えた、思考キャプチャツール。
+      </p>
+
+      <div class="hero-cta">
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          最新リリースを入手
+        </a>
+
+        <a href="manual_ja.html" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          公式マニュアル・設定ガイド ↗
+        </a>
+
+        <div class="install-bar">
+          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/md-memo</span></span>
+          <button class="copy-btn" id="copyBtn" title="コマンドをコピー">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copyText">コピー</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Visual -->
+      <div class="hero-media-wrapper">
+        <div class="hero-media-inner">
+          <img src="./img/screen_diagram.png" alt="syki::sok 左右分割エディタとMermaid図解プレビュー">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Metrics -->
+  <section class="container">
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-val">&lt; 15ms</div>
+        <div class="metric-label">ホットキー復帰レイテンシ</div>
+        <div class="metric-sub">Ctrl+Alt+M で即座にカーソル復元</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">5–15 MB</div>
+        <div class="metric-label">アイドル時常駐メモリ</div>
+        <div class="metric-sub">debug.FreeOSMemory() 積極回収</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">11 µs</div>
+        <div class="metric-label">自律型 IME 判定オーバーヘッド</div>
+        <div class="metric-sub">コード領域の全角誤爆を完全防止</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">100%</div>
+        <div class="metric-label">ローカルデータ保存</div>
+        <div class="metric-sub">手元の.mdに直接永続化・クラウドAIは任意連携</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: The Scratchpad Paradox -->
+  <section class="section" id="paradox">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Philosophy</div>
+        <h2 class="section-title">思考とメモ帳、距離のパラドックス</h2>
+        <p class="section-desc">
+          Obsidian や Notion に代表されるナレッジベースは情報の蓄積・構造化には卓越していますが、起動に数秒かかり、思考の熱量を削いでしまいます。<br>
+          <strong>syki::sok は保管庫（Vault）を置き換えるものではありません。その手前で思考を一瞬も逃さず書き留める「摩擦ゼロの即時メモ帳（スクラッチパッド）」です。</strong>
+        </p>
+      </div>
+
+      <div class="matrix-table-wrap">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>比較項目</th>
+              <th>一般的なテキストエディタ</th>
+              <th>ナレッジ保管庫 (Notion / Obsidian)</th>
+              <th>syki::sok</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>アーキテクチャ</strong></td>
+              <td>C++ / Swift / Rust</td>
+              <td>Electron / Chromium (重厚)</td>
+              <td class="highlight">Go 1.26 + OS ネイティブ WebView</td>
+            </tr>
+            <tr>
+              <td><strong>復帰レイテンシ</strong></td>
+              <td>~100ms (コールド起動)</td>
+              <td>2.0s – 5.0s (JS初期化待ち)</td>
+              <td class="highlight">&lt; 15ms (システムトレイ常駐)</td>
+            </tr>
+            <tr>
+              <td><strong>待機メモリ</strong></td>
+              <td>~15 MB</td>
+              <td>400 MB – 800 MB+</td>
+              <td class="highlight">5 – 15 MB (積極的 GC 回収)</td>
+            </tr>
+            <tr>
+              <td><strong>IME 制御</strong></td>
+              <td>OS まかせ（全角誤爆頻発）</td>
+              <td>OS まかせ</td>
+              <td class="highlight">自律型 IME シールド (全角自動排除)</td>
+            </tr>
+            <tr>
+              <td><strong>AI 補完</strong></td>
+              <td>クラウド依存 (有料/要APIキー)</td>
+              <td>クラウド依存 / 拡張プラグイン</td>
+              <td class="highlight">ローカル (Ollama) / 任意でCloud AI</td>
+            </tr>
+            <tr>
+              <td><strong>データ保存</strong></td>
+              <td>プレーンテキスト</td>
+              <td>独自DB / クラウド同期</td>
+              <td class="highlight">100% ローカル POSIX プレーンテキスト</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Deep Features -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Capabilities</div>
+        <h2 class="section-title">技術基盤とディテール</h2>
+        <p class="section-desc">
+          目立たず、待たせず、思考を遮らない。プロダクトの細部に宿るエンジニアリング。
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3>ゼロレイテンシ・常駐復帰</h3>
+            <p>
+              トレイ常駐から <code>Ctrl+Alt+M</code>（Mac は Dock から <code>Option+Cmd+M</code>）で瞬時に復元。ウィンドウ最小化時は <code>debug.FreeOSMemory()</code> でワーキングセットを 5〜15MB まで極限まで縮小。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Go 1.26</li>
+            <li>OS Native WebView</li>
+            <li>Zero IPC Lag</li>
+          </ul>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>自律型 IME シールド</h3>
+            <p>
+              インラインコード（`...`）やブロック、URLの内部では全角文字を自動インターセプト。誤って半角モードで入力したローマ字拍動も対数尤度比検定（LLRT）で検知し自動補正。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>11µs Overhead</li>
+            <li>LLRT Engine</li>
+            <li>Syntax Guardian</li>
+          </ul>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <h3>ローカルファースト AI (Ghost Text)</h3>
+            <p>
+              完全オフラインで推論可能なローカル Ollama / vLLM と連携。外部へのデータ流出を防ぎながら、<code>Ctrl+→</code> で高速予測補完。Vision OCR などの高度推論時はクラウドAIも柔軟に選択可能。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Local / Offline</li>
+            <li>Ollama / vLLM</li>
+            <li>Ghost Text</li>
+          </ul>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </div>
+            <h3>UNIX パイプ & CLI 自動化</h3>
+            <p>
+              ターミナルから <code>cat build.log | syki</code> で起動中インスタンスへミリ秒転送。さらに <code>Ctrl+E</code> のコマンドバーでシェルコマンドを実行でき、<code>Tab</code> で AI モードに切り替えれば、ローカルの安全ガードが確認してから実行する自然言語 OS コマンドも利用可能。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Local TCP IPC</li>
+            <li>Safe CLI Agent</li>
+            <li>Pipe Filter</li>
+          </ul>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <h3>並列スクラップ検索</h3>
+            <p>
+              <code>runtime.NumCPU()</code> のワーカースレッドとゼロアロケーション並列スキャナにより、過去のデイリースクラップ（<code>scraps/YYYY-MM-DD.md</code>）全体を瞬時に Grep 検索。<strong>意味</strong>に切り替えると（試験的機能・初期設定はオフ）、言葉が違っても意味の近いノートが見つかり、<strong>深掘り</strong>を押すと、何をどこへ送るかを見せるダイアログのあとで、AI モデルがそれらのノートから出典リンクつきで答えます。<strong>絞り込み</strong>で、そのどれも、期間と、ノートに書いた（またはコマンドパレットで付けた）タグで狭められます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Parallel Scan</li>
+            <li>150ms Debounce</li>
+            <li>Auto Highlight</li>
+            <li>意味検索と深掘り</li>
+          </ul>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+            </div>
+            <h3>サイレント Git 同期</h3>
+            <p>
+              キー操作停止から 30 秒のアイドル後にバックグラウンドで自動コミット＆プッシュ。アプリ起動時には自動リベース。設定画面で Git リポジトリ URL を指定するだけで完全同期。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Auto Pull / Push</li>
+            <li>Conflict-Free</li>
+            <li>Zero Friction</li>
+          </ul>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+            </div>
+            <h3>AIに質問</h3>
+            <p>
+              テキストを選択（またはカーソルを置くだけ）して <code>Ctrl+L</code>、指示を入力すれば、内蔵 LLM の答えが数秒でその直下に挿入されます。元の文章は置き換わりません。<code>Alt+C</code> は指示なしで校正。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+L</li>
+            <li>Answer Below</li>
+            <li>Alt+C Proofread</li>
+          </ul>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="10 8 16 12 10 16 10 8"></polygon>
+              </svg>
+            </div>
+            <h3>自動セレクター: 聞く・任せる・実行</h3>
+            <p>
+              行を書いて <code>Ctrl+Enter</code> を押すと、ローカルの決まりごとが内容を判定し、内蔵 LLM、エージェント CLI（Claude Code / Codex / Hermes / Antigravity）、コマンドのどれに渡すかを選びます。結果は指示の行の下に入ります。既定ではエージェントとコマンドは 2 回目の押下で実行し、判断に迷うときは「AIに質問」バーが開きます。<code>{{ @エージェント ... }}</code> を自分で書くこともでき、エージェントは <code>agents.yaml</code> で定義できます。エージェントがつまずいたときは、タスクパネルの<strong>教訓</strong>で、あなたが承認した規則を次の実行のために残せます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Enter</li>
+            <li>Result Below</li>
+            <li>agents.yaml</li>
+          </ul>
+        </div>
+
+        <!-- Feature 9 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+            </div>
+            <h3>次の一手を提案</h3>
+            <p>
+              何をすべきか迷ったら <code>Ctrl+J</code>。書いている内容に対して最大 3 つの次の一手を提案。標準では内蔵のローカルルールで動作するためデータは外部に出ず、シェルコマンドは必ず AST ガードレールを通過してから実行。ステータスバーの AI をクリックし、「提案」で ON / OFF、「Ctrl+J を押したときだけ」で手動に切り替え可能。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+J</li>
+            <li>Local rules</li>
+            <li>AST guardrail</li>
+          </ul>
+        </div>
+
+        <!-- Feature 10 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+            </div>
+            <h3>スマートペースト</h3>
+            <p>
+              <code>Ctrl+V</code> は Excel・Word・Google Docs の HTML を外部ツールなしで Markdown に変換し（表・リスト・コードブロック・リンクを含む）、クリップボードが画像のみの場合は Vision OCR を実行します。エディタやターミナルからのコードとログは、そのまま貼ります。<code>Ctrl+Shift+V</code> は加工なしでそのまま貼ります。約1MBのHTMLがおよそ90msで変換されます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+V</li>
+            <li>Ctrl+Shift+V</li>
+            <li>HTML &rarr; Markdown</li>
+          </ul>
+        </div>
+
+        <!-- Feature 11 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </div>
+            <h3>音声入力</h3>
+            <p>
+              ツールバーのマイク、右クリックメニュー、コマンドパレット、または変更可能なショートカット（既定は <code>Ctrl+Shift+R</code>）で音声入力を開始すると、カーソル位置にマーカーが表示され、他の場所を編集しながら待てます。数秒の無音で自動停止するか、もう一度ショートカットを押すと停止し、<code>Esc</code> で破棄できます。既定のモデルは Gemini 3.5 Transcribe で、画像OCRと共通の設定でAPIキーが必要です。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+R</li>
+            <li>Gemini 3.5 Transcribe</li>
+            <li>Esc で破棄</li>
+          </ul>
+        </div>
+
+        <!-- Feature 12 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </div>
+            <h3>ファイルリンク</h3>
+            <p>
+              エディタにファイルをドロップするとカーソル位置にリンクが挿入され、リンクが維持されるよう <code>./assets</code> にコピーされます。<code>Ctrl+Click</code> でOS標準アプリで開き、<code>Alt+Click</code> で Explorer / Finder に表示、画像リンクにホバーするとサムネイルが表示されます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>ドラッグ&amp;ドロップ</li>
+            <li>Ctrl+Click</li>
+            <li>Alt+Click</li>
+          </ul>
+        </div>
+
+        <!-- Feature 13 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="2" width="10" height="20" rx="2" ry="2"></rect>
+                <line x1="11" y1="18" x2="13" y2="18"></line>
+              </svg>
+            </div>
+            <h3>Mobile Drop</h3>
+            <p>
+              <code>Ctrl+Shift+U</code> を押すとQRコードが表示され、同じWi-Fi（またはCloudflareトンネル経由のHTTPS）でスマホ側のページを開けます。写真・音声・ファイル・テキストをまとめて1回で送信でき（最大10ファイル・60MB）、PC側の選択テキストもスマホへ渡せます。OCRや文字起こしが実行できない場合でも、写真や録音は <code>./assets</code> に保存されてリンクされます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+U</li>
+            <li>QRコード</li>
+            <li>最大10ファイル</li>
+          </ul>
+        </div>
+
+        <!-- Feature 14 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="4" rx="1" ry="1"></rect>
+                <line x1="6" y1="12" x2="18" y2="12"></line>
+                <line x1="6" y1="16" x2="14" y2="16"></line>
+                <line x1="6" y1="20" x2="10" y2="20"></line>
+              </svg>
+            </div>
+            <h3>ツールバー &amp; 右クリックメニューのカスタマイズ</h3>
+            <p>
+              設定 &rarr; 一般から、表示するツールバーアイコンと右クリックメニュー項目を選び、グループ内で並べ替えられます。右クリックメニューには開いているメモの一覧サブメニューも備わっており、素早くノートを切り替えられます。変更は即座に反映され、キャンセルで元に戻り、「デフォルトに戻す」で元のレイアウトに復元します。非表示にした項目もショートカットからは引き続き使えます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>設定 &rarr; 一般</li>
+            <li>並べ替え</li>
+            <li>デフォルトに戻す</li>
+          </ul>
+        </div>
+
+        <!-- Feature 15 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+                <path d="M14 5h6v6"></path>
+              </svg>
+            </div>
+            <h3>選択範囲 CLI</h3>
+            <p>
+              外部ツールやAIエージェントは <code>md-memo buffer get --selection</code> で選択中のテキストだけを読み取り、<code>md-memo buffer replace-selection</code> で結果を書き戻せます。書き戻しは1回のUndoで元に戻せ、途中で選択範囲が変わっていた場合は何も書き込みません。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>buffer get --selection</li>
+            <li>replace-selection</li>
+            <li>Undo 1回</li>
+          </ul>
+        </div>
+
+        <!-- Feature 16 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </div>
+            <h3>ステータスバーの関連ノート</h3>
+            <p>
+              <code>Ctrl+Shift+O</code> でフォルダを開くと、入力中の内容に最も近い2件のノートがステータスバーにピルとして表示され、クリックすると新しいタブで開きます。照合は、そのフォルダ内の Markdown・テキストのノートのタイトル・先頭行・パスに対する単純なキーワードのスコア計算です。フォルダ未指定、または一致するノートがなければ何も表示しません。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+O</li>
+            <li>上位2件</li>
+            <li>クリックで開く</li>
+          </ul>
+        </div>
+
+        <!-- Feature 17 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
+              </svg>
+            </div>
+            <h3>安全なショートカット割り当て</h3>
+            <p>
+              設定 &rarr; ショートカットの各操作は、キーのボタンをクリックして新しい組み合わせを押すだけで割り当て直せます。すでに使われている組み合わせは上書きの前に確認され、<code>Ctrl+Shift+V</code> のような予約キーは割り当てできません。<code>Backspace</code> でキーを解除でき、「初期設定に戻す」ですべて元に戻ります。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>設定 &rarr; ショートカット</li>
+            <li>重複チェック</li>
+            <li>初期設定に戻す</li>
+          </ul>
+        </div>
+
+        <!-- Feature 18 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
+            </div>
+            <h3>AIエージェント対応</h3>
+            <p>
+              リポジトリには <code>skills/md-memo</code> が同梱されています。すべてのインターフェース・設定ファイル・セットアップ手順をソースで検証してまとめたもので、AIエージェントがあなたの代わりに syki::sok を操作・設定できます。CLI、JSON-RPC、安全ルール（<code>config.json</code> の編集はアプリ終了中のみ、キーは表示しない）を網羅しています。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>skills/md-memo</li>
+            <li>CLI</li>
+            <li>JSON-RPC</li>
+          </ul>
+        </div>
+
+        <!-- Feature 19 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </div>
+            <h3>Discord連携</h3>
+            <p>
+              自分のDiscord Botへスマホから送ったDMを、次にsyki::sokを起動したときに今日のスクラップへ取り込みます。md-memoが閉じている間に送っても大丈夫です。中継サーバーやCloudflareアカウントは不要で、必要なのは無料のDiscord Botだけ。写真はOCR、音声は文字起こしと、Mobile Dropと同じ処理を通ります。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>設定 &rarr; 同期</li>
+            <li>閉じていてもOK</li>
+            <li>中継サーバー不要</li>
+          </ul>
+        </div>
+
+        <!-- Feature 20 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="10" rx="2.5" ry="2.5"></rect>
+                <line x1="6" y1="12" x2="12" y2="12"></line>
+                <line x1="16" y1="10" x2="16" y2="14"></line>
+              </svg>
+            </div>
+            <h3>クイックキャプチャ (Windows)</h3>
+            <p>
+              どのアプリからでも <code>Ctrl+Shift+Q</code> を押すと、常に最前面の小さなポップアップが開きます。1行入力して <code>Enter</code> で今日のスクラップに追記、<code>Ctrl+Enter</code> ならAIで先に校正してから追記します。ホットキーで開いたときは、AI校正つきで追記した分に、直前まで使っていたウィンドウ名も一緒に記録されます。フォーカスを失って1秒たつと自動で閉じます。ホットキーは 設定 &rarr; ショートカット で変更・解除できます。Windows のみ。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+Q</li>
+            <li>Send / AI Send</li>
+            <li>Windows のみ</li>
+          </ul>
+        </div>
+
+        <!-- Feature 21 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path>
+                <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path>
+              </svg>
+            </div>
+            <h3>画面キャプチャ (Windows)</h3>
+            <p>
+              クイックキャプチャのポップアップで <code>Ctrl+Shift+Enter</code> を押し、ウィンドウをクリックするか範囲をドラッグします。<code>Ctrl</code> を押したまま選ぶと複数をまとめて取り込めます。取り込んだ画像はPNGとして <code>./assets</code> に保存され、選んだ順にOCRされて、今日のノートに1つのエントリーとして入ります。選ぶまで画面は一切読み取りません。Windows のみ。macOS では使えません。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+Enter</li>
+            <li>ウィンドウか範囲</li>
+            <li>Windows のみ</li>
+          </ul>
+        </div>
+
+        <!-- Feature 22 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+              </svg>
+            </div>
+            <h3>ホットフォルダ: 画像と音声がそのままノートに</h3>
+            <p>
+              監視フォルダに画像や音声ファイルを置くと、画像はOCR、音声は文字起こしされて今日のスクラップに追記され、ファイルは <code>./assets</code> に移動します（OCRに失敗しても削除しません）。既定はオフで、設定 &rarr; 同期 で有効にします。OCRはまずクラウドのビジョンモデルで読み取り、端末内エンジンは代替です。「画像をこのPCの外に出さない」をオンにすると端末内だけで読み取ります（Windows のみ）。macOS では、画像はクラウドのビジョンモデルだけ、音声は Gemini だけで処理されます。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Windows / macOS</li>
+            <li>既定はオフ</li>
+            <li>設定 &rarr; 同期</li>
+          </ul>
+        </div>
+
+        <!-- Feature 23 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+            </div>
+            <h3>このPC内 Whisper (Windows x64)</h3>
+            <p>
+              ホットフォルダの音声とDiscordのボイスメモを、自分のPCの中でオフラインのまま文字起こしします。設定 &rarr; AIモデル &rarr; 音声入力 でエンジンに Whisper を選ぶと、Whisper 本体（約9MB）とモデル（既定は日本語に特化した kotoba-whisper で約513MB）が必要なときにダウンロードされ、進捗表示と中断からの再開に対応します。Gemini での再試行をオンにしない限り、音声はPCの外へ出ません。Windows x64 のみ。画面での音声入力とMobile Dropは引き続き Gemini を使います。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>オフライン</li>
+            <li>kotoba-whisper</li>
+            <li>Windows x64 のみ</li>
+          </ul>
+        </div>
+
+        <!-- Feature 24 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </div>
+            <h3>「送る」と OCR コマンド</h3>
+            <p>
+              Windows では、エクスプローラーの「送る」メニューに <strong>syki::sok (OCR)</strong> を追加（設定 &rarr; 連携）すると、画像を右クリックするだけで文字を今日のノートに追記できます。ウィンドウは開きません。ターミナルからは <code>md-memo ocr &lt;画像&gt;</code> で、WindowsでもmacOSでも同じことができます（<code>--json</code> でJSON出力。macOS ではクラウドOCRのみ）。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>「送る」(Windows)</li>
+            <li>md-memo ocr</li>
+            <li>ウィンドウは開かない</li>
+          </ul>
+        </div>
+
+        <!-- Feature 25 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="9" x2="20" y2="9"></line>
+                <line x1="4" y1="15" x2="20" y2="15"></line>
+                <line x1="10" y1="3" x2="8" y2="21"></line>
+                <line x1="16" y1="3" x2="14" y2="21"></line>
+              </svg>
+            </div>
+            <h3>下線付きリンクと行番号</h3>
+            <p>
+              エディタ内のリンクにはすべて下線が付きます。対象は、Markdownのリンク、画像（点線で、ホバーでプレビュー）、そのままの <code>http(s)</code> アドレスです。<code>Ctrl+Click</code> でファイル・フォルダ・Webのアドレス（ブラウザで開きます）を開けます。行番号は各行の最初の表示行に付くので、折り返した行も番号は1つのままで、実際の行と一致します。非常に大きなノート（下線は10万文字超、行番号は12万文字超）では、従来の表示のままです。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Click</li>
+            <li>Webのアドレス</li>
+            <li>折り返し行</li>
+          </ul>
+        </div>
+
+        <!-- Feature 26 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9V3h12v6"></path>
+                <rect x="3" y="9" width="18" height="8" rx="2"></rect>
+                <path d="M6 14h12v7H6z"></path>
+              </svg>
+            </div>
+            <h3>プレビューの印刷・PDF保存</h3>
+            <p>
+              プレビューのプリンターのボタンで印刷パネルが開きます。左に印刷したときのページ（白い紙、黒い文字、画像はカラー、図は明るい配色、途中で切れない）、右に用紙・向き・余白・拡大率・ページの指定です。ファイル名とフォルダを入れるヘッダーとフッターは、スイッチを入れるまでオフです。<strong>PDFに保存</strong>でファイルに書き出し、スクリプトからは <code>md-memo tab pdf notes.md -o notes.pdf</code> でできます。最初にボタンを押すまで、何も読み込みません。
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>PDFに保存</li>
+            <li>A4 / A3 / B5 / Letter</li>
+            <li>md-memo tab pdf</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="section-desc" style="max-width: 720px; margin: 32px auto 0; text-align: center; font-size: 14px;">
+        <strong>Windows と macOS。</strong>クイックキャプチャ・画面キャプチャ・「送る」・このPC内 Whisper は、いまのところ Windows のみです。ホットフォルダと <code>md-memo ocr</code> は macOS でも動きますが、OCR はクラウド、文字起こしは Gemini のみです。リンクの下線と行番号は共通のWebコードなので macOS でも同様に動く見込みですが、実機の Mac ではまだ確認していません。印刷パネルは Windows のみで、macOS ではプリンターのボタンが標準の印刷画面（PDF ▾ → PDFとして保存）を開きます。こちらも実機の Mac ではまだ確認していません。
+      </p>
+    </div>
+  </section>
+
+  <!-- Section: Deep Dive - Vision OCR, AI CLI & Parallel Grep Pipeline -->
+  <section class="section" id="pipeline">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Deep Dive Workflows</div>
+        <h2 class="section-title">画像OCR・AI CLI・並列Grep・文章の図解<br>4大高速パイプライン</h2>
+        <p class="section-desc">
+          視覚情報からマークダウンへの自動構造化、安全確認付きのOSターミナル自動化、CPUマルチコア検索、そして長文ドキュメントの即時図解抽象化。
+        </p>
+      </div>
+
+      <div class="deepdive-grid">
+        <!-- Deep Dive Card 1: Vision OCR -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3>画像キャプチャの即時Markdown化</h3>
+              <span style="font-size:12px; color:var(--accent); font-weight:600;">Gemini Vision OCR 統合</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            OS標準の矩形選択キャプチャ（<code>Win+Shift+S</code> / <code>Cmd+Shift+4</code>）で画面やUIモックを切り取り、syki::sok上で <code>Ctrl+V</code>（ペースト）するだけ。専用ソフトやアップロード画面を開くことなく、画像内の情報をマークダウンとして即時バッファ展開します。
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>クリップボードからダイレクト検知</strong>
+                <span>画像ペーストを検知すると、エディタに仮アンカー <code>[画像マークダウン変換中 (Gemini)...]</code> を非同期挿入し、入力をブロックしません。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>単なるOCRを超えた「構造認識」</strong>
+                <span>文字列のベタ打ちではなく、表構造（Markdown Table <code>| 列 |</code>）、見出し階層、インデント付き箇条書き、Mermaid図解候補を自動判別して構造化。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>コードスニペットのシンタックス自動付与</strong>
+                <span>画面内のコード画像は、言語（<code>```typescript</code> 等）を推定したフェンスドコードブロックとしてクリーンに展開。手動での打ち直しを根絶します。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># デザイナー＆リサーチャーの実用例:</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">UI料金表スクショ → Markdownテーブルへ自動変換</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">ホワイトボード写真 → 箇条書きアクションリストへ構造化</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>Clipboard Paste (Ctrl+V)</li>
+            <li>Async Non-blocking</li>
+            <li>Auto Markdown Table</li>
+            <li>Vision Model API</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 2: AI CLI Pipeline -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </div>
+            <div>
+              <h3>AI CLI を活用した双方向パイプライン</h3>
+              <span style="font-size:12px; color:var(--accent-emerald); font-weight:600;">UNIX Pipe &amp; AST セーフティエージェント</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            エディタを独立した孤島にせず、OSやターミナルとの双方向データパイプラインとして機能させます。自然言語指示からシェルコマンドを自動生成し、AST安全解析で厳格に保護した上で非同期実行します。
+          </p>
+
+          <div class="security-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            組み込み AST &amp; Regex セーフティウォール搭載
+          </div>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">A</div>
+              <div class="flow-step-content">
+                <strong>Inbound: ターミナルからメモへ直結パイプ</strong>
+                <span><code>cat build.log | syki</code> や <code>docker logs ... | syki</code>。TCP IPC（<code>127.0.0.1:49152</code>）経由でデイリースクラップ（<code>scraps/YYYY-MM-DD.md</code>）へミリ秒転送。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">B</div>
+              <div class="flow-step-content">
+                <strong>In-Editor: 自然言語 AI CLI エージェント (Ctrl+E、AI モード)</strong>
+                <span>「ポート8080のプロセスを特定」「更新されたファイルを検索」と指示。LLMが安全なコマンドを推論し、Goroutineで非同期実行＆出力をバッファへ挿入。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">C</div>
+              <div class="flow-step-content">
+                <strong>Outbound: 外部 CLI フィルタ (Ctrl+E、CLI モード)</strong>
+                <span>選択テキストを <code>jq</code>、<code>prettier</code>、<code>sort</code> などのローカルCLI標準入力に流し込み、整形結果で選択範囲をインプレース置換。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">D</div>
+              <div class="flow-step-content">
+                <strong>Selection CLI: 選択範囲そのものをパイプする</strong>
+                <span><code>md-memo buffer get --selection</code> で選択中のテキストを出力し、<code>md-memo buffer replace-selection</code> で1つのUndoとして書き戻し、結果は選択状態のまま残ります。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># セーフティエンジンによる危険コマンド自動ブロック例:</span><br>
+            <span class="terminal-prompt">!</span> <span style="color:#f87171;">BLOCKED: rm -rf / , format c: , diskpart , :(){ :|:&amp; };:</span><br>
+            <span class="terminal-prompt">?</span> <span style="color:#fbbf24;">WARNING: 再帰削除 (rm -r) やシャットダウン時は事前承認ダイアログを表示</span><br>
+            <span class="terminal-prompt">$</span> <span class="terminal-cmd">md-memo buffer get --selection | some-formatter | syki buffer replace-selection</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>Local TCP IPC</li>
+            <li>Destructive Cmd Shield</li>
+            <li>CLI In-place Filter</li>
+            <li>Selection CLI</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 3: Parallel Grep Engine -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <path d="M11 8v6M8 11h6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>並列 Grep &amp; 全文検索エンジン</h3>
+              <span style="font-size:12px; color:#a855f7; font-weight:600;">Goroutine (NumCPU) マルチコアスキャン</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            「あの時のメモどこだっけ？」をゼロ秒で解決。<code>Ctrl+Shift+F</code>（Mac: <code>Cmd+Shift+F</code>）で、蓄積された全デイリースクラップ（<code>scraps/YYYY-MM-DD.md</code>）をインメモリ並列走査します。
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>runtime.NumCPU() 並列スキャナ</strong>
+                <span>CPUコア数に応じたワーカープールと <code>bufio.Scanner</code> により、大量の過去スクラップをゼロアロケーションで並列スキャン。数千ファイルでも瞬時に完了。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>前後3行のコンテキスト自動抽出</strong>
+                <span>マッチした行だけでなく前後の文脈（SnippetParts）を動的構築。検索モーダル上で前後の文脈を一目で把握可能。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>150ms デバウンス &amp; 一発ダイレクトジャンプ</strong>
+                <span>入力と同時にインクリメンタル絞り込み。キーボードの <code>↓</code>/<code>↑</code> で選び、<code>Enter</code> を押すと該当スクラップを開いて該当行へスムーズスクロール＆ハイライト。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># Grep 実行例 (日付降順で最新メモを優先表示):</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">scraps/2026-09-17.md:42 [行42へジャンプ]</span><br>
+            <span class="terminal-prompt">|</span> <span class="terminal-comment">OAuth token expired at 14:02:11</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>runtime.NumCPU()</li>
+            <li>Bufio Streaming</li>
+            <li>Context Snippet (3-line)</li>
+            <li>Instant Line Jump</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 4: Text Diagramming -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="6" height="6" rx="1"></rect>
+                <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+                <rect x="15" y="3" width="6" height="6" rx="1"></rect>
+                <path d="M6 9v3a3 3 0 0 0 3 3h6"></path>
+                <path d="M18 9v6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>長文ドキュメントの即時「文章の図解」</h3>
+              <span style="font-size:12px; color:var(--accent); font-weight:600;">Mermaid &amp; LLM 意味構造化パイプライン (Ctrl+L)</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            読むのに時間がかかる長大な仕様書や複雑なエラーログを、数秒で視覚的な図へと抽象化。文脈に応じたMermaid記法を即時生成し、分割プレビュー（<code>Ctrl+\</code>）で思考の整理と理解を大幅に加速します。
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>テキストから関係性・因果フローを自動抽出</strong>
+                <span>冗長な文章から主語・述語・条件分岐・時系列を抽出し、図解すべき本質的なコンテキストを整理。手作業での要約や構図検討をスキップします。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>最適なMermaid記法コードへダイレクト変換</strong>
+                <span>シーケンス図（API連携）、フローチャート（条件分岐）、状態遷移図など、内容に最も適した記法を選択してコードフェンス内へクリーンに出力。</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>分割ビューで文章と図をシームレスに同期</strong>
+                <span><code>Ctrl+\</code> で即座に分割プレビュー展開。重い作図ツールの起動を不要にし、テキストの修正とダイアグラムの更新がローカルで完結します。</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># 実践的な文章の図解ユースケース:</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">長大な認証仕様書 → シーケンス図 (sequenceDiagram) で即把握</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">障害タイムラインログ → 因果関係フローチャート (flowchart TD)</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>文章の図解</li>
+            <li>Mermaid Engine</li>
+            <li>分割ビュー (Ctrl+\)</li>
+            <li>AIに質問 (Ctrl+L)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Interactive Showcase -->
+  <section class="section" id="showcase">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Interface</div>
+        <h2 class="section-title">思考を誘惑しないミニマルデザイン</h2>
+        <p class="section-desc">
+          思考のノイズになるグラデーションや余分な装飾を削ぎ落とし、タイポグラフィとマークダウンの美しさに徹したインターフェース。
+        </p>
+      </div>
+
+      <div class="showcase-tabs">
+        <button class="showcase-tab active" data-img="./img/screen_diagram.png" data-desc="左右分割リアルタイムプレビュー & Mermaid 構文図解レンダリング" data-key="Ctrl + \">Mermaid / 分割ビュー</button>
+        <button class="showcase-tab" data-img="./img/screen_cli_filter.png" data-desc="コマンドバーの CLI モード: jq, sort, duckdb 等のローカルCLIへテキストを流し込む（Tab で AI モードに切り替え）" data-key="Ctrl + E">コマンドバー</button>
+        <button class="showcase-tab" data-img="./img/manual/ja/inline-ai.png" data-desc="選択した行の下に開く「AIに質問」バー: 指示の入力欄、対象を示すチップ（選択範囲: 34文字）、実行ボタン。答えは直下に挿入されます。" data-key="Ctrl + L">AIに質問</button>
+        <button class="showcase-tab" data-img="./img/screen_scraps_search.png" data-desc="全CPUコア（NumCPU）を用いたミリ秒単位の並列Grepスクラップ検索" data-key="Ctrl + Shift + F">並列スクラップ検索</button>
+        <button class="showcase-tab" data-img="./img/setting.png" data-desc="一般・外観・エディタ挙動の詳細設定" data-key="Ctrl + ,">一般設定</button>
+        <button class="showcase-tab" data-img="./img/screen_settings_agent.png" data-desc="自律エージェント連携（Claude Code / Hermes / AGY）と実行ポリシー" data-key="agents.yaml">エージェント連携</button>
+      </div>
+
+      <div class="showcase-view">
+        <img id="showcaseImg" src="./img/screen_diagram.png" alt="syki::sok Showcase" class="showcase-img">
+        <div class="showcase-caption">
+          <span id="showcaseText" class="showcase-caption-text">左右分割リアルタイムプレビュー & Mermaid 構文図解レンダリング</span>
+          <span id="showcaseKey" class="showcase-caption-key">Ctrl + \</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Use Cases -->
+  <section class="section" id="usecases">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Workflows</div>
+        <h2 class="section-title">思考加速のユースケース</h2>
+        <p class="section-desc">
+          プロダクトデザイナー、デザインエンジニア、ソフトウェア開発者、リサーチャーの現場に溶け込む具体例。
+        </p>
+      </div>
+
+      <div class="usecases-grid">
+        <!-- Case 1 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Designers & Researchers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">ユーザーヒアリング / アイデア出し</span>
+          </div>
+          <h3>インタビュー中の思考キャプチャ</h3>
+          <p>
+            ヒアリング中にブラウザやFigmaを見ながら、ホットキー一発でオーバーレイ。自律型IMEシールドが作動するため、日本語と英語の専門用語が混在しても入力モードのミスタッチで手が止まりません。
+          </p>
+          <div class="usecase-quote">
+            重いエディタのロードを待つ間に忘れる一瞬の着想を確実に残す。
+          </div>
+        </div>
+
+        <!-- Case 2 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Design Engineers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">デザインシステム & 仕様策定</span>
+          </div>
+          <h3>Mermaid による画面フローの即時構造化</h3>
+          <p>
+            UIステートやモーダルの遷移ロジックをテキストで書きながら、リアルタイムにMermaidダイアグラムで視覚確認（<code>Ctrl+\</code>）。ドキュメントと図面が単一のプレーンテキストとして同期します。
+          </p>
+          <div class="usecase-quote">
+            外部作図ツールの起動を不要にし、プロトタイプ段階の遷移図をマークダウンだけで即座に構造化する。
+          </div>
+        </div>
+
+        <!-- Case 3 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Software Engineers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">デバッグ & ターミナル連携</span>
+          </div>
+          <h3>CLI パイプによるログの流し込み & 整形</h3>
+          <p>
+            <code>docker logs ... | syki</code> や <code>curl ... | syki</code> でターミナル出力をそのままスクラッチパッドへ直結。コマンドバー（<code>Ctrl+E</code>）で <code>jq</code> や <code>prettier</code> フィルタを通し、<code>Ctrl+L</code> でAIに即時解析させます。
+          </p>
+          <div class="usecase-quote">
+            ターミナルとエディタのコピペ往復を根絶し、エラーログの整形とAI解析をシームレスに直結する。
+          </div>
+        </div>
+
+        <!-- Case 4 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Knowledge Workers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Obsidian / Notion Vault 連携</span>
+          </div>
+          <h3>「入口はsyki::sok、保管庫はObsidian」の二層運用</h3>
+          <p>
+            syki::sokの保存先を作業中Obsidian Vaultの <code>Daily Notes/</code> フォルダに直接指定。日中の殴り書きやエラーメモは最速のsyki::sokで行い、夕方にObsidianでリンクネットワークに組み込みます。
+          </p>
+          <div class="usecase-quote">
+            保管庫の堅牢性とスクラッチパッドの即時機動力を両立する、二層構造のメモ運用を実現する。
+          </div>
+        </div>
+
+        <!-- Case 5 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">現場メモ &amp; モバイル取込</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Mobile Drop + ボイスメモ</span>
+          </div>
+          <h3>ホワイトボード写真と音声メモを、スマホから一括送信</h3>
+          <p>
+            Mobile Drop の QR コードを開き、ホワイトボードを撮影して音声メモを添え、「まとめてPCへ送信」を押すだけ。写真は Vision OCR、音声は Gemini 文字起こしを経て、アイテムごとに見出しが付いてスクラッチパッドに届きます。
+          </p>
+          <div class="usecase-quote">
+            席に戻る前に、ホワイトボードの内容と自分の所感を同時に書き残せる。
+          </div>
+        </div>
+
+        <!-- Case 6 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">報告書 &amp; 表計算</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">スマートペースト</span>
+          </div>
+          <h3>Excel の範囲を、貼り付け1回で Markdown の表に</h3>
+          <p>
+            Excel のセルや Word の表をコピーして <code>Ctrl+V</code> を押すだけ。内蔵コンバーターがクリップボードのHTMLを列揃え付きのGFMテーブルに変換します。<code>Ctrl+Shift+V</code> は加工せず、テキストだけをそのまま貼り付けます。
+          </p>
+          <div class="usecase-quote">
+            表をメモに移すために、縦棒とハイフンを打ち直す必要はもうありません。
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Shortcuts -->
+  <section class="section" id="shortcuts">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Efficiency</div>
+        <h2 class="section-title">最小限の動作で最大限のログを残す</h2>
+        <p class="section-desc">
+          マウスに手を伸ばす必要はありません。すべてのコアアクションは指先に最適化されています。
+        </p>
+      </div>
+
+      <div class="shortcuts-grid">
+        <div class="shortcut-row">
+          <span class="shortcut-desc">グローバル呼び出し (前面に表示)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>M</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>M</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">高速スクラップ並列全文検索</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">予測ゴーストテキストの単語単位採用</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>→</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">アクション候補を表示 (次の一手を提案)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>J</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">AIに質問（選択範囲・現在の行・ノート全体）</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>L</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">自動セレクター（AIに質問 / エージェント / コマンドを行の内容から判定）</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Enter</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">コマンドバー（CLI フィルタ / AI CLI エージェント、Tab で切り替え）</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>E</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">エディタ・リアルタイムプレビュー左右分割</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>\</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">選択行 / カレント行の上下スムーズ移動</span>
+          <div class="kbd-wrap">
+            <kbd>Alt</kbd><kbd>↑</kbd><kbd>↓</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">コマンドパレット表示 (全アクション検索)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">カレントバッファ内高速検索</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>F</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">通常貼り付け (プレーンテキスト / 画像OCR)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">そのまま貼る (加工なし)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">音声入力 (キーは変更可)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>R</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">プレビューを右側に表示</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Mobile Drop (スマホ用QRコード)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>U</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">クイックキャプチャのポップアップ (Windowsのみ・キー変更可)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Q</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Zen モード（集中して書く）</span>
+          <div class="kbd-wrap">
+            <kbd>Shift</kbd><kbd>F11</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">全画面表示（タイトルバー・タスクバーを隠す）</span>
+          <div class="kbd-wrap">
+            <kbd>F11</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">リンクを開く / Explorer に表示</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Click</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>Alt</kbd><kbd>Click</kbd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Architecture Topology Box -->
+      <div class="arch-box">
+        <div style="margin-bottom: 16px; font-weight: 600; font-size: 15px;">システムトポロジー（高帯域幅 Go コアエンジン）</div>
+        <pre class="arch-code"><code>[ フロントエンド: 等幅キャンバス / Ghost Overlay / スクラップ検索UI ]
+                              ▲
+                              │ 双方向RPCブリッジ (WebView2 / WKWebView)
+                              ▼
+[ コアエンジン: Go 1.26 / OSネイティブWebView / ネイティブダイアログ (COM/Cocoa) ]
+       │
+       ├─► CLIパイプ & TCP IPC (127.0.0.1:49152)
+       ├─► ローカルLLMエンジン (Ollama / vLLM / LM Studio)
+       ├─► デイリースクラップ集約 (scraps/YYYY-MM-DD.md)
+       ├─► ホットフォルダ (画像 / 音声 &rarr; OCR / 文字起こし &rarr; スクラップ)
+       ├─► 並列Grepエンジン (runtime.NumCPU() ゼロアロケーションスキャン)
+       ├─► バックグラウンドGit同期 (30秒アイドル時サイレントPush)
+       ├─► ダイレクトファイルIO (UTF-8 / Shift_JIS 自動判定)
+       └─► メモリ回収機構 (ウィンドウ非表示時に積極的GC実行: 5〜15MB)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="container">
+    <div class="cta-banner" id="cta">
+      <h2>思考からログ反射、0秒</h2>
+      <p>
+        Windows / macOS に対応。起動待ちも入力モードの迷いもゼロ。インストーラー不要の単一バイナリ、または Homebrew から今すぐ使い始められます。
+      </p>
+      <div class="hero-cta" style="margin-bottom: 0;">
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Releases からダウンロード
+        </a>
+        <a href="https://github.com/youshinh/syki-sok" target="_blank" rel="noopener" class="btn btn-secondary">
+          GitHub で Star する
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="./app.png" alt="syki::sok" style="width:20px; height:20px; border-radius:4px;">
+        <span>syki::sok &copy; 2026 youshinh. Released under the MIT License.</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="index.html">English LP</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/blob/main/README_JA.md" target="_blank">ドキュメント (JA)</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/blob/main/README.md" target="_blank">Documentation (EN)</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/releases" target="_blank">リリースノート</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- Interactive Scripts -->
+  <script>
+    // 1. Theme Toggle
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let currentTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      localStorage.setItem('theme', theme);
+    }
+    applyTheme(currentTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(currentTheme);
+    });
+
+    // 2. Showcase Tab Switcher
+    const tabs = document.querySelectorAll('.showcase-tab');
+    const showcaseImg = document.getElementById('showcaseImg');
+    const showcaseText = document.getElementById('showcaseText');
+    const showcaseKey = document.getElementById('showcaseKey');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const newSrc = tab.getAttribute('data-img');
+        const newDesc = tab.getAttribute('data-desc');
+        const newKey = tab.getAttribute('data-key');
+
+        showcaseImg.style.opacity = '0.4';
+        setTimeout(() => {
+          showcaseImg.src = newSrc;
+          showcaseText.textContent = newDesc;
+          showcaseKey.textContent = newKey;
+          showcaseImg.style.opacity = '1';
+        }, 150);
+      });
+    });
+
+    // 3. Install Command Copy
+    const copyBtn = document.getElementById('copyBtn');
+    const copyText = document.getElementById('copyText');
+    const installCmd = document.getElementById('installCmd');
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(installCmd.textContent.trim());
+        copyText.textContent = 'コピー完了!';
+        copyBtn.style.color = 'var(--accent-emerald)';
+        copyBtn.style.borderColor = 'var(--accent-emerald)';
+        setTimeout(() => {
+          copyText.textContent = 'コピー';
+          copyBtn.style.color = '';
+          copyBtn.style.borderColor = '';
+        }, 2000);
+      } catch (err) {
+        copyText.textContent = '失敗';
+      }
+    });
+  </script>
+</body>
+</html>

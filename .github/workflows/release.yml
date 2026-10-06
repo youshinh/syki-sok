@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build Windows Executable
+        shell: pwsh
+        run: |
+          go build -ldflags="-H windowsgui -s -w" -trimpath -o syki.exe .
+          # syki-cli.exe is the console-subsystem twin of syki.exe: PowerShell waits for it, and its exit codes and
+          # output are reliable in scripts, agents and CI. syki.exe stays the one that starts the app.
+          $version = "$env:GITHUB_REF_NAME".TrimStart('v')
+          $ldflags = "-s -w -X main.version=$version"
+          go build "-ldflags=$ldflags" -trimpath -o syki-cli.exe ./cmd/syki
+          $reported = (& ./syki-cli.exe --version) -join ''
+          if ($reported -ne "md-memo $version") { throw "syki-cli.exe reports '$reported', expected 'md-memo $version'" }
+          # skills/syki is the agent skill: a release download is not a clone of the repository,
+          # so without it the docs' "read skills/syki/SKILL.md" would point at nothing on an installed PC.
+          # Only that folder goes into the zip, not the Go files next to it that embed it into the program.
+          New-Item -ItemType Directory -Force dist/skills | Out-Null
+          Copy-Item -Recurse skills/syki dist/skills/syki
+          Compress-Archive -Path syki.exe, syki-cli.exe, README.md, README_JA.md, LICENSE, dist/skills -DestinationPath syki-windows-x64.zip
+
+      - name: Upload Windows Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: syki-windows-x64.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    name: Build macOS App
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: Run Tests
+        run: go test -v ./...
+
+      - name: Build macOS App Bundle
+        run: |
+          chmod +x build_mac.sh
+          ./build_mac.sh
+
+      - name: Verify app bundle
+        run: |
+          test -x "MD-Memo.app/Contents/MacOS/MD-Memo"
+          plutil -lint "MD-Memo.app/Contents/Info.plist"
+          echo "Architectures in binary:"
+          lipo -archs "MD-Memo.app/Contents/MacOS/MD-Memo"
+
+      - name: Verify code signature
+        # Ad-hoc signing is best-effort (see build_mac.sh); never block the
+        # release on a signature-verification quirk in the runner's toolchain.
+        run: codesign --verify --deep --strict "MD-Memo.app"
+        continue-on-error: true
+
+      - name: Package macOS release archive
+        run: |
+          ditto -c -k --sequesterRsrc --keepParent "MD-Memo.app" md-memo-macos.zip
+          zip -j md-memo-macos.zip README.md README_JA.md LICENSE
+          # The agent skill, next to the app (see the Windows job for why). No -j: keep skills/md-memo/... paths.
+          # (-x: not the Go files next to it that embed it into the program.)
+          zip -r md-memo-macos.zip skills -x "skills/*.go"
+
+      - name: Upload macOS Release Asset
+        uses: softprops/action-gh-release@v2
+        with:
+          files: md-memo-macos.zip
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

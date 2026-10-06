@@ -1,0 +1,8 @@
+{
+  "defaults": { "motion": "system", "steps": "startup,memory" },
+  "configs": [
+    { "name": "A-base",     "exe": "v2-base.exe" },
+    { "name": "P-p2a-head", "exe": "v2-p2a-head.exe" },
+    { "name": "N-p2b",      "exe": "v2-p2b.exe" }
+  ]
+}

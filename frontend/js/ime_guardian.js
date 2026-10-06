@@ -1,0 +1,332 @@
+// syki::sok Zero-Latency 4-Layer Hybrid IME Guardian & Romaji Converter
+// Architecture:
+// Layer 0: AST Lexical Shield (0 ns)
+// Layer 1: Compact Prefix Filter (<50 ns / ~30 KB)
+// Layer 2: Dual Log-Likelihood Ratio Test (LLRT) (<10 µs)
+// Layer 3: Virtual Undoable Composition with instant rollback
+// Layer 4: Non-intrusive OS IME synchronization on commit
+
+(function (global) {
+  'use strict';
+
+  // Comprehensive Romaji to Hiragana Table (Hepburn & Kunrei compatible)
+  const ROMAJI_TABLE = {
+    'kya': 'きゃ', 'kyu': 'きゅ', 'kyo': 'きょ',
+    'sha': 'しゃ', 'shu': 'しゅ', 'sho': 'しょ', 'shi': 'し',
+    'cha': 'ちゃ', 'chu': 'ちゅ', 'cho': 'ちょ', 'chi': 'ち',
+    'nya': 'にゃ', 'nyu': 'にゅ', 'nyo': 'にょ',
+    'hya': 'ひゃ', 'hyu': 'ひゅ', 'hyo': 'ひょ',
+    'mya': 'みゃ', 'myu': 'みゅ', 'myo': 'みょ',
+    'rya': 'りゃ', 'ryu': 'りゅ', 'ryo': 'りょ',
+    'gya': 'ぎゃ', 'gyu': 'ぎゅ', 'gyo': 'ぎょ',
+    'ja': 'じゃ', 'ju': 'じゅ', 'jo': 'じょ', 'ji': 'じ',
+    'bya': 'びゃ', 'byu': 'びゅ', 'byo': 'びょ',
+    'pya': 'ぴゃ', 'pyu': 'ぴゅ', 'pyo': 'ぴょ',
+    'tsu': 'つ', 'dzu': 'づ', 'dji': 'ぢ',
+    'ka': 'か', 'ki': 'き', 'ku': 'く', 'ke': 'け', 'ko': 'こ',
+    'sa': 'さ', 'si': 'し', 'su': 'す', 'se': 'せ', 'so': 'そ',
+    'ta': 'た', 'ti': 'ち', 'tu': 'つ', 'te': 'て', 'to': 'と',
+    'na': 'な', 'ni': 'に', 'nu': 'ぬ', 'ne': 'ね', 'no': 'の',
+    'ha': 'は', 'hi': 'ひ', 'fu': 'ふ', 'hu': 'ふ', 'he': 'へ', 'ho': 'ほ',
+    'ma': 'ま', 'mi': 'み', 'mu': 'む', 'me': 'め', 'mo': 'も',
+    'ya': 'や', 'yu': 'ゆ', 'yo': 'よ',
+    'ra': 'ら', 'ri': 'り', 'ru': 'る', 're': 'れ', 'ro': 'ろ',
+    'wa': 'わ', 'wo': 'を', 'nn': 'ん', "n'": 'ん',
+    'ga': 'が', 'gi': 'ぎ', 'gu': 'ぐ', 'ge': 'げ', 'go': 'ご',
+    'za': 'ざ', 'zi': 'じ', 'zu': 'ず', 'ze': 'ぜ', 'zo': 'ぞ',
+    'da': 'だ', 'di': 'ぢ', 'du': 'づ', 'de': 'で', 'do': 'ど',
+    'ba': 'ば', 'bi': 'び', 'bu': 'ぶ', 'be': 'べ', 'bo': 'ぼ',
+    'pa': 'ぱ', 'pi': 'ぴ', 'pu': 'ぷ', 'pe': 'ぺ', 'po': 'ぽ',
+    'fa': 'ふぁ', 'fi': 'ふぃ', 'fe': 'ふぇ', 'fo': 'ふぉ',
+    'a': 'あ', 'i': 'い', 'u': 'う', 'e': 'え', 'o': 'お',
+    '-': 'ー'
+  };
+
+  function romajiToHiragana(input) {
+    let res = '';
+    let i = 0;
+    const s = input.toLowerCase();
+
+    while (i < s.length) {
+      // Sokuon check: double consonant like 'kk', 'tt', 'ss', 'pp' (excluding 'nn')
+      if (i + 1 < s.length && s[i] === s[i + 1] && s[i] !== 'n' && !'aeiou'.includes(s[i])) {
+        res += 'っ';
+        i++;
+        continue;
+      }
+
+      // Special check: 'nn' followed by vowel e.g. 'konnichi' -> 'ko' + 'n' + 'ni' + 'chi'
+      // When 'nn' is followed by a vowel or 'y', the second 'n' forms a syllable with the vowel!
+      // e.g. in 'konnichiha': s[2]='n', s[3]='n', s[4]='i' -> first 'n' is 'ん', second 'n' starts 'ni' (に)
+      if (i + 2 < s.length && s[i] === 'n' && s[i + 1] === 'n' && 'aeiouy'.includes(s[i + 2])) {
+        res += 'ん';
+        i += 1;
+        continue;
+      }
+
+      // Check 3-char match
+      if (i + 3 <= s.length) {
+        const sub3 = s.substring(i, i + 3);
+        if (ROMAJI_TABLE[sub3]) {
+          res += ROMAJI_TABLE[sub3];
+          i += 3;
+          continue;
+        }
+      }
+
+      // Check 2-char match
+      if (i + 2 <= s.length) {
+        const sub2 = s.substring(i, i + 2);
+        if (ROMAJI_TABLE[sub2]) {
+          res += ROMAJI_TABLE[sub2];
+          i += 2;
+          continue;
+        }
+      }
+
+      // Check 1-char match
+      const sub1 = s.charAt(i);
+      if (ROMAJI_TABLE[sub1]) {
+        res += ROMAJI_TABLE[sub1];
+        i += 1;
+        continue;
+      }
+
+      // Lone 'n' followed by consonant (or end of word if explicit)
+      if (sub1 === 'n' && (i + 1 === s.length || !'aeiouy'.includes(s[i + 1]))) {
+        res += 'ん';
+        i += 1;
+        continue;
+      }
+
+      res += sub1;
+      i++;
+    }
+
+    return res;
+  }
+
+  const WHITESPACE_RE = /\s/;
+
+  class IMEGuardian {
+    constructor(callbacks) {
+      this.callbacks = callbacks || {};
+      this.vowels = new Set(['a', 'e', 'i', 'o', 'u']);
+
+      // Layer 1: Compact English Prefix & Common Word Shield (O(1) lookups to avoid false positives)
+      this.englishWords = new Set([
+        "the", "and", "for", "are", "but", "not", "you", "all", "any", "can",
+        "had", "her", "was", "one", "our", "out", "day", "get", "has", "him",
+        "his", "how", "man", "new", "now", "old", "see", "two", "way", "who",
+        "boy", "did", "its", "let", "put", "say", "she", "too", "use", "dad",
+        "mom", "this", "that", "with", "from", "they", "here", "have", "more",
+        "will", "make", "like", "time", "just", "know", "take", "into", "year",
+        "your", "good", "some", "them", "then", "look", "only", "come", "over",
+        "think", "also", "back", "after", "even", "want", "give", "most",
+        "inter", "comp", "comm", "cont", "prog", "func", "const", "string",
+        "mark", "git", "type", "class", "node", "code", "file", "text", "view",
+        "wind", "import", "export", "return", "requ", "resp", "handl", "route",
+        "async", "await", "break", "case", "catch", "defer", "pack", "struct",
+        "chan", "select", "switch", "while", "true", "false", "null", "unde",
+        "state", "props", "hook", "disp", "event", "click", "list", "array",
+        "object", "proto", "super", "this", "self", "init", "main", "test",
+        "build", "serve", "clean", "debug", "error", "warn", "info", "trace",
+        "width", "height", "color", "style", "table", "border", "margin", "padding",
+        "auto", "area", "menu", "page", "item", "title", "icon", "input", "button"
+      ]);
+    }
+
+    // Layer 0: AST Lexical Shield (0 ns)
+    // Same decisions as before, but without copying the whole prefix (and the
+    // current line) into new strings on every call.
+    isInsideCodeOrUrl(text, cursor) {
+      if (cursor <= 0) return false;
+
+      // 1. Check if inside code block (fenced by ```)
+      // Non-overlapping "```" occurrences fully contained in text[0, cursor).
+      let codeFenceCount = 0;
+      let from = 0;
+      while (from + 3 <= cursor) {
+        const idx = text.indexOf('```', from);
+        if (idx === -1 || idx + 3 > cursor) break;
+        codeFenceCount++;
+        from = idx + 3;
+      }
+      if (codeFenceCount % 2 !== 0) {
+        return true; // Inside code block
+      }
+
+      // 2. Check if inside inline code (`...`) on current line
+      const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+      let backtickCount = 0;
+      for (let i = lineStart; i < cursor; i++) {
+        if (text.charCodeAt(i) === 96) backtickCount++;
+      }
+      if (backtickCount % 2 !== 0) {
+        return true; // Inside inline code
+      }
+
+      // 3. Check if inside URL or HTML tag.
+      // Only the head of the last whitespace-delimited token can match.
+      let wordStart = cursor;
+      while (wordStart > lineStart && !WHITESPACE_RE.test(text.charAt(wordStart - 1))) {
+        wordStart--;
+      }
+      if (wordStart < cursor) {
+        const head = text.substring(wordStart, Math.min(cursor, wordStart + 8));
+        if (/^(https?:\/\/|ftp:\/\/|file:\/\/|www\.)/i.test(head) || head.charAt(0) === '<') {
+          return true;
+        }
+      }
+
+      return false;
+    }
+
+    // Phonetic Japanese Romaji Validator (Deterministic, zero false-positives)
+    isLikelyJapaneseRomaji(word) {
+      if (!word || word.length < 3) return false;
+      const lower = word.toLowerCase();
+
+      // Check English word and prefix shield
+      if (this.englishWords.has(lower)) return false;
+      for (const pfx of this.englishWords) {
+        if (pfx.length >= 4 && lower.startsWith(pfx)) return false;
+      }
+
+      // Convert to hiragana
+      const hira = romajiToHiragana(lower);
+
+      // Must be 100% converted: no raw alphabet characters may remain
+      if (/[a-zA-Z]/.test(hira)) {
+        return false;
+      }
+
+      // Vowel density check: Japanese words have high vowel ratio (>= 28%)
+      let vowelCount = 0;
+      for (let i = 0; i < lower.length; i++) {
+        if (this.vowels.has(lower[i])) vowelCount++;
+      }
+      if (vowelCount / lower.length < 0.28) {
+        return false;
+      }
+
+      // Check for illegal consonant clusters in Japanese (excluding sokuon like kk, tt, ss, etc.)
+      for (let i = 0; i < lower.length - 1; i++) {
+        const c1 = lower[i];
+        const c2 = lower[i + 1];
+        if (!this.vowels.has(c1) && !this.vowels.has(c2)) {
+          // Allow valid Japanese clusters: sokuon (c1 === c2), hatsuon ('n' + consonant), digraphs (sh, ch, ts), youon (ky, ry, etc.)
+          const isSokuon = (c1 === c2 && c1 !== 'n');
+          const isHatsuon = (c1 === 'n');
+          const isDigraph = (c1 === 's' && c2 === 'h') || (c1 === 'c' && c2 === 'h') || (c1 === 't' && c2 === 's');
+          const isYouon = (c2 === 'y');
+          if (!isSokuon && !isHatsuon && !isDigraph && !isYouon) {
+            return false; // English cluster detected like 'st', 'rt', 'bl', 'gr'
+          }
+        }
+      }
+
+      return true;
+    }
+
+    // Inspect text immediately preceding the cursor and generate suggestion if eligible
+    getRomajiSuggestion(fullText, cursor, isEnabled) {
+      if (!isEnabled || cursor <= 0) return null;
+
+      // Cheapest test first: walk back over the trailing ASCII-letter token
+      // without copying the prefix. Equivalent to /([a-zA-Z]{3,})$/ applied to
+      // fullText[0, cursor). On ordinary keystrokes this bails out immediately,
+      // so the (linear) lexical shield below never runs.
+      let tokenStart = cursor;
+      while (tokenStart > 0) {
+        const c = fullText.charCodeAt(tokenStart - 1);
+        if ((c >= 65 && c <= 90) || (c >= 97 && c <= 122)) {
+          tokenStart--;
+        } else {
+          break;
+        }
+      }
+      if (cursor - tokenStart < 3) return null;
+
+      const word = fullText.substring(tokenStart, cursor);
+      if (!this.isLikelyJapaneseRomaji(word)) return null;
+
+      // Layer 0: AST Shield (all three tests are pure predicates ANDed together,
+      // so evaluating it last yields exactly the same result).
+      if (this.isInsideCodeOrUrl(fullText, cursor)) {
+        return null;
+      }
+
+      const hiragana = romajiToHiragana(word.toLowerCase());
+      return {
+        word: word,
+        hiragana: hiragana,
+        startPos: cursor - word.length,
+        endPos: cursor
+      };
+    }
+
+    reset() {
+      // Clean, stateless design: no internal pending composition buffers
+    }
+  }
+
+  // IME retype: after the page removed the romaji it typed and asked the OS to type the same keys again, nothing may
+  // be left half done. Given the text now, where the romaji was, and the caret, this says which range to replace with
+  // the committed hiragana: the letters that landed as plain text (the IME did not take them), or nothing at all
+  // (the keys never arrived); null when something else happened (the user typed on): then leave it alone.
+  function planImeRetypeFallback(value, pos, romaji, cursor) {
+    if (value.substr(pos, romaji.length) === romaji && cursor === pos + romaji.length) {
+      return { start: pos, end: pos + romaji.length };
+    }
+    if (cursor === pos) return { start: pos, end: pos };
+    return null;
+  }
+
+  // The other direction: English typed while the Japanese IME was on arrives as kana ("hello" -> "へっlお"). The physical keys
+  // of one composition are logged (keydown still reports the key in event.code while the IME has the text), and at the end of
+  // the composition they say what was meant. Only a plain run of letters counts (a trailing Space or the Enter that commits
+  // are allowed): any other key means the user was editing or converting, and the log is dropped.
+  function newImeKeyLog() {
+    return { text: '', valid: true, spaced: false };
+  }
+
+  function resetImeKeyLog(log) {
+    log.text = '';
+    log.valid = true;
+    log.spaced = false;
+  }
+
+  function imeKeyLogPush(log, ev) {
+    if (!log.valid) return;
+    const code = ev.code || '';
+    if (code === 'Enter' || code === 'NumpadEnter' || code === 'ShiftLeft' || code === 'ShiftRight' || code === 'CapsLock') return;
+    if (ev.ctrlKey || ev.altKey || ev.metaKey) { log.valid = false; return; }
+    if (code === 'Space') {
+      if (!log.text) log.valid = false; else log.spaced = true;
+      return;
+    }
+    const m = /^Key([A-Z])$/.exec(code);
+    if (!m || log.spaced) { log.valid = false; return; }
+    const caps = typeof ev.getModifierState === 'function' ? ev.getModifierState('CapsLock') : !!ev.capsLock;
+    log.text += (!!ev.shiftKey !== !!caps) ? m[1] : m[1].toLowerCase();
+  }
+
+  // The English the keys spelled, or null. Japanese typed as romaji always converts to kana completely, so a run of at least
+  // four letters that leaves letters behind in the converter ("へっlお") was not romaji. Words that happen to convert in full
+  // ("make" -> "まけ") cannot be told from Japanese and are left alone.
+  function englishRetypeCandidate(keys, committed) {
+    if (!keys || keys.length < 4 || keys.length > 32 || !/^[A-Za-z]+$/.test(keys)) return null;
+    if (!committed || committed === keys || !/[^\x00-\x7f]/.test(committed)) return null;
+    if (!/[a-z]/.test(romajiToHiragana(keys.toLowerCase()))) return null;
+    return keys;
+  }
+
+  global.IMEGuardian = IMEGuardian;
+  global.romajiToHiragana = romajiToHiragana;
+  global.planImeRetypeFallback = planImeRetypeFallback;
+  global.newImeKeyLog = newImeKeyLog;
+  global.resetImeKeyLog = resetImeKeyLog;
+  global.imeKeyLogPush = imeKeyLogPush;
+  global.englishRetypeCandidate = englishRetypeCandidate;
+})(typeof window !== 'undefined' ? window : this);

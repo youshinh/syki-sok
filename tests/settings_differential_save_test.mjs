@@ -1,0 +1,42 @@
+import fs from 'fs';
+import assert from 'assert';
+
+console.log("=== Testing Differential Save & Optimistic UI Logic in app.js ===");
+
+const appJs = fs.readFileSync('frontend/js/app.js', 'utf8');
+
+// 1. Check openedConfigSnapshot exists in openSettings
+assert(appJs.includes('let openedConfigSnapshot = null;'), 'openedConfigSnapshot variable declared');
+assert(appJs.includes('openedConfigSnapshot = JSON.parse(JSON.stringify(config));'), 'openedConfigSnapshot captured in openSettings');
+console.log("PASS: Configuration snapshot initialization verified.");
+
+// 2. Check differential git remote logic
+assert(appJs.includes('curRemoteUrl !== prevRemoteUrl || curBranch !== prevBranch'), 'Differential check for git remote setup exists');
+assert(!appJs.includes('window.backend.setupGitRemote(config.scraps.scrapDir, config.scraps.gitRemoteUrl, config.scraps.gitRemoteBranch).catch(() => {});\n    }'), 'Unconditional setupGitRemote removed from save button');
+console.log("PASS: Unconditional git setup on save removed and differential check implemented.");
+
+// 3. Check differential theme & language logic
+// The look, accent and font are applied after a save only when the saved setting differs from the one the dialog opened with, or a preview is up.
+assert(/if \(config\.general\.theme !== prevGeneral\.theme \|\| appearancePreviewing \|\| appearanceSignature\(\) !== prevAppearanceSignature\) \{\s*applyTheme\(\);/.test(appJs), 'Differential theme check exists');
+assert(appJs.includes('if (config.general.language !== prevGeneral.language)'), 'Differential language check exists');
+console.log("PASS: Differential UI updates for theme and language verified.");
+
+// 4. Check Optimistic UI (immediate closeSettings and showMessage before savePersistentConfig)
+const saveHandlerIdx = appJs.indexOf("document.getElementById('btn-save-settings').onclick");
+const closeSettingsIdx = appJs.indexOf("closeSettings();", saveHandlerIdx);
+const showMessageIdx = appJs.indexOf("showMessage(t('settingsSaved'), 2000);", saveHandlerIdx);
+const savePersistentIdx = appJs.indexOf("savePersistentConfig()", saveHandlerIdx);
+
+assert(closeSettingsIdx !== -1 && showMessageIdx !== -1 && savePersistentIdx !== -1, 'All key save calls exist in handler');
+assert(closeSettingsIdx < savePersistentIdx, 'closeSettings occurs before savePersistentConfig background call (Optimistic UI)');
+// B25: the dialog still closes at once, but the "saved" toast is chained on the write and only shown when config.json took it.
+assert(showMessageIdx > savePersistentIdx, 'the saved toast comes after the write is started, not before');
+assert(/savePersistentConfig\(\)\.then\(\(saved\) => \{\s*if \(saved !== false\) showMessage\(t\('settingsSaved'\), 2000\);/.test(appJs.slice(saveHandlerIdx)), 'the saved toast is chained on the write and skipped when it failed');
+console.log("PASS: Optimistic UI execution order verified (instant modal dismissal; the toast waits for the write).");
+
+// 5. Check taskkill non-blocking async execution in Windows
+const ollamaWin = fs.readFileSync('ollama_ops_windows.go', 'utf8');
+assert(ollamaWin.includes('_ = cmd.Start()'), 'cmd.Start() used instead of cmd.Run() for taskkill in Windows');
+console.log("PASS: Non-blocking async process termination in ollama_ops_windows.go verified.");
+
+console.log("\nALL DIFFERENTIAL SAVE & OPTIMISTIC UI EVALUATION TESTS PASSED (100%)!");

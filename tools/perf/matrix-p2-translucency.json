@@ -1,0 +1,16 @@
+{
+  "defaults": { "motion": "no-preference", "steps": "startup,memory,open,scroll,typing" },
+  "configs": [
+    { "name": "A-base",        "exe": "v2-base.exe",      "barsState": "natural" },
+    { "name": "P-p2a-head",    "exe": "v2-p2a-head.exe",  "barsState": "natural" },
+    { "name": "B-solid",       "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "solid", "autoHide": true } },  "barsState": "natural" },
+    { "name": "C-light",       "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "light", "autoHide": true } },  "barsState": "natural" },
+    { "name": "D-glass",       "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "glass", "autoHide": true } },  "barsState": "natural" },
+    { "name": "S-solid-shown", "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "solid", "autoHide": false } }, "barsState": "shown" },
+    { "name": "F-light-shown", "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "light", "autoHide": false } }, "barsState": "shown" },
+    { "name": "E-glass-shown", "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "glass", "autoHide": false } }, "barsState": "shown" },
+    { "name": "SG-solid-shown-nogpu", "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "solid", "autoHide": false } }, "browserArgs": "--disable-gpu", "barsState": "shown" },
+    { "name": "FG-light-shown-nogpu", "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "light", "autoHide": false } }, "browserArgs": "--disable-gpu", "barsState": "shown" },
+    { "name": "G-glass-shown-nogpu",  "exe": "v2-p2b.exe", "configPatch": { "appearance": { "bars": "glass", "autoHide": false } }, "browserArgs": "--disable-gpu", "barsState": "shown" }
+  ]
+}

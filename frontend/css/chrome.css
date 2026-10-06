@@ -1,0 +1,564 @@
+/* v2 chrome (P2): the header and the status bar are overlays that the text scrolls under, and they fade away while you write.
+   docs/design/v2-plan-P2.md has the whole plan. This file is loaded with media="screen" after style.css (print.css does not know
+   it, so nothing here can reach the paper), it holds only what v2 adds, and every colour in it is a token (css/tokens.css).
+   Compatibility (macOS 10.15 = Safari 15.6 is the oldest engine): no color-mix(), no @container, no nesting, no new :has().
+   Used: var()/calc(), inset, rgb(r g b / a), :focus-within (Chrome 60, Safari 10.1), scroll-padding (Chrome 69, Safari 14.1),
+   opacity transitions, max(), @supports with a grouped "or" (Chrome 28 / Safari 9), backdrop-filter (Chrome 76; Safari 9 with the -webkit-
+   prefix, 18 without: both are written), @media (forced-colors) and (prefers-reduced-transparency) (unknown to older engines: the
+   whole block is skipped). */
+
+/* ---- The numbers every box shares ------------------------------------------------------------------------------------------
+   --ov-top / --ov-bottom   the height of the header and of the status bar (the bars themselves take their height from these)
+   --ov-inset-*             how much room the text boxes keep for the bars at the top and at the bottom of their scroll range
+   --pad-x / --pad-y        the text's own margin inside a box (Zen widens --pad-x)
+   --pad-top-extra          room a view may ask for on top of that (a page that wants its first line lower)
+   The four boxes that show the same lines (the textarea, its ghost text, the number gutter, and the same three in the second
+   pane) take their top and bottom padding from the SAME two values, so the ghost text, the line numbers and the result bars
+   stay on the lines of the textarea whatever these numbers are. */
+:root {
+  --ov-top: 38px;
+  --ov-bottom: 24px;
+  --ov-inset-top: var(--ov-top);
+  --ov-inset-bottom: var(--ov-bottom);
+  --pad-x: 14px;
+  --pad-y: 12px;
+  --pad-top-extra: 0px;
+}
+
+/* Declared on the two panes (not on :root) so a view can set --pad-top-extra on the pane itself and the boxes inside follow. */
+#editor-pane,
+.secondary-editor-pane {
+  --editor-pad-top: calc(var(--ov-inset-top) + var(--pad-y) + var(--pad-top-extra));
+  --editor-pad-bottom: calc(var(--ov-inset-bottom) + var(--pad-y));
+}
+
+#editor,
+#editor-secondary,
+#ghost-overlay {
+  padding: var(--editor-pad-top) var(--pad-x) var(--editor-pad-bottom);
+}
+
+/* The line numbers are written in the margin, not in a panel: no background, no rule at their right edge, and the text itself is the
+   muted colour at a fraction of its strength. The fraction is the alpha of the colour (a token per look, css/tokens.css), never an
+   opacity: an opacity on a gutter 80,000 lines tall would make the browser keep an off-screen copy of all of it. The alpha is what
+   keeps them 3:1 against the page on both looks (tests/look_contrast_test.mjs). */
+#line-numbers,
+.secondary-editor-pane .line-numbers {
+  padding: var(--editor-pad-top) 6px var(--editor-pad-bottom);
+  background: none;
+  border-right: none;
+  color: rgb(var(--text-muted-rgb) / var(--linenum-a, 0.7));
+}
+
+/* ---- The bars float over the text --------------------------------------------------------------------------------------------
+   #header and #status-bar stay direct children of #app (print.css hides every child of #app but #workspace), they just leave the
+   flow: #workspace is then the whole window, and the text boxes run under the bars. The room the last line needs to get out
+   from under the status bar is the boxes' own padding-bottom (it is inside the scroll range), and scroll-padding keeps the caret
+   line out from under the bars when the browser scrolls it into view (Chrome 69, Safari 14.1). */
+#app {
+  position: relative;
+}
+
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: var(--ov-top);
+  background-color: rgb(var(--bar-top-rgb) / var(--bar-a));
+}
+
+#status-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  height: var(--ov-bottom);
+  background: rgb(var(--bar-bottom-rgb) / var(--bar-a));
+}
+
+/* ---- How see-through the two bars are (Settings > Appearance; <body data-bars>, js/appearance.js) ------------------------------
+   --bar-a is the opacity of the bar's colour (the channel tokens --bar-top-rgb / --bar-bottom-rgb are the same colours as the
+   solid bar had). It is set on the two bars, not on <body>: a custom property that changes on <body> is inherited by, and so
+   restyles, every element of the page.
+     solid  1     the bars as they were before v2; also what a page without data-bars gets
+     light  0.86  the text shows faintly under them, nothing is blurred
+     glass  0.55  the text under them is blurred (backdrop-filter); an engine without it gets light */
+#header,
+#status-bar {
+  --bar-a: 1;
+}
+
+body[data-bars="light"] #header,
+body[data-bars="light"] #status-bar,
+body[data-bars="glass"] #header,
+body[data-bars="glass"] #status-bar {
+  --bar-a: 0.86;
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  body[data-bars="glass"] #header,
+  body[data-bars="glass"] #status-bar {
+    --bar-a: 0.55;
+    -webkit-backdrop-filter: blur(8px) saturate(1.15);
+    backdrop-filter: blur(8px) saturate(1.15);
+  }
+}
+
+/* The title of the note in the header (the file name, nothing else), left-aligned to where the text starts: the strip's width (the
+   index tabs stand on the window's edge, css/style.css), the gutter's width and the text's margin. app.js (updateHeaderTitle) keeps its
+   text. It takes the room the icons leave (flex: 1, min-width: 0), so a long name is cut with an ellipsis before it reaches them.
+   --linenum-digits and --editor-fs are written on #header by app.js (four digits fit the 44px gutter; from five on it grows by the
+   width of a digit, about 0.6em of the editor's font). */
+#header {
+  --linenum-w: max(44px, calc(13px + var(--linenum-digits, 0) * var(--editor-fs, 14px) * 0.6));
+}
+
+#header-title {
+  flex: 1 1 0;
+  min-width: 0;
+  margin-left: calc(var(--tab-strip-w) + var(--linenum-w) + var(--pad-x));
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: var(--ov-top);
+  font-size: 13px;
+  color: var(--ink-2);
+  pointer-events: none;
+}
+
+#editor,
+#editor-secondary {
+  scroll-padding-top: var(--ov-inset-top);
+  scroll-padding-bottom: calc(var(--ov-inset-bottom) + 8px);
+}
+
+/* The second page runs under the header bar like the first one: the same room at the top (--pad-top-extra of the view, css/style.css, is the
+   room both pages keep free for the right page's name band), and the sheet of a preview beside the editor takes the same. */
+
+/* The rendered preview scrolls under the bars like the editor does. The HTML page (an iframe that scrolls by itself) is put between them. */
+#preview-pane {
+  padding: calc(var(--ov-inset-top) + 24px + var(--pad-top-extra, 0px)) 36px calc(var(--ov-inset-bottom) + 24px);
+  scroll-padding-top: var(--ov-inset-top);
+  scroll-padding-bottom: var(--ov-inset-bottom);
+}
+
+.secondary-preview-pane {
+  padding: calc(var(--ov-inset-top) + 24px + var(--pad-top-extra, 0px)) 24px calc(var(--ov-inset-bottom) + 24px);
+  scroll-padding-top: var(--ov-inset-top);
+  scroll-padding-bottom: var(--ov-inset-bottom);
+}
+
+/* A narrow window: a sheet is narrow too, so its text keeps less to the sides. */
+@media (max-width: 900px) {
+  #preview-pane {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
+
+  .secondary-preview-pane {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+
+#preview-pane.html-mode,
+#workspace.split-mode #preview-pane.html-mode {
+  padding: var(--ov-inset-top) 0 var(--ov-inset-bottom) !important;
+}
+
+.secondary-preview-pane.html-mode {
+  padding: var(--ov-inset-top) 0 var(--ov-inset-bottom) !important;
+}
+
+/* Everything that was placed "under the header" is placed under the bar. */
+.preview-badge {
+  top: calc(var(--ov-top) + 7px);
+}
+
+.preview-print-btn {
+  top: calc(var(--ov-top) + 5px);
+}
+
+.find-replace-bar {
+  top: calc(var(--ov-top) + 8px);
+}
+
+.inline-prompt-bar {
+  top: calc(var(--ov-top) + var(--panel-top, 16px));
+}
+
+.inline-prompt-bar.panel-dock-bottom {
+  top: auto;
+  bottom: calc(var(--ov-bottom) + var(--panel-top, 16px));
+}
+
+.jev-action-panel {
+  bottom: calc(var(--ov-bottom) + var(--panel-top, 16px));
+}
+
+body.dark-theme {
+  --panel-modal-top: calc(var(--ov-top) + 15px);
+}
+
+.status-ai-pop,
+.running-tasks-panel {
+  bottom: calc(var(--ov-bottom) + 6px);
+}
+
+/* ---- Zen mode (the permanent switch, Shift+F11) ---------------------------------------------------------------------------------
+   The margins stay, as they always were: the text gets wider side margins and a taller one at the top, the line numbers fade to 30%
+   (and come up to 80% under the mouse), and no column is folded. The bars (js/chrome_overlay.js: setZen) are away for good; the mouse
+   waiting at the top or bottom edge, focus, a failure and a recording call them back, an ordinary message is not shown. Zen sets the
+   numbers, not the boxes: the textarea, its ghost text and the line numbers keep sharing one padding, so a suggestion and a number stay
+   on the line they belong to. */
+body.zen-mode {
+  --ov-inset-top: 0px;
+  --ov-inset-bottom: 0px;
+  --pad-x: 32px;
+  --pad-y: 24px;
+  --linenum-a: 0.3;
+}
+
+body.zen-mode #line-numbers:hover {
+  --linenum-a: 0.8;
+}
+
+body.zen-mode .result-accent {
+  opacity: 0.3;
+}
+
+body.zen-mode #line-numbers:hover .result-accent {
+  opacity: 0.8;
+}
+
+/* The index tabs (css/style.css) are away in Zen mode like the bars: nothing to see and nothing to aim at (--tab-hit: the rows and the "+"
+   take no pointer events), but they stay in the Tab order, and the keyboard in one (F6, Tab) brings it back (:focus-within). */
+body.zen-mode .tab-index:not(:focus-within) {
+  opacity: 0;
+  --tab-hit: none;
+}
+
+/* An ordinary message is not shown in Zen mode, but it stays in the status line for a screen reader (the live region) and for anything that
+   reads the line's text. A failure (data-important) is shown: the status bar is called back for it. */
+body.zen-mode #stat-message:not([data-important]) {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+/* ---- Auto-hide ---------------------------------------------------------------------------------------------------------------
+   js/chrome_overlay.js puts body.chrome-faded on while you write or scroll, and takes it off when the mouse moves. Only opacity and
+   pointer-events change: no layout, no visibility, so the bars keep their place, stay in the reading order (a screen reader still
+   reads the status line) and take Tab. A bar stays while focus is inside it (:focus-within) or while script marks it data-pin
+   (a menu is open, the status bar has something to say). The selectors name the two bars and nothing else: a body class that
+   reached the text boxes would make every keystroke in a long note restyle them. */
+#header,
+#status-bar,
+#secondary-pane-header {
+  transition: opacity 0.2s ease, background-color 0.2s ease;
+}
+
+/* The right page's name band (css/style.css, .pane-header) goes with the bars: it is the same kind of thing, a label and four small buttons that the
+   text scrolls under. */
+body.chrome-faded #header:not(:focus-within):not([data-pin]),
+body.chrome-faded #status-bar:not(:focus-within):not([data-pin]),
+body.chrome-faded #secondary-pane-header:not(:focus-within):not([data-pin]),
+body.zen-mode #header:not(:focus-within):not([data-pin]),
+body.zen-mode #status-bar:not(:focus-within):not([data-pin]),
+body.zen-mode #secondary-pane-header:not(:focus-within):not([data-pin]) {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ---- Forced colors (Windows high contrast): the bars are told apart from the text by a line, not by a tint (the rest of the window: the
+   last section of this file) ----
+   ---- and a person who asked the system for less transparency gets solid bars whatever the setting says ---- */
+@media (forced-colors: active), (prefers-reduced-transparency: reduce) {
+  #header,
+  #status-bar {
+    --bar-a: 1 !important;
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  #header {
+    border-bottom: 1px solid currentColor;
+  }
+
+  #status-bar {
+    border-top: 1px solid currentColor;
+  }
+}
+
+/* ============================================================================================================================
+   P6: forced colours, the rest of the window; more contrast
+   ============================================================================================================================
+   Forced colours (Windows high contrast) draw no background, no shadow and no gradient, and every colour that is not a system colour
+   becomes one of the person's palette. The bars, the tab strips, the pages and the sticky notes have their rules next to their styles
+   (above, and in css/style.css). What is below is what the audit of all 70 pictures (tools/docshots/run.mjs --media forced-colors:active)
+   found gone: a state that was only a fill (a switch, the row you are on, a pressed button, the match you found, the bar of a result),
+   a fill that IS the information (the accent colours), and a transparent copy of the text that forced colours turn into a second text.
+   System colours (Canvas, CanvasText, Highlight, HighlightText, ButtonText, GrayText, LinkText) are written ONLY inside this kind of
+   @media block (tests/css_tokens_test.mjs); every other colour of the app stays a token. tests/forced_colors_test.mjs lists the
+   surfaces below and fails when one loses its rule. Compatibility: @media (forced-colors) is unknown to Safari 15.6 / macOS 10.15, which
+   skips the whole block (no macOS has forced colours). */
+@media (forced-colors: active) {
+  /* The switches: the track and the thumb are fills. Off is a thumb of the text colour at the left of an outlined track; on is a track in
+     the highlight colour with a thumb in its text colour at the right, so the position and the fill both say it. */
+  .status-ai-track,
+  #settings-modal input[type="checkbox"],
+  .print-switch-row > input[type="checkbox"] {
+    background: Canvas;
+    outline: 1px solid ButtonText;
+    outline-offset: -1px;
+  }
+
+  .status-ai-track::after,
+  #settings-modal input[type="checkbox"]::after,
+  .print-switch-row > input[type="checkbox"]::after {
+    background: ButtonText;
+  }
+
+  .status-ai-row[aria-checked="true"] .status-ai-track,
+  #settings-modal input[type="checkbox"]:checked,
+  .print-switch-row > input[type="checkbox"]:checked {
+    background: Highlight;
+  }
+
+  .status-ai-row[aria-checked="true"] .status-ai-track::after,
+  #settings-modal input[type="checkbox"]:checked::after,
+  .print-switch-row > input[type="checkbox"]:checked::after {
+    background: HighlightText;
+  }
+
+  /* The accent swatches ARE colours (Settings > Appearance): they keep their own, with a ring so a dark one shows on a dark window. */
+  .accent-swatch {
+    forced-color-adjust: none;
+    box-shadow: 0 0 0 1px CanvasText;
+  }
+
+  .accent-swatch[aria-pressed="true"] {
+    outline-color: CanvasText;
+  }
+
+  .accent-swatch:focus-visible {
+    outline-color: Highlight;
+  }
+
+  /* The row you are on (the palette, the notes search, Quick Actions, the snippet list, the All tabs list, the menus) was a tint. */
+  .quick-pick-item:hover,
+  .quick-pick-item.active,
+  .scraps-match-item:hover,
+  .scraps-match-item.active,
+  .jev-slot-card:hover,
+  .jev-slot-card.selected,
+  .slot-selector-item:hover,
+  .slot-selector-item.selected,
+  .tab-list-row:hover,
+  .tab-list-row.is-cursor,
+  .help-menu-item:hover,
+  .help-menu-item:focus-visible,
+  .menu-item:hover {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  /* A pressed toggle, the chosen chip, the mode you are in: a ring in the highlight colour, inside the control. (Not the swap of the highlight
+     fill and its text: a chip has children with a fill of their own, which forced colours make the window colour, and the text the swap
+     gives them is then the colour of that fill.) */
+  .btn-header-icon.active,
+  .btn-pane-icon.active,
+  .find-replace-bar .btn-toggle.active,
+  .scraps-mode-btn.active,
+  .scraps-filter-btn.on,
+  .scraps-filter-chip.on,
+  .tag-pick-place.active,
+  .print-seg-btn.active,
+  .tab-index-btn.active {
+    outline: 2px solid Highlight;
+    outline-offset: -2px;
+  }
+
+  /* The status bar's buttons are pills (a fill); forced colours draw the pill's outline, and the highlight colour under the pointer. The
+     red dot of a recording is a fill as well. */
+  .clickable-badge::before {
+    border: 1px solid ButtonText;
+  }
+
+  .clickable-badge:hover::before {
+    border-color: Highlight;
+  }
+
+  #stat-recording .rec-dot,
+  .voice-dot {
+    background: Highlight;
+  }
+
+  /* The PREVIEW label was a filled pill. */
+  .preview-badge {
+    border: 1px solid CanvasText;
+  }
+
+  /* The editor. The match the find box is on was a box of tint behind the text; the bars of a result block (the gutter's left edge) and of
+     the rows the AI just changed were fills. A ghost suggestion was told from the text by its colour: now by the grey of disabled text. */
+  .find-match-rect {
+    background: none;
+    box-shadow: none;
+    outline: 2px solid Highlight;
+  }
+
+  .result-accent-bar {
+    background: Highlight;
+  }
+
+  .ghost-diff-band {
+    border-left: 3px solid Highlight;
+  }
+
+  .ghost-suggestion {
+    color: GrayText;
+    opacity: 1;
+  }
+
+  /* The layer under the text that draws the underline of a link (js/file_anchor.js) is a copy of the whole note in transparent ink. Forced
+     colours turn transparent ink into the text colour, so the copy showed through (and hid the ghost text behind a stale line). It keeps
+     its own colours here; the underline is the link colour. */
+  .fanchor-layer {
+    forced-color-adjust: none;
+  }
+
+  .fanchor-layer span.lnk {
+    text-decoration-color: LinkText;
+  }
+
+  /* The soft light that follows the caret when idle is blended into the page: forced colours cannot blend it.
+     The display: none rule is placed in style.css so chrome.css preserves its overlay contract (no display rules). */
+  #cursor-aura {
+    opacity: 0;
+  }
+}
+
+/* ---- More contrast (Windows "Contrast themes" is forced colours, above; this is the OS preference of its own: macOS "Increase contrast",
+   Windows 11 contrast setting that does not force colours, Chrome's --force-prefers-contrast). Nothing runs: the same tokens, stronger values.
+   The supporting text is the next token up (--text-soft, 7:1 or more on every surface, tests/look_contrast_test.mjs), the lines are the text
+   colour at half strength (3:1 against the page, both looks), the numbers in the margin are the text colour, the strip of tabs does not fade
+   below 40%. body.dark-theme is on <body> in both looks and this file comes after css/tokens.css, so one block serves ink and paper.
+   (prefers-contrast is Safari 14.1+, Chrome 96+; older engines skip the block.) -------------------------------------------------------------- */
+@media (prefers-contrast: more) {
+  :root {
+    --tab-mix-floor: 0.4;
+  }
+
+  body.dark-theme {
+    --text-muted: var(--text-soft);
+    --ink-2: var(--text-soft);
+    --text-muted-rgb: var(--ink-rgb);
+    --border-color: rgb(var(--ink-rgb) / 0.55);
+    --border-input: rgb(var(--ink-rgb) / 0.55);
+    --border-button: rgb(var(--ink-rgb) / 0.55);
+    --hair: rgb(var(--ink-rgb) / 0.3);
+    --panel-line: rgb(var(--ink-rgb) / 0.3);
+    --line-row: rgb(var(--ink-rgb) / 0.2);
+  }
+
+  body.zen-mode {
+    --linenum-a: 0.55;
+  }
+}
+
+/* ---- User Interface Refinements: Minimal Quiet Chrome ---------------------------------------- */
+
+/* 1. Split view: hide active pane accent line on the header */
+body[data-view="pair"] #editor-pane.pane-focused::before,
+body[data-view="pair"] #secondary-pane.pane-focused::before,
+body[data-view="side"] #editor-pane.pane-focused::before,
+body[data-view="side"] #secondary-pane.pane-focused::before {
+  height: 0 !important;
+  opacity: 0 !important;
+}
+
+/* 2. Line numbers: low-contrast subtle numbers and compact margins */
+#workspace #line-numbers,
+#workspace .secondary-editor-pane .line-numbers {
+  width: 36px;
+  padding-left: 2px;
+  padding-right: 2px;
+  color: rgb(var(--text-muted-rgb) / 0.35);
+}
+
+#workspace #editor-pane {
+  padding-left: calc(var(--tab-strip-w) - 2px);
+}
+
+#workspace #editor,
+#workspace #editor-secondary,
+#workspace #ghost-overlay {
+  padding-left: 8px;
+}
+
+/* 3. Low-contrast quiet scrollbars */
+#editor,
+#editor-secondary,
+#preview-pane,
+.secondary-preview-pane {
+  scrollbar-color: rgb(var(--ink-rgb) / 0.2) transparent;
+}
+
+#editor::-webkit-scrollbar,
+#editor-secondary::-webkit-scrollbar,
+#preview-pane::-webkit-scrollbar,
+.secondary-preview-pane::-webkit-scrollbar {
+  width: 8px;
+}
+
+#editor::-webkit-scrollbar-track,
+#editor-secondary::-webkit-scrollbar-track,
+#preview-pane::-webkit-scrollbar-track,
+.secondary-preview-pane::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+#editor::-webkit-scrollbar-thumb,
+#editor-secondary::-webkit-scrollbar-thumb,
+#preview-pane::-webkit-scrollbar-thumb,
+.secondary-preview-pane::-webkit-scrollbar-thumb {
+  background: rgb(var(--ink-rgb) / 0.2);
+  border-radius: 4px;
+}
+
+#editor::-webkit-scrollbar-thumb:hover,
+#editor-secondary::-webkit-scrollbar-thumb:hover,
+#preview-pane::-webkit-scrollbar-thumb:hover,
+.secondary-preview-pane::-webkit-scrollbar-thumb:hover {
+  background: rgb(var(--ink-rgb) / 0.35);
+}
+
+/* 4. Low-contrast status bar text */
+#status-bar .status-left,
+#status-bar .status-center,
+#status-bar .clickable-badge {
+  color: rgb(var(--ink-rgb) / 0.68);
+  font-weight: 500;
+}
+
+#status-bar .clickable-badge:hover,
+#status-bar .clickable-badge:focus-visible {
+  color: var(--text-on-statusbar);
+}
+
+/* 5. Align right index tabs height with left strip and offset secondary pane header */
+#workspace .tab-index[data-side="right"] {
+  top: var(--tab-strip-top);
+}
+
+.pane-header {
+  right: calc(max(var(--tab-strip-gap-right), var(--tab-scrollbar-w, 0px)) + var(--tab-hit-w) + 10px);
+}
+

@@ -1,0 +1,721 @@
+/* MD-Memo colour tokens: every colour of the app is defined here, once, and nowhere else.
+   style.css (and the few inline styles in index.html and the scripts) only use var(--name). Nothing in this file is
+   used before it is needed: a token costs one custom property on <body>, no script runs. The role of each token
+   is in docs/design/v2-tokens.md. print.css keeps its own paper colours on purpose.
+
+   A LOOK is a class on <body> (and on <html>, for the canvas) that gives the same names other values:
+     body.dark-theme   the base: the INK look (dark). It is always on <body> (it also carries the page's layout in style.css) and
+                       defines every token, so a look only has to say what differs.
+     body.look-paper   the PAPER look (light), after the base: it redefines the tokens whose value differs.
+   An ACCENT is a class too: body.theme-olive | blue | forest | charcoal | vermilion set the accent tokens for ink,
+   body.look-paper.theme-* for paper (a self-chosen accent is computed by js/appearance.js and set on <body> as style).
+   Order matters and is part of the contract (tests/look_contrast_test.mjs): base, ink accents, paper, paper accents.
+   Colours that are derived from another colour (a tint of the accent, a shadow) are CHANNEL tokens (--accent-rgb: 85 107 47)
+   used as rgb(var(--accent-rgb) / 0.14): color-mix() is not available on macOS 10.15 (Safari 15.6). */
+
+/* The canvas behind <body>: set before anything is painted (style.css: html, body). */
+:root {
+  --canvas-bg: #1e1e1e;
+  --canvas-fg: #dcdde3;
+}
+:root.look-paper {
+  --canvas-bg: #fbfbf9;
+  --canvas-fg: #16171b;
+  color-scheme: light;
+}
+
+body.dark-theme {
+  --panel-shadow: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --panel-line: rgba(255, 255, 255, 0.08);
+  --bg-main: #1e1e1e;
+  --bg-header: #252526;
+  --bg-tab: #2d2d2d;
+  --bg-tab-active: #1e1e1e;
+  --bg-tab-hover: #333333;
+  --bg-editor: #1e1e1e;
+  --bg-line-num: #1e1e1e;
+  --bg-modal: #252526;
+  --bg-input: #3c3c3c;
+  --bg-btn: #333333;
+  --bg-btn-hover: #444444;
+  --bg-context: #252526;
+
+  /* Default Theme: Dark Olive (Calm & Elegant) */
+  --bg-statusbar: #3b442b;
+  --bg-context-hover: #424e30;
+  --accent-color: #556b2f;
+  --accent-hover: #6b843d;
+  --accent-label: #a6c26a;
+  --accent-active-bg: #424e30;
+  --bg-preview: #1e2227;
+
+  --text-main: #dcdde3;
+  --text-muted: #9d9d9d;
+  --text-active: #ffffff;
+  --border-color: rgba(255, 255, 255, 0.1);
+
+  /* The glow that follows the caret (one gradient per accent theme, set again in every body.theme-* block below) */
+  --aura-gradient: radial-gradient(circle, rgba(138, 185, 80, 0.24) 0%, rgba(110, 150, 50, 0.11) 40%, rgba(85, 115, 40, 0.03) 65%, transparent 75%);
+
+  /* Text */
+  --text-on-accent: #ffffff;
+  --text-on-danger: #ffffff;
+  --text-on-statusbar: #ffffff;
+  --text-soft: #c0c2cd;
+  --text-editor: #e2e3e8;
+  --text-placeholder: #8f8f8f;
+  --text-badge: #ffffff;
+  --text-key: #aeb0bd;
+  --text-key-empty: #70727f;
+  --text-ambient: #c5d4bc;
+  --text-dim: #7d7f8d;
+  --text-code-preview: #9cdcfe;
+  --text-error: #cca0a5;
+  --text-error-hover: #e5b2b7;
+  --text-ok: #73c991;
+  --text-warn-orange: #f0ad4e;
+  --text-danger-badge: #f26d6a;
+  --text-danger-hint: #ff6b6b;
+  --text-recipe-tag: #e5c07b;
+
+  /* Markdown preview */
+  --md-heading: var(--accent-label);
+  --md-h1: var(--accent-label);
+  --md-quote: #9cdcfe;
+  --md-th: #9cdcfe;
+  --md-code: #ce9178;
+  --bg-md-block: #13151e;
+  --bg-md-stripe: #151822;
+  --bg-md-inline: #11131b;
+  --bg-md-th: #1a1d2a;
+  --bg-html-page: #ffffff;
+  --bg-mermaid-light: #ffffff;
+  --border-mermaid-light: #d0d7de;
+  --text-mermaid-light: #24292f;
+  --bg-mermaid-dark: #13151e;
+  --border-mermaid-dark: rgba(255, 255, 255, 0.1);
+  --text-mermaid-dark: #dcdde3;
+  --mermaid-primary: #007acc;
+
+  /* Surfaces */
+  --bg-icon-hover: #1d2030;
+  --bg-hover-subtle: #232637;
+  --bg-field: #1e1e1e;
+  --bg-table: #1e1e1e;
+  --bg-table-head: #252526;
+  --bg-key: #2a2a2a;
+  --bg-btn-action: #3a3d41;
+  --bg-btn-action-hover: #4a4d51;
+  --bg-print-stage: #1b1d29;
+  --bg-scrim: rgba(0, 0, 0, 0.6);
+  --bg-danger-solid: #c72e2e;
+  --bg-qr: #ffffff;
+  --icon-knob-fill: #1e1e1e;
+
+  /* Lines and outlines */
+  --line-row: rgba(255, 255, 255, 0.06);
+  --border-input: rgba(255, 255, 255, 0.14);
+  --border-button: rgba(255, 255, 255, 0.22);
+  --border-btn-action: rgba(255, 255, 255, 0.16);
+  --outline-pane-focus: rgba(0, 122, 204, 0.4);
+  --ring-focus-input: rgb(var(--accent-rgb) / 0.35);
+
+  /* Switches */
+  --switch-track: #3a3e52;
+  --switch-thumb: #dcdde3;
+  --switch-thumb-on: #ffffff;
+
+  /* Shadows */
+  --shadow-menu: 0 4px 16px rgba(0, 0, 0, 0.6);
+  --shadow-modal: 0 8px 24px rgba(0, 0, 0, 0.6);
+  --shadow-bar: 0 4px 14px rgba(0, 0, 0, 0.6);
+  --shadow-popover: 0 8px 24px rgba(0, 0, 0, 0.55);
+  --shadow-button: 0 2px 8px rgba(0, 0, 0, 0.4);
+  --shadow-tasks: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --shadow-tooltip: 0 4px 16px rgba(0, 0, 0, 0.35);
+  --shadow-indicator: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+  /* Neutral overlays */
+  --veil-03: rgba(255, 255, 255, 0.03);
+  --veil-04: rgba(255, 255, 255, 0.04);
+  --veil-05: rgba(255, 255, 255, 0.05);
+  --veil-06: rgba(255, 255, 255, 0.06);
+  --veil-07: rgba(255, 255, 255, 0.07);
+  --veil-08: rgba(255, 255, 255, 0.08);
+  --veil-10: rgba(255, 255, 255, 0.1);
+  --veil-12: rgba(255, 255, 255, 0.12);
+  --veil-15: rgba(255, 255, 255, 0.15);
+  --veil-25: rgba(255, 255, 255, 0.25);
+  --veil-30: rgba(255, 255, 255, 0.3);
+  --veil-45: rgba(255, 255, 255, 0.45);
+  --shade-25: rgba(0, 0, 0, 0.25);
+  --shade-30: rgba(0, 0, 0, 0.3);
+  --shade-35: rgba(0, 0, 0, 0.35);
+  --shade-40: rgba(0, 0, 0, 0.4);
+  --shade-45: rgba(0, 0, 0, 0.45);
+  --shade-55: rgba(0, 0, 0, 0.55);
+
+  /* State colours */
+  --coral: #f68e79;
+  --coral-12: rgba(244, 135, 113, 0.12);
+  --coral-50: rgba(244, 135, 113, 0.5);
+  --rose: #e8777f;
+  --rose-10: rgba(224, 108, 117, 0.1);
+  --rose-12: rgba(224, 108, 117, 0.12);
+  --rose-20: rgba(224, 108, 117, 0.2);
+  --rose-25: rgba(224, 108, 117, 0.25);
+  --rose-45: rgba(224, 108, 117, 0.45);
+  --red-12: rgba(226, 75, 74, 0.12);
+  --red-50: rgba(226, 75, 74, 0.5);
+  --crimson-38: rgba(229, 72, 77, 0.38);
+  --crimson-60: rgba(229, 72, 77, 0.6);
+  --rec-dot: #ff5a5f;
+  --amber: #f59e0b;
+  --amber-12: rgba(245, 158, 11, 0.12);
+  --amber-15: rgba(245, 158, 11, 0.15);
+  --amber-18: rgba(245, 158, 11, 0.18);
+  --amber-25: rgba(245, 158, 11, 0.25);
+  --amber-28: rgba(245, 158, 11, 0.28);
+  --amber-40: rgba(245, 158, 11, 0.4);
+  --caution: #c5a059;
+  --caution-10: rgba(197, 160, 89, 0.1);
+  --caution-12: rgba(197, 160, 89, 0.12);
+  --caution-15: rgba(197, 160, 89, 0.15);
+  --caution-45: rgba(197, 160, 89, 0.45);
+  --caution-50: rgba(197, 160, 89, 0.5);
+  --ok-line: #6a9955;
+  --ok-bg: rgba(106, 153, 85, 0.15);
+  --ok-text: #8ecf9e;
+  --fail-line: #b86067;
+  --fail-bg: rgba(184, 96, 103, 0.15);
+  --fail-text: #cf8489;
+  --cloud-mark: #e8b04a;
+  --dirty-dot: #e2c08d;
+  --salmon: #f28b82;
+  --key-rec-border: #e51400;
+  --key-rec-bg: rgba(229, 20, 0, 0.15);
+  --key-rec-text: #ff8888;
+  --jump-link: #4ec9b0;
+  --jump-link-hover: #9cdcfe;
+  --jump-link-bg: rgba(78, 201, 176, 0.15);
+  --flash-yellow-65: rgba(255, 235, 59, 0.65);
+  --flash-yellow-50: rgba(255, 235, 59, 0.5);
+  --flash-yellow-35: rgba(255, 235, 59, 0.35);
+  --semantic-ok-line: #6ab07f;
+  --semantic-warn-line: #d9a441;
+  --semantic-ok-text: #c8f0d4;
+  --semantic-warn-text: #e0b050;
+  --status-ok: #73c991;
+  --status-warn: #e2c08d;
+  --status-error: #f48771;
+
+  /* Settings badges and banners */
+  --text-idle: #aaaaaa;
+  --badge-ok-bg: rgba(46, 204, 113, 0.2);
+  --badge-ok-text: #2ecc71;
+  --badge-danger-bg: rgba(231, 76, 60, 0.2);
+  --badge-danger-text: #f77868;
+  --badge-busy-text: #f1c40f;
+  --badge-git-warn-bg: rgba(255, 193, 7, 0.15);
+  --badge-git-warn-text: #ffc107;
+  --badge-git-ok-bg: rgba(40, 167, 69, 0.15);
+  --badge-git-ok-text: #3fbf5c;
+  --badge-git-idle-bg: rgba(108, 117, 125, 0.15);
+  --badge-git-idle-text: #adb5bd;
+  --danger-banner-bg: rgba(220, 53, 69, 0.12);
+  --danger-banner-border: rgba(220, 53, 69, 0.3);
+  --crimson: #e5484d;
+  --crimson-16: rgba(229, 72, 77, 0.16);
+
+  /* The colour swatches of Settings > Appearance: the accent of each look-independent choice (the "your own" swatch shows the chosen colour) */
+  --swatch-olive: #556b2f;
+  --swatch-blue: #0074c2;
+  --swatch-forest: #2e6656;
+  --swatch-charcoal: #505050;
+  --swatch-vermilion: #b8472c;
+  --swatch-custom: conic-gradient(from 0deg, #d9534f, #e8b04a, #6abf69, #4aa3df, #9b6bd6, #d9534f);
+
+  /* The glow that follows the caret blends with the page: screen on a dark page, multiply on a light one */
+  --aura-blend: screen;
+
+  /* The frame of the Markdown preview (it must not be mistaken for the editor): the accent on ink, a soft line of it on paper */
+  --preview-frame: var(--accent-hover);
+
+  /* ---- v2 (docs/design/v2-visual-2026-10.md 4.1): the surfaces, the text and the lines of the window, and the colours that other
+     phases build on (the tabs, the split boundary, the notes). The roles above are values of their own; these are the names the new
+     parts of the window use. A channel token is the same colour as its partner, written for rgb(var(--x-rgb) / alpha). */
+  --wall: #0a0a0a;
+  --page: #1e1e1e;
+  --sheet: #252526;
+  --ink: #dcdde3;
+  --ink-2: #9d9d9d;
+  --hair: rgba(255, 255, 255, 0.16);
+  --shade: rgb(var(--shade-rgb) / 0.5);
+
+  --ink-rgb: 220 221 227;
+  --shade-rgb: 0 0 0;
+  --page-rgb: 30 30 30;
+  --sheet-rgb: 37 37 38;
+  --wall-rgb: 10 10 10;
+  --bar-top-rgb: 37 37 38;
+  --bar-bottom-rgb: 59 68 43;
+  --text-muted-rgb: 157 157 157;
+  /* The strength of the line numbers (text-muted at this alpha; css/chrome.css). 0.68 on ink / 0.74 on paper make them 3.3:1 against the page. */
+  --linenum-a: 0.68;
+  --accent-rgb: 107 132 61;
+
+  /* The index tabs (P3). The fill is the accent (ink: --accent-hover, paper: --accent-color; that is --accent-rgb). --tab-ink is the text
+     of every tab but the selected one, which is --tab-ink-hi: the text on the full accent. Ink writes white on the Forest Teal and Charcoal
+     fills and the wall colour (nearly black) on the lighter Olive, Blue and Vermilion ones, 4.5:1 or more, as the paper does with white. */
+  --tab-accent: rgb(var(--accent-rgb));
+  --tab-base: var(--wall);
+  --tab-ink: var(--ink);
+  --tab-ink-hi: var(--text-on-accent);
+  --tab-hair: var(--hair);
+  --tab-dirty: var(--dirty-dot);
+  --tab-conflict: var(--coral);
+  --tab-close-hover-bg: var(--bg-danger-solid);
+  --focus-ring: var(--accent-label);
+
+  /* The split boundary, the preview sheet (P4) */
+  --gutter-shade: linear-gradient(to right, transparent 0%, rgba(0, 0, 0, 0.45) 35%, rgba(0, 0, 0, 0.65) 50%, rgba(0, 0, 0, 0.45) 65%, transparent 100%);
+  --gutter-dot: rgb(var(--ink-rgb) / 0.28);
+  --divider-line: rgba(255, 255, 255, 0.22);
+  --sheet-shadow: 0 0 18px rgb(var(--shade-rgb) / 0.35), 0 2px 6px rgb(var(--shade-rgb) / 0.2);
+  --pane-focus: rgb(var(--accent-rgb));
+
+  /* The sticky notes (P5): a tint of the accent over --sheet, a tape on top, a folded corner, a lifted shadow */
+  --note-tint-a: 0.12;
+  --note-tint: rgb(var(--accent-rgb) / var(--note-tint-a));
+  --note-tape: rgb(var(--accent-rgb) / 0.35);
+  --note-tape-focus: var(--accent-label);
+  --note-flap: rgb(var(--ink-rgb) / 0.12);
+  --note-shadow: 0 1px 2px rgb(var(--shade-rgb) / 0.3), 0 10px 24px rgb(var(--shade-rgb) / 0.22);
+  --bg-scrim-note: rgba(0, 0, 0, 0.32);
+
+  /* The sizes P4 and P5 name (lengths, the same on both looks; nothing uses them yet): the split boundary, the desk around a sheet, the widest sheet, the fold of a note */
+  --gutter-w: 24px;
+  --desk-margin: 34px;
+  --sheet-max: 800px;
+  --note-fold: 14px;
+
+  /* Icons */
+  --icon-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%239d9d9d' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* Theme Option: Classic VS Code Blue */
+body.theme-blue {
+  --bg-statusbar: #0074c2;
+  --bg-context-hover: #094771;
+  --accent-color: #0074c2;
+  --accent-hover: #1f8ad2;
+  --accent-label: #6cb6ff;
+  --accent-active-bg: #094771;
+  --bg-preview: #172131;
+  --accent-rgb: 31 138 210;
+  --bar-bottom-rgb: 0 116 194;
+  /* The state colours of the status bar (AI item, Git sync): the light bar makes the default ones 2.9:1 to 4.1:1 on the pill, these are 5:1 or more. */
+  --status-ok: #c8f0d4;
+  --status-warn: #ffd8a8;
+  --status-error: #ffd0c4;
+  --aura-gradient: radial-gradient(circle, rgba(70, 160, 240, 0.24) 0%, rgba(14, 120, 200, 0.11) 40%, rgba(0, 100, 180, 0.03) 65%, transparent 75%);
+  /* the text on the full accent of a tab: the fill is light, white reads at 4.2:1 or less, the wall colour at 4.8 or more */
+  --tab-ink-hi: var(--wall);
+}
+
+/* Theme Option: Dark Olive (Default) */
+body.theme-olive {
+  --bg-statusbar: #3b442b;
+  --bg-context-hover: #424e30;
+  --accent-color: #556b2f;
+  --accent-hover: #6b843d;
+  --accent-label: #a6c26a;
+  --accent-active-bg: #424e30;
+  --bg-preview: #1e2227;
+  --accent-rgb: 107 132 61;
+  --bar-bottom-rgb: 59 68 43;
+  --aura-gradient: radial-gradient(circle, rgba(138, 185, 80, 0.24) 0%, rgba(110, 150, 50, 0.11) 40%, rgba(85, 115, 40, 0.03) 65%, transparent 75%);
+  /* the text on the full accent of a tab: the fill is light, white reads at 4.2:1 or less, the wall colour at 4.8 or more */
+  --tab-ink-hi: var(--wall);
+}
+
+/* Theme Option: Forest Teal */
+body.theme-forest {
+  --bg-statusbar: #1f4037;
+  --bg-context-hover: #275246;
+  --accent-color: #2e6656;
+  --accent-hover: #3d806d;
+  --accent-label: #7fc8b0;
+  --accent-active-bg: #275246;
+  --bg-preview: #1a222b;
+  --accent-rgb: 61 128 109;
+  --bar-bottom-rgb: 31 64 55;
+  --aura-gradient: radial-gradient(circle, rgba(100, 200, 175, 0.24) 0%, rgba(46, 140, 115, 0.11) 40%, rgba(30, 90, 75, 0.03) 65%, transparent 75%);
+}
+
+/* Theme Option: Charcoal Monochrome */
+body.theme-charcoal {
+  --bg-statusbar: #333333;
+  --bg-context-hover: #444444;
+  --accent-color: #505050;
+  --accent-hover: #707070;
+  --accent-label: #c8c8c8;
+  --accent-active-bg: #444444;
+  --bg-preview: #1e1f2a;
+  --accent-rgb: 112 112 112;
+  --bar-bottom-rgb: 51 51 51;
+  --aura-gradient: radial-gradient(circle, rgba(220, 220, 230, 0.20) 0%, rgba(160, 160, 170, 0.09) 40%, rgba(120, 120, 130, 0.02) 65%, transparent 75%);
+}
+
+/* Theme Option: Vermilion (v2) */
+body.theme-vermilion {
+  --bg-statusbar: #47261f;
+  --bg-context-hover: #5a342a;
+  --accent-color: #b8472c;
+  --accent-hover: #cf5c3c;
+  --accent-label: #f1977c;
+  --accent-active-bg: #5a342a;
+  --bg-preview: #281f27;
+  --accent-rgb: 207 92 60;
+  --bar-bottom-rgb: 71 38 31;
+  --aura-gradient: radial-gradient(circle, rgba(245, 140, 110, 0.24) 0%, rgba(207, 92, 60, 0.11) 40%, rgba(170, 60, 35, 0.03) 65%, transparent 75%);
+  /* the text on the full accent of a tab: the fill is light, white reads at 4.2:1 or less, the wall colour at 4.8 or more */
+  --tab-ink-hi: var(--wall);
+}
+
+/* Result blocks: the bars beside the line numbers (result_blocks.js; app.js updateResultAccent). Bright green on the
+   line that opens a block, light green on the lines of the result, dark green on the line that closes it. The gutter
+   is #1e1e1e in every theme, so each set only tunes the hue to sit with the theme's accent. */
+body.dark-theme,
+body.theme-olive {
+  --result-open: #a6c26a;
+  --result-body: #8cb84d;
+  --result-close: #5b8a32;
+}
+body.theme-blue {
+  --result-open: #6cb6ff;
+  --result-body: #3b9ee0;
+  --result-close: #1e75b8;
+}
+body.theme-forest {
+  --result-open: #7fc8b0;
+  --result-body: #4fa38c;
+  --result-close: #328570;
+}
+body.theme-charcoal {
+  --result-open: #d8d8d8;
+  --result-body: #a0a0a0;
+  --result-close: #707070;
+}
+body.theme-vermilion {
+  --result-open: #f1977c;
+  --result-body: #e07353;
+  --result-close: #b05035;
+}
+
+/* ======================================================================================================================
+   The PAPER look (v2): a warm light grey. Three surfaces (the wall behind, the page you write on, the sheet that lies on it),
+   thin hairlines instead of borders, soft shadows, and an accent that fills only what is selected or pressed. Text is
+   4.5:1 or more on every surface it sits on, for every accent (tests/look_contrast_test.mjs). It follows the ink blocks
+   above on purpose: body.look-paper has the same weight as body.dark-theme and body.theme-*, so the later one wins; the
+   accent tokens that the ink accent blocks set are all set here too, so none of them leaks into paper.
+   ====================================================================================================================== */
+body.look-paper {
+  color-scheme: light;
+
+  /* v2 surfaces */
+  --wall: #e6e6e1;
+  --page: #fbfbf9;
+  --sheet: #ffffff;
+  --ink: #16171b;
+  --ink-2: #62636b;
+  --hair: rgb(var(--ink-rgb) / 0.18);
+  --shade: rgb(var(--shade-rgb) / 0.1);
+  --ink-rgb: 22 23 27;
+  --shade-rgb: 20 22 30;
+  --page-rgb: 251 251 249;
+  --sheet-rgb: 255 255 255;
+  --wall-rgb: 230 230 225;
+  --bar-top-rgb: 230 230 225;
+  --bar-bottom-rgb: 236 236 231;
+  --text-muted-rgb: 98 99 107;
+  --linenum-a: 0.74;
+
+  --panel-shadow: 0 8px 28px rgba(20, 22, 30, 0.16), 0 1px 3px rgba(20, 22, 30, 0.1);
+  --panel-line: rgba(22, 23, 27, 0.09);
+  --bg-main: #fbfbf9;
+  --bg-header: #e6e6e1;
+  --bg-tab: #ecece7;
+  --bg-tab-active: #fbfbf9;
+  --bg-tab-hover: #f3f3ef;
+  --bg-editor: #fbfbf9;
+  --bg-line-num: #fbfbf9;
+  --bg-modal: #ffffff;
+  --bg-input: #f2f2ee;
+  --bg-btn: #eeeee9;
+  --bg-btn-hover: #e4e4de;
+  --bg-context: #ffffff;
+
+  /* Accent (the default one, Dark Olive; body.look-paper.theme-* below set the others). The status bar is a neutral strip here. */
+  --bg-statusbar: #ecece7;
+  --bg-context-hover: #e8eed9;
+  --accent-color: #556b2f;
+  --accent-hover: #46592a;
+  --accent-label: #3f5226;
+  --accent-active-bg: #dfe7cc;
+  --bg-preview: #fafbf6;
+  --accent-rgb: 85 107 47;
+  --aura-gradient: radial-gradient(circle, rgba(135, 175, 55, 0.22) 0%, rgba(155, 190, 75, 0.11) 40%, rgba(175, 205, 95, 0.03) 65%, transparent 75%);
+  --aura-blend: normal;
+  --preview-frame: rgb(var(--accent-rgb) / 0.45);
+  --status-ok: #1a6f3d;
+  --status-warn: #7d5200;
+  --status-error: #a8231b;
+
+  --text-main: #16171b;
+  --text-muted: #62636b;
+  --text-active: #0b0c10;
+  --border-color: rgba(22, 23, 27, 0.14);
+
+  /* Text */
+  --text-on-accent: #ffffff;
+  --text-on-danger: #ffffff;
+  --text-on-statusbar: #33343a;
+  --text-soft: #44454c;
+  --text-editor: #16171b;
+  --text-placeholder: #6f7079;
+  --text-badge: #ffffff;
+  --text-key: #55565e;
+  --text-key-empty: #85868e;
+  --text-ambient: #4a5a3a;
+  --text-dim: #7a7b84;
+  --text-code-preview: #1f5f8b;
+  --text-error: #a6414c;
+  --text-error-hover: #8a2f3a;
+  --text-ok: #1d7a44;
+  --text-warn-orange: #9a5b00;
+  --text-danger-badge: #b3261e;
+  --text-danger-hint: #b3261e;
+  --text-recipe-tag: #8a5a00;
+
+  /* Markdown preview */
+  --md-heading: var(--accent-label);
+  --md-h1: var(--accent-label);
+  --md-quote: #35566e;
+  --md-th: #1f5f8b;
+  --md-code: #9a3f1c;
+  --bg-md-block: #f4f4f0;
+  --bg-md-stripe: #f7f7f3;
+  --bg-md-inline: #eeeeea;
+  --bg-md-th: #eeeeea;
+  --bg-mermaid-dark: #20222e;
+  --border-mermaid-dark: #3a3d4d;
+  --text-mermaid-dark: #dcdde3;
+
+  /* Surfaces */
+  --bg-icon-hover: #d9d9d3;
+  --bg-hover-subtle: #ebebe6;
+  --bg-field: #f3f3ef;
+  --bg-table: #fafaf8;
+  --bg-table-head: #f1f1ed;
+  --bg-key: #f1f1ed;
+  --bg-btn-action: #ecece7;
+  --bg-btn-action-hover: #e1e1db;
+  --bg-print-stage: #d4d4ce;
+  --bg-scrim: rgba(22, 23, 27, 0.26);
+  --icon-knob-fill: #fbfbf9;
+
+  /* Lines and outlines */
+  --line-row: rgba(22, 23, 27, 0.07);
+  --border-input: rgba(22, 23, 27, 0.26);
+  --border-button: rgba(22, 23, 27, 0.28);
+  --border-btn-action: rgba(22, 23, 27, 0.22);
+  --outline-pane-focus: rgba(0, 105, 176, 0.45);
+  --ring-focus-input: rgb(var(--accent-rgb) / 0.3);
+
+  /* Switches */
+  --switch-track: #b4b4ad;
+  --switch-thumb: #ffffff;
+  --switch-thumb-on: #ffffff;
+
+  /* Shadows */
+  --shadow-menu: 0 6px 20px rgba(20, 22, 30, 0.16), 0 1px 3px rgba(20, 22, 30, 0.1);
+  --shadow-modal: 0 12px 36px rgba(20, 22, 30, 0.2), 0 2px 6px rgba(20, 22, 30, 0.1);
+  --shadow-bar: 0 4px 16px rgba(20, 22, 30, 0.14), 0 1px 2px rgba(20, 22, 30, 0.1);
+  --shadow-popover: 0 8px 28px rgba(20, 22, 30, 0.18), 0 1px 3px rgba(20, 22, 30, 0.1);
+  --shadow-button: 0 2px 6px rgba(20, 22, 30, 0.18);
+  --shadow-tasks: 0 10px 30px rgba(20, 22, 30, 0.18);
+  --shadow-tooltip: 0 4px 14px rgba(20, 22, 30, 0.18);
+  --shadow-indicator: 0 2px 8px rgba(20, 22, 30, 0.16);
+
+  /* Neutral overlays: dark on light (the ink look lays white over dark) */
+  --veil-03: rgba(22, 23, 27, 0.025);
+  --veil-04: rgba(22, 23, 27, 0.035);
+  --veil-05: rgba(22, 23, 27, 0.045);
+  --veil-06: rgba(22, 23, 27, 0.055);
+  --veil-07: rgba(22, 23, 27, 0.06);
+  --veil-08: rgba(22, 23, 27, 0.07);
+  --veil-10: rgba(22, 23, 27, 0.08);
+  --veil-12: rgba(22, 23, 27, 0.1);
+  --veil-15: rgba(22, 23, 27, 0.12);
+  --veil-25: rgba(22, 23, 27, 0.18);
+  --veil-30: rgba(22, 23, 27, 0.22);
+  --veil-45: rgba(22, 23, 27, 0.35);
+  --shade-25: rgba(22, 23, 27, 0.07);
+  --shade-30: rgba(22, 23, 27, 0.1);
+  --shade-35: rgba(22, 23, 27, 0.12);
+  --shade-40: rgba(22, 23, 27, 0.12);
+  --shade-45: rgba(22, 23, 27, 0.11);
+  --shade-55: rgba(255, 255, 255, 0.88);
+
+  /* State colours: the dark ink look uses light tints of these hues, paper uses the deep ones */
+  --coral: #b3261e;
+  --coral-12: rgba(179, 38, 30, 0.1);
+  --coral-50: rgba(179, 38, 30, 0.45);
+  --rose: #b4373f;
+  --rose-10: rgba(180, 55, 63, 0.08);
+  --rose-12: rgba(180, 55, 63, 0.1);
+  --rose-20: rgba(180, 55, 63, 0.16);
+  --rose-25: rgba(180, 55, 63, 0.25);
+  --rose-45: rgba(180, 55, 63, 0.45);
+  --red-12: rgba(200, 40, 40, 0.1);
+  --red-50: rgba(200, 40, 40, 0.45);
+  --crimson-38: rgba(211, 53, 58, 0.2);
+  --crimson-60: rgba(211, 53, 58, 0.3);
+  --rec-dot: #d3353a;
+  --amber: #d97706;
+  --amber-12: rgba(217, 119, 6, 0.1);
+  --amber-15: rgba(217, 119, 6, 0.12);
+  --amber-18: rgba(217, 119, 6, 0.16);
+  --amber-25: rgba(217, 119, 6, 0.22);
+  --amber-28: rgba(217, 119, 6, 0.24);
+  --amber-40: rgba(217, 119, 6, 0.35);
+  --caution: #7d5f1a;
+  --caution-10: rgba(125, 95, 26, 0.1);
+  --caution-12: rgba(125, 95, 26, 0.12);
+  --caution-15: rgba(125, 95, 26, 0.14);
+  --caution-45: rgba(125, 95, 26, 0.45);
+  --caution-50: rgba(125, 95, 26, 0.5);
+  --ok-line: #3f8a3a;
+  --ok-bg: rgba(63, 138, 58, 0.12);
+  --ok-text: #1f6b2f;
+  --fail-line: #b4414a;
+  --fail-bg: rgba(180, 65, 74, 0.1);
+  --fail-text: #9a2f3a;
+  --cloud-mark: #985a00;
+  --dirty-dot: #a8650a;
+  --salmon: #b3261e;
+  --key-rec-border: #d12a1a;
+  --key-rec-bg: rgba(209, 42, 26, 0.1);
+  --key-rec-text: #b3261e;
+  --jump-link: #0b7a68;
+  --jump-link-hover: #1f5f8b;
+  --jump-link-bg: rgba(11, 122, 104, 0.12);
+  --flash-yellow-65: rgba(250, 204, 21, 0.55);
+  --flash-yellow-50: rgba(250, 204, 21, 0.42);
+  --flash-yellow-35: rgba(250, 204, 21, 0.28);
+  --semantic-ok-line: #2f7d4a;
+  --semantic-warn-line: #a8741a;
+  --semantic-ok-text: #1d5f36;
+  --semantic-warn-text: #7a5200;
+
+  /* Settings badges and banners */
+  --text-idle: #62636b;
+  --badge-ok-bg: rgba(26, 127, 70, 0.14);
+  --badge-ok-text: #176b3c;
+  --badge-danger-bg: rgba(179, 38, 30, 0.12);
+  --badge-danger-text: #b3261e;
+  --badge-busy-text: #8a6500;
+  --badge-git-warn-bg: rgba(180, 130, 0, 0.14);
+  --badge-git-warn-text: #8a6500;
+  --badge-git-ok-bg: rgba(30, 126, 52, 0.12);
+  --badge-git-ok-text: #1b6f2f;
+  --badge-git-idle-bg: rgba(90, 97, 105, 0.12);
+  --badge-git-idle-text: #5a6169;
+  --danger-banner-bg: rgba(200, 40, 50, 0.08);
+  --danger-banner-border: rgba(200, 40, 50, 0.3);
+  --crimson: #d3353a;
+  --crimson-16: rgba(211, 53, 58, 0.12);
+
+  /* Icons */
+  --icon-select-chevron: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2362636b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+
+  /* v2 colours that other phases build on */
+  --focus-ring: var(--accent-hover);
+  /* the text on the full accent of a tab: white on every paper accent (the ink accents that need the dark colour say so in their own block) */
+  --tab-ink-hi: var(--text-on-accent);
+  --gutter-shade: linear-gradient(to right, transparent 0%, rgba(20, 22, 30, 0.16) 35%, rgba(20, 22, 30, 0.28) 50%, rgba(20, 22, 30, 0.16) 65%, transparent 100%);
+  --gutter-dot: rgb(var(--ink-rgb) / 0.26);
+  --divider-line: rgba(20, 22, 30, 0.20);
+  --sheet-shadow: 0 0 18px rgb(var(--shade-rgb) / 0.12), 0 2px 6px rgb(var(--shade-rgb) / 0.1);
+  --note-tint-a: 0.1;
+  --note-tape-focus: var(--accent-color);
+  --note-flap: rgb(var(--shade-rgb) / 0.14);
+  --note-shadow: 0 1px 3px rgb(var(--shade-rgb) / 0.2), 0 12px 28px rgb(var(--shade-rgb) / 0.18);
+  --bg-scrim-note: rgba(22, 23, 27, 0.14);
+
+  /* Result blocks: the bars beside the line numbers, darker greens for a light gutter */
+  --result-open: #3f9a22;
+  --result-body: #55993a;
+  --result-close: #2e6b1d;
+}
+
+/* Theme Option: Classic VS Code Blue */
+body.look-paper.theme-blue {
+  --bg-context-hover: #e2eef9;
+  --accent-color: #0069b0;
+  --accent-hover: #005a96;
+  --accent-label: #004f85;
+  --accent-active-bg: #d6e8f7;
+  --bg-preview: #f8fbfe;
+  --accent-rgb: 0 105 176;
+  --aura-gradient: radial-gradient(circle, rgba(50, 150, 235, 0.20) 0%, rgba(70, 165, 240, 0.10) 40%, rgba(100, 180, 250, 0.03) 65%, transparent 75%);
+}
+
+/* Theme Option: Dark Olive (Default) */
+body.look-paper.theme-olive {
+  --bg-context-hover: #e8eed9;
+  --accent-color: #556b2f;
+  --accent-hover: #46592a;
+  --accent-label: #3f5226;
+  --accent-active-bg: #dfe7cc;
+  --bg-preview: #fafbf6;
+  --accent-rgb: 85 107 47;
+  --aura-gradient: radial-gradient(circle, rgba(135, 175, 55, 0.22) 0%, rgba(155, 190, 75, 0.11) 40%, rgba(175, 205, 95, 0.03) 65%, transparent 75%);
+}
+
+/* Theme Option: Forest Teal */
+body.look-paper.theme-forest {
+  --bg-context-hover: #e2f1ec;
+  --accent-color: #2e6656;
+  --accent-hover: #25544a;
+  --accent-label: #1f4a3d;
+  --accent-active-bg: #d7ebe4;
+  --bg-preview: #f7fbfa;
+  --accent-rgb: 46 102 86;
+  --aura-gradient: radial-gradient(circle, rgba(50, 160, 135, 0.20) 0%, rgba(70, 175, 150, 0.10) 40%, rgba(90, 190, 165, 0.03) 65%, transparent 75%);
+}
+
+/* Theme Option: Charcoal Monochrome */
+body.look-paper.theme-charcoal {
+  --bg-context-hover: #ebebeb;
+  --accent-color: #4a4a4a;
+  --accent-hover: #333333;
+  --accent-label: #2b2b2b;
+  --accent-active-bg: #e2e2e2;
+  --bg-preview: #fafafa;
+  --accent-rgb: 74 74 74;
+  --aura-gradient: radial-gradient(circle, rgba(100, 100, 110, 0.18) 0%, rgba(130, 130, 140, 0.08) 40%, rgba(160, 160, 170, 0.02) 65%, transparent 75%);
+}
+
+/* Theme Option: Vermilion (v2) */
+body.look-paper.theme-vermilion {
+  --bg-context-hover: #fae8e2;
+  --accent-color: #b8472c;
+  --accent-hover: #9a3a22;
+  --accent-label: #8c321d;
+  --accent-active-bg: #f7ddd5;
+  --bg-preview: #fdf9f7;
+  --accent-rgb: 184 71 44;
+  --aura-gradient: radial-gradient(circle, rgba(235, 110, 75, 0.20) 0%, rgba(245, 135, 100, 0.10) 40%, rgba(255, 160, 130, 0.03) 65%, transparent 75%);
+}

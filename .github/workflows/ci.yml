@@ -1,0 +1,176 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows (build, vet, test)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go vet
+        # pkg/dialog/dialog_windows.go intentionally uses unsafe.Pointer for
+        # Win32 COM/IFileDialog interop; go vet's unsafeptr analyzer flags
+        # this legitimate syscall-marshalling code. Non-fatal so it stays
+        # visible in the log without blocking CI on a known, reviewed case.
+        run: go vet ./...
+        continue-on-error: true
+
+      - name: go build (compile gate)
+        run: go build ./...
+
+      - name: go test
+        run: go test ./...
+
+      - name: Cross-check macOS build (no cgo)
+        # window_darwin.go / hotkey_darwin.go / openfile_darwin.go all use cgo and only actually
+        # compile on the macOS runner below. This step catches a pure-Go regression (a symbol the
+        # non-cgo darwin build needs going missing, a signature drifting) right here on Windows,
+        # instead of waiting for the macOS job. See platform_darwin.go / platform_darwin_nocgo.go.
+        shell: bash
+        env:
+          CGO_ENABLED: 0
+          GOOS: darwin
+          GOARCH: arm64
+        run: |
+          set -e
+          go vet ./...
+          mkdir -p "$RUNNER_TEMP/darwin-nocgo-test-bin"
+          go test -c -o "$RUNNER_TEMP/darwin-nocgo-test-bin/" ./...
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Frontend JS tests
+        shell: bash
+        run: |
+          if [ -f tools/run_js_tests.mjs ]; then
+            node tools/run_js_tests.mjs
+          else
+            for f in frontend/js/*_test.js tests/*.mjs; do
+              [ -e "$f" ] || continue
+              echo "--- Running $f ---"
+              node "$f"
+            done
+          fi
+
+      - name: Build Windows executable
+        shell: pwsh
+        run: |
+          go build -ldflags="-H windowsgui -s -w" -trimpath -o syki.exe .
+          # syki-cli.exe: the console-subsystem twin (PowerShell waits for it, real exit codes). The version is
+          # read from app.go so that --version matches; the release job takes it from the tag instead.
+          $version = (Select-String -Path app.go -Pattern 'AppVersion\s*=\s*"(\d+\.\d+\.\d+)"').Matches[0].Groups[1].Value
+          $ldflags = "-s -w -X main.version=$version"
+          go build "-ldflags=$ldflags" -trimpath -o syki-cli.exe ./cmd/syki
+          # The point of the binary, checked where it matters: the version, and the exit codes of jev verify
+          # (0 safe, 1 blocked) must reach a PowerShell caller.
+          $reported = (& ./syki-cli.exe --version) -join ''
+          if ($reported -ne "md-memo $version") { throw "syki-cli.exe reports '$reported', expected 'md-memo $version'" }
+          & ./syki-cli.exe jev verify --text "ls -la" | Out-Null
+          if ($LASTEXITCODE -ne 0) { throw "jev verify (safe command) exited with $LASTEXITCODE, expected 0" }
+          & ./syki-cli.exe jev verify --json "rm temp.txt" | Out-Null
+          if ($LASTEXITCODE -ne 1) { throw "jev verify (blocked command) exited with $LASTEXITCODE, expected 1" }
+          # The step's own exit code is that of the last native command (here the expected 1 of the blocked
+          # command), so end it explicitly: every check above has already passed.
+          exit 0
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: syki-windows-${{ github.sha }}
+          path: |
+            syki.exe
+            syki-cli.exe
+          if-no-files-found: error
+          retention-days: 14
+
+  macos:
+    name: macOS (build, vet, test, package)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - name: go build (compile gate)
+        # This is the ONLY place the cgo/Objective-C code in window_darwin.go
+        # actually gets compiled — there is no other macOS CI today.
+        run: go build ./...
+
+      - name: go vet
+        # Non-fatal: the real compile check already happened above; this is
+        # extra signal, not a gate, in case a toolchain quirk trips a vet
+        # analyzer on the cgo/Obj-C interop.
+        run: go vet ./...
+        continue-on-error: true
+
+      - name: go test
+        run: go test ./...
+
+      - name: Build MD-Memo.app (universal, with graceful native-only fallback)
+        run: |
+          chmod +x build_mac.sh
+          ./build_mac.sh
+
+      - name: Verify app bundle
+        run: |
+          test -x "MD-Memo.app/Contents/MacOS/MD-Memo"
+          plutil -lint "MD-Memo.app/Contents/Info.plist"
+          echo "Architectures in binary:"
+          lipo -archs "MD-Memo.app/Contents/MacOS/MD-Memo"
+
+      - name: Smoke-test the app binary (no GUI)
+        # --version and --help return before any window, lock or listener is
+        # created (main.go), so this proves the bundled binary loads its
+        # frameworks and starts on a real Mac without opening anything.
+        run: |
+          out="$(MD-Memo.app/Contents/MacOS/MD-Memo --version)"
+          echo "$out"
+          echo "$out" | grep -q '^md-memo [0-9]'
+          MD-Memo.app/Contents/MacOS/MD-Memo --help | head -5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Frontend JS tests (WebKit-side code paths are the same files)
+        run: node tools/run_js_tests.mjs
+
+      - name: Verify code signature
+        # Ad-hoc signing is best-effort (see build_mac.sh); warn rather than
+        # fail the whole CI run on a signature-verification quirk.
+        run: codesign --verify --deep --strict "MD-Memo.app"
+        continue-on-error: true
+
+      - name: Package app bundle
+        # ditto (not zip, and not upload-artifact zipping the raw directory)
+        # preserves the ad-hoc code signature, symlinks and executable bits.
+        run: ditto -c -k --sequesterRsrc --keepParent "MD-Memo.app" md-memo-macos.zip
+
+      - name: Upload macOS build artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: md-memo-macos-${{ github.sha }}
+          path: md-memo-macos.zip
+          if-no-files-found: error
+          retention-days: 14

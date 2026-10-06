@@ -1,0 +1,1866 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="dark">
+  <meta name="theme-color" content="#1e1e1e">
+  <title>syki::sok</title>
+  <link rel="icon" type="image/png" href="app.png">
+  <link rel="shortcut icon" href="app.png">
+  <!-- Every colour of the app is a token defined once in tokens.css; style.css only uses var(--name). -->
+  <link rel="stylesheet" href="css/tokens.css?v=1.0.0">
+  <link rel="stylesheet" href="css/style.css?v=1.5.13">
+  <!-- v2 chrome: the overlay bars, the numbers the text boxes share (padding), the auto-hide. Screen only; style.css stays the base. -->
+  <link rel="stylesheet" href="css/chrome.css?v=1.0.0" media="screen">
+  <!-- Paper look for printing the preview (the printer button of the preview). media="print": it applies to nothing on the screen. -->
+  <link rel="stylesheet" href="css/print.css?v=1.0.0" media="print">
+</head>
+<body class="dark-theme theme-olive" data-bars="light" data-view="page">
+  <!-- The look a profile chose is on the page before the first paint: this runs before anything below is painted, the scripts at the end of the page after it.
+       md_memo_look ("paper|blue", "ink|forest", ...) is written by app.js (applyTheme) only when the look is not the default (ink, Dark Olive); without it this does nothing. -->
+  <script>(function(){try{var m=localStorage.getItem('md_memo_look');if(!m)return;var p=m.split('|'),b=document.body;if(p[0]==='paper'){b.classList.add('look-paper');document.documentElement.classList.add('look-paper');}if(/^(blue|forest|charcoal|vermilion)$/.test(p[1])){b.classList.remove('theme-olive');b.classList.add('theme-'+p[1]);}}catch(e){}})();</script>
+  <div id="app">
+    <!-- Header: Tabs and Minimal Actions -->
+    <header id="header">
+      <!-- The file name of the note on screen, left-aligned to where the text starts (css/chrome.css); app.js (updateHeaderTitle) keeps its text. The tabs are not in this bar: they are the index strips at the window's edge (#tab-index-left, in #workspace). -->
+      <div id="header-title" aria-hidden="true"></div>
+      <div id="header-actions">
+        <button id="btn-open-file" class="btn-header-icon" data-i18n-title="openFileTitle" title="Open File (Ctrl+O)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="16" y1="13" x2="8" y2="13"></line>
+            <line x1="16" y1="17" x2="8" y2="17"></line>
+            <polyline points="10 9 9 9 8 9"></polyline>
+          </svg>
+        </button>
+        <button id="btn-open-folder" class="btn-header-icon" data-i18n-title="openFolderTitle" title="Open Folder (Ctrl+Shift+O)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+          </svg>
+        </button>
+        <button id="btn-save-file" class="btn-header-icon" data-i18n-title="saveFileTitle" title="Save (Ctrl+S)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+            <polyline points="17 21 17 13 7 13 7 21"></polyline>
+            <polyline points="7 3 7 8 15 8"></polyline>
+          </svg>
+        </button>
+        <button id="btn-find" class="btn-header-icon" data-i18n-title="findTitle" title="Find & Replace (Ctrl+F)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="6.5"></circle>
+            <line x1="21" y1="21" x2="16" y2="16"></line>
+          </svg>
+        </button>
+        <button id="btn-search-scraps" class="btn-header-icon" data-i18n-title="searchScrapsTitle" title="Search All Scraps (Ctrl+Shift+F)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <circle cx="11" cy="14" r="3"></circle>
+            <line x1="13.5" y1="16.5" x2="16" y2="19"></line>
+          </svg>
+        </button>
+        <button id="btn-header-llm" class="btn-header-icon" data-i18n-title="llmTitle" title="Ask AI (Ctrl+L)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2l2.4 6.8L21 12l-6.6 3.2L12 22l-2.4-6.8L3 12l6.6-3.2L12 2z"></path>
+            <path d="M19 4v3m1.5-1.5h-3"></path>
+          </svg>
+        </button>
+        <button id="btn-mobile-drop" class="btn-header-icon" title="Mobile Drop">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="5" y="2" width="14" height="20" rx="2" ry="2"></rect>
+            <line x1="12" y1="18" x2="12.01" y2="18"></line>
+          </svg>
+        </button>
+        <button id="btn-voice-input" class="btn-header-icon" data-i18n-title="voiceInputTitle" title="Voice input (Ctrl+Shift+R)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+            <path d="M5 10a7 7 0 0 0 14 0"></path>
+            <line x1="12" y1="19" x2="12" y2="22"></line>
+          </svg>
+        </button>
+        <button id="btn-quick-capture" class="btn-header-icon" data-i18n-title="quickCaptureTitle" title="Quick Capture (Ctrl+Shift+Q)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="7" width="20" height="10" rx="2.5"></rect>
+            <line x1="6" y1="12" x2="12" y2="12"></line>
+            <line x1="16" y1="10" x2="16" y2="14"></line>
+          </svg>
+        </button>
+        <div class="header-divider"></div>
+        <button id="btn-toggle-split" class="btn-header-icon" data-i18n-title="splitViewTitle" title="Split Editor Right (Ctrl+\)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="3" y="3" width="18" height="18" rx="2.5"></rect>
+            <line x1="12" y1="3" x2="12" y2="21"></line>
+            <path d="M12 3h6a2.5 2.5 0 0 1 2.5 2.5v13a2.5 2.5 0 0 1-2.5 2.5h-6z" fill="currentColor" opacity="0.25"></path>
+          </svg>
+        </button>
+        <button id="btn-preview-side" class="btn-header-icon" data-i18n-title="previewToSideTitle" title="Open Preview to the Side (Ctrl+Alt+V)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+        </button>
+        <button id="btn-toggle-preview" class="btn-header-icon" data-i18n-title="togglePreviewTitle" title="Toggle Preview (Ctrl+P)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+            <circle cx="12" cy="12" r="3.2"></circle>
+          </svg>
+        </button>
+        <button id="btn-zen" class="btn-header-icon" data-i18n-title="zenToggleTitle" title="Zen mode (Shift+F11)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
+        <button id="btn-fullscreen" class="btn-header-icon" data-i18n-title="fullscreenTitle" title="Full screen (F11)" aria-pressed="false">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3"></path>
+            <path d="M21 8V5a2 2 0 0 0-2-2h-3"></path>
+            <path d="M3 16v3a2 2 0 0 0 2 2h3"></path>
+            <path d="M16 21h3a2 2 0 0 0 2-2v-3"></path>
+          </svg>
+        </button>
+        <button id="btn-settings" class="btn-header-icon" data-i18n-title="settingsTitle" title="Settings">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="3" y1="8" x2="21" y2="8"></line>
+            <circle cx="9" cy="8" r="2.5"></circle>
+            <line x1="3" y1="16" x2="21" y2="16"></line>
+            <circle cx="15" cy="16" r="2.5"></circle>
+          </svg>
+        </button>
+        <button id="btn-help" class="btn-header-icon btn-header-help" data-i18n-title="helpTitle" title="Help & Documentation">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+          <span id="help-update-badge" class="update-badge hidden" data-i18n-title="helpUpdateAvailable" title="New update available"></span>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main id="workspace">
+      <!-- The index tabs (v2, docs/design/v2-plan-P3.md): thin strips on the window's edge, over the text; css/style.css. The left strip holds the
+           tabs (app.js renderTabs keeps them, tab_overflow.js scrolls them), then "+" and "All tabs" at its foot. The right strip is the
+           second page's, shown only for the view with two note pages (app.js syncStripMode). Nothing in a strip may be renamed: tests, flows and the manual use these ids. -->
+      <div id="tab-index-left" class="tab-index" data-side="left">
+        <div id="tabs-scroll">
+          <div id="tabs-list" role="tablist" aria-orientation="vertical"></div>
+        </div>
+        <div class="tab-index-foot">
+          <button id="btn-new-tab" class="tab-index-btn" data-i18n-title="newTabTitle" title="New Tab (Ctrl+N)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+          </button>
+          <button id="btn-open-tab" class="tab-index-btn" data-i18n-title="openFileTitle" title="Open File (Ctrl+O)">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+              <polyline points="14 2 14 8 20 8"></polyline>
+              <line x1="16" y1="13" x2="8" y2="13"></line>
+              <line x1="16" y1="17" x2="8" y2="17"></line>
+              <polyline points="10 9 9 9 8 9"></polyline>
+            </svg>
+          </button>
+          <button id="btn-all-tabs" class="tab-index-btn hidden" data-i18n-title="allTabsTitle" title="All tabs" aria-haspopup="dialog" aria-expanded="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </button>
+          <button id="btn-pin-tabs" class="tab-index-btn" data-i18n-title="pinTabsTitle" title="Pin tabs" aria-pressed="false">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="12" y1="17" x2="12" y2="22"></line>
+              <path d="M5 17h14v-2l-2-2V7a5 5 0 0 0-10 0v6l-2 2v2z"></path>
+            </svg>
+          </button>
+        </div>
+      </div>
+      <div id="tab-index-right" class="tab-index" data-side="right" hidden>
+        <div id="tabs-scroll-right">
+          <div id="tabs-list-right" role="tablist" aria-orientation="vertical"></div>
+        </div>
+      </div>
+      <!-- Floating Find & Replace Bar -->
+      <div id="find-replace-bar" class="find-replace-bar hidden">
+        <div class="find-row">
+          <button id="btn-toggle-replace" data-i18n-title="tipToggleReplace" class="btn-icon" title="Toggle Replace (Ctrl+H)">▶</button>
+          <div class="find-input-wrap">
+            <input type="text" id="find-input" placeholder="Find..." data-i18n-placeholder="findPlaceholder" spellcheck="false">
+            <span id="find-count" class="find-count" role="status" aria-live="polite">0/0</span>
+          </div>
+          <button id="btn-find-case" data-i18n-title="tipMatchCase" class="btn-toggle" title="Match Case (Alt+C)" aria-pressed="false">Aa</button>
+          <button id="btn-find-word" data-i18n-title="tipMatchWord" class="btn-toggle" title="Match Whole Word (Alt+W)" aria-pressed="false">\b</button>
+          <button id="btn-find-regex" data-i18n-title="tipRegex" class="btn-toggle" title="Use Regular Expression (Alt+R)" aria-pressed="false">.*</button>
+          <button id="btn-find-prev" data-i18n-title="tipFindPrev" class="btn-icon" title="Previous Match (Shift+Enter / Shift+F3)">▲</button>
+          <button id="btn-find-next" data-i18n-title="tipFindNext" class="btn-icon" title="Next Match (Enter / F3)">▼</button>
+          <button id="btn-find-close" data-i18n-title="tipCloseEsc" class="btn-icon" title="Close (Esc)">✕</button>
+        </div>
+        <div id="replace-row" class="replace-row hidden">
+          <div class="find-input-wrap replace-input-wrap">
+            <input type="text" id="replace-input" placeholder="Replace..." data-i18n-placeholder="replacePlaceholder" spellcheck="false">
+          </div>
+          <button id="btn-replace-one" data-i18n-title="tipReplaceOne" class="btn-action" data-i18n="btnReplace" title="Replace">Replace</button>
+          <button id="btn-replace-all" data-i18n-title="tipReplaceAll" class="btn-action" data-i18n="btnReplaceAll" title="Replace All">Replace All</button>
+        </div>
+      </div>
+      <!-- In-Place Non-Modal Ask Bar (Ctrl+L): the chip names what the question is about (selection / current line / whole note) -->
+      <div id="inline-prompt-bar" class="inline-prompt-bar hidden">
+        <div class="inline-prompt-row">
+          <div id="inline-prompt-badge" class="inline-prompt-badge">AI</div>
+          <input type="text" id="inline-prompt-input" placeholder="Ask AI: summarize, translate, rewrite... (Enter to run, Esc to close)" data-i18n-placeholder="inlinePromptPlaceholder" spellcheck="false">
+          <button id="btn-inline-prompt-send" data-i18n-title="tipRunEnter" class="btn-action" data-i18n="btnRunAI" title="Run (Enter)">Run</button>
+          <button id="btn-inline-prompt-close" data-i18n-title="tipCloseEsc" class="btn-icon" title="Close (Esc)">✕</button>
+        </div>
+        <div class="inline-prompt-meta">
+          <span id="inline-prompt-target" class="inline-prompt-chip"></span>
+          <!-- Where the text goes (UX review I3): "-> Local Ollama (model)" or "-> model (cloud)". Filled by app.js when the bar opens. -->
+          <span id="inline-prompt-dest" class="inline-prompt-dest hidden"><svg class="inline-prompt-dest-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="4" y1="12" x2="19" y2="12"></line><polyline points="13 6 19 12 13 18"></polyline></svg><span class="visually-hidden" data-i18n="askDestAria">Sent to: </span><span id="inline-prompt-dest-text"></span></span>
+          <span id="inline-prompt-hint" class="inline-prompt-hint"></span>
+        </div>
+        <div id="inline-prompt-setup" class="inline-prompt-setup hidden">
+          <span data-i18n="askSetupNeeded">No AI model is set up yet.</span>
+          <button type="button" id="btn-inline-prompt-setup" class="btn-action" data-i18n="askSetupButton">Set up</button>
+        </div>
+        <!-- The first time the bar opens with the untouched default model: a one-time choice (first_run.js, docs/design/first-run.md) -->
+        <div id="inline-prompt-choice" class="inline-prompt-setup inline-prompt-choice hidden" role="group" aria-labelledby="inline-prompt-choice-text">
+          <span id="inline-prompt-choice-text" data-i18n="aiChoiceText">Where should the AI run? You can change this any time in Settings.</span>
+          <span class="inline-prompt-choice-actions">
+            <button type="button" id="btn-ai-choice-local" class="btn-action" data-i18n="aiChoiceLocal">Set up a local model (Ollama)</button>
+            <button type="button" id="btn-ai-choice-cloud" class="btn-action btn-outline" data-i18n="aiChoiceCloud">Use a cloud key</button>
+            <button type="button" id="btn-ai-choice-later" class="btn-action btn-pale" data-i18n="aiChoiceLater">Later</button>
+          </span>
+        </div>
+        <!-- The first request to a cloud host asks once (general.cloudConsent keeps the answer per host) -->
+        <div id="inline-prompt-consent" class="inline-prompt-setup inline-prompt-consent hidden" role="alert">
+          <span id="inline-prompt-consent-text"></span>
+          <span class="inline-prompt-error-actions">
+            <button type="button" id="btn-inline-prompt-consent-allow" class="btn-action" data-i18n="askConsentAllow">Allow and send</button>
+            <button type="button" id="btn-inline-prompt-consent-cancel" class="btn-action btn-outline" data-i18n="btnCancel">Cancel</button>
+          </span>
+        </div>
+        <div id="inline-prompt-error" class="inline-prompt-setup inline-prompt-error hidden" role="alert">
+          <span id="inline-prompt-error-text"></span>
+          <span class="inline-prompt-error-actions">
+            <button type="button" id="btn-inline-prompt-retry" class="btn-action" data-i18n="btnRetry">Retry</button>
+            <button type="button" id="btn-inline-prompt-error-settings" class="btn-action btn-outline" data-i18n="askErrSettings">AI settings</button>
+          </span>
+          <details id="inline-prompt-error-details" class="inline-prompt-error-details">
+            <summary data-i18n="askErrDetails">Details</summary>
+            <div id="inline-prompt-error-detail"></div>
+          </details>
+        </div>
+      </div>
+
+      <!-- In-Place Non-Modal Command Bar (Ctrl+E): a shell command, or AI that writes it; Tab / the badge switches -->
+      <div id="cli-filter-bar" class="inline-prompt-bar hidden">
+        <div class="inline-prompt-row">
+          <div id="cli-filter-badge" class="inline-prompt-badge" data-i18n="cliFilterBadge" data-i18n-title="commandBarBadgeHint" title="Click or press Tab to switch between CLI and AI mode">CLI</div>
+          <input type="text" id="cli-filter-input" list="cli-snippets" placeholder="Enter CLI command (e.g. sort, uniq, jq ., tr a-z A-Z, prettier)... (Enter to Run, Esc to Cancel)" data-i18n-placeholder="cliFilterPlaceholder" spellcheck="false" autocomplete="off">
+          <datalist id="cli-snippets">
+            <option value="sort" label="行を昇順ソート (Sort ascending)"></option>
+            <option value="sort -r" label="行を降順ソート (Sort descending)"></option>
+            <option value="sort -u" label="重複行を排除してソート (Sort unique)"></option>
+            <option value="uniq" label="連続する重複行を排除 (Remove repeated adjacent lines)"></option>
+            <option value="jq ." label="JSON整形・インデント (Pretty-print JSON)"></option>
+            <option value="jq -c ." label="JSONを1行に圧縮 (Minify JSON)"></option>
+            <option value="tr a-z A-Z" label="大文字に変換 (Convert to uppercase)"></option>
+            <option value="tr A-Z a-z" label="小文字に変換 (Convert to lowercase)"></option>
+            <option value="wc -l" label="行数をカウント (Count lines)"></option>
+            <option value="wc -w" label="単語数をカウント (Count words)"></option>
+            <option value="base64 -d" label="Base64デコード (Decode base64)"></option>
+            <option value="base64" label="Base64エンコード (Encode base64)"></option>
+            <option value="npx prettier --parser markdown" label="Markdown整形 (Prettier format)"></option>
+            <option value="duckdb -box" label="SQL実行: DuckDB 表形式 (DuckDB query)"></option>
+            <option value="sqlite3 -header -column" label="SQL実行: SQLite 表形式 (SQLite query)"></option>
+            <option value="psql -f -" label="SQL実行: PostgreSQL (psql execute stdin)"></option>
+            <option value="mysql -t" label="SQL実行: MySQL 表形式 (MySQL execute stdin)"></option>
+          </datalist>
+          <button id="btn-cli-filter-expand" class="btn-icon" data-i18n-title="cliExpandTitle" title="Toggle command preview">⤢</button>
+          <button id="btn-cli-filter-send" data-i18n-title="tipRunEnter" class="btn-action" data-i18n="btnRunCli" title="Run (Enter)">Run</button>
+          <button id="btn-cli-filter-close" data-i18n-title="tipCloseEsc" class="btn-icon" title="Close (Esc)">✕</button>
+        </div>
+        <div id="cli-filter-preview" class="cli-filter-preview hidden"></div>
+      </div>
+
+      <!-- Jev Autonomous Action Panel (Ctrl+J Suggest) -->
+      <div id="jev-action-panel" class="jev-action-panel hidden">
+        <div class="jev-header">
+          <div class="jev-title">
+            <span class="jev-badge">Suggest</span>
+          </div>
+          <div class="jev-hints" id="jev-hints"></div>
+        </div>
+        <div class="jev-slots" id="jev-slots-container"></div>
+        <div class="jev-status hidden" id="jev-status-bar"></div>
+      </div>
+
+      <!-- Primary Pane (Left) -->
+      <div id="editor-pane" class="pane">
+        <div id="line-numbers"></div>
+        <div id="editor-wrapper">
+          <div id="cursor-aura"></div>
+          <div id="ghost-overlay"></div>
+          <textarea id="editor" spellcheck="false" data-i18n-placeholder="editorPlaceholder" placeholder="Type markdown here... (Press Tab to accept autocomplete, Ctrl+L for AI assist)"></textarea>
+        </div>
+      </div>
+
+      <!-- Split Resizer: the divider between two pages. A separator the mouse drags and the keyboard moves (F6 reaches it: the editors keep Tab; then the arrows, Home, End, Enter); app.js initPaneResizer. In the pair of editors it is the gutter (shadow and dots), beside a preview only a grip (css/style.css). -->
+      <div id="pane-resizer" data-i18n-title="tipPaneResizer" class="pane-resizer hidden" title="Drag or use the arrow keys to resize / Double-click or press Enter to reset (50:50)" role="separator" aria-orientation="vertical" tabindex="0" data-stop="divider" aria-valuemin="15" aria-valuemax="85" aria-valuenow="50"></div>
+
+      <!-- Secondary Pane (Right) - Split Editor / Side Preview -->
+      <div id="secondary-pane" class="pane secondary-pane-container hidden">
+        <div id="secondary-pane-header" class="pane-header">
+          <span id="secondary-pane-title" class="pane-title">Untitled.md</span>
+          <div class="pane-actions">
+            <button id="btn-secondary-sync" class="btn-pane-icon active" data-i18n-title="syncScrollTitle" title="Toggle Scroll Synchronization">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </button>
+            <!-- Print / save as PDF of the preview shown in this pane (app.js startPrint; shown only while the pane shows the preview) -->
+            <button id="btn-secondary-print" type="button" class="btn-pane-icon" data-i18n-title="previewPrintTitle" title="Print or save as PDF" hidden>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M6 9V3h12v6"></path>
+                <rect x="3" y="9" width="18" height="8" rx="2"></rect>
+                <path d="M6 14h12v7H6z"></path>
+              </svg>
+            </button>
+            <div id="secondary-preview-badge" class="secondary-preview-badge" hidden>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                <circle cx="12" cy="12" r="3"></circle>
+              </svg>
+              <span data-i18n="preview">Preview</span>
+            </div>
+            <button id="btn-secondary-mode" class="btn-pane-icon" data-i18n-title="togglePaneModeTitle" title="Toggle Editor / Preview">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+              </svg>
+            </button>
+            <button id="btn-secondary-close" class="btn-pane-icon" data-i18n-title="closePaneTitle" title="Close Pane">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+          </div>
+        </div>
+        <div id="secondary-editor-pane" class="secondary-editor-pane">
+          <div id="secondary-line-numbers" class="line-numbers"></div>
+          <div id="secondary-editor-wrapper" class="editor-wrapper">
+            <textarea id="editor-secondary" spellcheck="false" data-i18n-placeholder="editorSecondaryPlaceholder" placeholder="Type markdown here..."></textarea>
+          </div>
+        </div>
+        <div id="secondary-preview-pane" class="markdown-body secondary-preview-pane hidden"></div>
+      </div>
+
+      <!-- Preview View (1-Screen Full Preview Toggle) -->
+      <div id="preview-pane" class="pane markdown-body hidden"></div>
+      <!-- Shown by CSS (sibling selector) only while #preview-pane is visible: no script involved. -->
+      <div id="preview-badge" class="preview-badge" data-i18n="preview" aria-hidden="true">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+          <circle cx="12" cy="12" r="3"></circle>
+        </svg>
+        <span data-i18n="preview">Preview</span>
+      </div>
+      <!-- Print / save as PDF (print_preview.js, loaded on the first press). Like the badge it is shown by CSS only while the preview is. -->
+      <button id="btn-preview-print" type="button" class="preview-print-btn" data-i18n-title="previewPrintTitle" title="Print or save as PDF">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M6 9V3h12v6"></path>
+          <rect x="3" y="9" width="18" height="8" rx="2"></rect>
+          <path d="M6 14h12v7H6z"></path>
+          <circle cx="17" cy="12" r="0.6" fill="currentColor"></circle>
+        </svg>
+      </button>
+    </main>
+
+    <!-- Status Bar -->
+    <footer id="status-bar">
+      <div class="status-left">
+        <span id="stat-cursor">Ln 1, Col 1</span>
+        <span id="stat-chars">Chars: 0</span>
+        <span id="stat-selection" class="hidden">(Sel: 0)</span>
+      </div>
+      <div class="status-center">
+        <div id="stat-ambient-container" class="hidden"></div>
+        <span id="stat-llm-indicator" class="hidden">
+          <span class="spinner"></span> <span id="stat-llm-text" data-i18n="llmProcessing">LLM processing... (typing enabled)</span>
+        </span>
+        <span id="stat-message"></span>
+      </div>
+      <div class="status-right">
+        <!-- Every item on the right is a real <button> (a 24px target, in the Tab order). The AI item (status_ai.js) groups Text prediction / Suggestions / Voice tidy-up behind one popover and says which model answers. -->
+        <button type="button" id="stat-recording" class="clickable-badge recording-status hidden" title="Recording. Click to stop (Esc discards)" data-i18n-title="voiceStatusTitle"><span class="rec-dot" aria-hidden="true"></span><span class="rec-label"></span><span class="rec-time"></span><span class="rec-mode"></span><span class="rec-stop"></span></button>
+        <button type="button" id="stat-tasks" class="clickable-badge hidden" data-i18n-title="taskListTitle" title="Task list (Alt+T)"><span class="task-badge-spinner"></span><span id="stat-tasks-count">実行中: 0件</span></button>
+        <button type="button" id="stat-gitsync" class="clickable-badge" title="Git sync status. Click to sync now.">Git: Ready</button>
+        <button type="button" id="stat-ime" class="clickable-badge" style="display: none;" aria-pressed="true" data-i18n-title="statImeTooltip" title="Auto Romaji-to-Japanese conversion (IME Guardian)">IME: ON</button>
+        <button type="button" id="stat-ai" class="clickable-badge status-ai" data-a11y-keep aria-haspopup="dialog" aria-expanded="false" title="AI">AI</button>
+        <button type="button" id="stat-autosave" class="clickable-badge" aria-pressed="true" data-i18n-title="statAutosaveTooltip" title="Autosave is enabled (Click to toggle)">Autosave: ON</button>
+        <button type="button" id="stat-encoding" class="clickable-badge" data-i18n-title="statEncodingTooltip" title="Click to toggle encoding">UTF-8</button>
+      </div>
+    </footer>
+
+    <!-- Running Tasks Panel (Drawer / HUD) -->
+    <div id="running-tasks-panel" class="running-tasks-panel hidden">
+      <div class="tasks-panel-header">
+        <div class="tasks-panel-title">
+          <svg class="tasks-title-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+          </svg>
+          <span class="tasks-title-text" data-i18n="runningTasksTitle">実行中タスク</span>
+          <span class="tasks-active-badge" id="tasks-active-count">0</span>
+        </div>
+        <div class="tasks-panel-controls">
+          <button id="btn-tasks-clear-history" class="btn-task-action" data-i18n="taskClearButton" data-i18n-title="taskClearTitle" title="Clear history">Clear</button>
+          <button id="btn-tasks-close" class="btn-task-action" data-i18n-title="taskCloseTitle" title="Close (Esc)">✕</button>
+        </div>
+      </div>
+      <div class="tasks-panel-body" id="tasks-panel-list">
+        <!-- Live task cards and recent history dynamically injected -->
+      </div>
+    </div>
+
+    <!-- Minimal Context Menu with Fluent Outline Icons -->
+    <div id="context-menu" class="hidden">
+      <div class="menu-item" id="ctx-undo">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7v6h6"/><path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"/></svg>
+        <span class="menu-label" data-i18n="ctxUndo">Undo</span>
+        <span class="shortcut" id="sc-ctx-undo">Ctrl+Z</span>
+      </div>
+      <div class="menu-item" id="ctx-redo">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 7v6h-6"/><path d="M3 17a9 9 0 0 1 9-9 9 9 0 0 1 6 2.3l3 2.7"/></svg>
+        <span class="menu-label" data-i18n="ctxRedo">Redo</span>
+        <span class="shortcut" id="sc-ctx-redo">Ctrl+Y</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="ctx-cut">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/></svg>
+        <span class="menu-label" data-i18n="ctxCut">Cut</span>
+        <span class="shortcut" id="sc-ctx-cut">Ctrl+X</span>
+      </div>
+      <div class="menu-item" id="ctx-copy">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+        <span class="menu-label" data-i18n="ctxCopy">Copy</span>
+        <span class="shortcut" id="sc-ctx-copy">Ctrl+C</span>
+      </div>
+      <div class="menu-item" id="ctx-paste">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        <span class="menu-label" data-i18n="ctxPaste">Paste</span>
+        <span class="shortcut" id="sc-ctx-paste">Ctrl+V</span>
+      </div>
+      <div class="menu-item" id="ctx-select-all">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" stroke-dasharray="3 3"/><path d="M9 12h6"/></svg>
+        <span class="menu-label" data-i18n="ctxSelectAll">Select All</span>
+        <span class="shortcut" id="sc-ctx-select-all">Ctrl+A</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="ctx-find">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <span class="menu-label" data-i18n="ctxFind">Find...</span>
+        <span class="shortcut" id="sc-ctx-find">Ctrl+F</span>
+      </div>
+      <div class="menu-item" id="ctx-replace">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h7v7"/><path d="M21 4l-7 7"/><path d="M10 20H3v-7"/><path d="M3 20l7-7"/></svg>
+        <span class="menu-label" data-i18n="ctxReplace">Replace...</span>
+        <span class="shortcut" id="sc-ctx-replace">Ctrl+H</span>
+      </div>
+      <div class="menu-item" id="ctx-goto-line">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 10 4 15 9 20"/><path d="M20 4v7a4 4 0 0 1-4 4H4"/></svg>
+        <span class="menu-label" data-i18n="ctxGotoLine">Go to Line...</span>
+        <span class="shortcut" id="sc-ctx-goto-line">Ctrl+G</span>
+      </div>
+      <div class="menu-item" id="ctx-quick-pick">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+        <span class="menu-label" data-i18n="ctxQuickPick">Command Palette...</span>
+        <span class="shortcut" id="sc-ctx-quick-pick">Ctrl+Shift+P</span>
+      </div>
+      <div class="menu-item" id="ctx-open-folder">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+        <span class="menu-label" data-i18n="ctxOpenFolder">Open Folder...</span>
+        <span class="shortcut" id="sc-ctx-open-folder">Ctrl+Shift+O</span>
+      </div>
+      <div class="menu-item has-submenu" id="ctx-switch-tab">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+          <path d="M7 15h10M7 9h6"></path>
+        </svg>
+        <span class="menu-label" data-i18n="ctxSwitchTab">Open Notes</span>
+        <span class="submenu-arrow">▶</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="ctx-llm-query">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.8L21 12l-6.6 3.2L12 22l-2.4-6.8L3 12l6.6-3.2L12 2z"/></svg>
+        <span class="menu-label" data-i18n="ctxPromptLLM">Ask AI...</span>
+        <span class="shortcut" id="sc-ctx-inline-prompt">Ctrl+L</span>
+      </div>
+      <div class="menu-item" id="ctx-ai-correct">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>
+        <span class="menu-label" data-i18n="ctxAiCorrection">Proofread Text</span>
+        <span class="shortcut" id="sc-ctx-ai-correct">Alt+C</span>
+      </div>
+      <div class="menu-item" id="ctx-command-bar">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span class="menu-label" data-i18n="ctxCommandBar">Command Bar...</span>
+        <span class="shortcut" id="sc-ctx-command-bar">Ctrl+E</span>
+      </div>
+      <div class="menu-item" id="ctx-voice-input">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10a7 7 0 0 0 14 0"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
+        <span class="menu-label" data-i18n="ctxVoiceInput">Voice input</span>
+        <span class="shortcut" id="sc-ctx-voice-input">Ctrl+Shift+R</span>
+      </div>
+      <div class="menu-item hidden" id="ctx-tag-entry">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="menu-label" data-i18n="ctxTagEntry">Add a Tag to This Entry...</span>
+        <span class="shortcut" id="sc-ctx-tag-entry"></span>
+      </div>
+      <div class="menu-item hidden" id="ctx-tag-note">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="menu-label" data-i18n="ctxTagNote">Add a Tag to the Whole Note...</span>
+        <span class="shortcut" id="sc-ctx-tag-note"></span>
+      </div>
+      <div class="menu-item hidden" id="ctx-tag-remove">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/><line x1="7" y1="7" x2="7.01" y2="7"/></svg>
+        <span class="menu-label" data-i18n="ctxTagRemove">Remove a Tag...</span>
+        <span class="shortcut" id="sc-ctx-tag-remove"></span>
+      </div>
+      <div class="menu-item" id="ctx-convert-mermaid">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M10 6.5h4a2 2 0 0 1 2 2v5.5"/></svg>
+        <span class="menu-label" data-i18n="ctxConvertMermaid">To Flowchart...</span>
+        <span class="shortcut" id="sc-ctx-convert-mermaid"></span>
+      </div>
+      <div class="menu-item" id="ctx-mermaid-to-image">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span class="menu-label" data-i18n="ctxMermaidToImage">Render Image...</span>
+        <span class="shortcut" id="sc-ctx-mermaid-to-image"></span>
+      </div>
+      <div class="menu-item" id="ctx-save-txt">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+        <span class="menu-label" data-i18n="ctxExportPlainText">Save Plain Text...</span>
+        <span class="shortcut" id="sc-ctx-save-txt"></span>
+      </div>
+      <div class="menu-item" id="ctx-insert-date">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        <span class="menu-label" data-i18n="ctxInsertDateTime">Insert Date/Time</span>
+        <span class="shortcut" id="sc-ctx-insert-date">F5</span>
+      </div>
+      <div class="menu-item" id="ctx-toggle-preview">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+        <span class="menu-label" data-i18n="ctxTogglePreview">Preview</span>
+        <span class="shortcut" id="sc-ctx-toggle-preview">Ctrl+P</span>
+      </div>
+      <div class="menu-item" id="ctx-open-to-side">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+        <span class="menu-label" data-i18n="ctxOpenToSide">Open to the Side</span>
+        <span class="shortcut" id="sc-ctx-open-to-side">Ctrl+\</span>
+      </div>
+      <div class="menu-item" id="ctx-save-as">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+        <span class="menu-label" data-i18n="ctxSaveAs">Save As / Rename...</span>
+        <span class="shortcut" id="sc-ctx-save-as">Ctrl+Shift+S</span>
+      </div>
+      <div class="menu-item" id="ctx-zen">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+        <span class="menu-label" data-i18n="ctxZenMode">Zen Mode</span>
+        <span class="shortcut" id="sc-ctx-zen">Shift+F11</span>
+      </div>
+      <div class="menu-item" id="ctx-fullscreen">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/><path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/></svg>
+        <span class="menu-label" data-i18n="ctxFullscreen">Full Screen</span>
+        <span class="shortcut" id="sc-ctx-fullscreen">F11</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="ctx-settings">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <span class="menu-label" data-i18n="ctxSettings">Settings...</span>
+      </div>
+    </div>
+    <!-- Context Submenu (Floating outside #context-menu to avoid clipping and scrollbar) -->
+    <div id="ctx-tabs-submenu" class="context-submenu hidden"></div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal-backdrop hidden">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 data-i18n="settingsModalTitle">Editor & LLM Settings</h3>
+          <label class="settings-adv-toggle" for="cfg-show-advanced"><input type="checkbox" id="cfg-show-advanced"><span data-i18n="settingsShowAdvanced">Show advanced</span></label>
+          <button id="modal-close" class="btn-close">×</button>
+        </div>
+        
+        <!-- Settings Tabs (5 Clean Minimalist Tabs) -->
+        <div class="settings-tabs">
+          <button id="tab-btn-general" class="settings-tab-btn active" data-i18n="tabGeneral">一般</button>
+          <button id="tab-btn-model" class="settings-tab-btn" data-i18n="tabModel">AIモデル</button>
+          <button id="tab-btn-agent" class="settings-tab-btn" data-i18n="tabAgent">連携</button>
+          <button id="tab-btn-sync" class="settings-tab-btn" data-i18n="tabSync">同期</button>
+          <button id="tab-btn-shortcuts" class="settings-tab-btn" data-i18n="tabShortcuts">ショートカット</button>
+        </div>
+
+        <div class="modal-body">
+          <!-- 1. 一般 (General & Editor) -->
+          <div id="pane-general" class="settings-pane">
+            <div class="settings-section-header" data-basic>
+              <h4 data-i18n="sectionAppearance">外観 & ウィンドウ</h4>
+            </div>
+            <!-- The look of the window (config.appearance, js/appearance.js). A look, an accent and a font change the window as soon as
+                 they are chosen (Cancel puts the saved ones back); Save keeps them. A later setting of the same kind (the bars and the
+                 split boundary are two) is one more row here, one line in readAppearanceControls and one in showAppearanceControls (app.js). -->
+            <div class="form-group">
+              <label for="cfg-look" data-i18n="lookLabel">Look:</label>
+              <select id="cfg-look" class="form-select">
+                <option value="ink" data-i18n="lookInk">Ink (dark, default)</option>
+                <option value="paper" data-i18n="lookPaper">Paper (light)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label for="cfg-theme" id="cfg-theme-label" data-i18n="themeLabel">Accent color:</label>
+              <select id="cfg-theme" class="form-select">
+                <option value="olive" data-i18n="themeOlive">Dark Olive (default)</option>
+                <option value="blue" data-i18n="themeBlue">Classic Blue</option>
+                <option value="forest" data-i18n="themeForest">Forest Teal</option>
+                <option value="charcoal" data-i18n="themeCharcoal">Charcoal Monochrome</option>
+                <option value="vermilion" data-i18n="themeVermilion">Vermilion</option>
+                <option value="custom" data-i18n="themeCustom">Your own color</option>
+              </select>
+              <div class="accent-swatches" id="accent-swatches" role="group" aria-labelledby="cfg-theme-label">
+                <button type="button" class="accent-swatch" data-accent="olive" data-i18n-title="themeOlive" aria-pressed="false"></button>
+                <button type="button" class="accent-swatch" data-accent="blue" data-i18n-title="themeBlue" aria-pressed="false"></button>
+                <button type="button" class="accent-swatch" data-accent="forest" data-i18n-title="themeForest" aria-pressed="false"></button>
+                <button type="button" class="accent-swatch" data-accent="charcoal" data-i18n-title="themeCharcoal" aria-pressed="false"></button>
+                <button type="button" class="accent-swatch" data-accent="vermilion" data-i18n-title="themeVermilion" aria-pressed="false"></button>
+                <button type="button" class="accent-swatch accent-swatch-custom" id="accent-swatch-custom" data-accent="custom" data-i18n-title="themeCustom" aria-pressed="false"></button>
+              </div>
+              <div class="accent-custom-row hidden" id="accent-custom-row">
+                <input type="color" id="cfg-accent-custom" data-i18n-title="accentCustomPick" value="#556b2f">
+                <input type="text" id="cfg-accent-custom-hex" maxlength="7" size="9" spellcheck="false" autocomplete="off" placeholder="#rrggbb" data-i18n-title="accentCustomHex">
+              </div>
+              <small data-i18n="accentHint">Buttons, the selected tab and the highlights take this color. A color of your own gets text and tints that stay readable.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-editor-font" data-i18n="editorFontLabel">Editor font:</label>
+              <div class="font-row">
+                <input type="text" id="cfg-editor-font" list="editor-font-list" maxlength="80" spellcheck="false" autocomplete="off" placeholder="Cascadia Code" data-i18n-placeholder="editorFontPlaceholder">
+                <button type="button" class="btn-secondary" id="btn-editor-font-default" data-i18n="editorFontDefault">Default</button>
+              </div>
+              <datalist id="editor-font-list">
+                <option value="Cascadia Code"></option>
+                <option value="Cascadia Mono"></option>
+                <option value="Consolas"></option>
+                <option value="Fira Code"></option>
+                <option value="JetBrains Mono"></option>
+                <option value="Source Code Pro"></option>
+                <option value="SF Mono"></option>
+                <option value="Menlo"></option>
+                <option value="Monaco"></option>
+                <option value="BIZ UDGothic"></option>
+                <option value="Yu Gothic"></option>
+                <option value="Meiryo"></option>
+                <option value="MS Gothic"></option>
+                <option value="HackGen"></option>
+                <option value="PlemolJP"></option>
+              </datalist>
+              <small data-i18n="editorFontHint">The name of a font installed on this computer. Empty uses the default. The size is changed with Ctrl + and Ctrl - (Ctrl 0 resets it).</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-bars" data-i18n="barsLabel">Header and status bar:</label>
+              <select id="cfg-bars" class="form-select">
+                <option value="solid" data-i18n="barsSolid">Solid</option>
+                <option value="light" data-i18n="barsLight">Light tint (see-through)</option>
+                <option value="glass" data-i18n="barsGlass">Frosted glass (blurred)</option>
+              </select>
+              <small data-i18n="barsHint">The text scrolls under the two bars. See-through lets it show faintly; frosted glass blurs it (a little more work for the graphics card).</small>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-auto-hide" checked> <span data-i18n="autoHideLabel">Hide the header and status bar while writing or scrolling</span>
+              </label>
+              <small data-i18n="autoHideHint">They come back when the mouse moves, with F6, or when the status bar has something to tell you. Zen mode keeps them away until the mouse waits at the top or bottom edge.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-split-boundary" data-i18n="splitBoundaryLabel">Divider between two pages:</label>
+              <select id="cfg-split-boundary" class="form-select">
+                <option value="dots" data-i18n="splitBoundaryDots">Gutter (shadow and dots)</option>
+                <option value="shade" data-i18n="splitBoundaryShade">Shadow only</option>
+                <option value="line" data-i18n="splitBoundaryLine">Thin line</option>
+              </select>
+              <small data-i18n="splitBoundaryHint">The divider in the middle of a split window. Drag it, or focus it and use the arrow keys, to change the widths.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-mermaid-tone" data-i18n="mermaidToneLabel">Diagram (Mermaid) colors:</label>
+              <select id="cfg-mermaid-tone" class="form-select">
+                <option value="auto" data-i18n="mermaidToneAuto">Follow the look (default)</option>
+                <option value="dark" data-i18n="mermaidToneDark">Dark</option>
+                <option value="light" data-i18n="mermaidToneLight">Light (white background)</option>
+                <option value="neutral" data-i18n="mermaidToneNeutral">Gray (white background)</option>
+                <option value="forest" data-i18n="mermaidToneForest">Green (white background)</option>
+              </select>
+              <small data-i18n="mermaidToneHint">If a diagram is hard to read, choose a light tone. The button on each diagram in the preview switches between dark and light.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-language" data-i18n="languageLabel">Language:</label>
+              <select id="cfg-language" class="form-select">
+                <option value="ja">日本語 (Japanese)</option>
+                <option value="en">English (Default)</option>
+              </select>
+              <small data-i18n="languageImeGuardianHint">Choosing Japanese also turns on IME Guardian, in the Editor &amp; Input section below (you can turn it off there).</small>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-restore-session" checked> <span data-i18n="restoreSessionLabel">Restore open tabs & unsaved notes on startup</span>
+              </label>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-split-view-on-startup"> <span data-i18n="splitViewOnStartupLabel">Launch in 2-pane split view by default</span>
+              </label>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-tray-resident" checked> <span id="tray-resident-label-text" data-i18n="trayResidentLabel">Keep resident in background/tray on close</span>
+              </label>
+              <small id="tray-resident-os-hint" class="hidden" data-i18n="trayResidentUnsupportedHint">Not available on this platform yet; this setting currently has no effect.</small>
+            </div>
+
+            <div class="settings-section-header" data-basic style="margin-top: 18px;">
+              <h4 data-i18n="sectionEditor">エディタ & 入力</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-autosave" checked> <span data-i18n="autoSaveLabel">Autosave existing files on 1.5s pause</span>
+              </label>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-ime-guardian"> <span data-i18n="imeGuardianLabel">Japanese Romaji-to-Hiragana conversion (IME Guardian)</span>
+              </label>
+              <small id="ime-guardian-os-hint" class="hidden" data-i18n="imeGuardianOsHint">Automatic input-source switching is not supported on this OS yet, so this is off by default.</small>
+            </div>
+            <div id="ime-retype-group" class="form-group inline-group hidden" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-ime-retype"> <span data-i18n="imeRetypeLabel">Tab leaves the kana unconfirmed so you can convert to kanji</span>
+              </label>
+              <small data-i18n="imeRetypeHint">Removes the romaji and types the same keys again through the OS input method, so the word stays unconfirmed and Space offers kanji. If the input method does not react, the hiragana is committed as before.</small>
+            </div>
+            <div id="ime-reverse-group" class="form-group inline-group hidden" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-ime-reverse"> <span data-i18n="imeReverseLabel">Tab retypes an English word typed with Japanese input on</span>
+              </label>
+              <small data-i18n="imeReverseHint">When you confirm an English word that was typed with Japanese input on, the keys it was typed with are shown as [Tab: hello]. Tab puts the English word in place of the kana and switches input to half-width. It only applies to words that cannot be read as romaji.</small>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-ai-correction" checked> <span data-i18n="aiCorrectionLabel">Enable AI typo & error correction (Alt+C)</span>
+              </label>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-cursor-aura" checked> <span data-i18n="cursorAuraLabel">Subtle cursor aura on idle</span>
+              </label>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-paste-html-md" checked> <span data-i18n="pasteHtmlMdLabel">Ctrl+V turns web, Word and Excel content into Markdown</span>
+              </label>
+              <small data-i18n="pasteHtmlMdHint">Only content with structure (tables, headings, lists, links). Code and logs from editors and terminals stay as they are. Ctrl+Shift+V always pastes as it is. When off, it is the other way round: Ctrl+V pastes plain text and Ctrl+Shift+V converts.</small>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="cfg-comment-style" data-i18n="commentStyleLabel">Toggle comment writes:</label>
+              <select id="cfg-comment-style" class="form-select">
+                <option value="line" data-i18n="commentStyleLine">One comment per line (Default)</option>
+                <option value="block" data-i18n="commentStyleBlock">One comment around the lines</option>
+              </select>
+              <small data-i18n="commentStyleHint">Toggle comment (Ctrl+/) hides the selected lines in HTML comments (&lt;!-- --&gt;). Commented text is hidden in the preview, and a task or slot inside a comment never runs.</small>
+            </div>
+
+            <!-- Updates and privacy: the start-up update check (general.checkUpdates) and the cloud hosts the ask bars may send text to (general.cloudConsent) -->
+            <div class="settings-section-header" data-basic style="margin-top: 18px;">
+              <h4 data-i18n="sectionUpdatesPrivacy">Updates &amp; Privacy</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-check-updates" checked> <span data-i18n="checkUpdatesLabel">Check for updates at start-up</span>
+              </label>
+              <small data-i18n="checkUpdatesHint">About 2.5 seconds after start-up, syki::sok asks api.github.com for the number of the latest release. Nothing else is sent. Turn this off on a managed PC; you can still check by hand in About syki::sok.</small>
+            </div>
+            <div id="cfg-cloud-consent-row" class="cfg-consent-row hidden">
+              <span data-i18n="cloudConsentLabel">Cloud AI hosts you have allowed:</span>
+              <span id="cfg-cloud-consent-hosts" class="cfg-consent-hosts"></span>
+              <button type="button" id="btn-forget-cloud-consent" class="btn-secondary" data-i18n="cloudConsentForget">Forget</button>
+            </div>
+
+            <!-- Toolbar / right-click menu: which items are shown, and in what order.
+                 The rows are built (chrome_layout.js) only when this section is opened. -->
+            <div class="settings-section-header">
+              <h4 data-i18n="sectionLayout">ツールバーと右クリックメニュー</h4>
+            </div>
+            <div id="cfg-layout-details" class="settings-layout-body">
+              <small data-keep data-i18n="layoutHint">Tick an item to show it; use the arrows to reorder it within its group. Shortcuts keep working for hidden items.</small>
+              <div class="layout-block-title" data-i18n="layoutToolbar">ツールバーのアイコン</div>
+              <div id="cfg-layout-toolbar" class="layout-list"></div>
+              <div class="layout-block-title" data-i18n="layoutContext">右クリックメニュー</div>
+              <div id="cfg-layout-context" class="layout-list"></div>
+              <button type="button" id="btn-layout-reset" class="btn-secondary layout-reset" data-i18n="layoutReset">初期設定に戻す</button>
+            </div>
+          </div>
+
+          <!-- 2. AIモデル (AI Models: Text, Ghost Text, Vision, Image Gen) -->
+          <div id="pane-model" class="settings-pane hidden">
+            <!-- Local AI Setup -->
+            <div id="local-ai-card" class="local-ai-card" style="background: var(--veil-04); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; margin-bottom: 16px;">
+              <div style="display: flex; justify-content: space-between; align-items: center;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <strong style="font-size: 13px;" data-i18n="localAiTitle">Local AI (Ollama & Gemma 4 E2B)</strong>
+                  <span id="ollama-status-badge" data-i18n="statusChecking" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--veil-10); color: var(--text-idle);">Checking...</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="btn-start-ollama" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnStartOllama">Start</button>
+                  <button type="button" id="btn-stop-ollama" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnStopOllama">Stop</button>
+                  <button type="button" id="btn-setup-ollama" class="btn-secondary" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnSetupOllama">Install Gemma 4</button>
+                  <button type="button" id="btn-cancel-ollama-setup" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnCancel">Cancel</button>
+                </div>
+              </div>
+              <div id="ollama-setup-progress-box" class="hidden" style="margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border-color);">
+                <div style="display: flex; justify-content: space-between; font-size: 11px; color: var(--text-muted); margin-bottom: 4px;">
+                  <span id="ollama-progress-msg">Preparing...</span>
+                  <span id="ollama-progress-step">Step 1/5</span>
+                </div>
+                <div style="background: var(--shade-30); height: 4px; border-radius: 2px; overflow: hidden;">
+                  <div id="ollama-progress-bar" style="background: var(--accent-color); height: 100%; width: 20%; transition: width 0.3s ease;"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Text LLM -->
+            <div class="settings-section-header" data-basic>
+              <h4 data-i18n="sectionTextLLM">Writing & commands</h4>
+            </div>
+            <div class="form-group">
+              <label for="cfg-base-url" data-i18n="apiBaseUrlLabel">API Base URL:</label>
+              <input type="text" id="cfg-base-url" placeholder="http://localhost:11434 (Ollama) or https://api.openai.com/v1">
+              <small id="text-provider-detect-line" class="hidden"></small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-model" data-i18n="modelNameLabel">Model Name:</label>
+              <input type="text" id="cfg-model" placeholder="gemma4:latest, claude-sonnet-5, gemini-flash-latest etc.">
+              <small data-i18n="textModelFallbackHint">If blank: qwen2.5:latest</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-api-key" data-i18n="apiKeyLabel">API Key (for cloud APIs):</label>
+              <input type="password" id="cfg-api-key" placeholder="sk-... or AIzaSy... (leave empty for local models)">
+            </div>
+            <div class="form-group">
+              <label for="cfg-system-prompt" data-i18n="systemPromptLabel">System Prompt:</label>
+              <textarea id="cfg-system-prompt" rows="2" placeholder="You are a helpful assistant. Provide concise, accurate markdown responses."></textarea>
+            </div>
+
+            <!-- Autocomplete -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionAutocomplete">Inline Autocomplete (Ghost Text)</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-auto-enabled" checked> <span data-i18n="enableAutocomplete">Enable inline autocomplete (Ghost Text)</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="cfg-auto-base-url" data-i18n="apiBaseUrlLabel">API Base URL:</label>
+              <input type="text" id="cfg-auto-base-url" placeholder="http://localhost:11434 (Ollama) or https://generativelanguage.googleapis.com">
+            </div>
+            <div class="form-group">
+              <label for="cfg-auto-model" data-i18n="modelNameLabel">Model Name:</label>
+              <input type="text" id="cfg-auto-model" placeholder="gemini-flash-lite-latest, google/gemma-4-12b-qat, qwen2.5:latest etc.">
+            </div>
+            <div class="form-group">
+              <label for="cfg-auto-api-key" data-i18n="apiKeyLabel">API Key (for cloud APIs):</label>
+              <input type="password" id="cfg-auto-api-key" placeholder="sk-... or AIzaSy... (leave empty for local models)">
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-auto-delay" data-i18n="autoDelayLabel">Suggestion delay (ms):</label>
+                <input type="number" id="cfg-auto-delay" min="200" max="2000" step="50" value="500">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-auto-tokens" data-i18n="autoMaxTokensLabel">Max prediction tokens:</label>
+                <input type="number" id="cfg-auto-tokens" min="10" max="100" step="5" value="30">
+              </div>
+            </div>
+
+            <!-- Vision OCR & Analysis -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionVisionOCR">Image OCR & Vision</h4>
+            </div>
+            <div class="form-group inline-group" style="margin-bottom: 12px;">
+              <label>
+                <input type="checkbox" id="cfg-paste-image-ocr" checked> <span data-i18n="pasteImageOcrLabel">Automatically transcribe pasted images (Ctrl+V) using Gemini OCR</span>
+              </label>
+            </div>
+            <small style="display: block; margin: -6px 0 12px 22px;" data-i18n="pasteImageOcrHint">When it is off, or the image model has no API setup, a pasted image is saved to assets and linked instead (like Ctrl+Shift+V).</small>
+            <div class="form-group">
+              <label for="cfg-vision-base-url" data-i18n="apiBaseUrlLabel">API Base URL:</label>
+              <input type="text" id="cfg-vision-base-url" placeholder="https://generativelanguage.googleapis.com (Gemini) or http://localhost:11434 (Ollama)">
+            </div>
+            <div class="form-group">
+              <label for="cfg-vision-model" data-i18n="visionModelLabel">Vision Model Name:</label>
+              <input type="text" id="cfg-vision-model" list="vision-model-suggestions" placeholder="gemini-flash-lite-latest">
+              <datalist id="vision-model-suggestions">
+                <option value="gemini-flash-lite-latest">Gemini Flash Lite (Cloud / Fast & Free Tier)</option>
+                <option value="qwen2.5-vl:latest">Qwen 2.5 VL (Local Ollama / Top OCR & Diagrams)</option>
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="cfg-vision-api-key" data-i18n="visionApiKeyLabel">Vision API Key (Cloud only):</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="password" id="cfg-vision-api-key" placeholder="AIzaSy... or sk-... (leave empty for local models)" style="flex: 1;">
+                <button type="button" class="btn-secondary btn-get-gemini-key" data-i18n="btnGetApiKey" style="padding: 4px 12px; font-size: 12px; white-space: nowrap;">Get API key ↗</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cfg-vision-prompt" data-i18n="visionPromptLabel">Vision prompt instruction:</label>
+              <textarea id="cfg-vision-prompt" rows="2" placeholder="Transcribe the content of this image (text, diagrams, tables, code, etc.) into structured, faithful Markdown format."></textarea>
+            </div>
+
+            <!-- Voice Input -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionVoiceInput">Voice input</h4>
+            </div>
+            <div class="form-group" id="cfg-voice-credential-hint" data-i18n="voiceCredentialHint">Uses the API key from the image OCR settings</div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="cfg-voice-model" data-i18n="voiceModelLabel">Voice model:</label>
+                <input type="text" id="cfg-voice-model" list="voice-model-suggestions" placeholder="gemini-3.5-transcribe">
+                <datalist id="voice-model-suggestions">
+                  <option value="gemini-3.5-transcribe">Gemini 3.5 Transcribe (Recommended)</option>
+                  <option value="gemini-flash-lite-latest">Gemini Flash Lite (generateContent)</option>
+                </datalist>
+                <small data-i18n="voiceModelHint">Auto uses the Interactions API for models named ...transcribe and generateContent for all others.</small>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-voice-api-style" data-i18n="voiceApiStyleLabel">API style:</label>
+                <select id="cfg-voice-api-style" class="form-select">
+                  <option value="auto" data-i18n="voiceApiStyleAuto">Auto</option>
+                  <option value="interactions" data-i18n="voiceApiStyleInteractions">Interactions API</option>
+                  <option value="generateContent" data-i18n="voiceApiStyleGenerateContent">generateContent</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="cfg-voice-language" data-i18n="voiceLanguageLabel">Language codes:</label>
+                <input type="text" id="cfg-voice-language" placeholder="ja-JP, en-US" spellcheck="false" autocomplete="off">
+                <small data-i18n="voiceLanguageHint">Comma separated. Empty = auto-detect (mixed languages work too).</small>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-voice-mode" data-i18n="voiceModeLabel">Mode:</label>
+                <select id="cfg-voice-mode" class="form-select">
+                  <option value="smart" data-i18n="voiceModeSmart">Smart</option>
+                  <option value="verbatim" data-i18n="voiceModeVerbatim">Verbatim</option>
+                </select>
+                <small data-i18n="voiceModeHint">Smart drops fillers and tidies the text; Verbatim keeps every word.</small>
+              </div>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="cfg-voice-vocabulary" data-i18n="voiceVocabularyLabel">Custom vocabulary:</label>
+                <textarea id="cfg-voice-vocabulary" rows="2" spellcheck="false"></textarea>
+                <small data-i18n="voiceVocabularyHint">One term per line (names, jargon). Up to 100 recommended.</small>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-voice-silence" data-i18n="voiceSilenceLabel">Silence timeout (s):</label>
+                <input type="number" id="cfg-voice-silence" min="1" max="30" step="1" value="5">
+              </div>
+            </div>
+            <div class="form-group inline-group hidden" id="cfg-voice-system-audio-group">
+              <label>
+                <input type="checkbox" id="cfg-voice-system-audio"> <span data-i18n="voiceSystemAudioLabel">Also record the sound this PC plays (Zoom, video)</span>
+              </label>
+              <small id="voice-meeting-consent" data-i18n="voiceSystemAudioConsent" style="color: var(--text-muted);">Other participants' voices are recorded and sent to the transcription service. Tell them first.</small>
+              <small data-i18n="voiceSystemAudioHint">Records the microphone and the sound coming out of this PC (Zoom's other participants, a video) as one recording, then transcribes it piece by piece. Nothing changes for the call: the other side hears you as before, and you keep hearing them. The other participants' voices are sent to the transcription service too (Gemini, unless the on-device engine is used), so tell everyone in the meeting first. Zoom's speaker must be the PC's default output (or "Same as System"). A long meeting can take a few minutes to transcribe after you stop.</small>
+              <div style="display: flex; align-items: center; gap: 8px; margin-top: 6px;">
+                <button type="button" id="btn-check-meeting-audio" class="btn-secondary" data-i18n="voiceMeetingCheck">Check audio devices</button>
+                <small id="meeting-audio-check-result"></small>
+              </div>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-voice-refine-enabled" checked> <span data-i18n="voiceRefineLabel">Tidy the transcript with a second model</span>
+              </label>
+              <small data-i18n="voiceRefineHint">Removes fillers and self-corrections and fits the line you are on (lists, tasks, tables). With text selected, what you say is applied to the selection as an edit instruction. If it fails or is slow, the transcript is inserted as spoken.</small>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="cfg-voice-refine-model" data-i18n="voiceRefineModelLabel">Refine model:</label>
+                <input type="text" id="cfg-voice-refine-model" placeholder="gemini-flash-lite-latest" spellcheck="false" autocomplete="off">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-voice-refine-timeout" data-i18n="voiceRefineTimeoutLabel">Refine timeout (s):</label>
+                <input type="number" id="cfg-voice-refine-timeout" min="1" max="30" step="1" value="5">
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cfg-voice-prompt" data-i18n="voicePromptLabel">Transcription prompt:</label>
+              <textarea id="cfg-voice-prompt" rows="2"></textarea>
+              <small data-i18n="voicePromptHint">Used only by generateContent-style models.</small>
+            </div>
+
+            <!-- Speech engine (on-device Whisper) -->
+            <div id="speech-engine-block">
+              <div class="settings-section-header" style="margin-top: 18px;">
+                <h4 data-i18n="sectionSpeechEngine">Speech engine (hot folder &amp; Discord)</h4>
+              </div>
+              <div class="form-group">
+                <label for="cfg-speech-engine" data-i18n="speechEngineLabel">Engine:</label>
+                <select id="cfg-speech-engine" class="form-select">
+                  <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
+                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
+                </select>
+                <small data-i18n="speechEngineHint">Applies to the hot folder and the Discord bridge. Live voice input and Mobile Drop keep using Gemini.</small>
+              </div>
+              <div id="speech-whisper-panel" class="hidden">
+                <div id="speech-unsupported" class="form-group hidden"><small data-i18n="speechUnsupported">On-device Whisper is only available on Windows (x64) for now.</small></div>
+                <div class="form-group">
+                  <label data-i18n="speechRuntimeLabel">Whisper program</label>
+                  <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+                    <span id="speech-runtime-status" style="flex: 1; min-width: 160px;"></span>
+                    <button type="button" id="btn-speech-runtime-install" class="btn-secondary" data-i18n="speechDownload">Download</button>
+                    <button type="button" id="btn-speech-runtime-remove" class="btn-secondary hidden" data-i18n="speechRemove">Remove</button>
+                    <button type="button" id="btn-speech-runtime-cancel" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
+                  </div>
+                  <progress id="speech-runtime-progress" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
+                </div>
+                <div class="form-group">
+                  <label for="cfg-speech-model" data-i18n="speechModelLabel">Model</label>
+                  <select id="cfg-speech-model" class="form-select"></select>
+                  <small id="speech-model-note"></small>
+                  <div id="speech-model-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+                    <span id="speech-model-status" style="flex: 1; min-width: 160px;"></span>
+                    <button type="button" id="btn-speech-model-install" class="btn-secondary" data-i18n="speechDownload">Download</button>
+                    <button type="button" id="btn-speech-model-remove" class="btn-secondary hidden" data-i18n="speechRemove">Remove</button>
+                    <button type="button" id="btn-speech-model-cancel" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
+                  </div>
+                  <progress id="speech-model-progress" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
+                </div>
+                <div id="speech-custom-path" class="form-group hidden">
+                  <label for="cfg-speech-model-path" data-i18n="speechModelPathLabel">Model file (ggml .bin):</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="cfg-speech-model-path" spellcheck="false" autocomplete="off" style="flex: 1;">
+                    <button type="button" id="btn-speech-model-browse" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+                  </div>
+                  <small data-i18n="speechModelPathHint">Choose "All Files" in the dialog to see .bin files. A Whisper model in ggml format is required.</small>
+                  <small id="speech-model-path-result"></small>
+                </div>
+                <div id="speech-custom-url" class="form-group hidden">
+                  <label for="cfg-speech-model-url" data-i18n="speechModelUrlLabel">Model URL (https):</label>
+                  <input type="text" id="cfg-speech-model-url" spellcheck="false" autocomplete="off" placeholder="https://huggingface.co/.../ggml-....bin">
+                  <label for="cfg-speech-model-sha" style="margin-top: 6px;" data-i18n="speechModelShaLabel">SHA-256 (optional):</label>
+                  <input type="text" id="cfg-speech-model-sha" spellcheck="false" autocomplete="off">
+                  <small data-i18n="speechModelUrlHint">Optional but recommended: the download is verified against it.</small>
+                </div>
+                <details id="speech-advanced" class="form-group">
+                  <summary data-i18n="speechAdvanced">Advanced</summary>
+                  <div class="form-row" style="display: flex; gap: 12px; margin-top: 8px;">
+                    <div class="form-group" style="flex: 1;">
+                      <label for="cfg-speech-language" data-i18n="speechLanguageLabel">Language:</label>
+                      <input type="text" id="cfg-speech-language" placeholder="ja" spellcheck="false" autocomplete="off">
+                      <small data-i18n="speechLanguageHint">Empty = auto-detect. Examples: ja, en</small>
+                    </div>
+                    <div class="form-group" style="flex: 1;">
+                      <label for="cfg-speech-threads" data-i18n="speechThreadsLabel">Threads (0 = auto):</label>
+                      <input type="number" id="cfg-speech-threads" min="0" max="64" step="1" value="0">
+                    </div>
+                  </div>
+                  <div class="form-group">
+                    <label for="cfg-speech-prompt" data-i18n="speechPromptLabel">Initial prompt:</label>
+                    <textarea id="cfg-speech-prompt" rows="2" spellcheck="false"></textarea>
+                    <small data-i18n="speechPromptHint">Names or terms to bias recognition toward.</small>
+                  </div>
+                  <div class="form-group inline-group">
+                    <label>
+                      <input type="checkbox" id="cfg-speech-cloud-fallback"> <span data-i18n="speechCloudFallbackLabel">If Whisper fails, retry with Gemini (sends the audio out)</span>
+                    </label>
+                  </div>
+                </details>
+                <div class="form-group">
+                  <small id="speech-ready-hint"></small>
+                  <small><span data-i18n="speechStorageDir">Stored in:</span> <span id="speech-storage-dir"></span></small>
+                </div>
+              </div>
+            </div>
+
+            <!-- Image Generation -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionImageGen">Image generation</h4>
+            </div>
+            <div class="form-group">
+              <label for="cfg-image-api-key" data-i18n="imageGenApiKeyLabel">Gemini API Key (for Image Gen):</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="password" id="cfg-image-api-key" placeholder="(Inherit from Vision/Text) e.g. AIzaSy..." style="flex: 1;">
+                <button type="button" class="btn-secondary btn-get-gemini-key" data-i18n="btnGetApiKey" style="padding: 4px 12px; font-size: 12px; white-space: nowrap;">Get API key ↗</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cfg-image-model" data-i18n="imageModelLabel">Image Generation Model:</label>
+              <input type="text" id="cfg-image-model" list="image-model-suggestions" placeholder="gemini-3.1-flash-lite-image">
+              <datalist id="image-model-suggestions">
+                <option value="gemini-3.1-flash-lite-image">Nano Banana 2 Lite (Fast & Lightweight / Recommended)</option>
+                <option value="gemini-3.1-flash-image">Nano Banana 2 (High Quality)</option>
+                <option value="gemini-3-pro-image">Nano Banana Pro (State of the art)</option>
+                <option value="imagen-3.0-generate-002">Imagen 3 (Realistic Art & Photos)</option>
+              </datalist>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-image-aspect-ratio" data-i18n="aspectRatioLabel">Aspect Ratio:</label>
+                <select id="cfg-image-aspect-ratio" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+                  <option value="16:9">16:9 (Landscape - Default)</option>
+                  <option value="1:1">1:1 (Square)</option>
+                  <option value="4:3">4:3 (Standard)</option>
+                  <option value="3:4">3:4 (Portrait)</option>
+                  <option value="9:16">9:16 (Vertical)</option>
+                </select>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-image-resolution" data-i18n="resolutionLabel">Resolution:</label>
+                <select id="cfg-image-resolution" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 8px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+                  <option value="1024">1K (1024px - Standard)</option>
+                  <option value="512">0.5K (512px - Fast / Draft)</option>
+                  <option value="2048">2K (2048px - High Res)</option>
+                  <option value="4096">4K (4096px - Ultra High Res)</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Semantic search (frontend/js/semantic_settings.js): the switch, the embedding model, where the notes go, the index -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionSemantic">Semantic search</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-semantic-enabled"> <span data-i18n="semanticEnableLabel">Turn on semantic search (experimental)</span>
+              </label>
+              <small data-i18n="semanticEnableHint">Finds notes close in meaning, even when they use other words, and gives the notes search its Meaning mode and Deep search. An index of your notes is made on this PC; to make it, the text of your notes is sent to the model below.</small>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px;">
+              <div class="form-group" style="flex: 2;">
+                <label for="cfg-semantic-base-url" data-i18n="semanticBaseUrlLabel">Embedding model server:</label>
+                <input type="text" id="cfg-semantic-base-url" placeholder="http://localhost:11434" spellcheck="false" autocomplete="off">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-semantic-model" data-i18n="semanticModelLabel">Embedding model:</label>
+                <input type="text" id="cfg-semantic-model" list="semantic-model-suggestions" placeholder="bge-m3" spellcheck="false" autocomplete="off">
+                <datalist id="semantic-model-suggestions">
+                  <option value="bge-m3">bge-m3 (Ollama, Japanese and English)</option>
+                  <option value="nomic-embed-text">nomic-embed-text (Ollama)</option>
+                  <option value="text-embedding-3-small">text-embedding-3-small (OpenAI)</option>
+                  <option value="gemini-embedding-001">gemini-embedding-001 (Google)</option>
+                </datalist>
+              </div>
+            </div>
+            <div class="form-group">
+              <label for="cfg-semantic-api-key" data-i18n="semanticApiKeyLabel">API key (cloud models only):</label>
+              <input type="password" id="cfg-semantic-api-key" placeholder="(leave empty for a model on this PC)" data-i18n-placeholder="semanticApiKeyPlaceholder" autocomplete="off">
+            </div>
+            <div id="semantic-destination" class="semantic-dest hidden" data-keep role="status"></div>
+            <div id="semantic-consent-group" class="form-group inline-group hidden">
+              <label>
+                <input type="checkbox" id="cfg-semantic-consent"> <span id="semantic-consent-label"></span>
+              </label>
+              <small id="semantic-consent-note" data-i18n="semanticConsentNeeded">Until you allow it, semantic search does not work and nothing is sent.</small>
+            </div>
+            <div class="form-group semantic-index">
+              <label data-i18n="semanticIndexTitle">Index</label>
+              <div id="semantic-index-status" class="semantic-line" role="status"></div>
+              <div id="semantic-index-progress" class="semantic-line hidden" role="status"></div>
+              <div id="semantic-index-result" class="semantic-line hidden" role="status"></div>
+              <div class="semantic-buttons">
+                <button type="button" id="btn-semantic-update" class="btn-secondary" data-i18n="semanticUpdateNow">Update now</button>
+                <button type="button" id="btn-semantic-rebuild" class="btn-secondary" data-i18n="semanticRebuild">Rebuild</button>
+                <button type="button" id="btn-semantic-go" class="btn-secondary hidden" data-i18n="semanticGoAhead">Go ahead</button>
+                <button type="button" id="btn-semantic-cancel" class="btn-secondary hidden" data-i18n="semanticCancel">Stop</button>
+              </div>
+              <small data-i18n="semanticIndexHint">The index is kept outside your notes folder and can be deleted at any time. The same index is made by the command md-memo scrap index. Deep search also needs the text model (Text LLM above).</small>
+            </div>
+          </div>
+
+          <!-- 3. 連携 (Agent & CLI) -->
+          <div id="pane-agent" class="settings-pane hidden">
+            <!-- Section 1: コマンド (実行する) -->
+            <div class="settings-section-header">
+              <h4 data-i18n="sectionAgentCommands">コマンド (実行する)</h4>
+            </div>
+            <div class="form-group">
+              <label for="cfg-cli-model" data-i18n="cliModelLabel">CLI Model Name:</label>
+              <input type="text" id="cfg-cli-model" placeholder="e.g. qwen2.5-coder:latest">
+              <small data-i18n="cliModelHint">Blank = use the Text model from the AI Models tab.</small>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-cli-open-new-tab" checked> <span data-i18n="cliOpenNewTabLabel">Open CLI execution results in a new tab</span>
+              </label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="cfg-cli-result-placement" data-i18n="cliResultPlacementLabel">Where the command's output goes:</label>
+              <select id="cfg-cli-result-placement" class="form-select">
+                <option value="below" data-i18n="cliResultPlacementBelow">Below the selected text (the selection stays)</option>
+                <option value="replace" data-i18n="cliResultPlacementReplace">Over the selected text (like a filter)</option>
+              </select>
+              <small data-i18n="cliResultPlacementHint">With text selected. Without a selection, and with results not opened in a tab, the output is added at the end of the note.</small>
+            </div>
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="cfg-max-pipe-size" data-i18n="maxPipeSizeLabel">Max Pipe Input Size (MB):</label>
+              <input type="number" id="cfg-max-pipe-size" min="1" max="100" value="10" style="width: 120px; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 13px;">
+              <small data-i18n="maxPipeSizeHint">Failsafe limit for terminal standard input pipes to prevent memory spikes.</small>
+            </div>
+
+            <!-- Section 2: エージェント (依頼する) -->
+            <div class="settings-section-header" data-basic style="margin-top: 18px;">
+              <h4 data-i18n="sectionAgentDelegate">エージェント (依頼する)</h4>
+            </div>
+            <!-- External Agent Config File Bar -->
+            <div class="agent-config-card" style="background: var(--veil-03); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px 14px; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+              <div style="display: flex; align-items: center; gap: 8px;">
+                <strong style="font-size: 13px;" data-i18n="sectionAgentConfig">エージェント設定</strong>
+                <span id="agent-config-status-badge" data-i18n="statusChecking" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--veil-10); color: var(--text-muted);">Checking...</span>
+              </div>
+              <button type="button" id="btn-open-agents-config" class="btn-secondary" style="padding: 5px 12px; font-size: 12px; white-space: nowrap;" data-i18n="btnOpenAgentsConfig">agents.yaml を開く</button>
+            </div>
+            <div class="form-group">
+              <label for="cfg-default-agent" data-i18n="lblDefaultAgent">エージェント:</label>
+              <select id="cfg-default-agent" class="form-select">
+                <option value="claude-code">Claude Code</option>
+                <option value="hermes">Hermes 3 (Ollama)</option>
+                <option value="codex">Codex</option>
+                <option value="agy">Google Antigravity</option>
+              </select>
+              <small id="agent-availability-badge" class="hidden"></small>
+              <small id="agent-disabled-note" class="hidden"></small>
+              <small id="agent-auto-approve-warning" class="hidden" data-i18n="agentAutoApproveWarning">This agent is configured to modify files and run commands without asking (change its arguments in agents.yaml).</small>
+              <div id="agent-issues" class="hidden" style="margin-top: 8px; padding: 8px 10px; border: 1px solid var(--border-color); border-radius: 6px;"></div>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px; margin-top: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-slot-timeout" data-i18n="slotTimeoutLabel">Agent timeout (seconds)</label>
+                <input type="number" id="cfg-slot-timeout" min="10" max="600" step="10" value="180">
+                <small data-i18n="slotTimeoutHint">How long to wait for the agent before giving up and marking the task failed.</small>
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-slot-ghost-diff-ms" data-i18n="slotGhostDiffLabel">Change highlight duration (ms)</label>
+                <input type="number" id="cfg-slot-ghost-diff-ms" min="1000" max="10000" step="500" value="4000">
+                <small data-i18n="slotGhostDiffHint">How long the inserted/changed text stays highlighted after an agent finishes.</small>
+              </div>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-slot-hover-peek" checked> <span data-i18n="slotHoverPeekLabel">Live output preview in the task panel (Hover Peek)</span>
+              </label>
+              <small data-i18n="slotHoverPeekHint">When off, the task panel won't fetch or show the agent's live output while it runs.</small>
+            </div>
+
+            <!-- Section 3: 自動セレクター (任せる) -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionAutoSelector">Auto selector (Let it decide)</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-autosel-enabled" checked> <span data-i18n="autoSelEnabledLabel">Let Ctrl+Enter decide: ask the AI, hand over to an agent, or run a command</span>
+              </label>
+              <small data-i18n="autoSelEnabledHint">When off, Ctrl+Enter only runs {{ }} slots, as before.</small>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-autosel-agent-confirm" checked> <span data-i18n="autoSelAgentConfirmLabel">Confirm before an auto-detected agent or command runs</span>
+              </label>
+              <small data-i18n="autoSelAgentConfirmHint">The line is rewritten first; press Ctrl+Enter again to run it (Ctrl+Z undoes the rewrite).</small>
+            </div>
+
+            <!-- Section 4: 提案 (アクション) -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionAgentSuggestions">提案 (アクション)</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-action-enabled" checked> <span data-i18n="actionEnabledLabel">メモ入力時にアクション候補を自動提示する</span>
+              </label>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-action-manual-only"> <span data-i18n="actionManualOnlyLabel">手動呼び出しのみ (自動提示せず Ctrl+J で表示)</span>
+              </label>
+            </div>
+            <div class="form-group">
+              <label for="cfg-action-delay" data-i18n="actionDelayLabel">入力停止から自動提示までの待機時間 (秒):</label>
+              <input type="number" id="cfg-action-delay" min="0.5" max="10.0" step="0.5" value="1.5" style="width: 100px;">
+            </div>
+            <small data-i18n="actionApiBlockHint">With both URL and API key blank, nothing leaves your machine — suggestions come from built-in local rules. If you fill them in, the text around your caret is sent to that API.</small>
+            <div class="form-group" style="margin-top: 6px;">
+              <label for="cfg-action-base-url" data-i18n="actionBaseUrlLabel">API Base URL / Endpoint:</label>
+              <input type="text" id="cfg-action-base-url" placeholder="https://api.typesafe.ai or https://openrouter.ai/api/v1">
+            </div>
+            <div class="form-group">
+              <label for="cfg-action-model" data-i18n="actionModelLabel">Model Name:</label>
+              <input type="text" id="cfg-action-model" placeholder="jev-latest">
+              <small data-i18n="actionModelHint">Blank = jev-latest (the default prediction model).</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-action-api-key" data-i18n="actionApiKeyLabel">API Key (OpenRouter / Cloud):</label>
+              <input type="password" id="cfg-action-api-key" placeholder="sk-or-v1-... or typesafe key">
+            </div>
+
+            <!-- Section 5: OS連携 (送る) -->
+            <div id="sendto-section" class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionSendTo">OS Integration (Send To)</h4>
+            </div>
+            <div id="sendto-card" class="local-ai-card" style="background: var(--veil-04); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <strong style="font-size: 13px;" data-i18n="sendToLabel">Send To menu (image → OCR)</strong>
+                  <span id="sendto-status-badge" data-i18n="statusChecking" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--veil-10); color: var(--text-muted);">Checking...</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="btn-install-sendto" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnInstallSendTo">Add</button>
+                  <button type="button" id="btn-uninstall-sendto" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnUninstallSendTo">Remove</button>
+                </div>
+              </div>
+              <small data-i18n="sendToHint">Right-click an image file in Explorer → Send To → syki::sok (OCR) to extract its text into today's scrap.</small>
+              <small id="sendto-result-hint" style="display: block; margin-top: 4px; color: var(--text-muted);"></small>
+            </div>
+          </div>
+
+          <!-- 4. 同期 (Sync: Scraps & Git) -->
+          <div id="pane-sync" class="settings-pane hidden">
+            <!-- Git Diagnostic Alert Banner -->
+            <div id="git-installed-banner" style="display: none; padding: 10px 12px; margin-bottom: 14px; border-radius: 6px; font-size: 12px; line-height: 1.5; background: var(--danger-banner-bg); border: 1px solid var(--danger-banner-border); color: var(--text-danger-hint);">
+              <div style="font-weight: 600; display: flex; align-items: center; gap: 6px;">
+                <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+                <span data-i18n="gitNotInstalledTitle">Git is not detected on this system</span>
+              </div>
+              <div style="margin-top: 4px; color: var(--text-main);" data-i18n="gitNotInstalledDesc">
+                Git is required for background synchronization. Please install Git and restart the application.
+              </div>
+              <div style="margin-top: 6px;">
+                <a href="https://git-scm.com/downloads" target="_blank" class="link-external" style="color: var(--accent-hover); text-decoration: underline;" data-i18n="gitDownloadLink">Download Git for Windows / macOS ↗</a>
+              </div>
+            </div>
+
+            <div class="settings-section-header" data-basic>
+              <h4 data-i18n="sectionScrapFolder">Daily scraps folder</h4>
+            </div>
+            <div class="form-group">
+              <label for="cfg-scrap-dir" data-i18n="scrapDirLabel">Daily Scraps Folder Path:</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="cfg-scrap-dir" placeholder="~/Documents/md-memo/scraps" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+                <button id="btn-browse-scrap-dir" type="button" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+              </div>
+              <small data-i18n="scrapDirHint">Folder where piped logs (cat file | syki) and daily notes are saved.</small>
+            </div>
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionGitHub">GitHub sync</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-git-sync-enabled" checked> <span data-i18n="gitSyncEnabledLabel">Enable background Git sync (Pull on startup, auto-commit & push)</span>
+              </label>
+              <small data-i18n="gitSyncEnabledHint" style="display: block; margin-top: 4px; color: var(--text-muted);">Uncheck to turn off all automatic GitHub pull, commit, and push operations.</small>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px; margin-top: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-git-debounce" data-i18n="gitDebounceLabel">Auto-sync debounce (seconds):</label>
+                <input type="number" id="cfg-git-debounce" min="5" max="3600" value="30" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+              </div>
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-git-remote-branch" data-i18n="gitRemoteBranchLabel">Remote Branch:</label>
+                <input type="text" id="cfg-git-remote-branch" value="main" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+              </div>
+            </div>
+
+            <div class="form-group" style="margin-top: 14px;">
+              <label for="cfg-git-remote-url" data-i18n="gitRemoteUrlLabel">Git Remote URL (GitHub / GitLab):</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="cfg-git-remote-url" placeholder="https://github.com/username/scraps.git or git@github.com:username/scraps.git" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+                <button id="btn-git-test-remote" type="button" class="btn-secondary" data-i18n="btnGitTest" style="padding: 7px 12px; white-space: nowrap;">Test Connection</button>
+                <button id="btn-git-setup-remote" type="button" class="btn-primary" data-i18n="btnGitSetup" style="padding: 7px 14px; white-space: nowrap;">Link / Init</button>
+              </div>
+              <div style="display: flex; align-items: center; justify-content: space-between; margin-top: 6px;">
+                <small id="git-test-result-hint" data-i18n="gitRemoteUrlHint">Specify your GitHub repository URL to automatically initialize and sync scraps.</small>
+                <span id="git-repo-status-badge" data-i18n="statusChecking" style="font-size: 11px; padding: 2px 6px; border-radius: 3px; background: var(--veil-08); color: var(--text-muted);">Checking...</span>
+              </div>
+            </div>
+
+            <!-- Discord Bridge -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionDiscordBridge">Input from Discord</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-discord-enabled"> <span data-i18n="discordBridgeEnabledLabel">Append DMs sent to a Discord bot into today's scrap</span>
+              </label>
+              <small data-i18n="discordBridgeEnabledHint">Works even while md-memo is closed: messages sent in the meantime are picked up the next time the app runs. No account or server of your own is needed beyond the free Discord bot you create.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-discord-bot-token" data-i18n="discordBridgeBotTokenLabel">Bot Token:</label>
+              <input type="password" id="cfg-discord-bot-token" placeholder="MTA1Mzc4...">
+              <small data-i18n="discordBridgeBotTokenHint">From the Discord Developer Portal → your application → Bot → Reset Token. Kept locally, the same as your other API keys.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-discord-user-id" data-i18n="discordBridgeAllowedUserIdLabel">Your Discord User ID:</label>
+              <input type="text" id="cfg-discord-user-id" placeholder="123456789012345678">
+              <small data-i18n="discordBridgeAllowedUserIdHint">Discord → User Settings → Advanced → Developer Mode, then right-click your own name → Copy User ID. Messages from any other account are ignored.</small>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px; align-items: flex-end; margin-top: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-discord-poll-interval" data-i18n="discordBridgePollIntervalLabel">Check interval (seconds):</label>
+                <input type="number" id="cfg-discord-poll-interval" min="15" max="600" value="45" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+              </div>
+              <button id="btn-discord-test" type="button" class="btn-secondary" data-i18n="btnDiscordBridgeTest" style="padding: 7px 12px; white-space: nowrap;">Test Connection</button>
+            </div>
+            <small id="discord-test-result-hint" style="display: block; margin-top: 6px; color: var(--text-muted);"></small>
+
+            <!-- Inbox (Hot Folder) -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionInbox">Hot folder</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-inbox-enabled"> <span data-i18n="inboxEnabledLabel">Watch a folder: images are OCR'd, audio is transcribed, both appended to today's scrap</span>
+              </label>
+              <small data-i18n="inboxEnabledHint">Processed files are moved into an "assets" folder next to your scraps, never deleted - even if OCR/transcription fails. Checked once at startup for files already waiting, then live.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-inbox-dir" data-i18n="inboxDirLabel">Watched Folder Path:</label>
+              <div style="display: flex; gap: 8px;">
+                <input type="text" id="cfg-inbox-dir" placeholder="~/Documents/md-memo/inbox" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+                <button id="btn-browse-inbox-dir" type="button" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+              </div>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-ocr-on-device"> <span data-i18n="ocrOnDeviceLabel">Keep images on this PC: read them with the on-device OCR only (less accurate)</span>
+              </label>
+              <small data-i18n="ocrOnDeviceHint">Off (default): images are read by the image model set under Image OCR (Gemini etc.), which is far more accurate; the on-device OCR is used only when that fails. Applies to the hot folder, the Send To shortcut and the ocr command.</small>
+            </div>
+          </div>
+
+          <!-- Shortcuts Config Pane -->
+          <div id="pane-shortcuts" class="settings-pane hidden">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <small id="shortcuts-hint" style="color: var(--text-muted);" data-i18n="shortcutsHint">Click a key button to record a new shortcut</small>
+              <button id="btn-reset-shortcuts" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" data-i18n="btnResetShortcuts">Reset to Defaults</button>
+            </div>
+            <div class="shortcuts-table-wrap">
+              <table class="shortcuts-table">
+                <thead>
+                  <tr>
+                    <th data-i18n="shortcutsHeaderAction">Command / Action</th>
+                    <th data-i18n="shortcutsHeaderKey">Shortcut Key</th>
+                  </tr>
+                </thead>
+                <tbody id="shortcuts-list-body">
+                  <!-- Dynamically rendered -->
+                </tbody>
+              </table>
+            </div>
+            <div style="margin-top: 10px; font-size: 11px; color: var(--text-muted); line-height: 1.4;" data-i18n="shortcutGlobalSummonDesc">
+              Global hotkey to bring syki::sok to front from anywhere
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer" style="display: flex; justify-content: space-between; align-items: center;">
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-export-settings" type="button" class="btn-secondary" data-i18n="btnExportSettings">Export...</button>
+            <button id="btn-import-settings" type="button" class="btn-secondary" data-i18n="btnImportSettings">Import...</button>
+          </div>
+          <div style="display: flex; gap: 8px;">
+            <button id="btn-save-settings" class="btn-primary" data-i18n="btnSave">Save</button>
+            <button id="btn-cancel-settings" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings package (export / import) dialog: built by js/config_pack.js when opened; sits after the Settings modal so it stacks above it -->
+    <div id="pack-modal" class="modal-backdrop hidden">
+      <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="pack-title">
+        <div class="modal-header">
+          <h3 id="pack-title"></h3>
+          <button id="pack-close" type="button" class="btn-icon">✕</button>
+        </div>
+        <div id="pack-body" class="modal-body"></div>
+        <div class="modal-footer">
+          <button id="pack-confirm" type="button" class="btn-primary"></button>
+          <button id="pack-cancel" type="button" class="btn-secondary"></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Go To Line Modal -->
+    <div id="goto-line-modal" class="modal-backdrop hidden">
+      <div class="modal-card modal-small">
+        <div class="modal-header">
+          <h3 data-i18n="gotoLineTitle">Go to Line</h3>
+          <button id="modal-goto-close" class="btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <div class="form-group">
+            <label for="goto-line-input" data-i18n="gotoLinePrompt">Line number:</label>
+            <input type="number" id="goto-line-input" min="1" step="1" style="width: 100%; box-sizing: border-box; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-goto-confirm" class="btn-primary" data-i18n="btnGo">Go</button>
+          <button id="btn-goto-cancel" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+    <!-- Help menu (the ? button): the online manual, the release notes when an update is known, and About. app.js shows it under the button. -->
+    <div id="help-menu" class="help-menu hidden" role="group" aria-label="Help &amp; Documentation">
+      <div id="help-menu-update" class="help-menu-update hidden">
+        <div class="help-menu-label" data-i18n="helpMenuUpdateLabel">Update available</div>
+        <div id="help-menu-update-text" class="help-menu-update-text"></div>
+        <button type="button" id="help-menu-notes" class="btn-secondary" data-i18n="aboutReleaseNotes">Release notes</button>
+      </div>
+      <button type="button" id="help-menu-manual" class="help-menu-item" data-i18n="helpMenuManual">Online manual</button>
+      <button type="button" id="help-menu-about" class="help-menu-item" data-i18n="helpMenuAbout">About syki::sok</button>
+    </div>
+
+    <!-- About dialog (palette: About syki::sok; the Help menu). js/about_dialog.js fills #about-body when it opens and empties it when it closes. -->
+    <div id="about-modal" class="modal-backdrop hidden">
+      <div class="modal-card about-card" role="dialog" aria-modal="true" aria-labelledby="about-title">
+        <div class="modal-header">
+          <h3 id="about-title" data-i18n="aboutTitle">About syki::sok</h3>
+          <button id="about-close" type="button" class="btn-icon" data-i18n-title="dialogClose" title="Close">✕</button>
+        </div>
+        <div id="about-body" class="modal-body"></div>
+        <div class="modal-footer">
+          <button id="about-copy" type="button" class="btn-secondary" data-i18n="aboutCopyDetails" data-i18n-title="aboutCopyTitle" title="Copy the version, OS and folders as text, for a bug report">Copy details</button>
+          <span id="about-copy-status" class="visually-hidden" role="status" aria-live="polite"></span>
+          <button id="about-done" type="button" class="btn-primary" data-i18n="dialogClose">Close</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Custom In-App Confirm Dialog (Eliminates Browser 127.0.0.1 Prompt) -->
+    <div id="confirm-modal" class="modal-backdrop hidden">
+      <div class="modal-card modal-small">
+        <div class="modal-header">
+          <h3 id="confirm-modal-title">syki::sok</h3>
+          <button id="confirm-modal-close" class="btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <p id="confirm-modal-message" style="font-size: 13px; line-height: 1.5; color: var(--text-main); margin: 4px 0;"></p>
+        </div>
+        <div class="modal-footer">
+          <button id="confirm-modal-save" class="btn-primary" data-i18n="btnSave">Save</button>
+          <button id="confirm-modal-dontsave" class="btn-secondary" data-i18n="btnDontSave">Don't Save</button>
+          <button id="confirm-modal-ok" class="btn-primary hidden" data-i18n="btnOk">OK</button>
+          <button id="confirm-modal-cancel" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Drop QR Sync Modal (Ctrl+Shift+U / Cmd+Shift+U) -->
+    <div id="mobile-drop-modal" class="modal-backdrop hidden">
+      <div class="modal-card modal-small">
+        <div class="modal-header">
+          <h3 data-i18n="mobileDropTitle">Mobile Drop</h3>
+          <button id="modal-mobile-drop-close" class="btn-icon">✕</button>
+        </div>
+        <div class="modal-body">
+          <div id="mobile-drop-loading" class="mobile-drop-state">
+            <div class="mobile-drop-spinner"></div>
+            <p data-i18n="mobileDropStarting">Starting...</p>
+          </div>
+          <div id="mobile-drop-content" class="hidden">
+            <img id="mobile-drop-qr" class="mobile-drop-qr" alt="QR code">
+            <p class="mobile-drop-url" id="mobile-drop-url"></p>
+            <p class="mobile-drop-hint" id="mobile-drop-hint" data-i18n="mobileDropHint">Scan with your phone's camera on the same Wi-Fi/LAN.</p>
+            <p class="mobile-drop-shared-preview hidden" id="mobile-drop-shared-preview"></p>
+            <p class="mobile-drop-countdown">
+              <span data-i18n="mobileDropExpiresIn">Expires in</span>
+              <span id="mobile-drop-countdown">60</span><span data-i18n="mobileDropSecondsUnit">s</span>
+            </p>
+            <button id="btn-mobile-drop-tunnel" class="btn-secondary mobile-drop-tunnel-btn" type="button" data-i18n-title="mobileDropTunnelTitle">
+              <svg class="mobile-drop-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg>
+              <span data-i18n="mobileDropTunnelSwitch">Switch to external network (mobile data / other Wi-Fi)</span>
+            </button>
+            <p id="mobile-drop-tunnel-status" class="hidden mobile-drop-tunnel-status"></p>
+            <div id="mobile-drop-install" class="hidden mobile-drop-install">
+              <code id="mobile-drop-install-cmd" class="mobile-drop-install-cmd"></code>
+              <button id="btn-mobile-drop-install-copy" class="btn-secondary mobile-drop-install-copy" type="button">
+                <svg class="mobile-drop-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+                <span id="mobile-drop-install-copy-label" data-i18n="mobileDropCopy">Copy</span>
+              </button>
+            </div>
+          </div>
+          <div id="mobile-drop-error" class="hidden mobile-drop-error"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="btn-mobile-drop-cancel" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick Pick Command & Search Palette (Ctrl+Shift+P / Ctrl+P) -->
+    <div id="quick-pick-modal" class="modal-backdrop hidden">
+      <div class="quick-pick-modal">
+        <div class="quick-pick-input-wrap">
+          <div class="inline-prompt-badge" data-i18n="badgeCommands">Commands</div>
+          <input type="text" id="quick-pick-input" class="quick-pick-input" placeholder="Type a command or search notes... (Esc to close)" data-i18n-placeholder="cmdPalettePlaceholder" spellcheck="false">
+        </div>
+        <div id="quick-pick-list" class="quick-pick-list"></div>
+      </div>
+    </div>
+
+    <!-- Tags (palette: Add a tag to this entry / to the whole note / Remove a tag; frontend/js/tag_edit.js, loaded on the first use): a box and
+         the tags to pick from. Hidden markup: nothing is built until a command opens it (docs/design/tag-filter-2026-10.md section 10.6). -->
+    <div id="tag-pick-modal" class="modal-backdrop hidden">
+      <div id="tag-pick-card" class="quick-pick-modal tag-pick-card">
+        <div class="quick-pick-input-wrap">
+          <div class="inline-prompt-badge" data-i18n="badgeTag">Tag</div>
+          <input type="text" id="tag-pick-input" class="quick-pick-input" role="combobox" aria-autocomplete="list" aria-controls="tag-pick-list" aria-expanded="true" autocomplete="off" spellcheck="false" placeholder="Type a tag (Esc to close)" data-i18n-placeholder="tagEditPlaceholderAdd">
+        </div>
+        <div class="inline-prompt-meta tag-pick-meta">
+          <span id="tag-pick-context" class="inline-prompt-chip" aria-live="polite"></span>
+        </div>
+        <div id="tag-pick-where" class="tag-pick-where hidden" role="radiogroup"></div>
+        <div id="tag-pick-list" class="quick-pick-list tag-pick-list hidden" role="listbox"></div>
+        <div id="tag-pick-hint" class="tag-pick-hint"></div>
+      </div>
+    </div>
+
+    <!-- Scraps In-Memory Grep Search Modal (Ctrl+Shift+F) -->
+    <div id="scraps-search-modal" class="modal-backdrop hidden">
+      <div class="quick-pick-modal scraps-search-dialog">
+        <div class="quick-pick-input-wrap">
+          <div class="inline-prompt-badge" data-i18n="badgeSearch">Search</div>
+          <!-- "Exact | Meaning" and the Deep search button: shown only when Settings > Semantic search is on (app.js wires them the first time) -->
+          <div id="scraps-search-mode" class="scraps-mode hidden" role="group" aria-label="Kind of search">
+            <button type="button" id="scraps-mode-exact" class="scraps-mode-btn active" aria-pressed="true" data-i18n="scrapsModeExact" data-i18n-title="scrapsModeExactTitle" title="Find the words you typed">Exact</button>
+            <button type="button" id="scraps-mode-meaning" class="scraps-mode-btn" aria-pressed="false" data-i18n="scrapsModeMeaning" data-i18n-title="scrapsModeMeaningTitle" title="Find notes close in meaning, even when they use other words">Meaning</button>
+          </div>
+          <input type="text" id="scraps-search-input" class="quick-pick-input" placeholder="Search daily scraps in milliseconds... (Ctrl+Shift+F, Esc to close)" data-i18n-placeholder="scrapsSearchPlaceholder" spellcheck="false">
+          <button type="button" id="btn-scraps-deep" class="scraps-deep-btn hidden" data-i18n="deepSearchButton">Deep search</button>
+        </div>
+        <!-- Filter (a period and tags that narrow every search): shown when the backend can list the tags; the area is built and the tags are asked
+             for when it is first opened (frontend/js/scraps_filter.js; docs/design/tag-filter-2026-10.md section 5). Its buttons stay out of the Tab order. -->
+        <div id="scraps-filter" class="scraps-filter hidden">
+          <div class="scraps-filter-row">
+            <button type="button" id="btn-scraps-filter" class="scraps-filter-btn" tabindex="-1" aria-expanded="false" aria-controls="scraps-filter-area" data-filter-toggle data-i18n-title="scrapsFilterTitle" title="Narrow the search by period and tags">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+              <span data-i18n="scrapsFilterButton">Filter</span>
+              <span id="scraps-filter-count" class="scraps-filter-count"></span>
+            </button>
+          </div>
+          <div id="scraps-filter-area" class="scraps-filter-area hidden"></div>
+        </div>
+        <div id="scraps-search-status" class="scraps-search-status hidden" role="status">
+          <span id="scraps-search-status-text"></span>
+          <button type="button" id="btn-scraps-status-action" class="scraps-status-btn hidden"></button>
+        </div>
+        <div id="scraps-search-results" class="quick-pick-list scraps-search-list">
+          <div class="scraps-search-empty" data-i18n="scrapsSearchEmpty">Type keyword to search daily scraps...</div>
+        </div>
+        <div id="scraps-search-hint" class="scraps-search-hint" data-i18n="scrapsSearchHint">Enter: open the note &middot; Tab: insert the line at the cursor &middot; Esc: close</div>
+      </div>
+    </div>
+
+    <!-- Deep search: what will be sent, and to whom, before anything leaves (app.js showDeepSearchDialog; docs/design/deep-search-2026-10.md section 4) -->
+    <div id="deep-search-modal" class="modal-backdrop hidden">
+      <div class="modal-card deep-search-card">
+        <div class="modal-header">
+          <h3 id="deep-search-title" data-i18n="deepSearchTitle">Deep search</h3>
+          <button id="deep-search-close" type="button" class="btn-icon" data-i18n-title="dialogClose" title="Close">✕</button>
+        </div>
+        <div class="modal-body deep-search-body">
+          <p id="deep-search-query" class="deep-search-query"></p>
+          <p id="deep-search-summary" class="deep-search-summary"></p>
+          <details id="deep-search-sources" class="deep-search-sources">
+            <summary id="deep-search-sources-summary"></summary>
+            <ol id="deep-search-source-list" class="deep-search-source-list"></ol>
+          </details>
+          <div id="deep-search-facts" class="deep-search-facts"></div>
+          <div id="deep-search-consent" class="deep-search-consent hidden" role="alert"></div>
+        </div>
+        <div class="modal-footer">
+          <button id="deep-search-cancel" type="button" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+          <button id="deep-search-run" type="button" class="btn-primary" data-i18n="deepSearchRun">Run</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Lessons (lessons.js, loaded on the first press of a task card's Lessons button or of the palette command "Open the lessons file"): what would
+         be sent and to whom, the proposed rules to edit and save, and the small picker of the lessons files. Hidden markup: nothing is built
+         until it opens (docs/design/lessons-2026-10.md section 7). -->
+    <div id="lesson-modal" class="modal-backdrop hidden">
+      <div id="lesson-card" class="quick-pick-modal lesson-card" role="dialog" aria-modal="true">
+        <div class="quick-pick-input-wrap lesson-head">
+          <div id="lesson-title" class="inline-prompt-badge" data-i18n="badgeLessons">Lessons</div>
+          <span id="lesson-agent" class="inline-prompt-chip lesson-agent hidden"></span>
+          <button id="lesson-close" type="button" class="btn-icon lesson-close" data-i18n-title="dialogClose" title="Close">✕</button>
+        </div>
+        <div id="lesson-meta" class="inline-prompt-meta lesson-meta">
+          <span id="lesson-context" class="lesson-context"></span>
+        </div>
+        <div id="lesson-body" class="lesson-body">
+          <div id="lesson-working" class="lesson-working hidden" role="status">
+            <span class="cli-spinner cli-spinner-sm"></span><span id="lesson-working-text"></span>
+          </div>
+          <div id="lesson-banner" class="lesson-banner hidden" role="alert" data-kind="warn"></div>
+          <div id="lesson-prepare" class="lesson-section hidden">
+            <p id="lesson-sent" class="lesson-line"></p>
+            <p id="lesson-sent-note" class="lesson-line hidden"></p>
+            <p id="lesson-masked" class="lesson-line lesson-muted hidden"></p>
+            <p id="lesson-dest" class="lesson-dest" data-kind="local"></p>
+            <label id="lesson-consent-row" class="lesson-check hidden">
+              <input type="checkbox" id="lesson-consent">
+              <span id="lesson-consent-text"></span>
+            </label>
+            <p id="lesson-existing" class="lesson-line lesson-muted hidden"></p>
+          </div>
+          <div id="lesson-none" class="lesson-section hidden">
+            <p id="lesson-none-text" class="lesson-line"></p>
+            <p id="lesson-none-hint" class="lesson-line lesson-muted"></p>
+          </div>
+          <div id="lesson-note-row" class="lesson-section hidden">
+            <label id="lesson-note-label" for="lesson-note" class="lesson-label"></label>
+            <textarea id="lesson-note" class="lesson-note" rows="2" maxlength="500" spellcheck="false"></textarea>
+          </div>
+          <div id="lesson-result" class="lesson-section hidden">
+            <p id="lesson-result-intro" class="lesson-line lesson-muted"></p>
+            <div id="lesson-rules" class="lesson-rules"></div>
+          </div>
+          <div id="lesson-pick" class="lesson-pick hidden">
+            <div id="lesson-pick-list" class="quick-pick-list lesson-pick-list" role="listbox" tabindex="0"></div>
+          </div>
+        </div>
+        <div id="lesson-footer" class="lesson-footer">
+          <!-- (their words and state are set by lessons.js for the phase of the dialog) -->
+          <button id="lesson-secondary" type="button" class="btn-secondary">Cancel</button>
+          <button id="lesson-primary" type="button" class="btn-primary hidden">Create a proposal</button>
+        </div>
+        <div id="lesson-hint" class="tag-pick-hint"></div>
+      </div>
+    </div>
+
+    <!-- Print / save as PDF (print_panel.js, loaded on the first press of the printer button): the page as it will be printed, on the
+         left, as the PDF the engine makes of it; the settings on the right. Hidden markup: nothing is built until the panel opens. -->
+    <div id="print-modal" class="modal-backdrop hidden">
+      <div class="modal-card print-card">
+        <div class="modal-header">
+          <h3 id="print-title" data-i18n="printTitle">Print or save as PDF</h3>
+          <button id="print-close" type="button" class="btn-icon" data-i18n-title="dialogClose" title="Close">✕</button>
+        </div>
+        <div class="print-body">
+          <div id="print-stage" class="print-stage">
+            <div id="print-status" class="print-status hidden" role="status"></div>
+          </div>
+          <div class="print-side">
+            <div class="print-field">
+              <label for="print-paper" data-i18n="printPaper">Paper</label>
+              <select id="print-paper" class="form-select">
+                <option value="a4">A4</option>
+                <option value="a3">A3</option>
+                <option value="b5">B5</option>
+                <option value="letter" data-i18n="printLetter">Letter</option>
+              </select>
+            </div>
+            <div class="print-field">
+              <span class="print-label" data-i18n="printOrientation">Orientation</span>
+              <div id="print-orientation" class="print-seg" role="group" aria-label="Orientation">
+                <button id="print-portrait" type="button" class="print-seg-btn active" data-value="portrait" aria-pressed="true" data-i18n="printPortrait">Portrait</button>
+                <button id="print-landscape" type="button" class="print-seg-btn" data-value="landscape" aria-pressed="false" data-i18n="printLandscape">Landscape</button>
+              </div>
+            </div>
+            <div class="print-field">
+              <span class="print-label" data-i18n="printMargin">Margins</span>
+              <div id="print-margin" class="print-seg" role="group" aria-label="Margins">
+                <button id="print-margin-normal" type="button" class="print-seg-btn active" data-value="normal" aria-pressed="true" data-i18n="printMarginNormal">Normal</button>
+                <button id="print-margin-narrow" type="button" class="print-seg-btn" data-value="narrow" aria-pressed="false" data-i18n="printMarginNarrow">Narrow</button>
+              </div>
+            </div>
+            <div class="print-field">
+              <label for="print-scale" data-i18n="printScale">Scale</label>
+              <select id="print-scale" class="form-select">
+                <option value="50">50%</option>
+                <option value="75">75%</option>
+                <option value="90">90%</option>
+                <option value="100" selected>100%</option>
+                <option value="110">110%</option>
+                <option value="125">125%</option>
+                <option value="150">150%</option>
+                <option value="200">200%</option>
+              </select>
+            </div>
+            <div class="print-field">
+              <label for="print-pages" data-i18n="printPages">Pages</label>
+              <input id="print-pages" type="text" class="print-input" autocomplete="off" spellcheck="false" data-i18n-placeholder="printPagesPlaceholder" placeholder="All (for example 1-3, 5)">
+            </div>
+            <div class="print-field print-switch-row">
+              <label for="print-header-footer" data-i18n="printHeaderFooter">Header and footer</label>
+              <input id="print-header-footer" type="checkbox">
+              <small class="print-hint" data-i18n="printHeaderFooterHint">The file name above; its folder and the page number below.</small>
+            </div>
+            <div id="print-summary" class="print-summary" aria-live="polite"></div>
+          </div>
+        </div>
+        <div class="modal-footer print-footer">
+          <button id="print-system" type="button" class="btn-secondary" data-i18n="printSystem">Print...</button>
+          <span class="print-spacer"></span>
+          <button id="print-cancel" type="button" class="btn-secondary" data-i18n="dialogClose">Close</button>
+          <button id="print-save" type="button" class="btn-primary" data-i18n="printSavePdf" disabled>Save as PDF</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/platform.js?v=1.0.0"></script>
+  <script src="js/i18n.js?v=1.5.17"></script>
+  <script src="js/ime_guardian.js?v=1.5.6"></script>
+  <script src="js/task_manager.js?v=1.0.5"></script>
+  <script src="js/html_comments.js?v=1.0.0"></script>
+  <script src="js/comment_toggle.js?v=1.0.0"></script>
+  <script src="js/auto_selector.js?v=1.0.0"></script>
+  <script src="js/slot_snippets.js?v=1.0.0"></script>
+  <script src="js/agent_risk.js?v=1.0.0"></script>
+  <script src="js/bulk_insert.js?v=1.0.0"></script>
+  <script src="js/disk_sync.js?v=1.0.0"></script>
+  <script src="js/ghost_diff.js?v=1.0.0"></script>
+  <script src="js/slot_agent.js?v=2.4.1"></script>
+  <script src="js/llm_error.js?v=1.0.0"></script>
+  <script src="js/go_text.js?v=1.0.0"></script>
+  <script src="js/panel_fade.js?v=1.0.0"></script>
+  <script src="js/chrome_overlay.js?v=1.0.0"></script>
+  <script src="js/jev_action.js?v=1.3.0"></script>
+  <script src="js/chrome_layout.js?v=1.0.0"></script>
+  <script src="js/tab_strip.js?v=1.0.0"></script>
+  <script src="js/tab_overflow.js?v=1.0.0"></script>
+  <script src="js/view_layout.js?v=1.0.0"></script>
+  <script src="js/html_to_md.js?v=1.0.0"></script>
+  <script src="js/voice_input.js?v=1.0.0"></script>
+  <script src="js/speech_settings.js?v=1.0.0"></script>
+  <script src="js/semantic_settings.js?v=1.0.0"></script>
+  <script src="js/file_anchor.js?v=1.1.0"></script>
+  <script src="js/line_gutter.js?v=1.0.0"></script>
+  <script src="js/preview_images.js?v=1.0.0"></script>
+  <script src="js/appearance.js?v=1.0.0"></script>
+  <script src="js/mermaid_tone.js?v=1.0.0"></script>
+  <script src="js/scrap_quote.js?v=1.0.0"></script>
+  <script src="js/scraps_filter.js?v=1.0.0"></script>
+  <script src="js/note_title.js?v=1.0.0"></script>
+  <script src="js/result_blocks.js?v=1.0.0"></script>
+  <script src="js/config_pack.js?v=1.0.0"></script>
+  <script src="js/secret_strip.js?v=1.0.0"></script>
+  <script src="js/builtin_ai.js?v=1.0.0"></script>
+  <script src="js/note_hash.js?v=1.0.0"></script>
+  <script src="js/settings_compact.js?v=1.0.0"></script>
+  <script src="js/about_dialog.js?v=1.0.0"></script>
+  <script src="js/a11y.js?v=1.0.0"></script>
+  <script src="js/status_ai.js?v=1.0.0"></script>
+  <script src="js/first_run.js?v=1.0.0"></script>
+  <script src="js/app.js?v=1.6.9"></script>
+</body>
+</html>
+

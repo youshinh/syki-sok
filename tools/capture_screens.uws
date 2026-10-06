@@ -1,0 +1,173 @@
+// tools/capture_screens.uws
+// Perfectly Normalized & Sequence-Guaranteed Screenshot Automation
+print "========================================================="
+print "  MD-Memo Precise Resolution Screenshot Generation      "
+print "========================================================="
+
+exe_path = "c:\Users\yoush\Documents\md-memo-v2\md-memo.exe"
+img_dir = "c:\Users\yoush\Documents\md-memo-v2\img\"
+ps_helper = "c:\Users\yoush\Documents\md-memo-v2\tools\capture_window.ps1"
+
+function eval_js(expr)
+    cmd = "c:\Users\yoush\Documents\md-memo-v2\md-memo.exe ui eval " + chr(34) + expr + chr(34)
+    res = doscmd(cmd)
+    res = trim(res)
+    result = res
+fend
+
+function capture_win(file_name, win_id, img_base, helper_path)
+    ctrlwin(win_id, ACTIVATE)
+    sleep(0.4)
+    target_path = img_base + file_name
+    print "  Capturing: " + file_name + " (Normalized 1120x720)..."
+    cmd = "powershell.exe -ExecutionPolicy Bypass -File " + chr(34) + helper_path + chr(34) + " -WindowTitle " + chr(34) + "MD-Memo" + chr(34) + " -OutputFile " + chr(34) + target_path + chr(34) + " -TargetWidth 1120 -TargetHeight 720"
+    res = doscmd(cmd)
+    print "  " + trim(res)
+    sleep(0.5)
+fend
+
+// 1. Terminate any previous instance & clean boot
+doscmd("powershell.exe -Command Stop-Process -Name md-memo -Force -ErrorAction SilentlyContinue")
+sleep(1.0)
+
+print "[Step 1] Launching clean md-memo instance..."
+pid = exec(exe_path)
+sleep(3.5)
+
+id = getid("MD-Memo", EMPTY, 5)
+if id < 0 then
+    print "FAILED: Could not find MD-Memo window"
+    exitexit 1
+endif
+
+win_title = status(id, ST_TITLE)
+print "Window acquired: " + win_title + " (ID: " + id + ")"
+
+// Resize and position window
+ctrlwin(id, ACTIVATE)
+sleep(0.5)
+acw(id, 60, 40, 1120, 720)
+sleep(0.6)
+
+// 2. Inject rich demo Markdown directly via md-memo buffer set CLI with tools\demo.md
+print "[Step 2] Injecting rich Markdown with Mermaid diagram via tools\demo.md..."
+doscmd("cmd.exe /c type c:\Users\yoush\Documents\md-memo-v2\tools\demo.md | c:\Users\yoush\Documents\md-memo-v2\md-memo.exe buffer set")
+sleep(1.0)
+
+// Open Preview to the Side
+print "Opening Live Preview to the Side..."
+eval_js("if (window.__testHelper && window.__testHelper.openPreviewToSide) { window.__testHelper.openPreviewToSide(); } else { document.getElementById('btn-preview-side').click(); }")
+sleep(3.5)
+
+// ------------------------------------------------------------------------------
+// Screenshot 1: Split Editor & Live Mermaid Diagram
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 1] Live Split View & Mermaid Diagram..."
+capture_win("screen_diagram.png", id, img_dir, ps_helper)
+capture_win("screen_split.png", id, img_dir, ps_helper)
+capture_win("screen.png", id, img_dir, ps_helper)
+
+// ------------------------------------------------------------------------------
+// Screenshot 2: Command Palette (Ctrl+Shift+P)
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 2] Command Palette (QuickPick Modal)..."
+eval_js("if (window.__testHelper && window.__testHelper.openQuickPick) { window.__testHelper.openQuickPick(); } else { document.getElementById('ctx-quick-pick').click(); }")
+sleep(1.0)
+capture_win("screen_palette.png", id, img_dir, ps_helper)
+eval_js("const qp = document.getElementById('quick-pick-modal'); if (qp) qp.classList.add('hidden');")
+sckey(id, VK_ESCAPE)
+sleep(0.5)
+
+// ------------------------------------------------------------------------------
+// Screenshot 3: Ask AI bar (Ctrl+L)
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 3] In-Place AI Prompt Bar..."
+eval_js("if (window.__testHelper && window.__testHelper.openInlinePromptBar) { window.__testHelper.openInlinePromptBar(); } else { document.getElementById('btn-header-llm').click(); }")
+sleep(0.5)
+eval_js("const inp = document.getElementById('inline-prompt-input'); if (inp) inp.value = 'Summarize daily scraps and extract actionable CLI tasks with Jev';")
+sleep(0.5)
+capture_win("screen_prompt.png", id, img_dir, ps_helper)
+eval_js("const closeBtn = document.getElementById('btn-inline-prompt-close'); if (closeBtn) closeBtn.click();")
+eval_js("const ipb = document.getElementById('inline-prompt-bar'); if (ipb) ipb.classList.add('hidden');")
+sleep(0.5)
+
+// ------------------------------------------------------------------------------
+// Screenshot 4: Command bar, manual CLI mode (Ctrl+E)
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 4] CLI Pipeline & Filter Bar..."
+eval_js("const cfb = document.getElementById('cli-filter-bar'); if (cfb) cfb.classList.remove('hidden'); const cfi = document.getElementById('cli-filter-input'); if (cfi) { cfi.value = 'jq . | sort -u | duckdb -box'; cfi.focus(); }")
+sleep(0.5)
+capture_win("screen_cli_filter.png", id, img_dir, ps_helper)
+eval_js("const cfbClose = document.getElementById('btn-cli-filter-close'); if (cfbClose) cfbClose.click();")
+eval_js("const cfb = document.getElementById('cli-filter-bar'); if (cfb) cfb.classList.add('hidden');")
+sleep(0.5)
+
+// ------------------------------------------------------------------------------
+// Screenshot 5: Daily Scraps High-Speed Search Modal (Ctrl+Shift+F)
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 5] Daily Scraps Search Modal..."
+eval_js("document.getElementById('btn-search-scraps').click();")
+sleep(0.6)
+eval_js("const si = document.getElementById('scraps-search-input') || document.getElementById('scrap-search-input'); if (si) { si.value = 'Architecture'; si.dispatchEvent(new Event('input')); }")
+sleep(0.8)
+capture_win("screen_scraps_search.png", id, img_dir, ps_helper)
+eval_js("const sm = document.getElementById('scraps-search-modal'); if (sm) sm.classList.add('hidden');")
+sckey(id, VK_ESCAPE)
+sleep(0.5)
+
+// ------------------------------------------------------------------------------
+// Screenshot 6: Settings Modal - General Tab
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 6] Settings Modal (General Tab)..."
+eval_js("document.getElementById('btn-settings').click();")
+sleep(0.6)
+eval_js("document.getElementById('tab-btn-general').click();")
+sleep(0.5)
+capture_win("setting.png", id, img_dir, ps_helper)
+
+// ------------------------------------------------------------------------------
+// Screenshot 7: Settings Modal - Agent & CLI Integration Tab
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 7] Settings Modal (Agent & CLI Tab)..."
+eval_js("document.getElementById('tab-btn-agent').click();")
+sleep(0.6)
+capture_win("screen_settings_agent.png", id, img_dir, ps_helper)
+
+// ------------------------------------------------------------------------------
+// Screenshot 8: Settings Modal - AI Models Tab
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 8] Settings Modal (AI Model Tab)..."
+eval_js("document.getElementById('tab-btn-model').click();")
+sleep(0.6)
+capture_win("screen_settings_model.png", id, img_dir, ps_helper)
+
+// ------------------------------------------------------------------------------
+// Screenshot 9: Settings Modal - Git Sync Tab
+// ------------------------------------------------------------------------------
+print ""
+print "[Capture 9] Settings Modal (Sync Tab)..."
+eval_js("document.getElementById('tab-btn-sync').click();")
+sleep(0.6)
+capture_win("screen_settings_sync.png", id, img_dir, ps_helper)
+
+// Close Settings Modal completely
+eval_js("document.getElementById('modal-close').click(); const sm = document.getElementById('settings-modal'); if (sm) sm.classList.add('hidden');")
+sleep(0.5)
+
+// Clean close
+print ""
+print "Closing MD-Memo..."
+ctrlwin(id, CLOSE)
+sleep(1.0)
+
+print "========================================================="
+print "  All Normalized Screenshots Generated Successfully!    "
+print "========================================================="

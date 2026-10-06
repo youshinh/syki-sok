@@ -1,0 +1,8 @@
+{
+  "defaults": { "motion": "no-preference", "extraArgs": ["--tabs", "3", "--cpu-idle-sec", "30"] },
+  "configs": [
+    { "name": "A-base", "exe": "v2-base.exe" },
+    { "name": "P-p3a",  "exe": "v2-p3a.exe" },
+    { "name": "N-p3b",  "exe": "v2-p3b.exe" }
+  ]
+}

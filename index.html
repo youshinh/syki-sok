@@ -1,0 +1,2460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>syki::sok — Zero-latency, Local-first Markdown Scratchpad</title>
+  <meta name="description" content="Capture fleeting thoughts with zero friction. A sub-15ms wake latency, 5MB idle footprint Markdown scratchpad with autonomous IME shielding and local AI.">
+  <link rel="icon" type="image/png" href="./app.png">
+  <meta property="og:title" content="syki::sok — Zero-latency, Local-first Markdown Scratchpad">
+  <meta property="og:description" content="The sub-15ms summon, 5MB idle memory buffer sitting right in front of Obsidian and Notion.">
+  <meta property="og:image" content="./img/screen_diagram.png">
+  <meta property="og:url" content="https://youshinh.github.io/syki-sok/">
+  <meta name="twitter:card" content="summary_large_image">
+
+  <style>
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      --font-mono: ui-monospace, "SF Mono", "Cascadia Code", "Fira Code", monospace;
+      
+      /* Dark Theme (MD-memo Calm Dark Olive) */
+      --bg-canvas: #111413;
+      --bg-surface: #181c1a;
+      --bg-surface-elevated: #202623;
+      --bg-surface-glass: rgba(24, 28, 26, 0.85);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --border-focus: rgba(255, 255, 255, 0.2);
+      
+      --text-primary: #e8ece5;
+      --text-secondary: #97a095;
+      --text-tertiary: #656d63;
+      
+      /* MD-memo Dark Olive Accent */
+      --accent: #6b843d;
+      --accent-glow: rgba(107, 132, 61, 0.15);
+      --accent-emerald: #556b2f;
+      --accent-emerald-subtle: rgba(85, 107, 47, 0.16);
+      
+      --code-bg: #141715;
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+      --radius-full: 9999px;
+      
+      --ease: cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    [data-theme="light"] {
+      --bg-canvas: #f7f9f6;
+      --bg-surface: #ffffff;
+      --bg-surface-elevated: #eef2eb;
+      --bg-surface-glass: rgba(255, 255, 255, 0.85);
+      --border-subtle: rgba(0, 0, 0, 0.08);
+      --border-focus: rgba(0, 0, 0, 0.2);
+      
+      --text-primary: #181c16;
+      --text-secondary: #4a5447;
+      --text-tertiary: #848e81;
+      
+      --accent: #455a24;
+      --accent-glow: rgba(69, 90, 36, 0.12);
+      --accent-emerald: #3b442b;
+      --accent-emerald-subtle: rgba(59, 68, 43, 0.1);
+      
+      --code-bg: #eef2eb;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      font-family: var(--font-sans);
+      font-size: 15px;
+      line-height: 1.6;
+      overflow-x: hidden;
+      transition: background-color 0.3s var(--ease), color 0.3s var(--ease);
+    }
+
+    /* Container */
+    .container {
+      max-width: 1140px;
+      margin: 0 auto;
+      padding: 0 24px;
+    }
+
+    /* Navbar */
+    .nav {
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      background: var(--bg-surface-glass);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .nav-inner {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 64px;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      color: var(--text-primary);
+      font-weight: 600;
+      font-size: 16px;
+      letter-spacing: -0.01em;
+    }
+
+    .brand-icon {
+      width: 28px;
+      height: 28px;
+      border-radius: var(--radius-sm);
+      object-fit: cover;
+    }
+
+    .nav-links {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+      list-style: none;
+    }
+
+    .nav-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      font-size: 14px;
+      transition: color 0.2s var(--ease);
+    }
+
+    .nav-links a:hover {
+      color: var(--text-primary);
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s var(--ease);
+    }
+
+    .icon-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 10px 18px;
+      font-size: 14px;
+      font-weight: 500;
+      border-radius: var(--radius-sm);
+      text-decoration: none;
+      transition: all 0.2s var(--ease);
+      cursor: pointer;
+      border: none;
+    }
+
+    .btn:active {
+      transform: scale(0.98);
+    }
+
+    .btn-primary {
+      background: var(--text-primary);
+      color: var(--bg-canvas);
+    }
+
+    .btn-primary:hover {
+      opacity: 0.9;
+    }
+
+    .btn-secondary {
+      background: var(--bg-surface-elevated);
+      color: var(--text-primary);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--border-focus);
+      background: var(--bg-surface);
+    }
+
+    /* Hero Section */
+    .hero {
+      padding: 96px 0 64px;
+      text-align: center;
+      position: relative;
+    }
+
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 12px;
+      border-radius: var(--radius-full);
+      background: var(--accent-emerald-subtle);
+      border: 1px solid rgba(85, 107, 47, 0.3);
+      color: var(--accent);
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      margin-bottom: 24px;
+    }
+
+    .hero-badge .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-size: clamp(38px, 5.5vw, 64px);
+      font-weight: 700;
+      line-height: 1.15;
+      letter-spacing: -0.03em;
+      margin-bottom: 24px;
+      color: var(--text-primary);
+    }
+
+    .hero h1 span.gradient {
+      background: linear-gradient(135deg, var(--text-primary) 30%, var(--text-secondary) 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .hero p.lead {
+      font-size: clamp(16px, 2vw, 19px);
+      color: var(--text-secondary);
+      max-width: 680px;
+      margin: 0 auto 36px;
+      line-height: 1.65;
+    }
+
+    .hero-cta {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: wrap;
+      margin-bottom: 40px;
+    }
+
+    .install-bar {
+      display: inline-flex;
+      align-items: center;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 6px 6px 6px 14px;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text-secondary);
+      max-width: 100%;
+    }
+
+    .install-bar span.cmd {
+      user-select: all;
+      color: var(--text-primary);
+      margin-right: 12px;
+    }
+
+    .install-bar span.os-label {
+      color: var(--text-secondary);
+      font-size: 11px;
+      margin-right: 10px;
+      padding-right: 10px;
+      border-right: 1px solid var(--border-subtle);
+    }
+
+    .install-bar button.copy-btn {
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      padding: 6px 10px;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s var(--ease);
+    }
+
+    .install-bar button.copy-btn:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    /* Hero Preview Media */
+    .hero-media-wrapper {
+      position: relative;
+      margin-top: 48px;
+      padding: 10px;
+      border-radius: calc(var(--radius-lg) + 6px);
+      background: linear-gradient(180deg, rgba(255,255,255,0.06) 0%, rgba(255,255,255,0) 100%);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 30px 80px -20px rgba(0,0,0,0.5);
+    }
+
+    .hero-media-inner {
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      background: #000;
+      border: 1px solid var(--border-subtle);
+      line-height: 0;
+    }
+
+    .hero-media-inner img {
+      width: 100%;
+      height: auto;
+      display: block;
+      transition: opacity 0.3s ease;
+    }
+
+    /* Metrics Bar */
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin: 48px 0 80px;
+    }
+
+    .metric-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 24px 20px;
+      border-radius: var(--radius-md);
+      text-align: left;
+    }
+
+    .metric-val {
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: var(--text-primary);
+      font-family: var(--font-mono);
+      margin-bottom: 4px;
+    }
+
+    .metric-label {
+      font-size: 13px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    .metric-sub {
+      font-size: 11px;
+      color: var(--text-tertiary);
+      margin-top: 4px;
+    }
+
+    /* Section Styles */
+    .section {
+      padding: 80px 0;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .section-header {
+      text-align: center;
+      max-width: 680px;
+      margin: 0 auto 56px;
+    }
+
+    .section-tag {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-tertiary);
+      margin-bottom: 12px;
+    }
+
+    .section-title {
+      font-size: clamp(26px, 3.5vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+      line-height: 1.25;
+    }
+
+    .section-desc {
+      font-size: 16px;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+
+    /* Comparison Matrix */
+    .matrix-table-wrap {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      overflow-x: auto;
+      overflow-y: hidden;
+      -webkit-overflow-scrolling: touch;
+      margin-top: 32px;
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar {
+      height: 6px;
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar-track {
+      background: var(--bg-surface);
+    }
+
+    .matrix-table-wrap::-webkit-scrollbar-thumb {
+      background: var(--border-focus);
+      border-radius: 3px;
+    }
+
+    .matrix-table {
+      width: 100%;
+      min-width: 640px;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    .matrix-table th, .matrix-table td {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .matrix-table th {
+      background: var(--bg-surface-elevated);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 12px;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .matrix-table td.highlight {
+      background: var(--accent-emerald-subtle);
+      color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    .matrix-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    /* Feature Deep Dive Grid */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+    }
+
+    .feature-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 28px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s var(--ease);
+    }
+
+    .feature-card:hover {
+      border-color: var(--border-focus);
+      transform: translateY(-2px);
+    }
+
+    .feature-icon-wrap {
+      width: 40px;
+      height: 40px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 20px;
+      color: var(--text-primary);
+    }
+
+    .feature-card h3 {
+      font-size: 17px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+
+    .feature-tag-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      list-style: none;
+      margin-top: auto;
+    }
+
+    .feature-tag-list li {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+    }
+
+    /* Interactive Showcase Tabs */
+    .showcase-tabs {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      max-width: 880px;
+      margin: 0 auto 28px;
+      width: 100%;
+    }
+
+    .showcase-tab {
+      width: 100%;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 11px 16px;
+      font-size: 13px;
+      font-weight: 500;
+      border-radius: var(--radius-full);
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-secondary);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s var(--ease);
+    }
+
+    .showcase-tab:hover {
+      color: var(--text-primary);
+      border-color: var(--border-focus);
+    }
+
+    .showcase-tab.active {
+      background: var(--text-primary);
+      color: var(--bg-canvas);
+      border-color: var(--text-primary);
+    }
+
+    /* Deep Dive: 4 High-Speed Pipelines */
+    .deepdive-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+      margin-top: 32px;
+    }
+
+    .deepdive-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .deepdive-card::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--accent), transparent);
+      opacity: 0.8;
+    }
+
+    .deepdive-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .deepdive-icon {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      flex-shrink: 0;
+    }
+
+    .deepdive-card h3 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.01em;
+    }
+
+    .deepdive-lead {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 24px;
+    }
+
+    .flow-steps {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+
+    .flow-step-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+      font-size: 13px;
+    }
+
+    .flow-step-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--accent-emerald-subtle);
+      color: var(--accent-emerald);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .flow-step-content {
+      color: var(--text-primary);
+      line-height: 1.5;
+    }
+
+    .flow-step-content strong {
+      color: var(--text-primary);
+    }
+
+    .flow-step-content span {
+      display: block;
+      color: var(--text-secondary);
+      font-size: 12px;
+      margin-top: 2px;
+    }
+
+    .deepdive-pill-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      list-style: none;
+      margin-top: auto;
+      padding-top: 16px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .deepdive-pill-list li {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 4px 10px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+    }
+
+    .terminal-demo {
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.6;
+      margin-bottom: 20px;
+      overflow-x: auto;
+    }
+
+    .terminal-prompt {
+      color: var(--accent-emerald);
+      user-select: none;
+      margin-right: 6px;
+    }
+
+    .terminal-cmd {
+      color: var(--text-primary);
+    }
+
+    .terminal-comment {
+      color: var(--text-tertiary);
+    }
+
+    .security-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: rgba(239, 68, 68, 0.1);
+      border: 1px solid rgba(239, 68, 68, 0.25);
+      color: #f87171;
+      margin-bottom: 12px;
+    }
+
+    .showcase-view {
+      position: relative;
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      overflow: hidden;
+      box-shadow: 0 24px 60px -15px rgba(0,0,0,0.4);
+    }
+
+    .showcase-img {
+      width: 100%;
+      height: auto;
+      display: block;
+    }
+
+    .showcase-caption {
+      padding: 16px 24px;
+      background: var(--bg-surface-elevated);
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 13px;
+    }
+
+    .showcase-caption-text {
+      color: var(--text-primary);
+      font-weight: 500;
+    }
+
+    .showcase-caption-key {
+      font-family: var(--font-mono);
+      background: var(--code-bg);
+      border: 1px solid var(--border-subtle);
+      padding: 2px 8px;
+      border-radius: var(--radius-sm);
+      color: var(--text-secondary);
+      font-size: 12px;
+    }
+
+    /* Use Cases Grid */
+    .usecases-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 24px;
+    }
+
+    .usecase-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-md);
+      padding: 32px 28px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .usecase-persona {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+
+    .usecase-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-glow);
+      color: var(--accent);
+      border: 1px solid rgba(107, 132, 61, 0.25);
+    }
+
+    .usecase-card h3 {
+      font-size: 19px;
+      font-weight: 600;
+      margin-bottom: 12px;
+      letter-spacing: -0.01em;
+    }
+
+    .usecase-card p {
+      color: var(--text-secondary);
+      font-size: 14px;
+      line-height: 1.65;
+      margin-bottom: 20px;
+    }
+
+    .usecase-quote {
+      background: var(--bg-surface-elevated);
+      border-left: 3px solid var(--accent);
+      padding: 12px 16px;
+      border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+      font-size: 13px;
+      color: var(--text-primary);
+      font-style: normal;
+      font-weight: 500;
+      line-height: 1.5;
+      margin-top: auto;
+    }
+
+    /* Architecture Section */
+    .arch-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      margin-top: 32px;
+    }
+
+    .arch-code {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.8;
+      color: var(--text-secondary);
+      background: var(--code-bg);
+      padding: 24px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border-subtle);
+      overflow-x: auto;
+    }
+
+    /* Shortcuts Table */
+    .shortcuts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 16px;
+      margin-top: 32px;
+    }
+
+    .shortcut-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      padding: 14px 18px;
+      border-radius: var(--radius-sm);
+    }
+
+    .shortcut-desc {
+      font-size: 14px;
+      color: var(--text-secondary);
+    }
+
+    .kbd-wrap {
+      display: flex;
+      gap: 6px;
+    }
+
+    kbd {
+      font-family: var(--font-mono);
+      font-size: 12px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-subtle);
+      box-shadow: 0 1px 0 rgba(0,0,0,0.2);
+      padding: 3px 8px;
+      border-radius: 4px;
+      color: var(--text-primary);
+    }
+
+    /* CTA Section */
+    .cta-banner {
+      background: linear-gradient(180deg, var(--bg-surface) 0%, var(--bg-canvas) 100%);
+      border: 1px solid var(--border-subtle);
+      border-radius: var(--radius-lg);
+      padding: 64px 32px;
+      text-align: center;
+      margin: 80px 0;
+    }
+
+    .cta-banner h2 {
+      font-size: clamp(28px, 4vw, 42px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      margin-bottom: 16px;
+    }
+
+    .cta-banner p {
+      font-size: 16px;
+      color: var(--text-secondary);
+      max-width: 540px;
+      margin: 0 auto 32px;
+    }
+
+    /* Footer */
+    .footer {
+      border-top: 1px solid var(--border-subtle);
+      padding: 40px 0;
+      color: var(--text-tertiary);
+      font-size: 13px;
+    }
+
+    .footer-inner {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+
+    .footer-links {
+      display: flex;
+      gap: 20px;
+      list-style: none;
+    }
+
+    .footer-links a {
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.2s var(--ease);
+    }
+
+    .footer-links a:hover {
+      color: var(--text-primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 900px) {
+      .deepdive-grid {
+        grid-template-columns: 1fr;
+      }
+      .metrics {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .features-grid {
+        grid-template-columns: 1fr;
+      }
+      .showcase-tabs {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .usecases-grid {
+        grid-template-columns: 1fr;
+      }
+      .shortcuts-grid {
+        grid-template-columns: 1fr;
+      }
+      .nav-links {
+        display: none;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .matrix-table th, .matrix-table td {
+        padding: 12px 14px;
+      }
+      .matrix-table {
+        min-width: 580px;
+        font-size: 13px;
+      }
+      .metrics {
+        grid-template-columns: 1fr;
+      }
+      .showcase-tabs {
+        grid-template-columns: 1fr;
+      }
+      .hero-cta {
+        flex-direction: column;
+      }
+      .install-bar {
+        width: 100%;
+        justify-content: space-between;
+      }
+    }
+
+  </style>
+</head>
+<body>
+
+  <!-- Navigation -->
+  <nav class="nav">
+    <div class="container nav-inner">
+      <a href="#" class="brand">
+        <img src="./app.png" alt="syki::sok Logo" class="brand-icon">
+        <span>syki::sok</span>
+      </a>
+      <ul class="nav-links">
+        <li><a href="#paradox">Philosophy</a></li>
+        <li><a href="#features">Capabilities</a></li>
+        <li><a href="#pipeline">Pipelines</a></li>
+        <li><a href="#showcase">Interface</a></li>
+        <li><a href="#usecases">Use Cases</a></li>
+        <li><a href="#shortcuts">Shortcuts</a></li>
+        <li><a href="manual.html" style="color: var(--accent); font-weight: 600;">Manual ↗</a></li>
+      </ul>
+      <div class="nav-actions">
+        <button id="themeToggle" class="icon-btn" title="Toggle theme" aria-label="Toggle theme">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="12" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+        </button>
+        <a href="https://github.com/youshinh/syki-sok" target="_blank" rel="noopener" class="icon-btn" title="GitHub Repository">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+            <path fill-rule="evenodd" clip-rule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"></path>
+          </svg>
+        </a>
+        <a href="index_ja.html" class="icon-btn" title="日本語 (Japanese)" aria-label="Switch to Japanese">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m5 8 6 6"></path>
+            <path d="m4 14 6-6 2-3"></path>
+            <path d="M2 5h12"></path>
+            <path d="M7 2h1"></path>
+            <path d="m22 22-5-10-5 10"></path>
+            <path d="M14 18h6"></path>
+          </svg>
+        </a>
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">Download</a>
+      </div>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="container">
+      <h1>
+        Fleeting Thoughts,<br>
+        <span class="gradient">Zero Friction.</span>
+      </h1>
+      <p class="lead">
+        A sub-15ms wake, 5MB idle footprint buffer engineered in front of Obsidian and Notion.<br>
+        Armed with an autonomous IME shield and air-gapped local AI for instant thought capture.
+      </p>
+
+      <div class="hero-cta">
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Get Latest Release
+        </a>
+
+        <a href="manual.html" class="btn btn-secondary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
+          User Manual &amp; Docs ↗
+        </a>
+
+        <div class="install-bar">
+          <span class="os-label">macOS</span><span class="cmd" id="installCmd">brew install --cask <span style="white-space: nowrap;">youshinh/tap/md-memo</span></span>
+          <button class="copy-btn" id="copyBtn" title="Copy command">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+            </svg>
+            <span id="copyText">Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Hero Visual -->
+      <div class="hero-media-wrapper">
+        <div class="hero-media-inner">
+          <img src="./img/screen_diagram.png" alt="syki::sok Split Editor and Mermaid Diagram Preview">
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- Metrics -->
+  <section class="container">
+    <div class="metrics">
+      <div class="metric-card">
+        <div class="metric-val">&lt; 15ms</div>
+        <div class="metric-label">Hotkey Wake Latency</div>
+        <div class="metric-sub">Instant cursor restoration via Ctrl+Alt+M</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">5–15 MB</div>
+        <div class="metric-label">Idle Memory Footprint</div>
+        <div class="metric-sub">Aggressive reclamation via debug.FreeOSMemory()</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">11 µs</div>
+        <div class="metric-label">Autonomous IME Overhead</div>
+        <div class="metric-sub">Guaranteed zero full-width typos in code blocks</div>
+      </div>
+      <div class="metric-card">
+        <div class="metric-val">100%</div>
+        <div class="metric-label">Local-First Storage</div>
+        <div class="metric-sub">Direct POSIX .md persistence with optional AI</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: The Scratchpad Paradox -->
+  <section class="section" id="paradox">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Philosophy</div>
+        <h2 class="section-title">The Paradox of Distance:<br>Thought &amp; Scratchpad</h2>
+        <p class="section-desc">
+          Modern knowledge vaults like Obsidian or Notion excel at long-term synthesis, but multi-second load times break cognitive momentum.<br>
+          <strong>syki::sok does not replace your vault. It is the zero-friction buffer standing directly in front of it.</strong>
+        </p>
+      </div>
+
+      <div class="matrix-table-wrap">
+        <table class="matrix-table">
+          <thead>
+            <tr>
+              <th>Dimension</th>
+              <th>Standard Text Editors</th>
+              <th>Knowledge Vaults (Notion / Obsidian)</th>
+              <th>syki::sok</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><strong>Architecture</strong></td>
+              <td>C++ / Swift / Rust</td>
+              <td>Electron / Chromium (Heavyweight)</td>
+              <td class="highlight">Go 1.26 + OS-Native WebView</td>
+            </tr>
+            <tr>
+              <td><strong>Summon Latency</strong></td>
+              <td>~100ms (Cold boot)</td>
+              <td>2.0s – 5.0s (JS runtime init)</td>
+              <td class="highlight">&lt; 15ms (System tray resident)</td>
+            </tr>
+            <tr>
+              <td><strong>Idle Memory</strong></td>
+              <td>~15 MB</td>
+              <td>400 MB – 800 MB+</td>
+              <td class="highlight">5 – 15 MB (Aggressive GC reclamation)</td>
+            </tr>
+            <tr>
+              <td><strong>IME Handling</strong></td>
+              <td>OS default (Typos in code)</td>
+              <td>OS default</td>
+              <td class="highlight">Autonomous IME Shield (Syntax Guardian)</td>
+            </tr>
+            <tr>
+              <td><strong>AI Assistance</strong></td>
+              <td>Cloud-only (Paid / API key)</td>
+              <td>Cloud-only / Third-party plugins</td>
+              <td class="highlight">Air-gapped Local (Ollama) / Optional Cloud AI</td>
+            </tr>
+            <tr>
+              <td><strong>Storage Model</strong></td>
+              <td>Plain text</td>
+              <td>Proprietary DB / Vendor Cloud Sync</td>
+              <td class="highlight">100% Local POSIX Plain Text</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Deep Features -->
+  <section class="section" id="features">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Capabilities</div>
+        <h2 class="section-title">Technical Foundation &amp; Details</h2>
+        <p class="section-desc">
+          Unobtrusive, instantaneous, and never interrupting your train of thought. Engineering poured into every nuance.
+        </p>
+      </div>
+
+      <div class="features-grid">
+        <!-- Feature 1 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3>Zero-Latency Resident Wake</h3>
+            <p>
+              Instantly summon from the system tray via <code>Ctrl+Alt+M</code> (macOS: from the Dock via <code>Option+Cmd+M</code>). On window minimize, <code>debug.FreeOSMemory()</code> aggressively shrinks the working set to 5–15 MB.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Go 1.26</li>
+            <li>OS Native WebView</li>
+            <li>Zero IPC Lag</li>
+          </ul>
+        </div>
+
+        <!-- Feature 2 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+            <h3>Autonomous IME Shield</h3>
+            <p>
+              Automatically intercepts full-width CJK characters inside inline code (<code>`...`</code>), code fences, and URLs. Log-Likelihood Ratio Testing (LLRT) catches accidental direct-mode Romaji typos.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>11µs Overhead</li>
+            <li>LLRT Engine</li>
+            <li>Syntax Guardian</li>
+          </ul>
+        </div>
+
+        <!-- Feature 3 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="3" width="20" height="14" rx="2" ry="2"></rect>
+                <line x1="8" y1="21" x2="16" y2="21"></line>
+                <line x1="12" y1="17" x2="12" y2="21"></line>
+              </svg>
+            </div>
+            <h3>Local-First AI (Ghost Text)</h3>
+            <p>
+              Pair with offline Ollama / vLLM instances without data leakage. Press <code>Ctrl+→</code> to accept high-speed predictive completions. Optional cloud models available for complex reasoning.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Local / Offline</li>
+            <li>Ollama / vLLM</li>
+            <li>Ghost Text</li>
+          </ul>
+        </div>
+
+        <!-- Feature 4 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </div>
+            <h3>UNIX Pipes &amp; CLI Automation</h3>
+            <p>
+              Pipe terminal streams via <code>cat build.log | syki</code> to running instances over local TCP IPC. Press <code>Ctrl+E</code> for the Command Bar: type a shell command, or press <code>Tab</code> to switch to AI mode for natural-language OS commands that a local safety guard checks before they run.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Local TCP IPC</li>
+            <li>Safe CLI Agent</li>
+            <li>Pipe Filter</li>
+          </ul>
+        </div>
+
+        <!-- Feature 5 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+              </svg>
+            </div>
+            <h3>Parallel Scrap Search</h3>
+            <p>
+              Harnesses <code>runtime.NumCPU()</code> worker threads and a zero-allocation parallel scanner to search across all daily scraps (<code>scraps/YYYY-MM-DD.md</code>) instantaneously. Switch to <strong>Meaning</strong> (experimental, off by default) to find notes that say it in other words, and press <strong>Deep search</strong> to have your AI model answer from those notes with links to the sources, after a dialog that shows what would be sent and where. A <strong>Filter</strong> narrows any of these to a period and to tags you write into your notes or add from the command palette.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Parallel Scan</li>
+            <li>150ms Debounce</li>
+            <li>Auto Highlight</li>
+            <li>Meaning &amp; Deep Search</li>
+          </ul>
+        </div>
+
+        <!-- Feature 6 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+              </svg>
+            </div>
+            <h3>Silent Background Git Sync</h3>
+            <p>
+              Auto-commits and pushes in the background after 30 seconds of keyboard idle. Auto-rebases on launch. Provide an empty Git repository URL in settings for effortless multi-device sync.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Auto Pull / Push</li>
+            <li>Conflict-Free</li>
+            <li>Zero Friction</li>
+          </ul>
+        </div>
+
+        <!-- Feature 7 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 20h9"></path>
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path>
+              </svg>
+            </div>
+            <h3>Ask AI</h3>
+            <p>
+              Select text (or just place the caret), press <code>Ctrl+L</code> and type an instruction: the built-in LLM's answer is inserted right below it in seconds, and your own text is never replaced. <code>Alt+C</code> proofreads with no instruction at all.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+L</li>
+            <li>Answer Below</li>
+            <li>Alt+C Proofread</li>
+          </ul>
+        </div>
+
+        <!-- Feature 8 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="10 8 16 12 10 16 10 8"></polygon>
+              </svg>
+            </div>
+            <h3>Auto Selector: Ask, Delegate, Run</h3>
+            <p>
+              Write a line and press <code>Ctrl+Enter</code>: fixed local rules decide whether it goes to the built-in LLM, an agent CLI (Claude Code, Codex, Hermes, Antigravity) or a command. The result lands below your line. By default agents and commands wait for a second press; when the rules are unsure, the Ask AI bar opens. Write <code>{{ @agent ... }}</code> yourself; agents live in <code>agents.yaml</code>. If an agent trips, <strong>Lessons</strong> in the task panel keeps a rule you approve for its next runs.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Enter</li>
+            <li>Result Below</li>
+            <li>agents.yaml</li>
+          </ul>
+        </div>
+
+        <!-- Feature 9 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76"></polygon>
+              </svg>
+            </div>
+            <h3>Quick Actions: What Next?</h3>
+            <p>
+              Not sure what to do? Press <code>Ctrl+J</code> for up to three next steps for what you are writing. It runs on built-in local rules by default, so nothing leaves your machine, and every shell command passes an AST guardrail first. Click AI in the status bar: the Suggestions switch turns it on or off, and Only when I press Ctrl+J makes it manual.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+J</li>
+            <li>Local rules</li>
+            <li>AST guardrail</li>
+          </ul>
+        </div>
+
+        <!-- Feature 10 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+              </svg>
+            </div>
+            <h3>Smart Paste</h3>
+            <p>
+              <code>Ctrl+V</code> converts HTML from Excel, Word or Google Docs into Markdown — tables, lists, code blocks and links included — with no external converter, and runs vision OCR when the clipboard holds only an image. Code and logs from editors and terminals stay as they are. <code>Ctrl+Shift+V</code> pastes as it is, with no conversion. About 1 MB of HTML converts in roughly 90 ms.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+V</li>
+            <li>Ctrl+Shift+V</li>
+            <li>HTML &rarr; Markdown</li>
+          </ul>
+        </div>
+
+        <!-- Feature 11 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
+                <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+                <line x1="12" y1="19" x2="12" y2="23"></line>
+                <line x1="8" y1="23" x2="16" y2="23"></line>
+              </svg>
+            </div>
+            <h3>Voice Input</h3>
+            <p>
+              Start dictation from the toolbar microphone, the right-click menu, the command palette or a configurable shortcut (<code>Ctrl+Shift+R</code> by default); a marker at the caret tracks progress while you keep typing elsewhere. Recording stops after a few seconds of silence or a second press of the shortcut, and <code>Esc</code> discards it. The default model is Gemini 3.5 Transcribe, and it needs an API key in Settings, shared with image OCR.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+R</li>
+            <li>Gemini 3.5 Transcribe</li>
+            <li>Esc to discard</li>
+          </ul>
+        </div>
+
+        <!-- Feature 12 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </div>
+            <h3>File Links</h3>
+            <p>
+              Drop a file onto the editor to insert a link at the caret; it is copied into <code>./assets</code> so the link keeps working. <code>Ctrl+Click</code> opens it with the OS default app, <code>Alt+Click</code> reveals it in Explorer or Finder, and hovering an image link shows a thumbnail.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Drag &amp; drop</li>
+            <li>Ctrl+Click</li>
+            <li>Alt+Click</li>
+          </ul>
+        </div>
+
+        <!-- Feature 13 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="7" y="2" width="10" height="20" rx="2" ry="2"></rect>
+                <line x1="11" y1="18" x2="13" y2="18"></line>
+              </svg>
+            </div>
+            <h3>Mobile Drop</h3>
+            <p>
+              Press <code>Ctrl+Shift+U</code> for a QR code that opens a page on your phone over the same Wi-Fi (or a Cloudflare tunnel for HTTPS). Send photos, voice notes, files and text in one batch — up to 10 files and 60 MB — and pull the PC's current selection over as text too. If OCR or transcription cannot run, the photo or recording is still saved to <code>./assets</code> and linked.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+U</li>
+            <li>QR code</li>
+            <li>Up to 10 files</li>
+          </ul>
+        </div>
+
+        <!-- Feature 14 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="5" width="18" height="4" rx="1" ry="1"></rect>
+                <line x1="6" y1="12" x2="18" y2="12"></line>
+                <line x1="6" y1="16" x2="14" y2="16"></line>
+                <line x1="6" y1="20" x2="10" y2="20"></line>
+              </svg>
+            </div>
+            <h3>Customizable Toolbar &amp; Right-Click Menu</h3>
+            <p>
+              Choose which toolbar icons and right-click menu items are shown, and reorder them within their group, from Settings &rarr; General. The right-click menu also includes an Open Notes submenu for quick tab switching. Changes apply immediately, Cancel undoes them, and Reset to default restores the original layout; hidden items keep working from their keyboard shortcut.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Settings &rarr; General</li>
+            <li>Reorder</li>
+            <li>Reset to default</li>
+          </ul>
+        </div>
+
+        <!-- Feature 15 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+                <path d="M14 5h6v6"></path>
+              </svg>
+            </div>
+            <h3>Selection CLI</h3>
+            <p>
+              External tools and AI agents can read just the text you have selected with <code>md-memo buffer get --selection</code> and write the result back with <code>md-memo buffer replace-selection</code>. The write is a single undo step, and if the selection moved in the meantime nothing is written.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>buffer get --selection</li>
+            <li>replace-selection</li>
+            <li>One undo step</li>
+          </ul>
+        </div>
+
+        <!-- Feature 16 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="18" cy="5" r="3"></circle>
+                <circle cx="6" cy="12" r="3"></circle>
+                <circle cx="18" cy="19" r="3"></circle>
+                <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+              </svg>
+            </div>
+            <h3>Related Notes in the Status Bar</h3>
+            <p>
+              Open a folder with <code>Ctrl+Shift+O</code> and the two notes that best match what you are typing appear as pills in the status bar; click one to open it in a new tab. Matches are scored by plain keywords against the titles, first lines and paths of the Markdown and text notes in that folder. No folder or no match means no pills.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+O</li>
+            <li>Top 2 matches</li>
+            <li>Click to open</li>
+          </ul>
+        </div>
+
+        <!-- Feature 17 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M18 3a3 3 0 0 0-3 3v12a3 3 0 0 0 3 3 3 3 0 0 0 3-3 3 3 0 0 0-3-3H6a3 3 0 0 0-3 3 3 3 0 0 0 3 3 3 3 0 0 0 3-3V6a3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3h12a3 3 0 0 0 3-3 3 3 0 0 0-3-3z"></path>
+              </svg>
+            </div>
+            <h3>Safe Shortcut Assignment</h3>
+            <p>
+              Every action in Settings &rarr; Shortcuts can be rebound: click its key button and press the new combination. A combination already in use asks before it is overwritten, and reserved keys such as <code>Ctrl+Shift+V</code> are refused. <code>Backspace</code> clears a key, and Reset to Defaults restores them all.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Settings &rarr; Shortcuts</li>
+            <li>Duplicate check</li>
+            <li>Reset to defaults</li>
+          </ul>
+        </div>
+
+        <!-- Feature 18 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="4" y="4" width="16" height="16" rx="2" ry="2"></rect>
+                <rect x="9" y="9" width="6" height="6"></rect>
+                <line x1="9" y1="1" x2="9" y2="4"></line>
+                <line x1="15" y1="1" x2="15" y2="4"></line>
+                <line x1="9" y1="20" x2="9" y2="23"></line>
+                <line x1="15" y1="20" x2="15" y2="23"></line>
+                <line x1="20" y1="9" x2="23" y2="9"></line>
+                <line x1="20" y1="14" x2="23" y2="14"></line>
+                <line x1="1" y1="9" x2="4" y2="9"></line>
+                <line x1="1" y1="14" x2="4" y2="14"></line>
+              </svg>
+            </div>
+            <h3>Made for AI Agents</h3>
+            <p>
+              The repository ships <code>skills/md-memo</code>, a source-verified reference of every interface, config file and setup step, so an AI agent can operate or configure syki::sok for you. It covers the CLI, JSON-RPC and the safety rules: <code>config.json</code> is edited only while the app is closed, and keys are never printed.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>skills/md-memo</li>
+            <li>CLI</li>
+            <li>JSON-RPC</li>
+          </ul>
+        </div>
+
+        <!-- Feature 19 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"></path>
+              </svg>
+            </div>
+            <h3>Discord Bridge</h3>
+            <p>
+              DM your own Discord bot from your phone and it lands in today's scrap the next time syki::sok runs, even if it was closed when you sent it. No relay server or Cloudflare account needed, just a free bot you create yourself. Photos and voice notes go through the same OCR/transcription pipeline as Mobile Drop.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Settings &rarr; Sync</li>
+            <li>Works while closed</li>
+            <li>No relay server</li>
+          </ul>
+        </div>
+
+        <!-- Feature 20 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="2" y="7" width="20" height="10" rx="2.5" ry="2.5"></rect>
+                <line x1="6" y1="12" x2="12" y2="12"></line>
+                <line x1="16" y1="10" x2="16" y2="14"></line>
+              </svg>
+            </div>
+            <h3>Quick Capture (Windows)</h3>
+            <p>
+              Press <code>Ctrl+Shift+Q</code> from any app for a small always-on-top popup: type a line and press <code>Enter</code> to append it to today's scrap, or <code>Ctrl+Enter</code> to have the AI correct it first. Opened with the hotkey, an AI Send entry also records which window you came from. The popup closes by itself a second after it loses focus. The hotkey can be rebound or cleared in Settings &rarr; Shortcuts. Windows only.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+Q</li>
+            <li>Send / AI Send</li>
+            <li>Windows only</li>
+          </ul>
+        </div>
+
+        <!-- Feature 21 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6.13 1L6 16a2 2 0 0 0 2 2h15"></path>
+                <path d="M1 6.13L16 6a2 2 0 0 1 2 2v15"></path>
+              </svg>
+            </div>
+            <h3>Screen Capture (Windows)</h3>
+            <p>
+              From the Quick Capture popup press <code>Ctrl+Shift+Enter</code>, then click a window or drag a rectangle; hold <code>Ctrl</code> to collect several. Each capture is saved as a PNG in <code>./assets</code> and read by OCR in the order you picked, and everything lands in today's note as one entry. Nothing is read from the screen until you choose. Windows only; not available on macOS.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Shift+Enter</li>
+            <li>Window or area</li>
+            <li>Windows only</li>
+          </ul>
+        </div>
+
+        <!-- Feature 22 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="22 12 16 12 14 15 10 15 8 12 2 12"></polyline>
+                <path d="M5.45 5.11L2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"></path>
+              </svg>
+            </div>
+            <h3>Hot Folder: Images and Audio Become Notes</h3>
+            <p>
+              Drop images and audio files into a watched folder: images are read by OCR, audio is transcribed, both are appended to today's scrap, and the files move to <code>./assets</code> (never deleted, even when OCR fails). Off by default, in Settings &rarr; Sync. OCR tries your cloud vision model first with the on-device engine as fallback; "Keep images on this PC" stays on-device (Windows only). On macOS images are read by the cloud vision model only and audio by Gemini only.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Windows + macOS</li>
+            <li>Off by default</li>
+            <li>Settings &rarr; Sync</li>
+          </ul>
+        </div>
+
+        <!-- Feature 23 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M3 18v-6a9 9 0 0 1 18 0v6"></path>
+                <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
+              </svg>
+            </div>
+            <h3>On-Device Whisper (Windows x64)</h3>
+            <p>
+              Transcribe hot-folder audio and Discord voice notes on your own PC, offline. Choose Whisper as the speech engine in Settings &rarr; AI Models &rarr; Voice; the Whisper program (about 9 MB) and a model (Japanese-specialised kotoba-whisper by default, about 513 MB) are downloaded on demand, with progress and resume. Audio leaves the PC only if you turn on the Gemini retry. Windows x64 only; live voice input and Mobile Drop keep using Gemini.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Offline</li>
+            <li>kotoba-whisper</li>
+            <li>Windows x64 only</li>
+          </ul>
+        </div>
+
+        <!-- Feature 24 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </div>
+            <h3>Send To &amp; the OCR Command</h3>
+            <p>
+              On Windows, add <strong>syki::sok (OCR)</strong> to the Explorer Send To menu (Settings &rarr; Agent) and right-click any image to append its text to today's note; no window opens. From a terminal, <code>md-memo ocr &lt;image&gt;</code> does the same on Windows and macOS (add <code>--json</code> for JSON output); on macOS it uses cloud OCR only.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Send To (Windows)</li>
+            <li>md-memo ocr</li>
+            <li>No window opens</li>
+          </ul>
+        </div>
+
+        <!-- Feature 25 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="4" y1="9" x2="20" y2="9"></line>
+                <line x1="4" y1="15" x2="20" y2="15"></line>
+                <line x1="10" y1="3" x2="8" y2="21"></line>
+                <line x1="16" y1="3" x2="14" y2="21"></line>
+              </svg>
+            </div>
+            <h3>Underlined Links &amp; Line Numbers</h3>
+            <p>
+              Every link in the editor is underlined: Markdown links, images (dotted, with a hover preview) and bare <code>http(s)</code> addresses. <code>Ctrl+Click</code> opens a file, a folder or a web address in the browser. Line numbers sit on the first row of each line, so a wrapped line keeps one number and the numbers match the real lines. For very large notes (over 100,000 characters for underlines, 120,000 for line numbers) the plain behavior is kept.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Click</li>
+            <li>Web addresses</li>
+            <li>Wrapped lines</li>
+          </ul>
+        </div>
+
+        <!-- Feature 26 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M6 9V3h12v6"></path>
+                <rect x="3" y="9" width="18" height="8" rx="2"></rect>
+                <path d="M6 14h12v7H6z"></path>
+              </svg>
+            </div>
+            <h3>Print or Save the Preview as PDF</h3>
+            <p>
+              The printer button on the preview opens a print panel: the page as it will be printed on the left (white paper, black text, pictures in colour, diagrams in light colours, nothing cut), paper, orientation, margins, scale and pages on the right. The header and footer, with the file name and folder, are off until you switch them on. <strong>Save as PDF</strong> writes the file; <code>md-memo tab pdf notes.md -o notes.pdf</code> does it from a script. Nothing is loaded until the first press.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Save as PDF</li>
+            <li>A4 / A3 / B5 / Letter</li>
+            <li>md-memo tab pdf</li>
+          </ul>
+        </div>
+      </div>
+
+      <p class="section-desc" style="max-width: 720px; margin: 32px auto 0; text-align: center; font-size: 14px;">
+        <strong>Windows and macOS.</strong> Quick Capture, Screen Capture, the Send To entry and on-device Whisper are Windows-only for now. The Hot Folder and <code>md-memo ocr</code> also run on macOS, with cloud OCR and Gemini transcription only. Link underlines and line numbers are shared web code, expected to behave the same on macOS but not yet verified on a real Mac. The print panel is Windows-only: on macOS the printer button opens the system print dialog (PDF &gt; Save as PDF), also not yet verified on a real Mac.
+      </p>
+    </div>
+  </section>
+
+  <!-- Section: Deep Dive - Vision OCR, AI CLI & Parallel Grep Pipeline -->
+  <section class="section" id="pipeline">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Deep Dive Workflows</div>
+        <h2 class="section-title">Vision OCR, AI CLI, Parallel Grep &amp; Text Diagramming<br>4 High-Speed Pipelines</h2>
+        <p class="section-desc">
+          Automated visual-to-markdown structuring, guarded OS terminal execution, multi-core Grep search, and instant text diagramming.
+        </p>
+      </div>
+
+      <div class="deepdive-grid">
+        <!-- Deep Dive Card 1: Vision OCR -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <div>
+              <h3>Instant Image-to-Markdown via Vision OCR</h3>
+              <span style="font-size:12px; color:var(--accent); font-weight:600;">Gemini Vision OCR Integration</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            Snip screenshots or UI mocks with OS shortcuts (<code>Win+Shift+S</code> / <code>Cmd+Shift+4</code>) and press <code>Ctrl+V</code> inside syki::sok. Without opening external upload tools, visual content is transcribed directly into structured Markdown.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>Direct Clipboard Detection</strong>
+                <span>Pastes trigger an async placeholder <code>[Transcribing Image (Gemini)...]</code>, ensuring your typing is never blocked.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>Semantic Structure Recognition</strong>
+                <span>Far beyond raw OCR text: automatically formats Markdown tables (<code>| Column |</code>), heading hierarchies, lists, and Mermaid diagram candidates.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>Syntax-Aware Code Extraction</strong>
+                <span>Code captured from screen is cleanly emitted into fenced code blocks with inferred language tags (e.g. <code>```typescript</code>), eliminating manual retyping.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># Practical examples for designers &amp; researchers:</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">UI Pricing Table Screenshot &rarr; Auto-converted to Markdown Table</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">Whiteboard Photo &rarr; Structured Bulleted Action List</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>Clipboard Paste (Ctrl+V)</li>
+            <li>Async Non-blocking</li>
+            <li>Auto Markdown Table</li>
+            <li>Vision Model API</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 2: AI CLI Pipeline -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </div>
+            <div>
+              <h3>Bi-directional AI CLI Automation Pipeline</h3>
+              <span style="font-size:12px; color:var(--accent-emerald); font-weight:600;">UNIX Pipe &amp; AST Safety Agent</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            Transforms your scratchpad into a living I/O bridge with your OS and terminal. Generates shell commands from plain-English prompts with AST-level safety enforcement.
+          </p>
+
+          <div class="security-badge">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+            </svg>
+            Built-in AST &amp; Regex Safety Firewall
+          </div>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">A</div>
+              <div class="flow-step-content">
+                <strong>Inbound: Direct Terminal Pipes</strong>
+                <span>Run <code>cat build.log | syki</code> or <code>docker logs ... | syki</code>. Ingests stdout into daily scraps (<code>scraps/YYYY-MM-DD.md</code>) via TCP IPC in milliseconds.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">B</div>
+              <div class="flow-step-content">
+                <strong>In-Editor: Natural Language CLI Agent (Ctrl+E, AI mode)</strong>
+                <span>Prompt: <em>"Find process listening on port 8080"</em>. LLM infers safe commands and runs them in a background Goroutine, streaming output back to buffer.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">C</div>
+              <div class="flow-step-content">
+                <strong>Outbound: External CLI Filters (Ctrl+E, CLI mode)</strong>
+                <span>Pipe selected text through <code>jq</code>, <code>prettier</code>, or <code>sort</code> and replace the selection in-place with formatted output.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">D</div>
+              <div class="flow-step-content">
+                <strong>Selection CLI: Pipe the Editor Selection Itself</strong>
+                <span><code>md-memo buffer get --selection</code> prints the current selection; <code>md-memo buffer replace-selection</code> writes it back as one undo step, keeping the result selected.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># Destructive command safety guard in action:</span><br>
+            <span class="terminal-prompt">!</span> <span style="color:#f87171;">BLOCKED: rm -rf / , format c: , diskpart , :(){ :|:&amp; };:</span><br>
+            <span class="terminal-prompt">?</span> <span style="color:#fbbf24;">WARNING: Confirmation required for recursive deletion (rm -r) or shutdown</span><br>
+            <span class="terminal-prompt">$</span> <span class="terminal-cmd">md-memo buffer get --selection | some-formatter | syki buffer replace-selection</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>Local TCP IPC</li>
+            <li>Destructive Cmd Shield</li>
+            <li>CLI In-place Filter</li>
+            <li>Selection CLI</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 3: Parallel Grep Engine -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                <path d="M11 8v6M8 11h6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>Parallel Grep &amp; Full-Text Search</h3>
+              <span style="font-size:12px; color:#a855f7; font-weight:600;">Goroutine (NumCPU) Multithreaded Scan</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            Resolve "Where did I write that note?" in zero seconds. Press <code>Ctrl+Shift+F</code> (macOS: <code>Cmd+Shift+F</code>) to scan all accumulated daily scraps concurrently in memory.
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>runtime.NumCPU() Parallel Scanner</strong>
+                <span>Worker pools tuned to available CPU cores combined with <code>bufio.Scanner</code> execute zero-allocation memory scans across thousands of past files instantly.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>Automatic 3-Line Context Extraction</strong>
+                <span>Extracts contextual surrounding lines (SnippetParts) dynamically so you grasp context directly in the search modal without opening files blindly.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>150ms Debounce &amp; Instant Line Jump</strong>
+                <span>Incremental live filtering as you type. Navigate with <code>&darr;</code>/<code>&uarr;</code>, hit <code>Enter</code> to open the scrap, smooth-scroll to line, and highlight.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># Live Grep output (sorted descending by timestamp):</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">scraps/2026-09-17.md:42 [Jump to line 42]</span><br>
+            <span class="terminal-prompt">|</span> <span class="terminal-comment">OAuth token expired at 14:02:11</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>runtime.NumCPU()</li>
+            <li>Bufio Streaming</li>
+            <li>Context Snippet (3-line)</li>
+            <li>Instant Line Jump</li>
+          </ul>
+        </div>
+
+        <!-- Deep Dive Card 4: Text Diagramming -->
+        <div class="deepdive-card">
+          <div class="deepdive-header">
+            <div class="deepdive-icon">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="6" height="6" rx="1"></rect>
+                <rect x="15" y="15" width="6" height="6" rx="1"></rect>
+                <rect x="15" y="3" width="6" height="6" rx="1"></rect>
+                <path d="M6 9v3a3 3 0 0 0 3 3h6"></path>
+                <path d="M18 9v6"></path>
+              </svg>
+            </div>
+            <div>
+              <h3>Instant Text Diagramming &amp; Abstraction</h3>
+              <span style="font-size:12px; color:var(--accent); font-weight:600;">Mermaid &amp; LLM Semantic Pipeline (Ctrl+L)</span>
+            </div>
+          </div>
+          <p class="deepdive-lead">
+            Synthesize complex documents into concise visual diagrams in seconds. From verbose specifications to error flows, AI extracts relationships and renders Mermaid diagrams in real-time split view (<code>Ctrl+\</code>).
+          </p>
+
+          <div class="flow-steps">
+            <div class="flow-step-item">
+              <div class="flow-step-num">1</div>
+              <div class="flow-step-content">
+                <strong>Automated Semantic Structure Extraction</strong>
+                <span>Analyzes causal relationships, conditional branches, and timelines from long-form text, distilling core concepts without manual outlining.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">2</div>
+              <div class="flow-step-content">
+                <strong>Direct Compilation to Mermaid Syntax</strong>
+                <span>Emits clean, version-controllable diagram code tailored to context: sequence, flowchart, state, or architecture diagrams directly in plain text.</span>
+              </div>
+            </div>
+            <div class="flow-step-item">
+              <div class="flow-step-num">3</div>
+              <div class="flow-step-content">
+                <strong>Real-Time Split View Visualization</strong>
+                <span>Synchronized live preview via <code>Ctrl+\</code>. Eliminates external drawing tool startup overhead and accelerates comprehension instantly.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="terminal-demo">
+            <span class="terminal-comment"># Practical text diagramming examples:</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">Verbose Auth Spec &rarr; Instant Sequence Diagram (sequenceDiagram)</span><br>
+            <span class="terminal-prompt">&gt;</span> <span class="terminal-cmd">Incident Timeline Log &rarr; Causal Flowchart (flowchart TD)</span>
+          </div>
+
+          <ul class="deepdive-pill-list">
+            <li>Text to Diagram</li>
+            <li>Mermaid Engine</li>
+            <li>Split View (Ctrl+\)</li>
+            <li>Ask AI (Ctrl+L)</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Interactive Showcase -->
+  <section class="section" id="showcase">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Interface</div>
+        <h2 class="section-title">Minimalist Design that Never Tempts Thought</h2>
+        <p class="section-desc">
+          Stripped of cognitive noise, gradients, and superfluous ornaments. Pure typography and markdown elegance.
+        </p>
+      </div>
+
+      <div class="showcase-tabs">
+        <button class="showcase-tab active" data-img="./img/screen_diagram.png" data-desc="Split-screen live preview &amp; real-time Mermaid syntax diagram rendering" data-key="Ctrl + \">Mermaid / Split View</button>
+        <button class="showcase-tab" data-img="./img/screen_cli_filter.png" data-desc="Command Bar in CLI mode: pipe text through jq, sort, duckdb and prettier (Tab switches to AI mode)" data-key="Ctrl + E">Command Bar</button>
+        <button class="showcase-tab" data-img="./img/manual/en/inline-ai.png" data-desc="The Ask AI bar under the selected line: an instruction, a chip for the target (Selection: 58 chars) and Run. The answer is inserted below." data-key="Ctrl + L">Ask AI</button>
+        <button class="showcase-tab" data-img="./img/screen_scraps_search.png" data-desc="Parallel multithreaded grep across historical scraps in &lt;150ms" data-key="Ctrl + Shift + F">Parallel Scrap Search</button>
+        <button class="showcase-tab" data-img="./img/setting.png" data-desc="General, themes (Dark Olive / Forest Teal), and editor behavior" data-key="Ctrl + ,">General Settings</button>
+        <button class="showcase-tab" data-img="./img/screen_settings_agent.png" data-desc="Autonomous agent execution policies (Claude Code, Hermes, AGY) and agents.yaml" data-key="agents.yaml">Agent Orchestration</button>
+      </div>
+
+      <div class="showcase-view">
+        <img id="showcaseImg" src="./img/screen_diagram.png" alt="syki::sok Showcase" class="showcase-img">
+        <div class="showcase-caption">
+          <span id="showcaseText" class="showcase-caption-text">Split-screen live preview &amp; real-time Mermaid syntax diagram rendering</span>
+          <span id="showcaseKey" class="showcase-caption-key">Ctrl + \</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Use Cases -->
+  <section class="section" id="usecases">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Workflows</div>
+        <h2 class="section-title">Use Cases for Accelerating Thought</h2>
+        <p class="section-desc">
+          Woven seamlessly into the daily workflows of designers, engineers, developers, and researchers.
+        </p>
+      </div>
+
+      <div class="usecases-grid">
+        <!-- Case 1 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Designers &amp; Researchers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">User Interviews &amp; Ideation</span>
+          </div>
+          <h3>Capturing Fleeting Interview Insights</h3>
+          <p>
+            Overlay syki::sok over Figma or browser windows with a single hotkey. The autonomous IME shield prevents mode-switching typos even when alternating between English terminology and CJK languages.
+          </p>
+          <div class="usecase-quote">
+            Capture fleeting insights that evaporate while waiting for heavy editors to load.
+          </div>
+        </div>
+
+        <!-- Case 2 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Design Engineers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Design Systems &amp; Spec Authoring</span>
+          </div>
+          <h3>Instant Screen Flow Modeling with Mermaid</h3>
+          <p>
+            Author UI states and modal transition logic in text while inspecting real-time Mermaid diagrams (<code>Ctrl+\</code>). Documentation and architectural diagrams remain synchronized as pure plain text.
+          </p>
+          <div class="usecase-quote">
+            Structure early-stage screen flows directly in Markdown without launching heavy diagram tools.
+          </div>
+        </div>
+
+        <!-- Case 3 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Software Engineers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Debugging &amp; Terminal Pipelines</span>
+          </div>
+          <h3>Piping Logs &amp; Real-Time In-Editor Formatting</h3>
+          <p>
+            Run <code>docker logs ... | syki</code> or <code>curl ... | syki</code> to stream terminal output straight into your buffer. Apply <code>jq</code> or <code>prettier</code> from the Command Bar (<code>Ctrl+E</code>) and ask the AI about the result with <code>Ctrl+L</code>.
+          </p>
+          <div class="usecase-quote">
+            Eliminate copy-paste roundtrips between terminal and editor; pipe logs directly into AI analysis.
+          </div>
+        </div>
+
+        <!-- Case 4 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Knowledge Workers</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Obsidian / Notion Vault Integration</span>
+          </div>
+          <h3>Two-Tier Architecture: Fast Buffer &amp; Deep Vault</h3>
+          <p>
+            Set syki::sok's storage folder directly to your active Obsidian <code>Daily Notes/</code> directory. Rapid daily brain-dumps happen in zero-lag syki::sok, and are reviewed in Obsidian's link graph at dusk.
+          </p>
+          <div class="usecase-quote">
+            Unite the archival durability of a knowledge vault with the zero-latency mobility of a scratchpad.
+          </div>
+        </div>
+
+        <!-- Case 5 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Field Notes &amp; Mobile Capture</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Mobile Drop + Voice Notes</span>
+          </div>
+          <h3>Whiteboard Photo and Voice Note, One Send from Your Phone</h3>
+          <p>
+            Scan the Mobile Drop QR code, snap the whiteboard, add a quick voice note, and press "Send all". Photos go through vision OCR and voice notes through Gemini transcription, arriving as one heading per item in your scratchpad.
+          </p>
+          <div class="usecase-quote">
+            Capture a meeting's whiteboard and your spoken take on it before you have even sat back down.
+          </div>
+        </div>
+
+        <!-- Case 6 -->
+        <div class="usecase-card">
+          <div class="usecase-persona">
+            <span class="usecase-badge">Reports &amp; Spreadsheets</span>
+            <span style="font-size: 13px; color: var(--text-tertiary);">Smart Paste</span>
+          </div>
+          <h3>An Excel Range Becomes a Markdown Table in One Paste</h3>
+          <p>
+            Copy cells in Excel or a table in Word and press <code>Ctrl+V</code>. The built-in converter turns the clipboard HTML into a GFM table with column alignment; <code>Ctrl+Shift+V</code> pastes the text only, as it is.
+          </p>
+          <div class="usecase-quote">
+            No more retyping pipes and dashes to move a table into a note.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Section: Shortcuts -->
+  <section class="section" id="shortcuts">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-tag">Efficiency</div>
+        <h2 class="section-title">Maximum Logs with Minimal Motion</h2>
+        <p class="section-desc">
+          Never reach for your mouse. Every core action is tuned for fingertip reflex.
+        </p>
+      </div>
+
+      <div class="shortcuts-grid">
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Global Summon (Bring to Front)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>M</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>M</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Parallel Full-Text Scrap Grep</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>F</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Accept Ghost Text Suggestion</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>&rarr;</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Suggest Quick Actions (What to do next)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>J</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Ask AI (Selection, Line or Whole Note)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>L</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Auto Selector (Ask AI / Agent / Command, Decided from the Line)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Enter</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Command Bar (CLI Filters / AI CLI Agent, Tab switches)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>E</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Split View / Real-Time Preview</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>\</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Move Selected / Current Line Up or Down</span>
+          <div class="kbd-wrap">
+            <kbd>Alt</kbd><kbd>&uarr;</kbd><kbd>&darr;</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Command &amp; Action Palette</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>P</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Find in Current Active Buffer</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>F</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Paste (plain text / image OCR)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Paste as it is (no conversion)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Voice Input (Dictate, rebindable)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>R</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Open Preview to the Side</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>V</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Mobile Drop (Phone QR Code)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>U</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Quick Capture Popup (Windows only, rebindable)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Q</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Zen Mode (Distraction-Free Writing)</span>
+          <div class="kbd-wrap">
+            <kbd>Shift</kbd><kbd>F11</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Full Screen (title bar and taskbar hidden)</span>
+          <div class="kbd-wrap">
+            <kbd>F11</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Open Link / Reveal in Explorer</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Click</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>Alt</kbd><kbd>Click</kbd>
+          </div>
+        </div>
+      </div>
+
+      <!-- Architecture Topology Box -->
+      <div class="arch-box">
+        <div style="margin-bottom: 16px; font-weight: 600; font-size: 15px;">System Topology (High-Bandwidth Compiled Go Engine)</div>
+        <pre class="arch-code"><code>[ Frontend: Monospace Canvas / Ghost Overlay / Scrap Search UI ]
+                              ▲
+                              │ Bi-directional RPC Bridge (WebView2 / WKWebView)
+                              ▼
+[ Core Engine: Go 1.26 / OS-Native WebView / Native Panels (COM/Cocoa) ]
+       │
+       ├─► CLI Pipes &amp; TCP IPC (127.0.0.1:49152)
+       ├─► Air-Gapped Local LLM Engine (Ollama / vLLM / LM Studio)
+       ├─► Daily Scraps Aggregator (scraps/YYYY-MM-DD.md)
+       ├─► Hot Folder (images / audio &rarr; OCR / transcription &rarr; scraps)
+       ├─► Parallel Grep Engine (runtime.NumCPU() Zero-Allocation Scan)
+       ├─► Background Git Sync (Silent Push after 30s Idle)
+       ├─► Direct File I/O (Auto-Encoding Detection)
+       └─► Aggressive Memory Reclamation (Active GC on Hide: 5–15 MB)</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA Banner -->
+  <section class="container">
+    <div class="cta-banner" id="cta">
+      <h2>Zero Seconds: From Thought to Log Reflection.</h2>
+      <p>
+        Engineered for Windows &amp; macOS. Zero startup lag, zero input mode friction. Get started immediately via the standalone portable binary or Homebrew.
+      </p>
+      <div class="hero-cta" style="margin-bottom: 0;">
+        <a href="https://github.com/youshinh/syki-sok/releases" class="btn btn-primary">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Download from Releases
+        </a>
+        <a href="https://github.com/youshinh/syki-sok" target="_blank" rel="noopener" class="btn btn-secondary">
+          Star on GitHub
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div style="display:flex; align-items:center; gap:10px;">
+        <img src="./app.png" alt="syki::sok" style="width:20px; height:20px; border-radius:4px;">
+        <span>syki::sok &copy; 2026 youshinh. Released under the MIT License.</span>
+      </div>
+      <ul class="footer-links">
+        <li><a href="index_ja.html">日本語翻訳 (JA)</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/blob/main/README.md" target="_blank">Documentation (EN)</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/blob/main/README_JA.md" target="_blank">ドキュメント (JA)</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok/releases" target="_blank">Release Notes</a></li>
+        <li><a href="https://github.com/youshinh/syki-sok" target="_blank">GitHub</a></li>
+      </ul>
+    </div>
+  </footer>
+
+  <!-- Interactive Scripts -->
+  <script>
+    // 1. Theme Toggle
+    const themeToggleBtn = document.getElementById('themeToggle');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    let currentTheme = localStorage.getItem('theme') || (prefersDark ? 'dark' : 'light');
+
+    function applyTheme(theme) {
+      if (theme === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
+      } else {
+        document.documentElement.removeAttribute('data-theme');
+      }
+      localStorage.setItem('theme', theme);
+    }
+    applyTheme(currentTheme);
+
+    themeToggleBtn.addEventListener('click', () => {
+      currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      applyTheme(currentTheme);
+    });
+
+    // 2. Showcase Tab Switcher
+    const tabs = document.querySelectorAll('.showcase-tab');
+    const showcaseImg = document.getElementById('showcaseImg');
+    const showcaseText = document.getElementById('showcaseText');
+    const showcaseKey = document.getElementById('showcaseKey');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+
+        const newSrc = tab.getAttribute('data-img');
+        const newDesc = tab.getAttribute('data-desc');
+        const newKey = tab.getAttribute('data-key');
+
+        showcaseImg.style.opacity = '0.4';
+        setTimeout(() => {
+          showcaseImg.src = newSrc;
+          showcaseText.textContent = newDesc;
+          showcaseKey.textContent = newKey;
+          showcaseImg.style.opacity = '1';
+        }, 150);
+      });
+    });
+
+    // 3. Install Command Copy
+    const copyBtn = document.getElementById('copyBtn');
+    const copyText = document.getElementById('copyText');
+    const installCmd = document.getElementById('installCmd');
+
+    copyBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(installCmd.textContent.trim());
+        copyText.textContent = 'Copied!';
+        copyBtn.style.color = 'var(--accent-emerald)';
+        copyBtn.style.borderColor = 'var(--accent-emerald)';
+        setTimeout(() => {
+          copyText.textContent = 'Copy';
+          copyBtn.style.color = '';
+          copyBtn.style.borderColor = '';
+        }, 2000);
+      } catch (err) {
+        copyText.textContent = 'Failed';
+      }
+    });
+  </script>
+</body>
+</html>
