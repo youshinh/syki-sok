@@ -123,6 +123,12 @@
     // back to the editor's box, then to the body.
     const host = document.getElementById('workspace') || document.getElementById('editor-wrapper') || document.body;
     host.appendChild(jevPanelEl);
+
+    // Prevent clicking on the panel cards/hints from taking focus away from the editor
+    jevPanelEl.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+    });
+
     renderHints();
 
     // The panel has nothing of its own to focus: the editor's blur/focus drive the fade (see bindEvents).
@@ -174,7 +180,7 @@
     if (badge) badge.textContent = getHintText('badgeSuggest') || 'Suggest';
     el.innerHTML =
       `${kbd(getModLabel() + '+1..3')} ${text('jevHintRun')} / ` +
-      `${kbd('Tab')} ${text('jevHintMove')} → ${kbd('Enter')} ${text('jevHintConfirm')} / ` +
+      `${kbd('Tab')} / ${kbd('↑↓')} ${text('jevHintMove')} → ${kbd('Enter')} ${text('jevHintConfirm')} / ` +
       `${kbd('Esc')} ${text('jevHintClose')}`;
   }
 
@@ -211,17 +217,10 @@
       schedulePrediction();
     });
 
-    // 2. The panel floats over the editor and has nothing of its own to focus (its
-    // candidate cards are plain divs, not buttons, so clicking one never steals focus
-    // away from the editor): a real blur means the user's attention genuinely left this
-    // editor (clicked a toolbar button, switched tabs/panes, opened Settings, ...), so
-    // there is nothing left for the panel to float over. Otherwise it would sit there
-    // until Esc even after the user has clearly moved on. It goes gently: a 0.4 s grace,
-    // then a 0.2 s fade, cancelled if focus comes back (panel_fade.js); Alt+Tab away
-    // and back does not close it.
+    // 2. Focus leaving the editor closes the panel immediately
     ed.addEventListener('blur', () => {
       if (!isPanelVisible) return;
-      if (panelFade) panelFade.arm(); else hidePanel();
+      hidePanel();
     });
     ed.addEventListener('focus', () => {
       if (panelFade) panelFade.cancel();
@@ -234,9 +233,9 @@
   }
 
   // The open panel's key bindings:
-  //   Tab / Ctrl+Tab  move the highlight (+Shift: back); a plain Enter then confirms it
-  //   Ctrl+1..3       run that candidate immediately (Cmd+1..3 on macOS; Alt+1..3 also works)
-  //   Esc             close
+  //   Tab / Ctrl+Tab / ↑ / ↓  move the highlight (+Shift: back); a plain Enter then confirms it
+  //   Ctrl+1..3               run that candidate immediately (Cmd+1..3 on macOS; Alt+1..3 also works)
+  //   Esc                     close
   // Registered on window in the CAPTURE phase so these keys beat every other handler:
   // app.js's editor Tab-indent (which would otherwise insert spaces or accept a ghost-text
   // suggestion), SlotAgent's capture-phase Ctrl+Enter, and the window-level Ctrl+Tab (switch
@@ -257,12 +256,17 @@
 
     if (isExecuting) return;
 
-    if (e.key === 'Tab' && !e.altKey && !e.metaKey) {
+    if ((e.key === 'Tab' && !e.altKey && !e.metaKey) ||
+        ((e.key === 'ArrowDown' || e.key === 'ArrowUp') && !e.altKey && !e.ctrlKey && !e.metaKey)) {
       e.preventDefault();
       e.stopPropagation();
       const count = currentCandidates.length;
       if (count > 0) {
-        selectedIndex = (selectedIndex + (e.shiftKey ? count - 1 : 1)) % count;
+        if (e.key === 'ArrowUp' || (e.key === 'Tab' && e.shiftKey)) {
+          selectedIndex = (selectedIndex + count - 1) % count;
+        } else {
+          selectedIndex = (selectedIndex + 1) % count;
+        }
         hasNavigated = true;
         renderSlots();
       }
@@ -308,11 +312,14 @@
       if (global.__recentlyDraggedPanel) return;
       if (typeof document !== 'undefined' && document.body && document.body.classList.contains('is-panel-dragging')) return;
       if (isPanelVisible && jevPanelEl && !jevPanelEl.contains(e.target) && !isEditorEl(e.target)) {
-        if (panelFade) panelFade.arm(); else hidePanel();
+        hidePanel();
       }
     });
 
     if (global.addEventListener) {
+      global.addEventListener('blur', () => {
+        if (isPanelVisible) hidePanel();
+      });
       global.addEventListener('keydown', onPanelKeydown, true);
 
       // The panel is docked relative to the caret; re-evaluate when the box moves.

@@ -221,6 +221,18 @@ async function runTests() {
   assert.deepStrictEqual(selectedFlags(), [false, true, false], 'plain Shift+Tab moves back, same as Ctrl+Shift+Tab');
   console.log('✔ Plain Tab / Shift+Tab move the highlight while the panel is open, and never reach the editor');
 
+  // 3b2. ArrowDown and ArrowUp also navigate candidates while the panel is open
+  reachedEditor = 0;
+  r = press(editorEl, { key: 'ArrowDown' });
+  assert(r.prevented, 'ArrowDown must be prevented by the panel while it is open');
+  assert.strictEqual(reachedEditor, 0, 'ArrowDown must not reach the editor handler while the panel is open');
+  assert.deepStrictEqual(selectedFlags(), [false, false, true], 'ArrowDown moves highlight forward');
+  r = press(editorEl, { key: 'ArrowUp' });
+  assert(r.prevented, 'ArrowUp must be prevented by the panel while it is open');
+  assert.strictEqual(reachedEditor, 0, 'ArrowUp must not reach the editor handler while the panel is open');
+  assert.deepStrictEqual(selectedFlags(), [false, true, false], 'ArrowUp moves highlight backward');
+  console.log('✔ ArrowDown / ArrowUp move the highlight while the panel is open, and never reach the editor');
+
   // 3c. Once the panel is gone, Tab goes back to being an ordinary indent.
   JevAction.hidePanel();
   reachedEditor = 0;
