@@ -6868,6 +6868,44 @@
     if (!o.quiet) inlinePromptInput.focus(); // quiet: the bar follows the person to another note without taking the focus from it
   }
 
+  // Toggles the open bar between Ask (Ctrl+L) and Rewrite (Ctrl+K) mode without losing typed prompt
+  function toggleInlinePromptMode() {
+    const held = currentInlinePromptContext;
+    if (!isAskBarOpen() || !held || held.onSubmit) return;
+    const newMode = held.mode === 'rewrite' ? 'ask' : 'rewrite';
+    const curTab = getTab(held.tabId);
+    if (!curTab) return;
+    const editor = editorForTab(curTab.id);
+    const text = editor ? editor.value : (curTab.content || '');
+    let target = held.target;
+
+    if (newMode === 'rewrite') {
+      if (target.kind === 'note' || target.kind === 'none') {
+        const start = editor ? editor.selectionStart : 0;
+        const end = editor ? editor.selectionEnd : 0;
+        const resolved = resolveAskTarget(text, start, end);
+        if (resolved.kind === 'note' || resolved.kind === 'none') {
+          showMessage(t('aiCorrectionNoText'), 3000);
+          return;
+        }
+        target = resolved;
+      }
+    }
+
+    held.mode = newMode;
+    held.target = target;
+    const isRewrite = newMode === 'rewrite';
+    inlinePromptBar.classList.toggle('inline-prompt-rewrite', isRewrite);
+    if (inlinePromptBadge) inlinePromptBadge.textContent = t(isRewrite ? 'badgeRewrite' : 'badgeAsk');
+    inlinePromptInput.placeholder = t(isRewrite ? 'rewritePlaceholder' : (held.recordInstruction ? 'askPlaceholderRecord' : 'inlinePromptPlaceholder'));
+    if (inlinePromptTarget) {
+      inlinePromptTarget.textContent = askTargetLabel(target);
+      inlinePromptTarget.title = target.text.length > 300 ? target.text.substring(0, 300) + '...' : target.text;
+    }
+    if (inlinePromptHint) inlinePromptHint.textContent = t(isRewrite ? 'rewriteKeysHint' : (held.recordInstruction ? 'askRecordHint' : 'askKeysHint'));
+    updateAskDestination(isLlmConfigured(false));
+  }
+
   // True when the open bar's target is no longer the one a fresh open would take: another note is in the pane the person works in, the
   // shortcut asks for the other mode, or the note's selection is not where it was when the bar opened.
   function askBarOutdated(held, mode) {
@@ -7466,7 +7504,13 @@
   if (inlinePromptInput) {
     inlinePromptInput.addEventListener('input', () => { if (askErrorShown) setInlinePromptError(null); });
     inlinePromptInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter') {
+      if (e.key === 'Tab') {
+        if (!e.altKey && !e.ctrlKey && !e.metaKey) {
+          e.preventDefault();
+          e.stopPropagation();
+          toggleInlinePromptMode();
+        }
+      } else if (e.key === 'Enter') {
         if (isImeComposingKey(e)) return;
         e.preventDefault();
         executeInlinePromptQuery();
