@@ -90,46 +90,9 @@
     cardClasses(tone, look).forEach(function (c) { container.classList.add(c); });
     const doc = container.ownerDocument;
 
-    // Remove existing actions bar if any
-    const oldActions = container.querySelector('.mermaid-card-actions');
-    if (oldActions) oldActions.remove();
-
-    const actionsBar = doc.createElement('div');
-    actionsBar.className = 'mermaid-card-actions';
-
-    if (extraActions && extraActions.onCopy) {
-      const copyBtn = doc.createElement('button');
-      copyBtn.type = 'button';
-      copyBtn.className = 'mermaid-action-btn';
-      copyBtn.title = extraActions.copyTitle || 'Copy as image';
-      copyBtn.setAttribute('aria-label', copyBtn.title);
-      copyBtn.innerHTML = COPY_ICON;
-      copyBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        extraActions.onCopy();
-      });
-      actionsBar.appendChild(copyBtn);
-    }
-
-    if (extraActions && extraActions.onSave) {
-      const saveBtn = doc.createElement('button');
-      saveBtn.type = 'button';
-      saveBtn.className = 'mermaid-action-btn';
-      saveBtn.title = extraActions.saveTitle || 'Save as image';
-      saveBtn.setAttribute('aria-label', saveBtn.title);
-      saveBtn.innerHTML = SAVE_ICON;
-      saveBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
-        extraActions.onSave();
-      });
-      actionsBar.appendChild(saveBtn);
-    }
-
     const toneBtn = doc.createElement('button');
     toneBtn.type = 'button';
-    toneBtn.className = 'mermaid-tone-btn mermaid-action-btn';
+    toneBtn.className = 'mermaid-tone-btn' + (extraActions ? ' mermaid-action-btn' : '');
     toneBtn.title = title;
     toneBtn.setAttribute('aria-label', title);
     toneBtn.innerHTML = TONE_ICON;
@@ -138,9 +101,51 @@
       e.stopPropagation();
       onFlip();
     });
-    actionsBar.appendChild(toneBtn);
 
-    container.appendChild(actionsBar);
+    if (extraActions && (extraActions.onCopy || extraActions.onSave)) {
+      if (typeof container.querySelector === 'function') {
+        const oldActions = container.querySelector('.mermaid-card-actions');
+        if (oldActions && typeof oldActions.remove === 'function') oldActions.remove();
+      }
+
+      const actionsBar = doc.createElement('div');
+      actionsBar.className = 'mermaid-card-actions';
+
+      if (extraActions.onCopy) {
+        const copyBtn = doc.createElement('button');
+        copyBtn.type = 'button';
+        copyBtn.className = 'mermaid-action-btn';
+        copyBtn.title = extraActions.copyTitle || 'Copy as image';
+        copyBtn.setAttribute('aria-label', copyBtn.title);
+        copyBtn.innerHTML = COPY_ICON;
+        copyBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          extraActions.onCopy();
+        });
+        actionsBar.appendChild(copyBtn);
+      }
+
+      if (extraActions.onSave) {
+        const saveBtn = doc.createElement('button');
+        saveBtn.type = 'button';
+        saveBtn.className = 'mermaid-action-btn';
+        saveBtn.title = extraActions.saveTitle || 'Save as image';
+        saveBtn.setAttribute('aria-label', saveBtn.title);
+        saveBtn.innerHTML = SAVE_ICON;
+        saveBtn.addEventListener('click', function (e) {
+          e.preventDefault();
+          e.stopPropagation();
+          extraActions.onSave();
+        });
+        actionsBar.appendChild(saveBtn);
+      }
+
+      actionsBar.appendChild(toneBtn);
+      container.appendChild(actionsBar);
+    } else {
+      container.appendChild(toneBtn);
+    }
   }
 
   global.MermaidTone = {

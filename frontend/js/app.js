@@ -1146,11 +1146,13 @@
     svgClone.setAttribute('width', width);
     svgClone.setAttribute('height', height);
 
-    // Determine background color based on container's rendered style
-    const containerStyle = window.getComputedStyle(container);
-    let bgColor = containerStyle.backgroundColor;
-    if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
-      bgColor = container.classList.contains('tone-dark') ? '#1e1e1e' : '#ffffff';
+    // Determine background color based on container's rendered style or CSS tokens
+    const bodyStyle = window.getComputedStyle ? window.getComputedStyle(document.body) : null;
+    const darkBg = (bodyStyle && bodyStyle.getPropertyValue('--bg-mermaid-dark').trim()) || '';
+    const lightBg = (bodyStyle && bodyStyle.getPropertyValue('--bg-mermaid-light').trim()) || '';
+    let bgColor = window.getComputedStyle(container).backgroundColor;
+    if (!bgColor || bgColor === 'transparent' || bgColor.includes('(0, 0, 0, 0)')) {
+      bgColor = container.classList.contains('tone-dark') ? darkBg : lightBg;
     }
 
     const svgXml = new XMLSerializer().serializeToString(svgClone);
@@ -5130,9 +5132,6 @@
           if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
             const histHeader = `# History: ${reqInfo.tabTitle || baseFileName}\n- Archived: ${now.toLocaleString()}\n- Source: ${parentPath || '(Unsaved Note)'}\n\n---\n\n`;
             window.backend.saveFile(histFullPath, histHeader + reqInfo.originalText, reqInfo.tabEncoding || 'UTF-8');
-            // Append markdown link that is hidden in preview (HTML comment styled or collapsible/subtle)
-            // Using [<!-- 履歴: 元のテキスト -->](linkPath) or <a href="linkPath" style="display:none">
-            cleanedResult += `\n[<!-- 履歴: 元のテキスト -->](${linkPath})`;
           }
         } catch (histErr) {
           console.warn('Failed to archive rewrite original text:', histErr);
@@ -12170,6 +12169,9 @@ STRICT SYNTAX SAFETY RULES:
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
     hideAllContextMenus();
+    if (window.ChromeLayout && !window.ChromeLayout.hasVisibleItems('context')) {
+      return;
+    }
 
     // 1. Right-click on Tab Item or Tab Strip
     const tabEl = e.target.closest ? e.target.closest('.tab-item') : null;

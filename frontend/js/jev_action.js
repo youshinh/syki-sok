@@ -217,10 +217,11 @@
       schedulePrediction();
     });
 
-    // 2. Focus leaving the editor closes the panel immediately
+    // 2. The panel floats over the editor and has nothing of its own to focus:
+    // the editor's blur drives the fade when panelFade is enabled
     ed.addEventListener('blur', () => {
       if (!isPanelVisible) return;
-      hidePanel();
+      if (panelFade) panelFade.arm(); else hidePanel();
     });
     ed.addEventListener('focus', () => {
       if (panelFade) panelFade.cancel();
