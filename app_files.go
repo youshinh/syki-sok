@@ -88,6 +88,30 @@ func (a *App) OpenExternal(targetURL string) error {
 	return cmd.Start()
 }
 
+// ShowInFileExplorer reveals the given file in the native file manager (Explorer, Finder, or file manager).
+func (a *App) ShowInFileExplorer(filePath string) error {
+	filePath = filepath.Clean(filePath)
+	if filePath == "" {
+		return fmt.Errorf("empty file path")
+	}
+
+	var cmd *exec.Cmd
+	switch runtime.GOOS {
+	case "windows":
+		// explorer /select,"C:\path\to\file"
+		cmd = exec.Command("explorer", "/select,", filePath)
+	case "darwin":
+		// open -R "/path/to/file"
+		cmd = exec.Command("open", "-R", filePath)
+	default:
+		// Linux: try to open the directory containing the file
+		dir := filepath.Dir(filePath)
+		cmd = exec.Command("xdg-open", dir)
+	}
+	setCmdWindowFlags(cmd)
+	return cmd.Start()
+}
+
 func getSessionFilePath() string {
 	configDir, err := appdir.ConfigDir()
 	if err != nil {
@@ -439,6 +463,11 @@ func (a *App) SaveFile(path, content, enc string) (*SaveResult, error) {
 	encoded, err := encoding.Encode(content, enc)
 	if err != nil {
 		return nil, fmt.Errorf("エンコードエラー: %w", err)
+	}
+
+	dir := filepath.Dir(path)
+	if dir != "" && dir != "." {
+		_ = os.MkdirAll(dir, 0755)
 	}
 
 	if err := os.WriteFile(path, encoded, 0644); err != nil {

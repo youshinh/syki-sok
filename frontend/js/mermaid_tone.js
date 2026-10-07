@@ -67,25 +67,80 @@
     'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<circle cx="12" cy="12" r="9"/><path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor"/></svg>';
 
-  // Turns the <pre> that held the diagram source into the diagram's card and gives it the flip button.
-  // `onFlip` is called with no arguments when the button is pressed.
-  function decorate(container, tone, title, onFlip, look) {
+  const COPY_ICON =
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/>' +
+    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>' +
+    '</svg>';
+
+  const SAVE_ICON =
+    '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+    'stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
+    '<polyline points="7 10 12 15 17 10"/>' +
+    '<line x1="12" y1="15" x2="12" y2="3"/>' +
+    '</svg>';
+
+  // Turns the <pre> that held the diagram source into the diagram's card and gives it action buttons.
+  // extraActions: { copyTitle, onCopy, saveTitle, onSave }
+  function decorate(container, tone, title, onFlip, look, extraActions) {
     if (!container) return;
     container.classList.remove('tone-dark', 'tone-light', 'tone-neutral', 'tone-forest');
     cardClasses(tone, look).forEach(function (c) { container.classList.add(c); });
     const doc = container.ownerDocument;
-    const btn = doc.createElement('button');
-    btn.type = 'button';
-    btn.className = 'mermaid-tone-btn';
-    btn.title = title;
-    btn.setAttribute('aria-label', title);
-    btn.innerHTML = TONE_ICON;
-    btn.addEventListener('click', function (e) {
+
+    // Remove existing actions bar if any
+    const oldActions = container.querySelector('.mermaid-card-actions');
+    if (oldActions) oldActions.remove();
+
+    const actionsBar = doc.createElement('div');
+    actionsBar.className = 'mermaid-card-actions';
+
+    if (extraActions && extraActions.onCopy) {
+      const copyBtn = doc.createElement('button');
+      copyBtn.type = 'button';
+      copyBtn.className = 'mermaid-action-btn';
+      copyBtn.title = extraActions.copyTitle || 'Copy as image';
+      copyBtn.setAttribute('aria-label', copyBtn.title);
+      copyBtn.innerHTML = COPY_ICON;
+      copyBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        extraActions.onCopy();
+      });
+      actionsBar.appendChild(copyBtn);
+    }
+
+    if (extraActions && extraActions.onSave) {
+      const saveBtn = doc.createElement('button');
+      saveBtn.type = 'button';
+      saveBtn.className = 'mermaid-action-btn';
+      saveBtn.title = extraActions.saveTitle || 'Save as image';
+      saveBtn.setAttribute('aria-label', saveBtn.title);
+      saveBtn.innerHTML = SAVE_ICON;
+      saveBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        extraActions.onSave();
+      });
+      actionsBar.appendChild(saveBtn);
+    }
+
+    const toneBtn = doc.createElement('button');
+    toneBtn.type = 'button';
+    toneBtn.className = 'mermaid-tone-btn mermaid-action-btn';
+    toneBtn.title = title;
+    toneBtn.setAttribute('aria-label', title);
+    toneBtn.innerHTML = TONE_ICON;
+    toneBtn.addEventListener('click', function (e) {
       e.preventDefault();
       e.stopPropagation();
       onFlip();
     });
-    container.appendChild(btn);
+    actionsBar.appendChild(toneBtn);
+
+    container.appendChild(actionsBar);
   }
 
   global.MermaidTone = {

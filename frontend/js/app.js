@@ -1114,6 +1114,136 @@
     renderSecondaryPreview();
   }
 
+  // Rasterizes a Mermaid SVG element to an HTML5 Canvas at high DPI (scale 2)
+  async function rasterizeMermaidSvgToCanvas(container) {
+    if (!container) throw new Error('Container not found');
+    const svgEl = container.querySelector('svg');
+    if (!svgEl) throw new Error('SVG element not found in diagram container');
+
+    const svgClone = svgEl.cloneNode(true);
+    // Ensure XML namespace attributes
+    if (!svgClone.getAttribute('xmlns')) {
+      svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    }
+
+    // Measure bounding box or attributes
+    const rect = svgEl.getBoundingClientRect();
+    let width = parseFloat(svgEl.getAttribute('width')) || rect.width || 800;
+    let height = parseFloat(svgEl.getAttribute('height')) || rect.height || 600;
+
+    // Fallback to viewBox if width/height are 100% or invalid
+    const viewBox = svgEl.getAttribute('viewBox');
+    if (viewBox && (width <= 0 || height <= 0 || width > 5000)) {
+      const parts = viewBox.trim().split(/[\s,]+/).map(Number);
+      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+        width = parts[2];
+        height = parts[3];
+      }
+    }
+    if (width <= 0) width = 800;
+    if (height <= 0) height = 600;
+
+    svgClone.setAttribute('width', width);
+    svgClone.setAttribute('height', height);
+
+    // Determine background color based on container's rendered style
+    const containerStyle = window.getComputedStyle(container);
+    let bgColor = containerStyle.backgroundColor;
+    if (!bgColor || bgColor === 'rgba(0, 0, 0, 0)' || bgColor === 'transparent') {
+      bgColor = container.classList.contains('tone-dark') ? '#1e1e1e' : '#ffffff';
+    }
+
+    const svgXml = new XMLSerializer().serializeToString(svgClone);
+    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const scale = window.devicePixelRatio && window.devicePixelRatio > 1 ? 2 : 2;
+          const canvas = document.createElement('canvas');
+          canvas.width = Math.round(width * scale);
+          canvas.height = Math.round(height * scale);
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            URL.revokeObjectURL(url);
+            reject(new Error('Failed to get canvas 2d context'));
+            return;
+          }
+
+          // Fill background
+          ctx.fillStyle = bgColor;
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+          // Draw high-resolution SVG
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          URL.revokeObjectURL(url);
+          resolve(canvas);
+        } catch (err) {
+          URL.revokeObjectURL(url);
+          reject(err);
+        }
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to render SVG image'));
+      };
+      img.src = url;
+    });
+  }
+
+  // Copy Mermaid diagram as PNG to clipboard
+  async function copyMermaidDiagramAsPng(container) {
+    try {
+      const canvas = await rasterizeMermaidSvgToCanvas(container);
+      if (canvas.toBlob && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+        canvas.toBlob(async (blob) => {
+          if (!blob) {
+            showMessage(t('mermaidExportError', { err: 'Blob conversion failed' }), 3000, { important: true });
+            return;
+          }
+          try {
+            await navigator.clipboard.write([
+              new ClipboardItem({ 'image/png': blob })
+            ]);
+            showMessage(t('mermaidCopiedImage'), 3000);
+          } catch (clipErr) {
+            // Fallback: download if clipboard item refused
+            downloadCanvasAsPng(canvas, 'diagram.png');
+            showMessage('Clipboard access restricted. Downloaded as PNG file instead.', 3000);
+          }
+        }, 'image/png');
+      } else {
+        downloadCanvasAsPng(canvas, 'diagram.png');
+        showMessage('Clipboard image not supported. Downloaded as PNG file.', 3000);
+      }
+    } catch (err) {
+      console.warn('Copy diagram error:', err);
+      showMessage(t('mermaidExportError', { err: err.message || String(err) }), 4000, { important: true });
+    }
+  }
+
+  // Save Mermaid diagram as PNG file
+  async function saveMermaidDiagramAsPng(container) {
+    try {
+      const canvas = await rasterizeMermaidSvgToCanvas(container);
+      downloadCanvasAsPng(canvas, `diagram_${Date.now()}.png`);
+    } catch (err) {
+      console.warn('Save diagram error:', err);
+      showMessage(t('mermaidExportError', { err: err.message || String(err) }), 4000, { important: true });
+    }
+  }
+
+  function downloadCanvasAsPng(canvas, filename) {
+    const a = document.createElement('a');
+    a.download = filename || 'diagram.png';
+    a.href = canvas.toDataURL('image/png');
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   async function ensureMermaidLibraries() {
     if (window.mermaid && mermaidLoaded) return;
     if (mermaidLoadingPromise) return mermaidLoadingPromise;
@@ -3625,7 +3755,12 @@
           try {
             const { svg } = await window.mermaid.render(id, diagramCode);
             container.innerHTML = svg;
-            window.MermaidTone.decorate(container, tone, t('mermaidToneToggle'), flipMermaidTone);
+            window.MermaidTone.decorate(container, tone, t('mermaidToneToggle'), flipMermaidTone, currentLook(), {
+              copyTitle: t('mermaidCopyImage'),
+              onCopy: () => copyMermaidDiagramAsPng(container),
+              saveTitle: t('mermaidSaveImage'),
+              onSave: () => saveMermaidDiagramAsPng(container)
+            });
           } catch (err) {
             container.innerHTML = '<div class="mermaid-error" style="color:var(--coral);">' + escapeHtml(t('mermaidError')) + escapeHtml(err.message) + '</div>';
           }
@@ -3693,17 +3828,49 @@
   // Intercept all in-preview link clicks to prevent in-webview navigation
   [previewPane, secondaryPreviewPane].forEach(pane => {
     if (!pane) return;
-    pane.addEventListener('click', (e) => {
+    pane.addEventListener('click', async (e) => {
       const link = e.target.closest('a');
-      if (link && link.href) {
+      if (link && (link.href || link.getAttribute('href'))) {
         e.preventDefault();
-        const href = link.getAttribute('href') || link.href;
-        if (href.startsWith('http://') || href.startsWith('https://') || href.startsWith('vscode://')) {
+        const rawHref = link.getAttribute('href') || link.href;
+        if (rawHref.startsWith('http://') || rawHref.startsWith('https://') || rawHref.startsWith('vscode://')) {
           if (window.backend && window.backend.openExternal) {
-            window.backend.openExternal(href);
+            window.backend.openExternal(rawHref);
           } else {
-            window.open(href, '_blank', 'noopener,noreferrer');
+            window.open(rawHref, '_blank', 'noopener,noreferrer');
           }
+          return;
+        }
+
+        // Local or relative file link: open directly in syki-sok tab!
+        let targetPath = rawHref;
+        if (targetPath.startsWith('file:///')) {
+          targetPath = decodeURIComponent(targetPath.replace(/^file:\/\/\/?/, ''));
+        }
+        // If relative path and current tab has a file path, resolve against current tab's folder
+        const curTab = getActiveTab();
+        if (curTab && curTab.path && !targetPath.includes(':') && !targetPath.startsWith('/') && !targetPath.startsWith('\\')) {
+          const sep = curTab.path.includes('\\') ? '\\' : '/';
+          const dir = curTab.path.substring(0, curTab.path.lastIndexOf(sep));
+          if (dir) {
+            targetPath = dir + sep + targetPath.replace(/[\\/]/g, sep);
+          }
+        }
+
+        if (window.backend && window.backend.readFileByPath) {
+          try {
+            const res = await window.backend.readFileByPath(targetPath);
+            if (res) {
+              createTab(res.title || targetPath.split(/[\\/]/).pop(), res.content, res.path || targetPath, res.encoding);
+              return;
+            }
+          } catch (err) {
+            console.warn('Failed to open local link in syki:', err);
+          }
+        }
+        // Fallback for missing backend or file error
+        if (window.backend && window.backend.openExternal) {
+          window.backend.openExternal(rawHref);
         }
       }
     });
@@ -4919,6 +5086,57 @@
       if (errorText || !cleanedResult || cleanedResult.trim() === '') {
         cleanedResult = reqInfo.originalText || '';
         isRollback = true;
+      } else if (reqInfo.originalText && reqInfo.originalText.trim() !== '') {
+        // Successful rewrite: archive original text to a unique MD file in history folder
+        try {
+          const histDirName = (config.general && config.general.rewriteHistoryDir) ? config.general.rewriteHistoryDir.trim() : 'history';
+          const parentPath = reqInfo.tabPath || '';
+          let baseDir = '';
+          let baseFileName = reqInfo.tabTitle || 'untitled';
+          if (parentPath) {
+            const sep = parentPath.includes('\\') ? '\\' : '/';
+            const lastSlash = parentPath.lastIndexOf(sep);
+            if (lastSlash !== -1) {
+              baseDir = parentPath.substring(0, lastSlash);
+              baseFileName = parentPath.substring(lastSlash + 1);
+            }
+          }
+          baseFileName = baseFileName.replace(/\.[^.]+$/, ''); // drop extension
+          // Sanitize OS forbidden filename characters (\ / : * ? " < > |) and whitespace
+          baseFileName = baseFileName.replace(/[\\/:*?"<>|\r\n\t]/g, '_').trim();
+          // Cap length to 50 chars to avoid MAX_PATH (260 chars) issues on Windows
+          if (baseFileName.length > 50) {
+            baseFileName = baseFileName.substring(0, 50).trim();
+          }
+          if (!baseFileName) baseFileName = 'note';
+
+          const pad = (n) => String(n).padStart(2, '0');
+          const now = new Date();
+          const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+          const histFileName = `${baseFileName}_history_${timestamp}.md`;
+
+          let histFullPath = '';
+          let linkPath = '';
+          if (baseDir) {
+            const sep = parentPath.includes('\\') ? '\\' : '/';
+            histFullPath = `${baseDir}${sep}${histDirName}${sep}${histFileName}`;
+            linkPath = `${histDirName}/${histFileName}`;
+          } else {
+            // Unsaved note fallback: save in AppData/scraps or local folder
+            linkPath = `${histDirName}/${histFileName}`;
+            histFullPath = histFileName;
+          }
+
+          if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
+            const histHeader = `# History: ${reqInfo.tabTitle || baseFileName}\n- Archived: ${now.toLocaleString()}\n- Source: ${parentPath || '(Unsaved Note)'}\n\n---\n\n`;
+            window.backend.saveFile(histFullPath, histHeader + reqInfo.originalText, reqInfo.tabEncoding || 'UTF-8');
+            // Append markdown link that is hidden in preview (HTML comment styled or collapsible/subtle)
+            // Using [<!-- 履歴: 元のテキスト -->](linkPath) or <a href="linkPath" style="display:none">
+            cleanedResult += `\n[<!-- 履歴: 元のテキスト -->](${linkPath})`;
+          }
+        } catch (histErr) {
+          console.warn('Failed to archive rewrite original text:', histErr);
+        }
       }
     } else if (reqId.startsWith('vision_') || reqId.startsWith('ocr_')) {
       cleanedResult = stripMarkdownCodeFences(cleanedResult);
@@ -6495,6 +6713,52 @@
     return true;
   }
 
+  const INLINE_REWRITE_PRESETS = [
+    { value: '/chat', label: 'チャット返信用 (Slack/Teams: 簡潔・口語調・迅速)', instruction: 'SlackやTeamsなどのビジネスチャット向けに、結論ファースト・簡潔・自然な口語調で書き直してください。' },
+    { value: '/email', label: 'ビジネスメール本文用 (敬語・礼儀・定型挨拶)', instruction: '社外・社内向けの丁寧なビジネスメールの文体として、適切な敬語・挨拶・用件・締めの構成で書き直してください。' },
+    { value: '/summary', label: '要約 (3箇条書き・重要エッセンス抽出)', instruction: '内容の最重要ポイントを3点以内の簡潔な箇条書きで要約してください。' },
+    { value: '/proofread', label: '文章校正・誤字脱字修正 (自然な日本語)', instruction: '元の文意やニュアンスを完全に保ったまま、誤字脱字・不自然な表現・助詞の重複を整えて自然な日本語に校正してください。' },
+    { value: '/polite', label: 'より丁寧な表現に書き直す', instruction: '相手に敬意と配慮が伝わる丁寧で柔らかな敬語表現に書き直してください。' },
+    { value: '/casual', label: 'フランク・親しみやすい表現に書き直す', instruction: '親しみやすく自然でフランクな口語表現に書き直してください。' },
+    { value: '/markdown', label: 'Markdown構造化 (見出し・箇条書き・表整形)', instruction: 'Markdownの見出し、箇条書き、必要に応じて表形式を用いて論理的で読みやすい構造に整理してください。' },
+    { value: '/translate-en', label: '英語に翻訳 (自然な英語・ビジネス英語)', instruction: '自然でこなれた英語（ビジネスシーンでも通用する表現）に翻訳してください。解説は不要です。' },
+    { value: '/translate-ja', label: '日本語に翻訳 (自然な日本語)', instruction: '自然で読みやすい日本語に翻訳してください。解説は不要です。' },
+  ];
+
+  async function refreshInlinePromptSuggestions(filePath) {
+    const datalist = document.getElementById('inline-prompt-suggestions');
+    if (!datalist) return;
+    datalist.innerHTML = '';
+
+    // 1. Built-in rewrite presets
+    INLINE_REWRITE_PRESETS.forEach(p => {
+      const opt = document.createElement('option');
+      opt.value = p.value;
+      opt.textContent = p.label;
+      datalist.appendChild(opt);
+    });
+
+    // 2. Discover skills from project and ~/.gemini/skills / ~/.claude/skills
+    if (window.backend && typeof window.backend.getAvailableSkillsJSON === 'function') {
+      try {
+        const raw = await window.backend.getAvailableSkillsJSON(filePath || '');
+        const skills = raw ? JSON.parse(raw) : [];
+        if (Array.isArray(skills)) {
+          skills.forEach(s => {
+            if (s && s.name && !INLINE_REWRITE_PRESETS.some(p => p.value === '/' + s.name)) {
+              const opt = document.createElement('option');
+              opt.value = '/' + s.name;
+              opt.textContent = `スキル: ${s.name}${s.description ? ' (' + s.description + ')' : ''}`;
+              datalist.appendChild(opt);
+            }
+          });
+        }
+      } catch (err) {
+        console.warn('Failed to load available skills for datalist:', err);
+      }
+    }
+  }
+
   // opts (all optional): { tabId, target: { text, start, end, kind? }, recordInstruction, onSubmit(instruction, ctx), mode }
   // Without onSubmit this is the quick ask: the answer lands below the target. With onSubmit the bar only collects
   // the instruction and hands it back (the caller writes the task line); ctx = { tabId, target, insertPos, recordInstruction }.
@@ -6601,6 +6865,7 @@
 
     // Every panel opens in the same place (top centre, 560px); it moves to the bottom edge only when the target would sit under it.
     dockPanelBar(inlinePromptBar, editor, (target.kind === 'selection' || o.target) ? target.end : start);
+    refreshInlinePromptSuggestions(curTab ? curTab.path : '');
     if (!o.quiet) inlinePromptInput.focus(); // quiet: the bar follows the person to another note without taking the focus from it
   }
 
@@ -6913,27 +7178,32 @@
       return;
     }
 
-    // Resolve /skill-name or @skill-name command if present (e.g. /review or @review ...)
+    // Resolve /command: built-in presets or /skill-name command
     const skillMatch = instruction.match(/^[/@]([a-zA-Z0-9_\-]+)(?:\s+([\s\S]*))?$/);
     if (skillMatch) {
       const skillName = skillMatch[1];
       const userPrompt = (skillMatch[2] || '').trim();
-      let skillInstruction = '';
-      if (window.backend && typeof window.backend.getSkillInstruction === 'function') {
-        try {
-          skillInstruction = await window.backend.getSkillInstruction(curTab.path || '', skillName);
-        } catch (e) {
-          console.warn('Skill instruction load failed:', e);
-        }
-      }
-      if (skillInstruction) {
-        if (userPrompt) {
-          instruction = `【スキル: ${skillName}】\n${skillInstruction}\n\n【指示】:\n${userPrompt}`;
-        } else {
-          instruction = `【スキル: ${skillName}】\n${skillInstruction}`;
-        }
+      const preset = INLINE_REWRITE_PRESETS.find(p => p.value === '/' + skillName);
+      if (preset) {
+        instruction = userPrompt ? `${preset.instruction}\n\n【追加指示】: ${userPrompt}` : preset.instruction;
       } else {
-        showMessage(`Skill "${skillName}" not found (skills/${skillName}/SKILL.md)`, 4000);
+        let skillInstruction = '';
+        if (window.backend && typeof window.backend.getSkillInstruction === 'function') {
+          try {
+            skillInstruction = await window.backend.getSkillInstruction(curTab.path || '', skillName);
+          } catch (e) {
+            console.warn('Skill instruction load failed:', e);
+          }
+        }
+        if (skillInstruction) {
+          if (userPrompt) {
+            instruction = `【スキル: ${skillName}】\n${skillInstruction}\n\n【指示】:\n${userPrompt}`;
+          } else {
+            instruction = `【スキル: ${skillName}】\n${skillInstruction}`;
+          }
+        } else {
+          showMessage(`Skill "${skillName}" not found (skills/${skillName}/SKILL.md)`, 4000);
+        }
       }
     }
     // The offsets the bar took when it opened are only good while the note is as it was then (typing, another answer landing).
@@ -7025,6 +7295,9 @@
 
       registerPendingLLMRequest(reqId, {
         tabId: curTab.id,
+        tabPath: curTab.path || '',
+        tabTitle: curTab.title || 'untitled',
+        tabEncoding: curTab.encoding || 'UTF-8',
         anchorId: anchorId,
         originalText: originalText,
         baseline: baseline,
@@ -8099,14 +8372,38 @@ ${tipText}
   if (btnCliFilterClose) btnCliFilterClose.onclick = closeCliFilterBar;
 
   // --- Degram-inspired Lightweight Diagram & Mermaid Engine ---
-  const DEGRAM_MERMAID_SYSTEM_PROMPT = `You are a Mermaid.js diagram expert. Convert the user's text into a clean, accurate Mermaid 11 diagram.
+  const DEGRAM_MERMAID_SYSTEM_PROMPT = `You are a Mermaid.js diagram expert and information architect. Convert the user's text into the most semantically fitting and accurate Mermaid 11 diagram.
+
+DIAGRAM TYPE ROUTING (CRITICAL: DO NOT DEFAULT TO FLOWCHART UNLESS IT IS A STEP-BY-STEP PROCESS):
+Analyze the semantic structure and intent of the user's text and STRICTLY select the best diagram type:
+1. SEQUENCE DIAGRAM (\`sequenceDiagram\`):
+   - Use when the text describes interaction between two or more actors/systems/APIs/services over time, message exchange, client-server requests/responses, or conversation flows.
+   - Example triggers: "クライアントとサーバー", "APIリクエスト", "ユーザーが注文するとシステムが...", "対話", "送受信".
+2. STATE DIAGRAM (\`stateDiagram-v2\`):
+   - Use when describing entity lifecycle, status transitions, modal states, connection statuses (e.g. idle -> active -> completed/failed).
+   - Example triggers: "ステータス遷移", "状態", "保留中/承認/却下", "ライフサイクル", "接続状態".
+3. CLASS DIAGRAM / ER DIAGRAM (\`classDiagram\` or \`erDiagram\`):
+   - Use when describing data models, database tables, object properties, schemas, or entity relationships (1:N, inheritance).
+   - Example triggers: "データ構造", "エンティティ", "テーブル定義", "User has many Posts", "クラス構成".
+4. MINDMAP (\`mindmap\`):
+   - Use when brainstorming, categorizing concepts, tree hierarchical topics, feature breakdowns, or nested taxonomy.
+   - Example triggers: "アイデア出し", "構成要素", "分類", "ブレインストーミング", "機能一覧".
+5. TIMELINE / GANTT (\`timeline\` or \`gantt\`):
+   - Use when describing chronological events, roadmap, historical dates, milestones, or schedules.
+   - Example triggers: "年表", "スケジュール", "ロードマップ", "Q1/Q2", "歴史", "○月○日".
+6. QUADRANT CHART (\`quadrantChart\`):
+   - Use when 2x2 matrix comparison is appropriate (e.g., Urgency vs Importance, Effort vs Impact, Cost vs Value).
+   - Example triggers: "4象限", "緊急度と重要度", "難易度と効果", "ポジショニング".
+7. FLOWCHART (\`flowchart TD\` or \`flowchart LR\`):
+   - ONLY use when the text specifically represents an operational decision tree, workflow with branches/conditions (if/then/else), algorithms, or standard procedural tasks.
+
 STRICT SYNTAX SAFETY RULES:
-1. Node IDs MUST be ASCII-only alphanumeric (e.g. A, Node1, ProcB). NEVER use Japanese or spaces in IDs.
+1. Node IDs MUST be ASCII-only alphanumeric (e.g. A, Node1, ProcB, ActorA). NEVER use Japanese or spaces in IDs.
 2. ALL labels must be enclosed in double quotes: id["Label Text"]. Use <br/> for line breaks inside labels.
-3. NEVER use the reserved word 'end' as an ID, participant, or label. Use Finish, EndStep, etc.
-4. Replace inner double quotes with single quotes. Use fullwidth （ ） for parentheses in labels.
-5. Flowchart subgraphs MUST use: subgraph SG1["Title"] ... end.
-6. Choose the best diagram type: flowchart, sequenceDiagram, stateDiagram-v2, mindmap, timeline, or quadrantChart.
+3. In sequence diagrams, define participants with clean ASCII aliases: participant C as "クライアント".
+4. NEVER use the reserved word 'end' as an ID, participant, or label. Use Finish, EndStep, etc.
+5. Replace inner double quotes with single quotes. Use fullwidth （ ） for parentheses in labels.
+6. Flowchart subgraphs MUST use: subgraph SG1["Title"] ... end.
 7. Return ONLY the markdown fenced mermaid code block (\`\`\`mermaid ... \`\`\`) with NO conversational filler or greetings.`;
 
   function convertSelectionToMermaid() {
@@ -11832,55 +12129,253 @@ STRICT SYNTAX SAFETY RULES:
     });
   }
 
-  window.addEventListener('contextmenu', (e) => {
-    e.preventDefault();
-    forgetContextTabUnlessOnTab(e.target);
-    syncTagContextItems();
-    hideTabsSubmenu(true);
-    syncTabsSubmenu();
-    if (window.ChromeLayout && !window.ChromeLayout.hasVisibleItems('context')) {
-      contextMenu.classList.add('hidden'); // every item is hidden in Settings: nothing to show
-      return;
-    }
-    contextMenu.classList.remove('hidden');
+  const tabContextMenu = document.getElementById('tab-context-menu');
+  const statusContextMenu = document.getElementById('status-context-menu');
 
-    const menuWidth = contextMenu.offsetWidth || 220;
-    const menuHeight = contextMenu.offsetHeight || 520;
+  function positionContextMenu(menuEl, x, y) {
+    menuEl.classList.remove('hidden');
+    const menuWidth = menuEl.offsetWidth || 220;
+    const menuHeight = menuEl.offsetHeight || 300;
     const padding = 8;
 
-    // Smart horizontal positioning
-    let left = e.clientX;
+    let left = x;
     if (left + menuWidth > window.innerWidth - padding) {
-      if (e.clientX - menuWidth >= padding) {
-        left = e.clientX - menuWidth;
+      if (x - menuWidth >= padding) {
+        left = x - menuWidth;
       } else {
         left = Math.max(padding, window.innerWidth - menuWidth - padding);
       }
     }
 
-    // Smart vertical positioning: if overflowing bottom, flip upwards or clamp within viewport
-    let top = e.clientY;
+    let top = y;
     if (top + menuHeight > window.innerHeight - padding) {
-      if (e.clientY - menuHeight >= padding) {
-        // Flip upwards so menu sits above cursor
-        top = e.clientY - menuHeight;
+      if (y - menuHeight >= padding) {
+        top = y - menuHeight;
       } else {
-        // Clamp to bottom with margin
         top = Math.max(padding, window.innerHeight - menuHeight - padding);
       }
     }
 
-    contextMenu.style.left = `${left}px`;
-    contextMenu.style.top = `${top}px`;
+    menuEl.style.left = `${left}px`;
+    menuEl.style.top = `${top}px`;
+  }
+
+  function hideAllContextMenus() {
+    if (contextMenu) contextMenu.classList.add('hidden');
+    if (tabContextMenu) tabContextMenu.classList.add('hidden');
+    if (statusContextMenu) statusContextMenu.classList.add('hidden');
+    hideTabsSubmenu(true);
+  }
+
+  window.addEventListener('contextmenu', (e) => {
+    e.preventDefault();
+    hideAllContextMenus();
+
+    // 1. Right-click on Tab Item or Tab Strip
+    const tabEl = e.target.closest ? e.target.closest('.tab-item') : null;
+    const tabStripEl = e.target.closest ? e.target.closest('.tab-strip') : null;
+    if (tabEl || tabStripEl) {
+      const targetId = tabEl ? tabEl.dataset.tabId : (contextMenuTargetTabId || activeTabId);
+      contextMenuTargetTabId = targetId || activeTabId;
+      if (tabContextMenu) {
+        positionContextMenu(tabContextMenu, e.clientX, e.clientY);
+        return;
+      }
+    }
+
+    // 2. Right-click on Status Bar
+    const statusBarEl = e.target.closest ? e.target.closest('#status-bar') : null;
+    if (statusBarEl && statusContextMenu) {
+      positionContextMenu(statusContextMenu, e.clientX, e.clientY);
+      return;
+    }
+
+    // 3. Regular Editor / Workspace Context Menu
+    forgetContextTabUnlessOnTab(e.target);
+    syncTagContextItems();
+    syncTabsSubmenu();
+    if (window.ChromeLayout && !window.ChromeLayout.hasVisibleItems('context')) {
+      return;
+    }
+    positionContextMenu(contextMenu, e.clientX, e.clientY);
   });
 
   window.addEventListener('click', (e) => {
     const subEl = document.getElementById('ctx-tabs-submenu');
-    if (!contextMenu.contains(e.target) && (!subEl || !subEl.contains(e.target))) {
-      contextMenu.classList.add('hidden');
-      hideTabsSubmenu(true);
+    const inCtx = contextMenu && contextMenu.contains(e.target);
+    const inTabCtx = tabContextMenu && tabContextMenu.contains(e.target);
+    const inStatCtx = statusContextMenu && statusContextMenu.contains(e.target);
+    const inSub = subEl && subEl.contains(e.target);
+    if (!inCtx && !inTabCtx && !inStatCtx && !inSub) {
+      hideAllContextMenus();
     }
   });
+
+  // Tab Header Context Menu Actions
+  if (tabContextMenu) {
+    const btnTabClose = document.getElementById('tab-ctx-close');
+    if (btnTabClose) {
+      btnTabClose.onclick = () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        closeTab(targetId);
+      };
+    }
+
+    const btnTabCloseOthers = document.getElementById('tab-ctx-close-others');
+    if (btnTabCloseOthers) {
+      btnTabCloseOthers.onclick = async () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        const otherTabs = tabs.filter(t => t.id !== targetId);
+        for (const t of otherTabs) {
+          await closeTab(t.id);
+        }
+      };
+    }
+
+    const btnTabCloseBelow = document.getElementById('tab-ctx-close-below');
+    if (btnTabCloseBelow) {
+      btnTabCloseBelow.onclick = async () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        const targetIdx = tabs.findIndex(t => t.id === targetId);
+        if (targetIdx !== -1) {
+          const belowTabs = tabs.slice(targetIdx + 1);
+          for (const t of belowTabs) {
+            await closeTab(t.id);
+          }
+        }
+      };
+    }
+
+    const btnTabCloseSaved = document.getElementById('tab-ctx-close-saved');
+    if (btnTabCloseSaved) {
+      btnTabCloseSaved.onclick = async () => {
+        hideAllContextMenus();
+        contextMenuTargetTabId = null;
+        const savedTabs = tabs.filter(t => !t.isDirty && t.path);
+        for (const t of savedTabs) {
+          await closeTab(t.id);
+        }
+      };
+    }
+
+    const btnTabCloseAll = document.getElementById('tab-ctx-close-all');
+    if (btnTabCloseAll) {
+      btnTabCloseAll.onclick = async () => {
+        hideAllContextMenus();
+        contextMenuTargetTabId = null;
+        const allTabs = [...tabs];
+        for (const t of allTabs) {
+          await closeTab(t.id);
+        }
+      };
+    }
+
+    const btnTabOpenSide = document.getElementById('tab-ctx-open-to-side');
+    if (btnTabOpenSide) {
+      btnTabOpenSide.onclick = () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        openSplitEditor(targetId);
+      };
+    }
+
+    const btnTabCopyPath = document.getElementById('tab-ctx-copy-path');
+    if (btnTabCopyPath) {
+      btnTabCopyPath.onclick = async () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        const tab = getTab(targetId);
+        const pathToCopy = (tab && tab.path) || (tab && tab.title) || '';
+        if (pathToCopy) {
+          await copyTextToClipboard(pathToCopy);
+          showMessage(t('tabCtxPathCopied') || 'File path copied!', 2500);
+        }
+      };
+    }
+
+    const btnTabReveal = document.getElementById('tab-ctx-reveal-explorer');
+    if (btnTabReveal) {
+      btnTabReveal.onclick = () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        const tab = getTab(targetId);
+        if (tab && tab.path && window.backend && window.backend.showInFileExplorer) {
+          window.backend.showInFileExplorer(tab.path);
+        } else if (!tab || !tab.path) {
+          showMessage(t('noteNotSavedOnDisk') || 'ノートがまだディスクに保存されていません', 3000, { important: true });
+        }
+      };
+    }
+  }
+
+  // Status Bar Context Menu Actions
+  if (statusContextMenu) {
+    const btnStatCopyMsg = document.getElementById('stat-ctx-copy-message');
+    if (btnStatCopyMsg) {
+      btnStatCopyMsg.onclick = async () => {
+        hideAllContextMenus();
+        const msgText = (statMessage && statMessage.textContent ? statMessage.textContent.trim() : '') ||
+                        (statMessage && statMessage.title ? statMessage.title.trim() : '');
+        if (msgText) {
+          await copyTextToClipboard(msgText);
+          showMessage(t('statCtxMessageCopied') || 'Status message copied!', 2500);
+        } else {
+          showMessage('コピーする通知メッセージがありません', 2000);
+        }
+      };
+    }
+
+    const btnStatCopyAll = document.getElementById('stat-ctx-copy-all-info');
+    if (btnStatCopyAll) {
+      btnStatCopyAll.onclick = async () => {
+        hideAllContextMenus();
+        const cur = document.getElementById('stat-cursor') ? document.getElementById('stat-cursor').textContent : '';
+        const chars = document.getElementById('stat-chars') ? document.getElementById('stat-chars').textContent : '';
+        const sel = document.getElementById('stat-selection') ? document.getElementById('stat-selection').textContent : '';
+        const enc = document.getElementById('stat-encoding') ? document.getElementById('stat-encoding').textContent : '';
+        const auto = document.getElementById('stat-autosave') ? document.getElementById('stat-autosave').textContent : '';
+        const git = document.getElementById('stat-gitsync') ? document.getElementById('stat-gitsync').textContent : '';
+        const msg = statMessage ? statMessage.textContent.trim() : '';
+
+        const fullInfo = [cur, chars, sel, `Encoding: ${enc}`, auto, git, msg ? `Message: ${msg}` : '']
+          .filter(Boolean)
+          .join(' | ');
+
+        await copyTextToClipboard(fullInfo);
+        showMessage(t('statCtxAllInfoCopied') || 'Status info copied!', 2500);
+      };
+    }
+
+    const btnStatClearMsg = document.getElementById('stat-ctx-clear-message');
+    if (btnStatClearMsg) {
+      btnStatClearMsg.onclick = () => {
+        hideAllContextMenus();
+        if (statMessage) {
+          statMessage.textContent = '';
+          statMessage.title = '';
+          statMessage.removeAttribute('data-quiet');
+          statMessage.removeAttribute('data-important');
+        }
+      };
+    }
+
+    const btnStatOpenTasks = document.getElementById('stat-ctx-open-tasks');
+    if (btnStatOpenTasks) {
+      btnStatOpenTasks.onclick = () => {
+        hideAllContextMenus();
+        toggleRunningTasksPanel();
+      };
+    }
+  }
 
   // Context Menu Actions
   const ctxUndo = document.getElementById('ctx-undo');
@@ -13564,6 +14059,17 @@ STRICT SYNTAX SAFETY RULES:
     document.getElementById('cfg-api-key').value = config.text.apiKey || '';
     document.getElementById('cfg-system-prompt').value = config.text.systemPrompt || '';
 
+    const inheritToAllEl = document.getElementById('cfg-inherit-to-all');
+    if (inheritToAllEl) {
+      inheritToAllEl.checked = config.general ? (config.general.inheritTextConnection !== false) : true;
+    }
+    const rewriteHistDirEl = document.getElementById('cfg-rewrite-history-dir');
+    if (rewriteHistDirEl) {
+      rewriteHistDirEl.value = (config.general && config.general.rewriteHistoryDir) || 'history';
+    }
+
+    syncTextProviderSelect();
+
     document.getElementById('cfg-auto-enabled').checked = config.autocomplete.enabled;
     document.getElementById('cfg-auto-base-url').value = config.autocomplete.baseUrl || 'http://localhost:11434';
     document.getElementById('cfg-auto-model').value = config.autocomplete.model || 'qwen2.5:latest';
@@ -13958,15 +14464,254 @@ STRICT SYNTAX SAFETY RULES:
     lineEl.textContent = key ? t('llmProtocolDetected', { protocol: t(key) }) : t('llmProtocolUnknown');
   }
 
-  let providerDetectDebounceTimer = null;
-  function debouncedUpdateLLMProviderDetection() {
-    if (providerDetectDebounceTimer) clearTimeout(providerDetectDebounceTimer);
-    providerDetectDebounceTimer = setTimeout(updateLLMProviderDetection, 300);
+  const TEXT_PROVIDER_PRESETS = {
+    gemini: {
+      baseUrl: 'https://generativelanguage.googleapis.com',
+      defaultModel: 'gemini-2.5-flash',
+      models: [
+        { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Google Cloud / Fast & High Quality)' },
+        { id: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite (Google Cloud / Free Tier & Light)' },
+        { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Google Cloud / High Reasoning)' }
+      ]
+    },
+    openai: {
+      baseUrl: 'https://api.openai.com/v1',
+      defaultModel: 'gpt-4o-mini',
+      models: [
+        { id: 'gpt-4o-mini', label: 'GPT-4o Mini (OpenAI / Fast & Cost Effective)' },
+        { id: 'gpt-4o', label: 'GPT-4o (OpenAI / Flagship)' },
+        { id: 'o3-mini', label: 'o3-mini (OpenAI / Reasoning)' }
+      ]
+    },
+    claude: {
+      baseUrl: 'https://openrouter.ai/api/v1',
+      defaultModel: 'anthropic/claude-3.5-sonnet',
+      models: [
+        { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (Anthropic / Top Coding & Writing)' },
+        { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku (Anthropic / Ultra Fast)' },
+        { id: 'anthropic/claude-3.7-sonnet', label: 'Claude 3.7 Sonnet (Anthropic / Hybrid Reasoning)' }
+      ]
+    },
+    sakana: {
+      baseUrl: 'https://openrouter.ai/api/v1',
+      defaultModel: 'sakana/evollm-jp-v1-7b',
+      models: [
+        { id: 'sakana/evollm-jp-v1-7b', label: 'EvoLLM-JP (Sakana AI / Japanese Evolutionary Model)' }
+      ]
+    },
+    deepseek: {
+      baseUrl: 'https://api.deepseek.com/v1',
+      defaultModel: 'deepseek-chat',
+      models: [
+        { id: 'deepseek-chat', label: 'DeepSeek-V3 (DeepSeek / High Performance & Low Cost)' },
+        { id: 'deepseek-reasoner', label: 'DeepSeek-R1 (DeepSeek / Deep Reasoning)' }
+      ]
+    },
+    qwen: {
+      baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+      defaultModel: 'qwen-plus',
+      models: [
+        { id: 'qwen-plus', label: 'Qwen Plus (Alibaba / Balanced)' },
+        { id: 'qwen-max', label: 'Qwen Max (Alibaba / Flagship)' },
+        { id: 'qwen-turbo', label: 'Qwen Turbo (Alibaba / Fast)' },
+        { id: 'qwen-coder-plus', label: 'Qwen Coder Plus (Alibaba / Code Specialist)' }
+      ]
+    },
+    moonshot: {
+      baseUrl: 'https://api.moonshot.cn/v1',
+      defaultModel: 'moonshot-v1-8k',
+      models: [
+        { id: 'moonshot-v1-8k', label: 'Moonshot Kimi v1 8K (Moonshot AI)' },
+        { id: 'moonshot-v1-32k', label: 'Moonshot Kimi v1 32K (Moonshot AI / Long Context)' },
+        { id: 'moonshot-v1-128k', label: 'Moonshot Kimi v1 128K (Moonshot AI / Extra Long)' }
+      ]
+    },
+    mistral: {
+      baseUrl: 'https://api.mistral.ai/v1',
+      defaultModel: 'mistral-large-latest',
+      models: [
+        { id: 'mistral-large-latest', label: 'Mistral Large (Mistral AI / Flagship)' },
+        { id: 'mistral-small-latest', label: 'Mistral Small (Mistral AI / Fast)' },
+        { id: 'codestral-latest', label: 'Codestral (Mistral AI / Coding Specialist)' }
+      ]
+    },
+    openrouter: {
+      baseUrl: 'https://openrouter.ai/api/v1',
+      defaultModel: 'google/gemini-2.5-flash',
+      models: [
+        { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (OpenRouter)' },
+        { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (OpenRouter)' },
+        { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3 (OpenRouter)' },
+        { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (Meta / OpenRouter)' },
+        { id: 'qwen/qwen-2.5-72b-instruct', label: 'Qwen 2.5 72B (Alibaba / OpenRouter)' }
+      ]
+    },
+    groq: {
+      baseUrl: 'https://api.groq.com/openai/v1',
+      defaultModel: 'llama-3.3-70b-versatile',
+      models: [
+        { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Meta via Groq / Ultra Fast)' },
+        { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (Mistral via Groq)' },
+        { id: 'qwen-2.5-32b', label: 'Qwen 2.5 32B (Alibaba via Groq)' }
+      ]
+    },
+    ollama: {
+      baseUrl: 'http://localhost:11434',
+      defaultModel: 'qwen2.5:latest',
+      models: [
+        { id: 'qwen2.5:latest', label: 'Qwen 2.5 (Ollama / Local Japanese & Coding)' },
+        { id: 'gemma4:latest', label: 'Gemma 4 (Ollama / Google Open Weights)' },
+        { id: 'llama3.3:latest', label: 'Llama 3.3 (Ollama / Meta)' },
+        { id: 'deepseek-r1:latest', label: 'DeepSeek R1 (Ollama / Reasoning)' }
+      ]
+    },
+    lmstudio: {
+      baseUrl: 'http://localhost:1234/v1',
+      defaultModel: 'local-model',
+      models: [
+        { id: 'local-model', label: 'Currently loaded model in LM Studio' }
+      ]
+    }
+  };
+
+  function syncTextProviderSelect() {
+    const sel = document.getElementById('cfg-text-provider');
+    const url = (document.getElementById('cfg-base-url') && document.getElementById('cfg-base-url').value.trim()) || '';
+    if (!sel) return;
+    if (url.includes('generativelanguage.googleapis.com')) {
+      sel.value = 'gemini';
+    } else if (url.includes('api.deepseek.com')) {
+      sel.value = 'deepseek';
+    } else if (url.includes('dashscope') || url.includes('aliyuncs.com')) {
+      sel.value = 'qwen';
+    } else if (url.includes('moonshot.cn')) {
+      sel.value = 'moonshot';
+    } else if (url.includes('api.mistral.ai')) {
+      sel.value = 'mistral';
+    } else if (url.includes('11434')) {
+      sel.value = 'ollama';
+    } else if (url.includes('1234')) {
+      sel.value = 'lmstudio';
+    } else if (url.includes('api.openai.com')) {
+      sel.value = 'openai';
+    } else if (url.includes('openrouter.ai')) {
+      const model = (document.getElementById('cfg-model') && document.getElementById('cfg-model').value.trim()) || '';
+      if (model.includes('claude')) sel.value = 'claude';
+      else if (model.includes('sakana')) sel.value = 'sakana';
+      else sel.value = 'openrouter';
+    } else if (url.includes('groq.com')) {
+      sel.value = 'groq';
+    } else {
+      sel.value = 'custom';
+    }
   }
-  const cfgBaseUrlEl = document.getElementById('cfg-base-url');
-  if (cfgBaseUrlEl) cfgBaseUrlEl.addEventListener('input', debouncedUpdateLLMProviderDetection);
-  const cfgApiKeyForProviderEl = document.getElementById('cfg-api-key');
-  if (cfgApiKeyForProviderEl) cfgApiKeyForProviderEl.addEventListener('input', debouncedUpdateLLMProviderDetection);
+
+  function updateModelSuggestionsList(models) {
+    const dl = document.getElementById('text-model-suggestions');
+    if (!dl || !Array.isArray(models)) return;
+    dl.innerHTML = '';
+    models.forEach(m => {
+      const opt = document.createElement('option');
+      opt.value = m.id || m.name || m;
+      if (m.label) opt.textContent = m.label;
+      dl.appendChild(opt);
+    });
+  }
+
+  const cfgTextProviderEl = document.getElementById('cfg-text-provider');
+  if (cfgTextProviderEl) {
+    cfgTextProviderEl.addEventListener('change', () => {
+      const val = cfgTextProviderEl.value;
+      const preset = TEXT_PROVIDER_PRESETS[val];
+      if (!preset) return;
+      const baseUrlInput = document.getElementById('cfg-base-url');
+      const modelInput = document.getElementById('cfg-model');
+      if (baseUrlInput) baseUrlInput.value = preset.baseUrl;
+      if (modelInput && (!modelInput.value.trim() || val !== 'custom')) {
+        modelInput.value = preset.defaultModel;
+      }
+      updateModelSuggestionsList(preset.models);
+      debouncedUpdateLLMProviderDetection();
+    });
+  }
+
+  const btnFetchModelsEl = document.getElementById('btn-fetch-models');
+  if (btnFetchModelsEl) {
+    btnFetchModelsEl.addEventListener('click', async () => {
+      const baseUrlInput = document.getElementById('cfg-base-url');
+      const apiKeyInput = document.getElementById('cfg-api-key');
+      const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
+      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+
+      if (!baseUrl) {
+        showMessage(t('pleaseEnterBaseUrl') || 'Base URLを入力してください', 3000, { important: true });
+        return;
+      }
+
+      btnFetchModelsEl.disabled = true;
+      const originalText = btnFetchModelsEl.textContent;
+      btnFetchModelsEl.textContent = '⏳ Fetching...';
+
+      try {
+        let models = [];
+        // Gemini endpoint
+        if (baseUrl.includes('generativelanguage.googleapis.com')) {
+          const fetchUrl = `${baseUrl.replace(/\/+$/, '')}/v1beta/models${apiKey ? `?key=${apiKey}` : ''}`;
+          const res = await fetch(fetchUrl);
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const data = await res.json();
+          if (data && data.models) {
+            models = data.models
+              .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
+              .map(m => {
+                const cleanName = m.name.replace(/^models\//, '');
+                return { id: cleanName, label: `${m.displayName || cleanName} (${cleanName})` };
+              });
+          }
+        } else if (baseUrl.includes('11434')) {
+          // Ollama endpoint
+          const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/tags`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const data = await res.json();
+          if (data && data.models) {
+            models = data.models.map(m => ({ id: m.name, label: `${m.name} (${m.details ? m.details.parameter_size : 'local'})` }));
+          }
+        } else {
+          // OpenAI / LM Studio / OpenRouter / Groq / OpenAI-compatible endpoint
+          const headers = {};
+          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
+          let endpoint = baseUrl.replace(/\/+$/, '');
+          if (!endpoint.endsWith('/models')) {
+            endpoint = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/v1/models`;
+          }
+          const res = await fetch(endpoint, { headers });
+          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
+          const data = await res.json();
+          if (data && Array.isArray(data.data)) {
+            models = data.data.map(m => ({ id: m.id, label: m.id }));
+          } else if (data && Array.isArray(data.models)) {
+            models = data.models.map(m => ({ id: m.id || m.name, label: m.id || m.name }));
+          }
+        }
+
+        if (models.length > 0) {
+          updateModelSuggestionsList(models);
+          showMessage(`Found ${models.length} models! Model list updated.`, 3000);
+          const modelInput = document.getElementById('cfg-model');
+          if (modelInput && !modelInput.value.trim()) {
+            modelInput.value = models[0].id;
+          }
+        } else {
+          showMessage('No models returned from endpoint.', 3000, { important: true });
+        }
+      } catch (err) {
+        showMessage(`Fetch models failed: ${err.message || String(err)}`, 4000, { important: true });
+      } finally {
+        btnFetchModelsEl.disabled = false;
+        btnFetchModelsEl.textContent = originalText;
+      }
+    });
+  }
 
   // Ollama Lifecycle & Automated Gemma 4 Setup
   async function updateOllamaStatus() {
@@ -14324,6 +15069,24 @@ STRICT SYNTAX SAFETY RULES:
     config.vision.model = document.getElementById('cfg-vision-model').value.trim() || 'gemini-flash-lite-latest';
     config.vision.apiKey = document.getElementById('cfg-vision-api-key').value.trim();
     config.vision.prompt = document.getElementById('cfg-vision-prompt').value.trim();
+
+    const saveInheritEl = document.getElementById('cfg-inherit-to-all');
+    if (saveInheritEl) {
+      config.general.inheritTextConnection = saveInheritEl.checked;
+      if (saveInheritEl.checked) {
+        if (!config.vision.baseUrl || config.vision.baseUrl === 'https://generativelanguage.googleapis.com') {
+          config.vision.baseUrl = config.text.baseUrl;
+        }
+        if (!config.vision.apiKey && config.text.apiKey) {
+          config.vision.apiKey = config.text.apiKey;
+        }
+      }
+    }
+
+    const saveRewriteHistDirEl = document.getElementById('cfg-rewrite-history-dir');
+    if (saveRewriteHistDirEl) {
+      config.general.rewriteHistoryDir = saveRewriteHistDirEl.value.trim() || 'history';
+    }
 
     if (!config.voice) config.voice = {};
     const saveVoiceModelEl = document.getElementById('cfg-voice-model');

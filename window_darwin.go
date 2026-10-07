@@ -775,6 +775,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			toggleMaximize: () => window.backend_toggleMaximize(),
 			forceQuit: () => window.backend_forceQuit(),
 			openExternal: (url) => window.backend_openExternal(url),
+			showInFileExplorer: (filePath) => window.backend_showInFileExplorer(filePath || ""),
 			setIMEMode: (enableJapanese) => window.backend_setIMEMode(!!enableJapanese),
 			updateGlobalShortcut: (sc) => window.backend_updateGlobalShortcut(sc || ""),
 			checkOllamaRunning: () => window.backend_checkOllamaRunning(),

@@ -209,7 +209,18 @@
       <div id="inline-prompt-bar" class="inline-prompt-bar hidden">
         <div class="inline-prompt-row">
           <div id="inline-prompt-badge" class="inline-prompt-badge">AI</div>
-          <input type="text" id="inline-prompt-input" placeholder="Ask AI: summarize, translate, rewrite... (Enter to run, Esc to close)" data-i18n-placeholder="inlinePromptPlaceholder" spellcheck="false">
+          <input type="text" id="inline-prompt-input" list="inline-prompt-suggestions" placeholder="Ask AI: summarize, translate, rewrite... (Enter to run, Esc to close)" data-i18n-placeholder="inlinePromptPlaceholder" spellcheck="false">
+          <datalist id="inline-prompt-suggestions">
+            <option value="/chat">チャット返信用 (Slack/Teams: 簡潔・口語調・迅速)</option>
+            <option value="/email">ビジネスメール本文用 (敬語・礼儀・定型挨拶)</option>
+            <option value="/summary">要約 (3箇条書き・重要エッセンス抽出)</option>
+            <option value="/proofread">文章校正・誤字脱字修正 (自然な日本語)</option>
+            <option value="/polite">より丁寧な表現に書き直す</option>
+            <option value="/casual">フランク・親しみやすい表現に書き直す</option>
+            <option value="/markdown">Markdown構造化 (見出し・箇条書き・表整形)</option>
+            <option value="/translate-en">英語に翻訳 (自然な英語・ビジネス英語)</option>
+            <option value="/translate-ja">日本語に翻訳 (自然な日本語)</option>
+          </datalist>
           <button id="btn-inline-prompt-send" data-i18n-title="tipRunEnter" class="btn-action" data-i18n="btnRunAI" title="Run (Enter)">Run</button>
           <button id="btn-inline-prompt-close" data-i18n-title="tipCloseEsc" class="btn-icon" title="Close (Esc)">✕</button>
         </div>
@@ -582,6 +593,68 @@
     <!-- Context Submenu (Floating outside #context-menu to avoid clipping and scrollbar) -->
     <div id="ctx-tabs-submenu" class="context-submenu hidden"></div>
 
+    <!-- Tab Header Context Menu (Right-click on tab items) -->
+    <div id="tab-context-menu" class="hidden">
+      <div class="menu-item" id="tab-ctx-close">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <span class="menu-label" data-i18n="tabCtxClose">このタブを閉じる</span>
+        <span class="shortcut">Ctrl+W</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-close-others">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+        <span class="menu-label" data-i18n="tabCtxCloseOthers">他のタブをすべて閉じる</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-close-below">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><polyline points="19 12 12 19 5 12"></polyline></svg>
+        <span class="menu-label" data-i18n="tabCtxCloseBelow">下側のタブをすべて閉じる</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-close-saved">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"></polyline></svg>
+        <span class="menu-label" data-i18n="tabCtxCloseSaved">保存済みのタブを閉じる</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-close-all">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="3"></rect><path d="M7 7l10 10M17 7L7 17"></path></svg>
+        <span class="menu-label" data-i18n="tabCtxCloseAll">すべてのタブを閉じる</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="tab-ctx-open-to-side">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"></rect><line x1="12" y1="3" x2="12" y2="21"></line></svg>
+        <span class="menu-label" data-i18n="ctxOpenToSide">横に並べて開く</span>
+        <span class="shortcut">Ctrl+\</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="tab-ctx-copy-path">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span class="menu-label" data-i18n="tabCtxCopyPath">ファイルパスをコピー</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-reveal-explorer">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <span class="menu-label" data-i18n="tabCtxRevealExplorer">エクスプローラーで表示</span>
+      </div>
+    </div>
+
+    <!-- Status Bar Context Menu (Right-click on footer#status-bar) -->
+    <div id="status-context-menu" class="hidden">
+      <div class="menu-item" id="stat-ctx-copy-message">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span class="menu-label" data-i18n="statCtxCopyMessage">通知・エラー内容をコピー</span>
+      </div>
+      <div class="menu-item" id="stat-ctx-copy-all-info">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line></svg>
+        <span class="menu-label" data-i18n="statCtxCopyAllInfo">ステータス詳細をすべてコピー</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="stat-ctx-clear-message">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+        <span class="menu-label" data-i18n="statCtxClearMessage">メッセージ表示を消去</span>
+      </div>
+      <div class="menu-item" id="stat-ctx-open-tasks">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg>
+        <span class="menu-label" data-i18n="statCtxOpenTasks">タスク一覧を表示</span>
+        <span class="shortcut">Alt+T</span>
+      </div>
+    </div>
+
     <!-- Settings Modal -->
     <div id="settings-modal" class="modal-backdrop hidden">
       <div class="modal-card">
@@ -756,6 +829,11 @@
                 <input type="checkbox" id="cfg-ai-correction" checked> <span data-i18n="aiCorrectionLabel">Enable AI typo & error correction (Alt+C)</span>
               </label>
             </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Ctrl+K Rewrite backup folder:</label>
+              <input type="text" id="cfg-rewrite-history-dir" placeholder="history (relative to note, or 'source', '_history')" value="history">
+              <small data-i18n="rewriteHistoryDirHint">Folder name where original text is archived before Ctrl+K replacement. Saved relative to the edited file.</small>
+            </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
                 <input type="checkbox" id="cfg-cursor-aura" checked> <span data-i18n="cursorAuraLabel">Subtle cursor aura on idle</span>
@@ -839,18 +917,59 @@
               <h4 data-i18n="sectionTextLLM">Writing & commands</h4>
             </div>
             <div class="form-group">
+              <label for="cfg-text-provider" data-i18n="textProviderLabel">AI Provider Preset:</label>
+              <div style="display: flex; gap: 8px;">
+                <select id="cfg-text-provider" class="form-select" style="flex: 1;">
+                  <option value="custom">-- Custom / Manual Configuration --</option>
+                  <optgroup label="Global Cloud AI">
+                    <option value="gemini">Google Gemini (Recommended / Cloud)</option>
+                    <option value="openai">OpenAI (ChatGPT / GPT-4o)</option>
+                    <option value="claude">Anthropic Claude (via OpenRouter)</option>
+                    <option value="openrouter">OpenRouter (Unified: Claude, Llama, Gemini...)</option>
+                    <option value="groq">Groq (Ultra High Speed / Llama 3.3)</option>
+                    <option value="mistral">Mistral AI (European Open Weights)</option>
+                  </optgroup>
+                  <optgroup label="Japan / Frontier">
+                    <option value="sakana">Sakana AI (EvoLLM / OpenRouter)</option>
+                  </optgroup>
+                  <optgroup label="China / Asia Top LLM">
+                    <option value="deepseek">DeepSeek (DeepSeek-V3 / R1)</option>
+                    <option value="qwen">Alibaba Qwen (DashScope / Tongyi Qianwen)</option>
+                    <option value="moonshot">Moonshot AI (Kimi / Long Context)</option>
+                  </optgroup>
+                  <optgroup label="Local AI (On-Device)">
+                    <option value="ollama">Ollama (Local / http://localhost:11434)</option>
+                    <option value="lmstudio">LM Studio (Local / http://localhost:1234/v1)</option>
+                  </optgroup>
+                </select>
+                <button type="button" id="btn-fetch-models" class="btn-secondary" style="padding: 4px 12px; font-size: 12px; white-space: nowrap;" title="Fetch latest models from endpoint">🔄 Fetch Models</button>
+              </div>
+            </div>
+            <div class="form-group">
               <label for="cfg-base-url" data-i18n="apiBaseUrlLabel">API Base URL:</label>
-              <input type="text" id="cfg-base-url" placeholder="http://localhost:11434 (Ollama) or https://api.openai.com/v1">
+              <input type="text" id="cfg-base-url" placeholder="http://localhost:11434 (Ollama) or https://generativelanguage.googleapis.com">
               <small id="text-provider-detect-line" class="hidden"></small>
             </div>
             <div class="form-group">
               <label for="cfg-model" data-i18n="modelNameLabel">Model Name:</label>
-              <input type="text" id="cfg-model" placeholder="gemma4:latest, claude-sonnet-5, gemini-flash-latest etc.">
+              <input type="text" id="cfg-model" list="text-model-suggestions" placeholder="gemini-2.5-flash, qwen2.5:latest, gpt-4o-mini...">
+              <datalist id="text-model-suggestions">
+                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Google Cloud / Fast & High Quality)</option>
+                <option value="gemini-flash-lite-latest">Gemini Flash Lite (Google Cloud / Free Tier & Light)</option>
+                <option value="qwen2.5:latest">Qwen 2.5 (Ollama / Local Japanese & Coding)</option>
+                <option value="gpt-4o-mini">GPT-4o Mini (OpenAI / Fast & Cost Effective)</option>
+                <option value="gpt-4o">GPT-4o (OpenAI / Flagship)</option>
+              </datalist>
               <small data-i18n="textModelFallbackHint">If blank: qwen2.5:latest</small>
             </div>
             <div class="form-group">
               <label for="cfg-api-key" data-i18n="apiKeyLabel">API Key (for cloud APIs):</label>
               <input type="password" id="cfg-api-key" placeholder="sk-... or AIzaSy... (leave empty for local models)">
+            </div>
+            <div class="form-group inline-group" style="margin-bottom: 12px;">
+              <label>
+                <input type="checkbox" id="cfg-inherit-to-all" checked> <span data-i18n="inheritToAllLabel">Inherit text LLM connection (Base URL & Key) to Vision & Image settings if empty</span>
+              </label>
             </div>
             <div class="form-group">
               <label for="cfg-system-prompt" data-i18n="systemPromptLabel">System Prompt:</label>
@@ -1105,6 +1224,7 @@
               <label for="cfg-image-model" data-i18n="imageModelLabel">Image Generation Model:</label>
               <input type="text" id="cfg-image-model" list="image-model-suggestions" placeholder="gemini-3.1-flash-lite-image">
               <datalist id="image-model-suggestions">
+                <option value="gemini-nano-banana-2.1">Nano Banana 2.1 (Flagship / 1K, 2K, 4K High Quality)</option>
                 <option value="gemini-3.1-flash-lite-image">Nano Banana 2 Lite (Fast & Lightweight / Recommended)</option>
                 <option value="gemini-3.1-flash-image">Nano Banana 2 (High Quality)</option>
                 <option value="gemini-3-pro-image">Nano Banana Pro (State of the art)</option>

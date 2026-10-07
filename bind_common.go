@@ -129,9 +129,12 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_keepVoiceCache", app.KeepVoiceCache)
 	_ = w.Bind("backend_discardVoiceCache", app.DiscardVoiceCache)
 	_ = w.Bind("backend_openExternal", app.OpenExternal)
+	_ = w.Bind("backend_showInFileExplorer", app.ShowInFileExplorer)
 	_ = w.Bind("backend_checkOllamaRunning", app.CheckOllamaRunning)
 	_ = w.Bind("backend_startOllamaService", app.StartOllamaService)
 	_ = w.Bind("backend_stopOllamaService", app.StopOllamaService)
 	_ = w.Bind("backend_setupOllamaGemma4Async", app.SetupOllamaGemma4Async)
 	_ = w.Bind("backend_cancelOllamaSetup", app.CancelOllamaSetup)
+	_ = w.Bind("backend_getSkillInstruction", app.GetSkillInstruction)
+	_ = w.Bind("backend_getAvailableSkillsJSON", app.GetAvailableSkillsJSON)
 }

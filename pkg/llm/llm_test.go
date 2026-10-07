@@ -766,6 +766,79 @@ func TestGenerateImagen(t *testing.T) {
 	}
 }
 
+func TestGenerateInteractionsImage(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "interactions") {
+			body, _ := io.ReadAll(r.Body)
+			bodyStr := string(body)
+			if !strings.Contains(bodyStr, `"model":"gemini-nano-banana-2.1"`) {
+				t.Errorf("expected model gemini-nano-banana-2.1 in request, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"aspect_ratio":"16:9"`) {
+				t.Errorf("expected aspect_ratio 16:9, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"image_size":"2K"`) {
+				t.Errorf("expected image_size 2K, got: %s", bodyStr)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"status": "completed",
+				"steps": []map[string]interface{}{
+					{
+						"type": "thought",
+					},
+					{
+						"type": "model_output",
+						"content": []map[string]interface{}{
+							{
+								"type":      "image",
+								"mime_type": "image/jpeg",
+								"data":      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+							},
+						},
+					},
+				},
+			})
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	cfg := ImageGenConfig{
+		BaseURL:     server.URL,
+		Model:       "gemini-nano-banana-2.1",
+		APIKey:      "test-api-key",
+		AspectRatio: "16:9",
+		Resolution:  "2048",
+	}
+
+	data, mime, err := GenerateImage("Draw a nano banana dish", cfg)
+	if err != nil {
+		t.Fatalf("GenerateImage failed for banana model: %v", err)
+	}
+	if mime != "image/jpeg" {
+		t.Errorf("expected image/jpeg, got %s", mime)
+	}
+	if len(data) == 0 {
+		t.Errorf("expected non-empty image data")
+	}
+
+	// Test helper functions
+	if !isBananaImageModel("gemini-nano-banana-2.1") {
+		t.Errorf("expected isBananaImageModel to be true for gemini-nano-banana-2.1")
+	}
+	if isBananaImageModel("gemini-3.1-flash-lite-image") {
+		t.Errorf("expected isBananaImageModel to be false for gemini-3.1-flash-lite-image")
+	}
+	if ar := toInteractionsAspectRatio("16:9"); ar != "16:9" {
+		t.Errorf("expected 16:9, got %s", ar)
+	}
+	if sz := toInteractionsImageSize("2048"); sz != "2K" {
+		t.Errorf("expected 2K, got %s", sz)
+	}
+}
+
 func TestStripMarkdownCodeFences(t *testing.T) {
 	tests := []struct {
 		name     string

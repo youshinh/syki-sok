@@ -78,7 +78,7 @@ func newOpenFileName(title string, hwndOwner uintptr) (ofn openFileName, fileBuf
 	ofn.lStructSize = uint32(unsafe.Sizeof(ofn))
 	ofn.hwndOwner = hwndOwner
 
-	filter := "All Supported Text Files (*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack)\x00*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack\x00syki::sok Package (*.mdmemopack)\x00*.mdmemopack\x00Markdown Files (*.md;*.markdown)\x00*.md;*.markdown\x00JSON / Config Files (*.json;*.yaml;*.yml;*.toml;*.ini;*.env)\x00*.json;*.yaml;*.yml;*.toml;*.ini;*.env\x00Text / Source Code (*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css)\x00*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css\x00All Files (*.*)\x00*.*\x00\x00"
+	filter := "All Files (*.*)\x00*.*\x00All Supported Text Files (*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack)\x00*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack\x00syki::sok Package (*.mdmemopack)\x00*.mdmemopack\x00Markdown Files (*.md;*.markdown)\x00*.md;*.markdown\x00JSON / Config Files (*.json;*.yaml;*.yml;*.toml;*.ini;*.env)\x00*.json;*.yaml;*.yml;*.toml;*.ini;*.env\x00Text / Source Code (*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css)\x00*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css\x00\x00"
 	filterUTF16, _ := syscall.UTF16PtrFromString(filter)
 	ofn.lpstrFilter = filterUTF16
 
