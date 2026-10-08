@@ -999,7 +999,7 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 	}
 	model := strings.TrimSpace(cfg.Model)
 	if model == "" || !isDedicatedImageModel(model) {
-		model = "gemini-3.1-flash-image"
+		model = "gemini-3.1-flash-lite-image"
 	}
 	aspectRatio := cfg.AspectRatio
 	if aspectRatio == "" {
@@ -1011,12 +1011,7 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 		return generateImagen(baseURL, model, prompt, cfg.APIKey)
 	}
 
-	// 2. If Gemini Nano Banana model (or interactions-based image model) is requested, use /v1beta/interactions
-	if isBananaImageModel(model) {
-		return generateInteractionsImage(baseURL, model, prompt, aspectRatio, cfg.Resolution, cfg.APIKey)
-	}
-
-	// 3. Default: Gemini generateContent with responseModalities / responseFormat image
+	// 2. Default: Gemini generateContent with responseModalities / responseFormat image
 	return generateGeminiImage(baseURL, model, prompt, aspectRatio, cfg.Resolution, cfg.APIKey)
 }
 
@@ -1228,143 +1223,6 @@ func generateImagen(baseURL, model, prompt, apiKey string) ([]byte, string, erro
 	}
 
 	return nil, "", fmt.Errorf("Imagenから画像データが返されませんでした")
-}
-
-// isBananaImageModel checks whether the model is a Nano Banana / Banana 2.1 model or uses the Interactions API.
-func isBananaImageModel(model string) bool {
-	m := strings.ToLower(strings.TrimSpace(model))
-	return strings.Contains(m, "banana") || strings.Contains(m, "nano-banana")
-}
-
-// toInteractionsAspectRatio maps aspect ratio strings to standard ratio strings accepted by Interactions API (e.g. "16:9", "1:1", "4:3").
-func toInteractionsAspectRatio(ar string) string {
-	switch strings.TrimSpace(ar) {
-	case "16:9", "16_9", "16x9", "ASPECT_RATIO_SIXTEEN_BY_NINE":
-		return "16:9"
-	case "1:1", "1_1", "1x1", "ASPECT_RATIO_ONE_BY_ONE":
-		return "1:1"
-	case "4:3", "4_3", "4x3", "ASPECT_RATIO_FOUR_BY_THREE":
-		return "4:3"
-	case "3:4", "3_4", "3x4", "ASPECT_RATIO_THREE_BY_FOUR":
-		return "3:4"
-	case "9:16", "9_16", "9x16", "ASPECT_RATIO_NINE_BY_SIXTEEN":
-		return "9:16"
-	case "2:3", "2_3", "2x3", "ASPECT_RATIO_TWO_BY_THREE":
-		return "2:3"
-	case "3:2", "3_2", "3x2", "ASPECT_RATIO_THREE_BY_TWO":
-		return "3:2"
-	case "21:9", "21_9", "21x9", "ASPECT_RATIO_TWENTY_ONE_BY_NINE":
-		return "21:9"
-	case "4:5", "ASPECT_RATIO_FOUR_BY_FIVE":
-		return "4:5"
-	case "5:4", "ASPECT_RATIO_FIVE_BY_FOUR":
-		return "5:4"
-	case "1:4", "ASPECT_RATIO_ONE_BY_FOUR":
-		return "1:4"
-	case "4:1", "ASPECT_RATIO_FOUR_BY_ONE":
-		return "4:1"
-	case "1:8", "ASPECT_RATIO_ONE_BY_EIGHT":
-		return "1:8"
-	case "8:1", "ASPECT_RATIO_EIGHT_BY_ONE":
-		return "8:1"
-	default:
-		return "16:9"
-	}
-}
-
-// toInteractionsImageSize maps resolutions to standard sizes for the Interactions API ("1K", "2K", "4K").
-func toInteractionsImageSize(res string) string {
-	switch strings.ToUpper(strings.TrimSpace(res)) {
-	case "1024", "1K", "IMAGE_SIZE_ONE_K":
-		return "1K"
-	case "2048", "2K", "IMAGE_SIZE_TWO_K":
-		return "2K"
-	case "4096", "4K", "IMAGE_SIZE_FOUR_K":
-		return "4K"
-	default:
-		return ""
-	}
-}
-
-func generateInteractionsImage(baseURL, model, prompt, aspectRatio, resolution, apiKey string) ([]byte, string, error) {
-	url := fmt.Sprintf("%s/v1beta/interactions?key=%s", baseURL, apiKey)
-
-	respFormat := map[string]interface{}{
-		"type":         "image",
-		"aspect_ratio": toInteractionsAspectRatio(aspectRatio),
-	}
-	if sz := toInteractionsImageSize(resolution); sz != "" {
-		respFormat["image_size"] = sz
-	}
-
-	payload := map[string]interface{}{
-		"model": strings.TrimPrefix(model, "models/"),
-		"input": []map[string]interface{}{
-			{
-				"type": "text",
-				"text": prompt,
-			},
-		},
-		"response_format": respFormat,
-	}
-
-	bodyBytes, err := json.Marshal(payload)
-	if err != nil {
-		return nil, "", err
-	}
-
-	req, err := http.NewRequest("POST", url, bytes.NewReader(bodyBytes))
-	if err != nil {
-		return nil, "", err
-	}
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-goog-api-key", apiKey)
-
-	res, err := client.Do(req)
-	if err != nil {
-		return nil, "", fmt.Errorf("Gemini Interactions API接続エラー: %w", err)
-	}
-	defer res.Body.Close()
-
-	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
-		return nil, "", fmt.Errorf("Gemini Interactions APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
-	}
-
-	var result struct {
-		Status string `json:"status"`
-		Steps  []struct {
-			Type    string `json:"type"`
-			Content []struct {
-				Type     string `json:"type"`
-				MimeType string `json:"mime_type"`
-				Data     string `json:"data"`
-			} `json:"content"`
-		} `json:"steps"`
-	}
-
-	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
-		return nil, "", err
-	}
-
-	for _, step := range result.Steps {
-		for _, item := range step.Content {
-			if item.Type == "image" && item.Data != "" {
-				mime := item.MimeType
-				if mime == "" {
-					mime = "image/jpeg"
-				}
-				dataStr := strings.TrimSpace(item.Data)
-				imgBytes, decErr := base64.StdEncoding.DecodeString(dataStr)
-				if decErr != nil {
-					return nil, "", fmt.Errorf("画像データのBase64デコードに失敗しました: %w", decErr)
-				}
-				return imgBytes, mime, nil
-			}
-		}
-	}
-
-	return nil, "", fmt.Errorf("Gemini Interactions APIから画像データが返されませんでした")
 }
 
 // stripMarkdownCodeFences removes surrounding ```markdown or ``` code fences often returned by LLMs.
