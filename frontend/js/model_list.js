@@ -2,8 +2,8 @@
 // without a new release. The <datalist> options written in index.html stay as the offline fallback and are kept after the fetched ones.
 //
 //  - Pure functions first (no DOM): the list URL of a provider, the parsing of its answer, and which models fit a field.
-//  - attach() wires one model <input>: the first focus (and every focus after the endpoint or key changed) fetches the list once; a failure is
-//    silent and leaves the fallback. refresh() is the same fetch on demand, for the "Fetch Models" button, and it reports failures.
+//  - Not loaded at startup: app.js loads this file on the first focus of a model field. refreshIfStale() then fetches the list once per
+//    endpoint and key, silently; refresh() is the same fetch on demand, for the "Fetch Models" button, and it reports failures.
 (function (global) {
   'use strict';
 
@@ -113,16 +113,15 @@
     return models.length;
   }
 
-  function attach(field) {
+  // The silent refresh of a focused field: once per endpoint and key, and a failure leaves the suggestions of index.html.
+  function refreshIfStale(field) {
     if (!field.input || !field.input.list) return;
-    field.input.addEventListener('focus', () => {
-      const ep = field.endpoint() || {};
-      if (loaded.get(field.input) === ep.baseUrl + '\n' + (ep.apiKey || '')) return;
-      refresh(field).catch(() => { /* offline or no key: the suggestions of index.html stay */ });
-    });
+    const ep = field.endpoint() || {};
+    if (loaded.get(field.input) === ep.baseUrl + '\n' + (ep.apiKey || '')) return;
+    refresh(field).catch(() => { /* offline or no key */ });
   }
 
-  const api = { listUrl: listUrl, parse: parse, fits: fits, filterFor: filterFor, fetchModels: fetchModels, refresh: refresh, attach: attach, GOOGLE_BASE: GOOGLE_BASE };
+  const api = { listUrl: listUrl, parse: parse, fits: fits, filterFor: filterFor, fetchModels: fetchModels, refresh: refresh, refreshIfStale: refreshIfStale, GOOGLE_BASE: GOOGLE_BASE };
   global.ModelList = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

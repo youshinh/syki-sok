@@ -14767,31 +14767,34 @@ STRICT SYNTAX SAFETY RULES:
     });
   }
 
-  // The model fields read their suggestions from the provider (frontend/js/model_list.js); the options of index.html are the fallback.
+  // The model fields read their suggestions from the provider (frontend/js/model_list.js, loaded on the first focus of one of them); the
+  // options of index.html are the fallback.
+  const GEMINI_BASE = 'https://generativelanguage.googleapis.com';
+  const ensureModelList = () => window.ModelList ? Promise.resolve() : loadScript('js/model_list.js?v=1.0.0');
   const settingValue = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const textEndpoint = () => ({ baseUrl: settingValue('cfg-base-url'), apiKey: settingValue('cfg-api-key') });
   const visionEndpoint = () => {
-    const baseUrl = settingValue('cfg-vision-base-url') || ModelList.GOOGLE_BASE;
+    const baseUrl = settingValue('cfg-vision-base-url') || GEMINI_BASE;
     return { baseUrl, apiKey: settingValue('cfg-vision-api-key') || borrowedApiKey(baseUrl, [textEndpoint()]) };
   };
-  const imageEndpoint = () => {
-    const baseUrl = ModelList.GOOGLE_BASE;
-    return { baseUrl, apiKey: settingValue('cfg-image-api-key') || borrowedApiKey(baseUrl, [visionEndpoint(), textEndpoint()]) };
-  };
+  const imageEndpoint = () => ({
+    baseUrl: GEMINI_BASE,
+    apiKey: settingValue('cfg-image-api-key') || borrowedApiKey(GEMINI_BASE, [visionEndpoint(), textEndpoint()])
+  });
   const semanticEndpoint = () => ({ baseUrl: settingValue('cfg-semantic-base-url') || 'http://localhost:11434', apiKey: settingValue('cfg-semantic-api-key') });
   const textModelField = { input: document.getElementById('cfg-model'), kind: 'text', endpoint: textEndpoint };
-  if (window.ModelList) {
-    [
-      textModelField,
-      { input: document.getElementById('cfg-vision-model'), kind: 'text', endpoint: visionEndpoint },
-      { input: document.getElementById('cfg-voice-model'), kind: 'voice', endpoint: visionEndpoint },
-      { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
-      { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint }
-    ].forEach(f => ModelList.attach(f));
-  }
+  [
+    textModelField,
+    { input: document.getElementById('cfg-vision-model'), kind: 'text', endpoint: visionEndpoint },
+    { input: document.getElementById('cfg-voice-model'), kind: 'voice', endpoint: visionEndpoint },
+    { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
+    { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint }
+  ].forEach(field => {
+    if (field.input) field.input.addEventListener('focus', () => ensureModelList().then(() => ModelList.refreshIfStale(field), () => {}));
+  });
 
   const btnFetchModelsEl = document.getElementById('btn-fetch-models');
-  if (btnFetchModelsEl && window.ModelList) {
+  if (btnFetchModelsEl) {
     btnFetchModelsEl.addEventListener('click', async () => {
       if (!textEndpoint().baseUrl) {
         showMessage(t('pleaseEnterBaseUrl') || 'Base URLを入力してください', 3000, { important: true });
@@ -14801,6 +14804,7 @@ STRICT SYNTAX SAFETY RULES:
       const originalText = btnFetchModelsEl.textContent;
       btnFetchModelsEl.textContent = '⏳ Fetching...';
       try {
+        await ensureModelList();
         const n = await ModelList.refresh(textModelField);
         if (n > 0) {
           showMessage(`Found ${n} models! Model list updated.`, 3000);
