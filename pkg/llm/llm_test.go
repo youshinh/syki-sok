@@ -701,7 +701,7 @@ func TestGenerateGeminiImageWithResolutionAndAspect(t *testing.T) {
 
 	cfg := ImageGenConfig{
 		BaseURL:     server.URL,
-		Model:       "gemini-3.1-flash-image",
+		Model:       "gemini-2.5-flash-image",
 		APIKey:      "test-api-key",
 		AspectRatio: "1:1",
 		Resolution:  "2048",
@@ -837,8 +837,13 @@ func TestGenerateInteractionsImageBanana(t *testing.T) {
 	if !isInteractionsImageModel("my-custom-banana") {
 		t.Errorf("expected isInteractionsImageModel to be true for my-custom-banana")
 	}
-	if isInteractionsImageModel("gemini-3.1-flash-lite-image") {
-		t.Errorf("expected isInteractionsImageModel to be false for gemini-3.1-flash-lite-image")
+	for _, m := range []string{"gemini-3.1-flash-lite-image", "gemini-3.1-flash-image"} {
+		if !isInteractionsImageModel(m) {
+			t.Errorf("expected isInteractionsImageModel to be true for %s", m)
+		}
+	}
+	if isInteractionsImageModel("gemini-2.5-flash-image") {
+		t.Errorf("expected isInteractionsImageModel to be false for gemini-2.5-flash-image")
 	}
 }
 

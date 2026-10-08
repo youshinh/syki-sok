@@ -982,7 +982,7 @@ func queryOpenAI(baseURL, model, prompt string, cfg Config) (string, error) {
 	return strings.TrimSpace(result.Choices[0].Message.Content), nil
 }
 
-// GenerateImage calls Gemini image generation (gemini-3.1-flash-image-preview / imagen-3) and returns raw image bytes and mimeType.
+// GenerateImage calls Gemini image generation (gemini-3.1-flash-lite-image / imagen-3) and returns raw image bytes and mimeType.
 // An error never carries the API key.
 func GenerateImage(prompt string, cfg ImageGenConfig) ([]byte, string, error) {
 	data, mime, err := generateImageProvider(prompt, cfg)
@@ -1001,7 +1001,7 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 	}
 	model := strings.TrimSpace(cfg.Model)
 	if model == "" {
-		model = "gemini-3.1-flash-image-preview"
+		model = "gemini-3.1-flash-lite-image"
 	}
 	aspectRatio := cfg.AspectRatio
 	if aspectRatio == "" {
@@ -1235,7 +1235,8 @@ func generateImagen(baseURL, model, prompt, apiKey string) ([]byte, string, erro
 // isInteractionsImageModel checks whether the model should be routed to the Interactions API (/v1beta/interactions).
 func isInteractionsImageModel(model string) bool {
 	m := strings.ToLower(strings.TrimSpace(model))
-	return strings.Contains(m, "banana") || strings.Contains(m, "interactions")
+	return strings.Contains(m, "banana") || strings.Contains(m, "interactions") ||
+		m == "gemini-3.1-flash-image" || m == "gemini-3.1-flash-lite-image"
 }
 
 // toInteractionsAspectRatio formats aspect ratio into Interactions format (e.g. "16:9", "1:1", "4:3").
@@ -1302,23 +1303,27 @@ func generateInteractionsImage(baseURL, model, prompt, aspectRatio, resolution, 
 	aspect := toInteractionsAspectRatio(aspectRatio)
 	imgSize := toInteractionsImageSize(resolution)
 
+	lower := strings.ToLower(modelID)
+	thinking := "minimal"
+	if strings.Contains(lower, "banana") {
+		thinking = "medium"
+	}
 	payload := map[string]interface{}{
 		"model": modelID,
 		"input": prompt,
-		"tools": []map[string]interface{}{
-			{
-				"type": "google_search",
-			},
-		},
 		"generation_config": map[string]interface{}{
 			"max_output_tokens": 65536,
-			"thinking_level":    "medium",
+			"thinking_level":    thinking,
 			"image_config": map[string]interface{}{
 				"aspect_ratio": aspect,
 				"image_size":   imgSize,
 			},
 		},
 		"response_modalities": []string{"image", "text"},
+	}
+	// The lite image model does not take the Google Search tool.
+	if !strings.Contains(lower, "flash-lite") {
+		payload["tools"] = []map[string]interface{}{{"type": "google_search"}}
 	}
 
 	bodyBytes, err := json.Marshal(payload)

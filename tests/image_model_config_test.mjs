@@ -15,10 +15,10 @@ test('llmConfigOf maps img_ request ids to config.image, not config.text', () =>
 
   // Verify dedicated image model validation is present
   assert.ok(appJs.includes('function isDedicatedImageModel('), 'app.js must define isDedicatedImageModel');
-  assert.ok(appJs.includes("imageModel = 'gemini-3.1-flash-image-preview'"), 'app.js must default imageModel to gemini-3.1-flash-image-preview');
+  assert.ok(appJs.includes("imageModel = 'gemini-3.1-flash-lite-image'"), 'app.js must default imageModel to gemini-3.1-flash-lite-image');
 
   // Verify config defaults
-  assert.ok(appJs.includes("model: 'gemini-3.1-flash-image-preview'"), 'default config must specify gemini-3.1-flash-image-preview');
+  assert.ok(appJs.includes("model: 'gemini-3.1-flash-lite-image'"), 'default config must specify gemini-3.1-flash-lite-image');
 
   // Verify inheritTextConnection does NOT overwrite config.image.model
   const inheritMatch = appJs.match(/if \(saveInheritEl\.checked\) \{[\s\S]*?\n    \}/);

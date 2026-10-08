@@ -5199,7 +5199,7 @@ syki lessons list --agent cc --text                   # 別名でも引けます
         <pre class="code-block" style="white-space: pre-wrap;"><code>syki::sok を Gemini 向けに設定してください（画像 OCR、音声入力、Mermaid の画像化）。
 まず skills/syki/SKILL.md と skills/syki/references/setup-guide.md を読んでください。
 config.json を編集する前に、syki::sok を終了する（トレイ → 終了）ようこちらに依頼し、バックアップを取ってから、渡す Gemini キーは vision.apiKey にだけ入れてください（音声と画像はそれを引き継ぎます）。
-音声は voice.model を gemini-3.5-transcribe、apiStyle は auto、languageCodes は ["ja-JP"] に、画像は image.model を gemini-3.1-flash-image-preview にしてください。
+音声は voice.model を gemini-3.5-transcribe、apiStyle は auto、languageCodes は ["ja-JP"] に、画像は image.model を gemini-3.1-flash-lite-image にしてください。
 これらの機能に必要な環境と前提条件（ネットワーク、マイクの許可、general.pasteImageOcr など）も確認し、足りない設定を整えてください。
 インストールや OS のプライバシー設定の変更が必要なときは、実行する前にコマンドを私に見せて、許可を得てください。
 キーは表示もコミットもしないでください。
