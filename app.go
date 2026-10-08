@@ -99,7 +99,7 @@ type App struct {
 	nativeLookApply func(nativeLook)
 }
 
-const AppVersion = "0.0.5"
+const AppVersion = "0.0.6"
 
 func (a *App) GetAppVersion() string {
 	return AppVersion

@@ -123,6 +123,7 @@
       aiCorrection: true,
       cursorAura: true,
       rewriteHistoryDir: 'history',
+      rewriteHistoryLink: true,
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
       aiChoiceMade: false, // the ask bar's one-time model choice was answered (first_run.js); false / absent = not yet
       commentStyle: 'line', // Ctrl+/ writes one <!-- --> per line ('line') or one around the lines ('block'): comment_toggle.js
@@ -590,6 +591,7 @@
   const btnOpenTab = document.getElementById('btn-open-tab');
   const btnPinTabs = document.getElementById('btn-pin-tabs');
   const tabIndexLeft = document.getElementById('tab-index-left');
+  const btnNewFile = document.getElementById('btn-new-file');
   const btnOpenFile = document.getElementById('btn-open-file');
   const btnOpenFolder = document.getElementById('btn-open-folder');
   const btnSaveFile = document.getElementById('btn-save-file');
@@ -1127,33 +1129,51 @@
       svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     }
 
-    // Measure bounding box or attributes
-    const rect = svgEl.getBoundingClientRect();
-    let width = parseFloat(svgEl.getAttribute('width')) || rect.width || 800;
-    let height = parseFloat(svgEl.getAttribute('height')) || rect.height || 600;
-
-    // Fallback to viewBox if width/height are 100% or invalid
+    // 1. Prioritize viewBox as the native vector dimension of the diagram
     const viewBox = svgEl.getAttribute('viewBox');
-    if (viewBox && (width <= 0 || height <= 0 || width > 5000)) {
+    let width = 0;
+    let height = 0;
+    if (viewBox) {
       const parts = viewBox.trim().split(/[\s,]+/).map(Number);
       if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
         width = parts[2];
         height = parts[3];
       }
     }
+
+    // 2. Fallback to width/height attributes if not a percentage
+    if (width <= 0 || height <= 0) {
+      const rawW = svgEl.getAttribute('width') || '';
+      const rawH = svgEl.getAttribute('height') || '';
+      if (!rawW.includes('%')) width = parseFloat(rawW) || 0;
+      if (!rawH.includes('%')) height = parseFloat(rawH) || 0;
+    }
+
+    // 3. Fallback to bounding client rect
+    if (width <= 0 || height <= 0) {
+      const rect = svgEl.getBoundingClientRect();
+      width = rect.width || 800;
+      height = rect.height || 600;
+    }
+
     if (width <= 0) width = 800;
     if (height <= 0) height = 600;
 
+    // Remove fixed or percentage width/height style on clone so it renders crisply at full resolution
+    svgClone.removeAttribute('style');
     svgClone.setAttribute('width', width);
     svgClone.setAttribute('height', height);
 
     // Determine background color based on container's rendered style or CSS tokens
     const bodyStyle = window.getComputedStyle ? window.getComputedStyle(document.body) : null;
-    const darkBg = (bodyStyle && bodyStyle.getPropertyValue('--bg-mermaid-dark').trim()) || '';
-    const lightBg = (bodyStyle && bodyStyle.getPropertyValue('--bg-mermaid-light').trim()) || '';
+    const darkBg = (bodyStyle && (bodyStyle.getPropertyValue('--bg-mermaid-dark').trim() || bodyStyle.getPropertyValue('--bg-main').trim())) || '';
+    const lightBg = (bodyStyle && (bodyStyle.getPropertyValue('--bg-mermaid-light').trim() || bodyStyle.getPropertyValue('--bg-html-page').trim())) || '';
     let bgColor = window.getComputedStyle(container).backgroundColor;
     if (!bgColor || bgColor === 'transparent' || bgColor.includes('(0, 0, 0, 0)')) {
       bgColor = container.classList.contains('tone-dark') ? darkBg : lightBg;
+    }
+    if (!bgColor || bgColor === 'transparent') {
+      bgColor = container.classList.contains('tone-dark') ? (bodyStyle && bodyStyle.getPropertyValue('--page').trim()) || '' : '';
     }
 
     const svgXml = new XMLSerializer().serializeToString(svgClone);
@@ -1165,7 +1185,11 @@
       img.onload = () => {
         try {
           const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
-          const scale = Math.max(4, Math.round(dpr * 2));
+          // Scale to achieve at least 2400px width for crystal-clear diagram export, or 4x scale
+          let scale = Math.max(4, Math.round(dpr * 3));
+          if (width * scale < 2400) {
+            scale = Math.max(scale, Math.ceil(2400 / width));
+          }
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(width * scale);
           canvas.height = Math.round(height * scale);
@@ -1181,6 +1205,8 @@
           ctx.fillRect(0, 0, canvas.width, canvas.height);
 
           // Draw high-resolution SVG
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
           URL.revokeObjectURL(url);
           resolve(canvas);
@@ -5148,6 +5174,13 @@
           if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
             const histHeader = `# History: ${reqInfo.tabTitle || baseFileName}\n- Archived: ${now.toLocaleString()}\n- Source: ${parentPath || '(Unsaved Note)'}\n\n---\n\n`;
             window.backend.saveFile(histFullPath, histHeader + reqInfo.originalText, reqInfo.tabEncoding || 'UTF-8');
+            const shouldInsertLink = config.general ? (config.general.rewriteHistoryLink !== false) : true;
+            const isMultiLineBlock = (reqInfo.originalText && reqInfo.originalText.includes('\n')) ||
+              (cleanedResult && cleanedResult.includes('\n'));
+            if (shouldInsertLink && isMultiLineBlock) {
+              const linkTitle = t('historyArchiveLink', { file: histFileName }) || `📜 History: ${histFileName}`;
+              cleanedResult += `\n\n[${linkTitle}](${linkPath})`;
+            }
           }
         } catch (histErr) {
           console.warn('Failed to archive rewrite original text:', histErr);
@@ -7353,6 +7386,7 @@
         tabEncoding: curTab.encoding || 'UTF-8',
         anchorId: anchorId,
         originalText: originalText,
+        targetKind: ctx.target.kind,
         baseline: baseline,
         persistRestore: originalText,
         isRewrite: true,
@@ -12640,6 +12674,7 @@ STRICT SYNTAX SAFETY RULES:
 
   // Header Button Bindings
   btnNewTab.onclick = () => createTab();
+  if (btnNewFile) btnNewFile.onclick = () => createTab();
   if (btnOpenTab) btnOpenTab.onclick = () => openFile();
   if (btnPinTabs) btnPinTabs.onclick = () => togglePinTabs();
   btnOpenFile.onclick = () => openFile();
@@ -14158,6 +14193,10 @@ STRICT SYNTAX SAFETY RULES:
     if (rewriteHistDirEl) {
       rewriteHistDirEl.value = (config.general && config.general.rewriteHistoryDir) || 'history';
     }
+    const rewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
+    if (rewriteHistLinkEl) {
+      rewriteHistLinkEl.checked = config.general ? (config.general.rewriteHistoryLink !== false) : true;
+    }
 
     syncTextProviderSelect();
 
@@ -15185,6 +15224,10 @@ STRICT SYNTAX SAFETY RULES:
     const saveRewriteHistDirEl = document.getElementById('cfg-rewrite-history-dir');
     if (saveRewriteHistDirEl) {
       config.general.rewriteHistoryDir = saveRewriteHistDirEl.value.trim() || 'history';
+    }
+    const saveRewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
+    if (saveRewriteHistLinkEl) {
+      config.general.rewriteHistoryLink = saveRewriteHistLinkEl.checked;
     }
 
     if (!config.voice) config.voice = {};

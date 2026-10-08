@@ -308,17 +308,28 @@
     if (globalEventsBound) return;
     globalEventsBound = true;
 
-    // Hide panel on click outside or blur
+    // Hide panel on click outside (including clicking elsewhere in the editor)
     document.addEventListener('click', (e) => {
       if (global.__recentlyDraggedPanel) return;
       if (typeof document !== 'undefined' && document.body && document.body.classList.contains('is-panel-dragging')) return;
+      if (isPanelVisible && jevPanelEl && !jevPanelEl.contains(e.target)) {
+        hidePanel();
+      }
+    });
+
+    // Hide panel when focus moves outside the active editor and panel
+    document.addEventListener('focusin', (e) => {
       if (isPanelVisible && jevPanelEl && !jevPanelEl.contains(e.target) && !isEditorEl(e.target)) {
         hidePanel();
       }
     });
 
     if (global.addEventListener) {
-      // Do not close panel on window blur so switching windows or losing OS focus keeps candidates visible
+      // Close panel on window blur so losing app focus closes the panel
+      global.addEventListener('blur', () => {
+        if (isPanelVisible) hidePanel();
+      });
+
       global.addEventListener('keydown', onPanelKeydown, true);
 
       // The panel is docked relative to the caret; re-evaluate when the box moves.

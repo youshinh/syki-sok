@@ -35,10 +35,10 @@ check('the calm list is made of real toolbar buttons, Settings is never in it', 
   assert.ok(!CL.CALM_TOOLBAR_HIDDEN.includes('x'), 'each call gives a fresh copy');
 });
 
-check('what is left visible is exactly Open, Save, Find, Ask AI, Preview and Settings; "+" is outside the layout', () => {
+check('what is left visible is exactly New, Open, Save, Find, Ask AI, Preview and Settings; "+" is outside the layout', () => {
   const visible = toolbarIds.filter((id) => !CL.CALM_TOOLBAR_HIDDEN.includes(id));
-  assert.deepEqual(visible, ['btn-open-file', 'btn-save-file', 'btn-find', 'btn-header-llm', 'btn-toggle-preview', 'btn-settings']);
-  assert.ok(!toolbarIds.includes('btn-new-tab'), 'New is the "+" beside the tabs, always there');
+  assert.deepEqual(visible, ['btn-new-file', 'btn-open-file', 'btn-save-file', 'btn-find', 'btn-header-llm', 'btn-toggle-preview', 'btn-settings']);
+  assert.ok(!toolbarIds.includes('btn-new-tab'), 'New is also the "+" beside the tabs, always there');
   assert.ok(html.includes('id="btn-new-tab"'));
 });
 
@@ -72,7 +72,7 @@ function buildFromMarkup() {
   return { container, doc };
 }
 
-check('applied to the real header: the seven stay, the rest hide, and the one divider sits between the two groups that remain', () => {
+check('applied to the real header: the eight stay, the rest hide, and the one divider sits between the two groups that remain', () => {
   const { container, doc } = buildFromMarkup();
   // a page that has never had a layout applied: state starts pristine in a fresh module instance
   const fresh = createRequire(import.meta.url);
@@ -81,7 +81,7 @@ check('applied to the real header: the seven stay, the rest hide, and the one di
   const module = globalThis.ChromeLayout;
   assert.equal(module._apply('toolbar', module.calmToolbarLayout(), doc), true);
   const shown = container.children.filter((c) => !c._classes.has('layout-hidden')).map((c) => c.id || 'divider');
-  assert.deepEqual(shown, ['btn-open-file', 'btn-save-file', 'btn-find', 'btn-header-llm', 'divider', 'btn-toggle-preview', 'btn-settings']);
+  assert.deepEqual(shown, ['btn-new-file', 'btn-open-file', 'btn-save-file', 'btn-find', 'btn-header-llm', 'divider', 'btn-toggle-preview', 'btn-settings']);
   assert.equal(module.hasVisibleItems('toolbar'), true);
   // the user can bring one back through the ordinary list, and take the divider logic with it
   const layout = module.calmToolbarLayout();

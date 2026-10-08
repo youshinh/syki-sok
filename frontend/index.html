@@ -26,6 +26,14 @@
       <!-- The file name of the note on screen, left-aligned to where the text starts (css/chrome.css); app.js (updateHeaderTitle) keeps its text. The tabs are not in this bar: they are the index strips at the window's edge (#tab-index-left, in #workspace). -->
       <div id="header-title" aria-hidden="true"></div>
       <div id="header-actions">
+        <button id="btn-new-file" class="btn-header-icon" data-i18n-title="newTabTitle" title="New Tab (Ctrl+N)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+            <polyline points="14 2 14 8 20 8"></polyline>
+            <line x1="12" y1="18" x2="12" y2="12"></line>
+            <line x1="9" y1="15" x2="15" y2="15"></line>
+          </svg>
+        </button>
         <button id="btn-open-file" class="btn-header-icon" data-i18n-title="openFileTitle" title="Open File (Ctrl+O)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
@@ -840,6 +848,12 @@
               <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Ctrl+K Rewrite backup folder:</label>
               <input type="text" id="cfg-rewrite-history-dir" placeholder="history (relative to note, or 'source', '_history')" value="history">
               <small data-i18n="rewriteHistoryDirHint">Folder name where original text is archived before Ctrl+K replacement. Saved relative to the edited file.</small>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after rewritten block</span>
+              </label>
+              <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file at the end of rewritten paragraphs.</small>
             </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
