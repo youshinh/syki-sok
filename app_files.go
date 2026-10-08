@@ -98,17 +98,19 @@ func (a *App) ShowInFileExplorer(filePath string) error {
 	var cmd *exec.Cmd
 	switch runtime.GOOS {
 	case "windows":
-		// explorer /select,"C:\path\to\file"
-		cmd = exec.Command("explorer", "/select,", filePath)
+		// explorer.exe /select,"C:\path\to\file"
+		// Do not set CREATE_NO_WINDOW on explorer.exe as it suppresses the GUI shell window
+		cmd = exec.Command("explorer.exe", "/select,", filePath)
 	case "darwin":
 		// open -R "/path/to/file"
 		cmd = exec.Command("open", "-R", filePath)
+		setCmdWindowFlags(cmd)
 	default:
 		// Linux: try to open the directory containing the file
 		dir := filepath.Dir(filePath)
 		cmd = exec.Command("xdg-open", dir)
+		setCmdWindowFlags(cmd)
 	}
-	setCmdWindowFlags(cmd)
 	return cmd.Start()
 }
 

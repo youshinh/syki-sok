@@ -5102,6 +5102,11 @@
               baseDir = parentPath.substring(0, lastSlash);
               baseFileName = parentPath.substring(lastSlash + 1);
             }
+          } else {
+            const configuredScrapDir = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '';
+            if (configuredScrapDir) {
+              baseDir = configuredScrapDir.replace(/^~[\\/]/, '');
+            }
           }
           baseFileName = baseFileName.replace(/\.[^.]+$/, ''); // drop extension
           // Sanitize OS forbidden filename characters (\ / : * ? " < > |) and whitespace
@@ -5118,15 +5123,11 @@
           const histFileName = `${baseFileName}_history_${timestamp}.md`;
 
           let histFullPath = '';
-          let linkPath = '';
           if (baseDir) {
-            const sep = parentPath.includes('\\') ? '\\' : '/';
+            const sep = (baseDir.includes('\\') || (parentPath && parentPath.includes('\\'))) ? '\\' : '/';
             histFullPath = `${baseDir}${sep}${histDirName}${sep}${histFileName}`;
-            linkPath = `${histDirName}/${histFileName}`;
           } else {
-            // Unsaved note fallback: save in AppData/scraps or local folder
-            linkPath = `${histDirName}/${histFileName}`;
-            histFullPath = histFileName;
+            histFullPath = `${histDirName}/${histFileName}`;
           }
 
           if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
