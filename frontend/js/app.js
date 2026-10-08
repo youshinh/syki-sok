@@ -5122,64 +5122,31 @@
       } else if (reqInfo.originalText && reqInfo.originalText.trim() !== '') {
         // Successful rewrite: archive original text to a unique MD file in history folder
         try {
-          const histDirName = (config.general && config.general.rewriteHistoryDir) ? config.general.rewriteHistoryDir.trim() : 'history';
-          const parentPath = reqInfo.tabPath || '';
-          let baseDir = '';
-          let baseFileName = reqInfo.tabTitle || 'untitled';
-          if (parentPath) {
-            const sep = parentPath.includes('\\') ? '\\' : '/';
-            const lastSlash = parentPath.lastIndexOf(sep);
-            if (lastSlash !== -1) {
-              baseDir = parentPath.substring(0, lastSlash);
-              baseFileName = parentPath.substring(lastSlash + 1);
-            }
-          } else {
-            let scrapDir = '';
-            if (window.backend && typeof window.backend.getScrapDir === 'function') {
-              try { scrapDir = window.backend.getScrapDir() || ''; } catch (e) {}
-            }
-            if (!scrapDir) {
-              const configuredScrapDir = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '';
-              if (configuredScrapDir) {
-                scrapDir = configuredScrapDir.replace(/^~[\\/]/, '');
-              }
-            }
-            baseDir = scrapDir;
-          }
-          baseFileName = baseFileName.replace(/\.[^.]+$/, ''); // drop extension
-          // Sanitize OS forbidden filename characters (\ / : * ? " < > |) and whitespace
-          baseFileName = baseFileName.replace(/[\\/:*?"<>|\r\n\t]/g, '_').trim();
-          // Cap length to 50 chars to avoid MAX_PATH (260 chars) issues on Windows
-          if (baseFileName.length > 50) {
-            baseFileName = baseFileName.substring(0, 50).trim();
-          }
-          if (!baseFileName) baseFileName = 'note';
-
           const pad = (n) => String(n).padStart(2, '0');
           const now = new Date();
-          const timestamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
-          const histFileName = `${baseFileName}_history_${timestamp}.md`;
-
-          let histFullPath = '';
-          let linkPath = '';
-          if (baseDir) {
-            const sep = (baseDir.includes('\\') || (parentPath && parentPath.includes('\\'))) ? '\\' : '/';
-            histFullPath = `${baseDir}${sep}${histDirName}${sep}${histFileName}`;
-            linkPath = `${histDirName}/${histFileName}`;
-          } else {
-            linkPath = `${histDirName}/${histFileName}`;
-            histFullPath = linkPath;
-          }
-
-          if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
-            const histHeader = `# History: ${reqInfo.tabTitle || baseFileName}\n- Archived: ${now.toLocaleString()}\n- Source: ${parentPath || '(Unsaved Note)'}\n\n---\n\n`;
-            window.backend.saveFile(histFullPath, histHeader + reqInfo.originalText, reqInfo.tabEncoding || 'UTF-8');
+          const stamp = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+          const archive = window.FileAnchor && window.FileAnchor.archivePaths({
+            tabPath: reqInfo.tabPath,
+            tabTitle: reqInfo.tabTitle,
+            scrapDir: reqInfo.scrapDir,
+            dirName: config.general && config.general.rewriteHistoryDir,
+            stamp: stamp
+          });
+          if (!archive) {
+            // No folder to keep it in (a note with no file and no scrap folder): say so rather than write it to wherever the app runs.
+            showMessage(t('historyArchiveFailed', { error: 'no folder' }), 5000, { important: true });
+          } else if (window.backend && typeof window.backend.saveFile === 'function') {
+            const histHeader = `# History: ${reqInfo.tabTitle || archive.fileName}\n- Archived: ${now.toLocaleString()}\n- Source: ${reqInfo.tabPath || '(Unsaved Note)'}\n\n---\n\n`;
+            // The call answers later (it is a bound Go function), and a failure must not leave a link to nothing unsaid.
+            Promise.resolve(window.backend.saveFile(archive.fullPath, histHeader + reqInfo.originalText, reqInfo.tabEncoding || 'UTF-8'))
+              .then((res) => { if (res && res.Success === false) throw new Error('not saved'); })
+              .catch((err) => showMessage(t('historyArchiveFailed', { error: String((err && err.message) || err) }), 6000, { important: true }));
             const shouldInsertLink = config.general ? (config.general.rewriteHistoryLink !== false) : true;
             const isMultiLineBlock = (reqInfo.originalText && reqInfo.originalText.includes('\n')) ||
               (cleanedResult && cleanedResult.includes('\n'));
             if (shouldInsertLink && isMultiLineBlock) {
-              const linkTitle = t('historyArchiveLink', { file: histFileName }) || `📜 History: ${histFileName}`;
-              cleanedResult += `\n\n[${linkTitle}](${linkPath})`;
+              const linkTitle = t('historyArchiveLink', { file: archive.fileName }) || `📜 History: ${archive.fileName}`;
+              cleanedResult += `\n\n[${linkTitle}](${archive.linkTarget})`;
             }
           }
         } catch (histErr) {
@@ -7339,6 +7306,11 @@
     // typo correction does, instead of inserting a new answer below it. openInlinePromptBar
     // already refused to open this mode without real text to rewrite (kind 'note'/'none').
     if (ctx.mode === 'rewrite') {
+      // A note with no file keeps the original in the scrap folder; the backend answers asynchronously, so it is asked before the edit starts.
+      let rewriteScrapDir = '';
+      if (!curTab.path && window.backend && typeof window.backend.getScrapDir === 'function') {
+        try { rewriteScrapDir = (await window.backend.getScrapDir()) || ''; } catch (e) { /* no folder: reported when the answer arrives */ }
+      }
       closeInlinePromptBar();
 
       const editor = editorForTab(curTab.id);
@@ -7384,6 +7356,7 @@
         tabPath: curTab.path || '',
         tabTitle: curTab.title || 'untitled',
         tabEncoding: curTab.encoding || 'UTF-8',
+        scrapDir: rewriteScrapDir,
         anchorId: anchorId,
         originalText: originalText,
         targetKind: ctx.target.kind,

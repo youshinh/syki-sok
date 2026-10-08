@@ -1,0 +1,25 @@
+# syki::sok
+
+> カーソルの位置にAIがいる、超軽量Markdownスクラッチパッド。Go + OSネイティブWebView（Windows WebView2 / macOS WKWebView）で構築され、常駐メモリ5〜15MB、15ms未満で前面復帰します。
+
+## Documentation for AI & LLMs
+
+- [AI_MANUAL.md](AI_MANUAL.md): AI/LLM用総合マニュアル・ナレッジベース（ChatGPT, Claude, Gemini, Ollama等の取り込み用完全ガイド）
+- [README_JA.md](README_JA.md): 日本語版 README
+- [README.md](README.md): English README
+- [docs/features_ja.md](docs/features_ja.md): 全機能・仕様・ショートカットの詳細リファレンス (日本語)
+- [skills/syki/SKILL.md](skills/syki/SKILL.md): AIエージェント向け操作スキル定義とJSON-RPC/CLIインターフェース仕様
+
+## Core Concepts & Key Bindings
+
+- **前面呼び出し**: `Ctrl+Alt+M` (Windows) / `Opt+Cmd+M` (macOS)
+- **AIに質問**: `Ctrl+L` (Windows) / `Cmd+L` (macOS)
+- **ワンキー校正**: `Alt+C` (Windows) / `Cmd+Shift+C` (macOS)
+- **コマンドバー**: `Ctrl+E` (Windows) / `Cmd+E` (macOS)
+- **自動セレクター**: `Ctrl+Enter` (Windows) / `Cmd+Enter` (macOS)
+- **アクション候補**: `Ctrl+J` (Windows) / `Cmd+J` (macOS)
+- **全メモ並列検索**: `Ctrl+Shift+F` (Windows) / `Cmd+Shift+F` (macOS)
+- **左右分割プレビュー**: `Ctrl+\` (Windows) / `Cmd+\` (macOS)
+- **Mermaidプレビュー**: `Ctrl+Alt+V` (Windows) / `Cmd+Opt+V` (macOS)
+- **タスクパネル**: `Alt+T` (Windows) / `Opt+T` (macOS)
+- **コマンドパレット**: `Ctrl+Shift+P` (Windows) / `Cmd+Shift+P` (macOS)

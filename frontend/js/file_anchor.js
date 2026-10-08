@@ -815,6 +815,34 @@
     return String(target || '').replace(/ /g, '%20').replace(/\(/g, '%28').replace(/\)/g, '%29');
   }
 
+  // Where the Ctrl+K rewrite keeps the text it replaced, and the link that points at it. A saved note keeps it in <its folder>/<dirName>/ and
+  // the link is relative to that folder (the note's own folder is what a click resolves a relative link against); a note with no file
+  // yet keeps it in the scrap folder, which a click does not resolve against, so its link is the full path. The link target is encoded
+  // (a note called "2026-10-08 21-54" has a space in its name). null when there is no folder to write to. o: { tabPath, tabTitle,
+  // scrapDir, dirName, stamp }.
+  const BS = String.fromCharCode(92); // a backslash
+  function archivePaths(o) {
+    const tabPath = o.tabPath || '';
+    const dirName = String(o.dirName || '').trim() || 'history';
+    let baseDir = '';
+    let name = o.tabTitle || 'untitled';
+    if (tabPath) {
+      const i = Math.max(tabPath.lastIndexOf('/'), tabPath.lastIndexOf(BS));
+      if (i !== -1) { baseDir = tabPath.slice(0, i); name = tabPath.slice(i + 1); }
+    } else {
+      baseDir = o.scrapDir || '';
+    }
+    if (!baseDir) return null;
+    name = name.replace(/\.[^.]+$/, '').split(BS).join('_').replace(/[/:*?"<>|\r\n\t]/g, '_').trim();
+    if (name.length > 50) name = name.slice(0, 50).trim(); // keeps the path under MAX_PATH on Windows
+    if (!name) name = 'note';
+    const fileName = `${name}_history_${o.stamp}.md`;
+    const sep = baseDir.includes(BS) ? BS : '/';
+    const fullPath = `${baseDir}${sep}${dirName}${sep}${fileName}`;
+    const target = tabPath ? `${dirName}/${fileName}` : fullPath.split(BS).join('/');
+    return { fileName: fileName, fullPath: fullPath, linkTarget: encodeLinkTarget(target) };
+  }
+
   function init() {
     bindHoverListeners();
   }
@@ -826,6 +854,7 @@
     handleDragLeave: handleDragLeave,
     handleDrop: handleDrop,
     encodeLinkTarget: encodeLinkTarget,
+    archivePaths: archivePaths,
     // Refresh the link underlines of an editor (or of both, without an argument) once typing pauses;
     // app.js calls this wherever it sets a note's text itself, which fires no input event.
     scheduleMarks: function (editor) { if (editor) scheduleMarks(editor); else refreshMarks(); }
@@ -837,6 +866,7 @@
       scanLinks: scanLinks,
       segmentText: segmentText,
       encodeLinkTarget: encodeLinkTarget,
+      archivePaths: archivePaths,
       collectImageLinks: collectImageLinks,
       pathToFileUrl: pathToFileUrl,
       resolveLocalImageSrc: resolveLocalImageSrc,

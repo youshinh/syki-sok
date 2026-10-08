@@ -10,7 +10,7 @@
 
 <p align="center"><img src="img/screen_diagram.png" width="840" alt="syki::sok - 左右分割エディタとリアルタイムMermaid図解プレビュー"></p>
 
-[**ダウンロード**](https://github.com/youshinh/syki-sok/releases/latest) • [公式マニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [English README](README.md) • [全機能リファレンス](docs/features_ja.md)
+[**ダウンロード**](https://github.com/youshinh/syki-sok/releases/latest) • [公式マニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [AI用マニュアル](AI_MANUAL.md) • [English README](README.md) • [全機能リファレンス](docs/features_ja.md)
 
 ---
 
@@ -114,6 +114,7 @@ syki-cli agent install-skill         # Claude Code や Codex に syki::sok 操�
 ## ドキュメント
 
 - [公式マニュアル](https://youshinh.github.io/syki-sok/manual_ja.html)（[English](https://youshinh.github.io/syki-sok/manual.html)）: スクリーンショット付きの詳しい使い方
+- [AI / LLM 用マニュアル](AI_MANUAL.md): ChatGPT・Claude・Gemini等のAIに読み込ませて質問・相談するための知識ベース
 - [全機能リファレンス](docs/features_ja.md)（[English](docs/features.md)）: 仕様・全ショートカット・設定項目の一覧
 
 ## ライセンス
