@@ -982,7 +982,7 @@ func queryOpenAI(baseURL, model, prompt string, cfg Config) (string, error) {
 	return strings.TrimSpace(result.Choices[0].Message.Content), nil
 }
 
-// GenerateImage calls Gemini image generation (gemini-3.1-flash-lite-image / imagen-3) and returns raw image bytes and mimeType.
+// GenerateImage calls Gemini image generation (gemini-3.1-flash-image-preview / imagen-3) and returns raw image bytes and mimeType.
 // An error never carries the API key.
 func GenerateImage(prompt string, cfg ImageGenConfig) ([]byte, string, error) {
 	data, mime, err := generateImageProvider(prompt, cfg)
@@ -999,7 +999,7 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 	}
 	model := strings.TrimSpace(cfg.Model)
 	if model == "" {
-		model = "gemini-3.1-flash-lite-image"
+		model = "gemini-3.1-flash-image-preview"
 	}
 	aspectRatio := cfg.AspectRatio
 	if aspectRatio == "" {
