@@ -994,7 +994,9 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 		return nil, "", errNotConfigured("Gemini API Keyが設定されていません")
 	}
 	baseURL := strings.TrimRight(cfg.BaseURL, "/")
-	if baseURL == "" {
+	if baseURL == "" || strings.Contains(baseURL, "generativelanguage.googleapis.com") {
+		// The image endpoints append /v1beta/... themselves, so a base URL borrowed from the text or vision
+		// settings (e.g. https://generativelanguage.googleapis.com/v1beta) must be reduced to the host.
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
 	model := strings.TrimSpace(cfg.Model)
