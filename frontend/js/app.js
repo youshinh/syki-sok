@@ -8754,8 +8754,7 @@ STRICT SYNTAX SAFETY RULES:
 
     const imageGenPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
     let imageModel = (config.image && config.image.model) ? config.image.model.trim() : '';
-    // Prevent accidental text model leakage (e.g. gemini-flash-latest, qwen2.5) to image gen
-    if (!imageModel || !isDedicatedImageModel(imageModel)) {
+    if (!imageModel) {
       imageModel = 'gemini-3.1-flash-lite-image';
     }
     const imageAspect = (config.image && config.image.aspectRatio) || '16:9';
@@ -14275,7 +14274,7 @@ STRICT SYNTAX SAFETY RULES:
     const imgModelInput = document.getElementById('cfg-image-model');
     if (imgModelInput) {
       const rawModel = config.image && config.image.model;
-      imgModelInput.value = (rawModel && isDedicatedImageModel(rawModel)) ? rawModel : 'gemini-3.1-flash-lite-image';
+      imgModelInput.value = rawModel ? rawModel.trim() : 'gemini-3.1-flash-lite-image';
     }
     const imgAspectSelect = document.getElementById('cfg-image-aspect-ratio');
     if (imgAspectSelect) imgAspectSelect.value = (config.image && config.image.aspectRatio) || '16:9';
@@ -15297,7 +15296,7 @@ STRICT SYNTAX SAFETY RULES:
     const imgModelEl = document.getElementById('cfg-image-model');
     if (imgModelEl) {
       const enteredModel = imgModelEl.value.trim();
-      config.image.model = (enteredModel && isDedicatedImageModel(enteredModel)) ? enteredModel : (enteredModel || 'gemini-3.1-flash-lite-image');
+      config.image.model = enteredModel || 'gemini-3.1-flash-lite-image';
     }
     const imgAspectEl = document.getElementById('cfg-image-aspect-ratio');
     if (imgAspectEl) config.image.aspectRatio = imgAspectEl.value || '16:9';

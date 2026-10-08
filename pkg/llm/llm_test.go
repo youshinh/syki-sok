@@ -766,6 +766,82 @@ func TestGenerateImagen(t *testing.T) {
 	}
 }
 
+func TestGenerateInteractionsImageBanana(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "interactions") {
+			body, _ := io.ReadAll(r.Body)
+			bodyStr := string(body)
+			if !strings.Contains(bodyStr, `"model":"models/gemini-nano-banana-2.1"`) {
+				t.Errorf("expected model models/gemini-nano-banana-2.1 in request, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"google_search"`) {
+				t.Errorf("expected google_search tool in request, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"thinking_level":"medium"`) {
+				t.Errorf("expected thinking_level medium in request, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"aspect_ratio":"16:9"`) {
+				t.Errorf("expected aspect_ratio 16:9, got: %s", bodyStr)
+			}
+			if !strings.Contains(bodyStr, `"image_size":"2K"`) {
+				t.Errorf("expected image_size 2K, got: %s", bodyStr)
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(map[string]interface{}{
+				"status": "completed",
+				"steps": []map[string]interface{}{
+					{
+						"type": "thought",
+					},
+					{
+						"type": "model_output",
+						"content": []map[string]interface{}{
+							{
+								"type":      "image",
+								"mime_type": "image/jpeg",
+								"data":      "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+							},
+						},
+					},
+				},
+			})
+			return
+		}
+		http.NotFound(w, r)
+	}))
+	defer server.Close()
+
+	cfg := ImageGenConfig{
+		BaseURL:     server.URL,
+		Model:       "gemini-nano-banana-2.1",
+		APIKey:      "test-api-key",
+		AspectRatio: "16:9",
+		Resolution:  "2048",
+	}
+
+	data, mime, err := GenerateImage("Draw a nano banana dish", cfg)
+	if err != nil {
+		t.Fatalf("GenerateImage failed for banana model: %v", err)
+	}
+	if mime != "image/jpeg" {
+		t.Errorf("expected image/jpeg, got %s", mime)
+	}
+	if len(data) == 0 {
+		t.Errorf("expected non-empty image data")
+	}
+
+	// Test helper functions
+	if !isInteractionsImageModel("gemini-nano-banana-2.1") {
+		t.Errorf("expected isInteractionsImageModel to be true for gemini-nano-banana-2.1")
+	}
+	if !isInteractionsImageModel("my-custom-banana") {
+		t.Errorf("expected isInteractionsImageModel to be true for my-custom-banana")
+	}
+	if isInteractionsImageModel("gemini-3.1-flash-lite-image") {
+		t.Errorf("expected isInteractionsImageModel to be false for gemini-3.1-flash-lite-image")
+	}
+}
+
 func TestDedicatedImageModel(t *testing.T) {
 	// Test dedicated image model detection
 	if !isDedicatedImageModel("gemini-3.1-flash-lite-image") {
