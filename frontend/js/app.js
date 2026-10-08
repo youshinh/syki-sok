@@ -14767,71 +14767,46 @@ STRICT SYNTAX SAFETY RULES:
     });
   }
 
-  const btnFetchModelsEl = document.getElementById('btn-fetch-models');
-  if (btnFetchModelsEl) {
-    btnFetchModelsEl.addEventListener('click', async () => {
-      const baseUrlInput = document.getElementById('cfg-base-url');
-      const apiKeyInput = document.getElementById('cfg-api-key');
-      const baseUrl = baseUrlInput ? baseUrlInput.value.trim() : '';
-      const apiKey = apiKeyInput ? apiKeyInput.value.trim() : '';
+  // The model fields read their suggestions from the provider (frontend/js/model_list.js); the options of index.html are the fallback.
+  const settingValue = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
+  const textEndpoint = () => ({ baseUrl: settingValue('cfg-base-url'), apiKey: settingValue('cfg-api-key') });
+  const visionEndpoint = () => {
+    const baseUrl = settingValue('cfg-vision-base-url') || ModelList.GOOGLE_BASE;
+    return { baseUrl, apiKey: settingValue('cfg-vision-api-key') || borrowedApiKey(baseUrl, [textEndpoint()]) };
+  };
+  const imageEndpoint = () => {
+    const baseUrl = ModelList.GOOGLE_BASE;
+    return { baseUrl, apiKey: settingValue('cfg-image-api-key') || borrowedApiKey(baseUrl, [visionEndpoint(), textEndpoint()]) };
+  };
+  const semanticEndpoint = () => ({ baseUrl: settingValue('cfg-semantic-base-url') || 'http://localhost:11434', apiKey: settingValue('cfg-semantic-api-key') });
+  const textModelField = { input: document.getElementById('cfg-model'), kind: 'text', endpoint: textEndpoint };
+  if (window.ModelList) {
+    [
+      textModelField,
+      { input: document.getElementById('cfg-vision-model'), kind: 'text', endpoint: visionEndpoint },
+      { input: document.getElementById('cfg-voice-model'), kind: 'voice', endpoint: visionEndpoint },
+      { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
+      { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint }
+    ].forEach(f => ModelList.attach(f));
+  }
 
-      if (!baseUrl) {
+  const btnFetchModelsEl = document.getElementById('btn-fetch-models');
+  if (btnFetchModelsEl && window.ModelList) {
+    btnFetchModelsEl.addEventListener('click', async () => {
+      if (!textEndpoint().baseUrl) {
         showMessage(t('pleaseEnterBaseUrl') || 'Base URLを入力してください', 3000, { important: true });
         return;
       }
-
       btnFetchModelsEl.disabled = true;
       const originalText = btnFetchModelsEl.textContent;
       btnFetchModelsEl.textContent = '⏳ Fetching...';
-
       try {
-        let models = [];
-        // Gemini endpoint
-        if (baseUrl.includes('generativelanguage.googleapis.com')) {
-          const fetchUrl = `${baseUrl.replace(/\/+$/, '')}/v1beta/models${apiKey ? `?key=${apiKey}` : ''}`;
-          const res = await fetch(fetchUrl);
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          const data = await res.json();
-          if (data && data.models) {
-            models = data.models
-              .filter(m => (m.supportedGenerationMethods || []).includes('generateContent'))
-              .map(m => {
-                const cleanName = m.name.replace(/^models\//, '');
-                return { id: cleanName, label: `${m.displayName || cleanName} (${cleanName})` };
-              });
-          }
-        } else if (baseUrl.includes('11434')) {
-          // Ollama endpoint
-          const res = await fetch(`${baseUrl.replace(/\/+$/, '')}/api/tags`);
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          const data = await res.json();
-          if (data && data.models) {
-            models = data.models.map(m => ({ id: m.name, label: `${m.name} (${m.details ? m.details.parameter_size : 'local'})` }));
-          }
-        } else {
-          // OpenAI / LM Studio / OpenRouter / Groq / OpenAI-compatible endpoint
-          const headers = {};
-          if (apiKey) headers['Authorization'] = `Bearer ${apiKey}`;
-          let endpoint = baseUrl.replace(/\/+$/, '');
-          if (!endpoint.endsWith('/models')) {
-            endpoint = endpoint.endsWith('/v1') ? `${endpoint}/models` : `${endpoint}/v1/models`;
-          }
-          const res = await fetch(endpoint, { headers });
-          if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-          const data = await res.json();
-          if (data && Array.isArray(data.data)) {
-            models = data.data.map(m => ({ id: m.id, label: m.id }));
-          } else if (data && Array.isArray(data.models)) {
-            models = data.models.map(m => ({ id: m.id || m.name, label: m.id || m.name }));
-          }
-        }
-
-        if (models.length > 0) {
-          updateModelSuggestionsList(models);
-          showMessage(`Found ${models.length} models! Model list updated.`, 3000);
-          const modelInput = document.getElementById('cfg-model');
-          if (modelInput && !modelInput.value.trim()) {
-            modelInput.value = models[0].id;
+        const n = await ModelList.refresh(textModelField);
+        if (n > 0) {
+          showMessage(`Found ${n} models! Model list updated.`, 3000);
+          const modelInput = textModelField.input;
+          if (modelInput && !modelInput.value.trim() && modelInput.list && modelInput.list.options[0]) {
+            modelInput.value = modelInput.list.options[0].value;
           }
         } else {
           showMessage('No models returned from endpoint.', 3000, { important: true });
