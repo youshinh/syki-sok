@@ -122,6 +122,7 @@
       imeGuardianReverse: true,
       aiCorrection: true,
       cursorAura: true,
+      rewriteHistoryDir: 'history',
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
       aiChoiceMade: false, // the ask bar's one-time model choice was answered (first_run.js); false / absent = not yet
       commentStyle: 'line', // Ctrl+/ writes one <!-- --> per line ('line') or one around the lines ('block'): comment_toggle.js
@@ -1163,7 +1164,8 @@
       const img = new Image();
       img.onload = () => {
         try {
-          const scale = window.devicePixelRatio && window.devicePixelRatio > 1 ? 2 : 2;
+          const dpr = (typeof window !== 'undefined' && window.devicePixelRatio) || 1;
+          const scale = Math.max(4, Math.round(dpr * 2));
           const canvas = document.createElement('canvas');
           canvas.width = Math.round(width * scale);
           canvas.height = Math.round(height * scale);
@@ -5103,10 +5105,17 @@
               baseFileName = parentPath.substring(lastSlash + 1);
             }
           } else {
-            const configuredScrapDir = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '';
-            if (configuredScrapDir) {
-              baseDir = configuredScrapDir.replace(/^~[\\/]/, '');
+            let scrapDir = '';
+            if (window.backend && typeof window.backend.getScrapDir === 'function') {
+              try { scrapDir = window.backend.getScrapDir() || ''; } catch (e) {}
             }
+            if (!scrapDir) {
+              const configuredScrapDir = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '';
+              if (configuredScrapDir) {
+                scrapDir = configuredScrapDir.replace(/^~[\\/]/, '');
+              }
+            }
+            baseDir = scrapDir;
           }
           baseFileName = baseFileName.replace(/\.[^.]+$/, ''); // drop extension
           // Sanitize OS forbidden filename characters (\ / : * ? " < > |) and whitespace
@@ -5123,11 +5132,14 @@
           const histFileName = `${baseFileName}_history_${timestamp}.md`;
 
           let histFullPath = '';
+          let linkPath = '';
           if (baseDir) {
             const sep = (baseDir.includes('\\') || (parentPath && parentPath.includes('\\'))) ? '\\' : '/';
             histFullPath = `${baseDir}${sep}${histDirName}${sep}${histFileName}`;
+            linkPath = `${histDirName}/${histFileName}`;
           } else {
-            histFullPath = `${histDirName}/${histFileName}`;
+            linkPath = `${histDirName}/${histFileName}`;
+            histFullPath = linkPath;
           }
 
           if (histFullPath && window.backend && typeof window.backend.saveFile === 'function') {
@@ -12260,6 +12272,24 @@ STRICT SYNTAX SAFETY RULES:
 
   // Tab Header Context Menu Actions
   if (tabContextMenu) {
+    const btnTabNew = document.getElementById('tab-ctx-new-file');
+    if (btnTabNew) {
+      btnTabNew.onclick = () => {
+        hideAllContextMenus();
+        contextMenuTargetTabId = null;
+        newTab();
+      };
+    }
+
+    const btnTabOpen = document.getElementById('tab-ctx-open-file');
+    if (btnTabOpen) {
+      btnTabOpen.onclick = () => {
+        hideAllContextMenus();
+        contextMenuTargetTabId = null;
+        openFile();
+      };
+    }
+
     const btnTabClose = document.getElementById('tab-ctx-close');
     if (btnTabClose) {
       btnTabClose.onclick = () => {

@@ -318,9 +318,7 @@
     });
 
     if (global.addEventListener) {
-      global.addEventListener('blur', () => {
-        if (isPanelVisible) hidePanel();
-      });
+      // Do not close panel on window blur so switching windows or losing OS focus keeps candidates visible
       global.addEventListener('keydown', onPanelKeydown, true);
 
       // The panel is docked relative to the caret; re-evaluate when the box moves.

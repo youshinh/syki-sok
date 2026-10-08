@@ -53,6 +53,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_closeWindow", app.CloseWindow)
 	_ = w.Bind("backend_updateGlobalShortcut", app.UpdateGlobalShortcut)
 	_ = w.Bind("backend_searchScraps", app.SearchScraps)
+	_ = w.Bind("backend_getScrapDir", app.GetScrapDir)
 	_ = w.Bind("backend_searchScrapsAsync", app.SearchScrapsAsync)
 	_ = w.Bind("backend_searchScrapsSemanticAsync", app.SearchScrapsSemanticAsync)
 	_ = w.Bind("backend_scrapFilterOptionsAsync", app.ScrapFilterOptionsAsync)

@@ -5778,6 +5778,8 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
 .print-card {
   width: min(1080px, 94vw);
   max-width: 94vw;
+  border-radius: 8px;
+  overflow: hidden;
 }
 .print-body {
   display: flex;
@@ -5788,12 +5790,16 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   flex: 1;
   min-width: 0;
   background: var(--bg-print-stage);
+  border-radius: 6px;
+  overflow: hidden;
+  margin: 10px;
 }
 .print-embed {
   display: block;
   width: 100%;
   height: 100%;
   border: 0;
+  border-radius: 6px;
 }
 .print-status {
   position: absolute;

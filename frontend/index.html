@@ -28,11 +28,9 @@
       <div id="header-actions">
         <button id="btn-open-file" class="btn-header-icon" data-i18n-title="openFileTitle" title="Open File (Ctrl+O)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-            <polyline points="14 2 14 8 20 8"></polyline>
-            <line x1="16" y1="13" x2="8" y2="13"></line>
-            <line x1="16" y1="17" x2="8" y2="17"></line>
-            <polyline points="10 9 9 9 8 9"></polyline>
+            <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+            <path d="M8 10V6h8v4"></path>
+            <path d="M2 10h20"></path>
           </svg>
         </button>
         <button id="btn-open-folder" class="btn-header-icon" data-i18n-title="openFolderTitle" title="Open Folder (Ctrl+Shift+O)">
@@ -157,11 +155,9 @@
           </button>
           <button id="btn-open-tab" class="tab-index-btn" data-i18n-title="openFileTitle" title="Open File (Ctrl+O)">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-              <polyline points="14 2 14 8 20 8"></polyline>
-              <line x1="16" y1="13" x2="8" y2="13"></line>
-              <line x1="16" y1="17" x2="8" y2="17"></line>
-              <polyline points="10 9 9 9 8 9"></polyline>
+              <path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path>
+              <path d="M8 10V6h8v4"></path>
+              <path d="M2 10h20"></path>
             </svg>
           </button>
           <button id="btn-all-tabs" class="tab-index-btn hidden" data-i18n-title="allTabsTitle" title="All tabs" aria-haspopup="dialog" aria-expanded="false">
@@ -595,6 +591,17 @@
 
     <!-- Tab Header Context Menu (Right-click on tab items) -->
     <div id="tab-context-menu" class="hidden">
+      <div class="menu-item" id="tab-ctx-new-file">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="12" y1="18" x2="12" y2="12"></line><line x1="9" y1="15" x2="15" y2="15"></line></svg>
+        <span class="menu-label" data-i18n="tabCtxNewFile">新規作成</span>
+        <span class="shortcut">Ctrl+N</span>
+      </div>
+      <div class="menu-item" id="tab-ctx-open-file">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h16a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.93a2 2 0 0 1-1.66-.9l-.82-1.2A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13c0 1.1.9 2 2 2Z"></path><path d="M8 10V6h8v4"></path><path d="M2 10h20"></path></svg>
+        <span class="menu-label" data-i18n="tabCtxOpenFile">ファイルを開く...</span>
+        <span class="shortcut">Ctrl+O</span>
+      </div>
+      <div class="menu-divider"></div>
       <div class="menu-item" id="tab-ctx-close">
         <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
         <span class="menu-label" data-i18n="tabCtxClose">このタブを閉じる</span>
