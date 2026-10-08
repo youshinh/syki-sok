@@ -101,7 +101,7 @@
       apiKey: ''
     },
     image: {
-      model: 'gemini-3.1-flash-lite-image',
+      model: 'gemini-3.1-flash-image',
       aspectRatio: '16:9',
       resolution: '1024'
     },
@@ -5047,9 +5047,12 @@
     return window.LlmError ? window.LlmError.oneLine(errorText, 300) : String(errorText || '').replace(/\s+/g, ' ').trim().substring(0, 300);
   }
 
-  // The settings of the model a request went to: an image read by the vision model reports on config.vision.
+  // The settings of the model a request went to: an image read by the vision model reports on config.vision,
+  // and image generation (Mermaid diagram, etc.) reports on config.image.
   function llmConfigOf(reqId) {
-    return String(reqId).startsWith('vision_') ? config.vision : config.text;
+    if (String(reqId).startsWith('vision_')) return config.vision;
+    if (String(reqId).startsWith('img_')) return config.image;
+    return config.text;
   }
 
   window.__onLLMResult = function (reqId, resultText, errorText) {
@@ -8645,6 +8648,13 @@ STRICT SYNTAX SAFETY RULES:
     ].join(' ');
   }
 
+  function isDedicatedImageModel(model) {
+    if (!model || typeof model !== 'string') return false;
+    const m = model.toLowerCase().trim();
+    if (m.startsWith('imagen-') || m.endsWith('-image') || m.includes('banana')) return true;
+    return false;
+  }
+
   function generateImageFromMermaid() {
     clearGhostText();
     const curTab = getActiveTab();
@@ -8709,7 +8719,11 @@ STRICT SYNTAX SAFETY RULES:
     updateLLMIndicator();
 
     const imageGenPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
-    const imageModel = (config.image && config.image.model) || 'gemini-3.1-flash-lite-image';
+    let imageModel = (config.image && config.image.model) ? config.image.model.trim() : '';
+    // Prevent accidental text model leakage (e.g. gemini-flash-latest, qwen2.5) to image gen
+    if (!imageModel || !isDedicatedImageModel(imageModel)) {
+      imageModel = 'gemini-3.1-flash-image';
+    }
     const imageAspect = (config.image && config.image.aspectRatio) || '16:9';
     const imageRes = (config.image && config.image.resolution) || '1024';
 
@@ -14220,7 +14234,10 @@ STRICT SYNTAX SAFETY RULES:
     const imgApiKeyInput = document.getElementById('cfg-image-api-key');
     if (imgApiKeyInput) imgApiKeyInput.value = (config.image && config.image.apiKey) || '';
     const imgModelInput = document.getElementById('cfg-image-model');
-    if (imgModelInput) imgModelInput.value = (config.image && config.image.model) || 'gemini-3.1-flash-lite-image';
+    if (imgModelInput) {
+      const rawModel = config.image && config.image.model;
+      imgModelInput.value = (rawModel && isDedicatedImageModel(rawModel)) ? rawModel : 'gemini-3.1-flash-image';
+    }
     const imgAspectSelect = document.getElementById('cfg-image-aspect-ratio');
     if (imgAspectSelect) imgAspectSelect.value = (config.image && config.image.aspectRatio) || '16:9';
     const imgResSelect = document.getElementById('cfg-image-resolution');
@@ -15157,6 +15174,11 @@ STRICT SYNTAX SAFETY RULES:
         if (!config.vision.apiKey && config.text.apiKey) {
           config.vision.apiKey = config.text.apiKey;
         }
+        // Inherit API key only (never overwrite image model with text model)
+        if (!config.image) config.image = {};
+        if (!config.image.apiKey && config.text.apiKey) {
+          config.image.apiKey = config.text.apiKey;
+        }
       }
     }
 
@@ -15230,7 +15252,10 @@ STRICT SYNTAX SAFETY RULES:
     const imgApiKeyEl = document.getElementById('cfg-image-api-key');
     if (imgApiKeyEl) config.image.apiKey = imgApiKeyEl.value.trim();
     const imgModelEl = document.getElementById('cfg-image-model');
-    if (imgModelEl) config.image.model = imgModelEl.value.trim() || 'gemini-3.1-flash-lite-image';
+    if (imgModelEl) {
+      const enteredModel = imgModelEl.value.trim();
+      config.image.model = (enteredModel && isDedicatedImageModel(enteredModel)) ? enteredModel : (enteredModel || 'gemini-3.1-flash-image');
+    }
     const imgAspectEl = document.getElementById('cfg-image-aspect-ratio');
     if (imgAspectEl) config.image.aspectRatio = imgAspectEl.value || '16:9';
     const imgResEl = document.getElementById('cfg-image-resolution');

@@ -837,6 +837,27 @@ func TestGenerateInteractionsImage(t *testing.T) {
 	if sz := toInteractionsImageSize("2048"); sz != "2K" {
 		t.Errorf("expected 2K, got %s", sz)
 	}
+
+	// Test dedicated image model detection
+	if !isDedicatedImageModel("gemini-3.1-flash-image") {
+		t.Errorf("expected isDedicatedImageModel to be true for gemini-3.1-flash-image")
+	}
+	if !isDedicatedImageModel("imagen-3.0-generate-002") {
+		t.Errorf("expected isDedicatedImageModel to be true for imagen-3.0-generate-002")
+	}
+	if !isDedicatedImageModel("gemini-nano-banana-2.1") {
+		t.Errorf("expected isDedicatedImageModel to be true for gemini-nano-banana-2.1")
+	}
+	// Text models mistakenly passed must NOT be considered dedicated image models
+	if isDedicatedImageModel("gemini-flash-latest") {
+		t.Errorf("expected isDedicatedImageModel to be false for text model gemini-flash-latest")
+	}
+	if isDedicatedImageModel("gemini-2.5-flash") {
+		t.Errorf("expected isDedicatedImageModel to be false for text model gemini-2.5-flash")
+	}
+	if isDedicatedImageModel("qwen2.5:latest") {
+		t.Errorf("expected isDedicatedImageModel to be false for text model qwen2.5:latest")
+	}
 }
 
 func TestStripMarkdownCodeFences(t *testing.T) {

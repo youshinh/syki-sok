@@ -997,9 +997,9 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 	if baseURL == "" {
 		baseURL = "https://generativelanguage.googleapis.com"
 	}
-	model := cfg.Model
-	if model == "" {
-		model = "gemini-3.1-flash-lite-image"
+	model := strings.TrimSpace(cfg.Model)
+	if model == "" || !isDedicatedImageModel(model) {
+		model = "gemini-3.1-flash-image"
 	}
 	aspectRatio := cfg.AspectRatio
 	if aspectRatio == "" {
@@ -1018,6 +1018,15 @@ func generateImageProvider(prompt string, cfg ImageGenConfig) ([]byte, string, e
 
 	// 3. Default: Gemini generateContent with responseModalities / responseFormat image
 	return generateGeminiImage(baseURL, model, prompt, aspectRatio, cfg.Resolution, cfg.APIKey)
+}
+
+// isDedicatedImageModel validates whether the requested model is a dedicated image generation model.
+func isDedicatedImageModel(model string) bool {
+	m := strings.ToLower(strings.TrimSpace(model))
+	if m == "" {
+		return false
+	}
+	return strings.HasPrefix(m, "imagen-") || strings.HasSuffix(m, "-image") || strings.Contains(m, "banana")
 }
 
 func toGeminiImageSize(res string) string {
@@ -1119,7 +1128,7 @@ func generateGeminiImage(baseURL, model, prompt, aspectRatio, resolution, apiKey
 
 	if res.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(res.Body)
-		return nil, "", fmt.Errorf("Gemini Image APIエラー (%d): %s", res.StatusCode, string(respBody))
+		return nil, "", fmt.Errorf("Gemini Image APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 
 	var result struct {
@@ -1191,7 +1200,7 @@ func generateImagen(baseURL, model, prompt, apiKey string) ([]byte, string, erro
 
 	if res.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(res.Body)
-		return nil, "", fmt.Errorf("Imagen APIエラー (%d): %s", res.StatusCode, string(respBody))
+		return nil, "", fmt.Errorf("Imagen APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 
 	var result struct {
@@ -1319,7 +1328,7 @@ func generateInteractionsImage(baseURL, model, prompt, aspectRatio, resolution, 
 
 	if res.StatusCode != http.StatusOK {
 		respBody, _ := io.ReadAll(res.Body)
-		return nil, "", fmt.Errorf("Gemini Interactions APIエラー (%d): %s", res.StatusCode, string(respBody))
+		return nil, "", fmt.Errorf("Gemini Interactions APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 
 	var result struct {
