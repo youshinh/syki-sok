@@ -188,8 +188,18 @@
     const RO = opts.ResizeObserver || win.ResizeObserver || global.ResizeObserver;
     if (typeof RO === 'function') {
       observer = new RO((entries) => {
-        strips.forEach((st) => { if (entries.some((entry) => entry.target === st.scrollEl)) st.reveal = true; });
-        schedule();
+        let changed = false;
+        strips.forEach((st) => {
+          const mine = entries.filter((entry) => entry.target === st.scrollEl || entry.target === st.listEl);
+          if (mine.length === 0) return;
+          // While the Dock's magnification (js/tab_dock.js) is on a strip the tabs change height every frame; nothing about the column has
+          // really changed, and reacting would measure it every frame and pull the selected tab back into view under the person's wheel.
+          const strip = typeof st.scrollEl.closest === 'function' ? st.scrollEl.closest('.dock-live') : null;
+          if (strip) return;
+          changed = true;
+          if (mine.some((entry) => entry.target === st.scrollEl)) st.reveal = true;
+        });
+        if (changed) schedule();
       });
       strips.forEach((st) => { observer.observe(st.scrollEl); observer.observe(st.listEl); });
     }

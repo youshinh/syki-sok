@@ -30,6 +30,14 @@ assert.strictEqual(D.strengthOf('x'), 100);
 assert.strictEqual(D.strengthOf(undefined), 100);
 assert.ok(D.MIN_STRENGTH >= 10 && D.MIN_STRENGTH <= 30);
 
+// 2c. easing by elapsed time: the same curve at any frame rate, nothing when no time has passed, one when there is no easing
+assert.strictEqual(D.easeShare(0, 60), 0);
+assert.strictEqual(D.easeShare(16, 0), 1);
+assert.ok(Math.abs(D.easeShare(30, 60) - (1 - Math.exp(-0.5))) < 1e-12, 'dt over tau is 1 - e^-(dt/tau)');
+const twoFrames = 1 - (1 - D.easeShare(8, 60)) * (1 - D.easeShare(8, 60));
+assert.ok(Math.abs(twoFrames - D.easeShare(16, 60)) < 1e-12, 'two 8ms frames move a tab as far as one 16ms frame');
+assert.strictEqual(D.easeShare(5000, 60), D.easeShare(50, 60), 'a stalled page does not jump');
+
 // 3. the names: hidden on a thin strip, readable at the resting width
 assert.strictEqual(D.textShare(18), 0);
 assert.strictEqual(D.textShare(D.BASE_W), 1);
