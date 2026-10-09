@@ -312,3 +312,23 @@ func TestBuildMacVersionGrepMatchesAppGo(t *testing.T) {
 		t.Errorf("extracted APP_VERSION %q is not a plain X.Y.Z version string", version)
 	}
 }
+
+// The macOS icon is made from app.png in the repository root. The build once fell back to tools/makeicon.go when app.png was missing, which
+// draws an older, olive icon and overwrites app.png: the app shipped with that icon instead of the black one. The script must stop instead,
+// and the file must be there.
+func TestMacIconComesFromAppPngAndNeverFromTheGenerator(t *testing.T) {
+	script := readRepoFile(t, "build_mac.sh")
+	if strings.Contains(script, "makeicon") && !strings.Contains(script, "never a fallback") {
+		t.Errorf("build_mac.sh runs tools/makeicon.go; a missing app.png must stop the build, not draw the old olive icon")
+	}
+	if regexp.MustCompile(`(?m)^\s*go run tools/makeicon\.go`).MatchString(script) {
+		t.Errorf("build_mac.sh must not run tools/makeicon.go")
+	}
+	data, err := os.ReadFile("app.png")
+	if err != nil {
+		t.Fatalf("app.png (the source of the macOS icon) is missing: %v", err)
+	}
+	if len(data) < 100000 {
+		t.Errorf("app.png is %d bytes: the black icon is about 147 KB; a file this small is the generated olive one", len(data))
+	}
+}

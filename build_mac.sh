@@ -14,9 +14,11 @@ echo "Building $APP_NAME for macOS..."
 rm -rf "$BUNDLE_DIR"
 rm -rf AppIcon.iconset AppIcon.icns
 
-# Generate high-res app.png if not present
+# The icon is app.png in the repository root (the black one). tools/makeicon.go draws a different, older icon (the olive "M") and
+# overwrites app.png, so it is never a fallback here: a missing app.png stops the build instead of shipping the wrong icon.
 if [ ! -f "app.png" ]; then
-    go run tools/makeicon.go
+    echo "ERROR: app.png (the application icon) is missing from the repository root" >&2
+    exit 1
 fi
 
 # Create macOS icns file
