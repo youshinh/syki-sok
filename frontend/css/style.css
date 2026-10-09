@@ -433,7 +433,11 @@ body.dark-theme {
   padding-left: var(--tab-strip-w);
 }
 
-/* Pinned Index Tabs: keep open as a persistent sidebar */
+/* Pinned Index Tabs: keep open as a persistent sidebar. Its width is --tab-pinned-w (dragged by the handle at its edge, app.js
+   initTabResizer; the least that holds the foot's buttons is TabStrip.PINNED_MIN), the same 200px as before until it is dragged. */
+body.tabs-pinned {
+  --tab-open-w: var(--tab-pinned-w, 200px);
+}
 body.tabs-pinned .tab-index {
   width: var(--tab-open-w) !important;
   transition: none !important;
@@ -461,6 +465,45 @@ body.tabs-pinned .tab-index .tab-index-btn svg {
   opacity: 1 !important;
   transition: none !important;
 }
+/* The handle: a 6px band on the pinned strip's right edge, a hairline on hover and while it is dragged (the conflict colour when the drag would unpin). */
+.tab-index-resizer {
+  display: none;
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  z-index: 2;
+  cursor: col-resize;
+  touch-action: none;
+}
+body.tabs-pinned #tab-index-left .tab-index-resizer {
+  display: block;
+}
+.tab-index-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color 0.12s ease;
+}
+.tab-index-resizer:is(:hover, :focus-visible, .dragging)::after {
+  background: var(--tab-ink);
+}
+.tab-index-resizer.will-unpin::after {
+  background: var(--tab-conflict);
+}
+body.tabs-resizing {
+  cursor: col-resize;
+  user-select: none;
+  -webkit-user-select: none;
+}
+body.tabs-resizing .tab-index {
+  transition: none !important;
+}
 body.tabs-pinned #workspace #editor-pane {
   padding-left: var(--tab-open-w) !important;
 }
@@ -472,6 +515,56 @@ body.tabs-pinned #header #header-title {
    (Zen mode is in css/chrome.css, with the bars: there the strips are away but a keyboard can bring one back.) */
 #workspace[data-tabs="none"] .tab-index {
   visibility: hidden;
+}
+
+/* The Dock's magnification (js/tab_dock.js, loaded the first time the mouse reaches a strip; Settings can turn it off: body.tab-dock-off).
+   While the mouse is over a strip the script puts .dock-live on it and sets --rw (the row's width) and --st (how much of its name shows) on
+   every row each frame: the tab under the pointer is the widest, its neighbours follow on a bell curve, and all of them are wide enough to
+   read. Without the script (touch, the keyboard, Settings off) none of this applies and the strip opens as before. */
+.tab-index.dock-live {
+  width: var(--tab-open-w);
+  transition: none;
+}
+.tab-index.dock-live .tab-item,
+.tab-index.dock-live .tab-index-foot {
+  width: var(--rw, var(--tab-hit-w));
+  transition: none;
+}
+.tab-index.dock-live[data-side="right"] .tab-item {
+  align-self: flex-end;
+}
+.tab-index.dock-live .tab-item {
+  background-image: linear-gradient(var(--tab-base), var(--tab-base));
+  background-repeat: no-repeat;
+  background-size: calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)) 100%;
+}
+.tab-index.dock-live .tab-item::before {
+  width: calc(var(--rw, var(--tab-hit-w)) - (var(--tab-hit-w) - var(--tab-strip-w)));
+  transition: none;
+}
+.tab-index.dock-live .tab-title {
+  opacity: var(--st, 0);
+  transition: none;
+}
+.tab-index.dock-live .tab-item.is-dirty::after,
+.tab-index.dock-live .tab-item.has-conflict::after {
+  opacity: calc(1 - var(--st, 0));
+}
+.tab-index.dock-live .tab-item:is(:hover, :focus-visible, .active) .tab-close {
+  opacity: var(--st, 0);
+}
+.tab-index.dock-live .tab-index-btn {
+  background-image: linear-gradient(var(--tab-base), var(--tab-base));
+  background-repeat: no-repeat;
+  background-size: calc(100% * var(--bgs, 0)) 100%;
+  transition: none;
+}
+.tab-index.dock-live .tab-index-btn svg {
+  opacity: var(--st, 0);
+  transition: none;
+}
+body.tab-dock-off .tab-index.dock-live {
+  width: var(--tab-hit-w);
 }
 
 /* Less motion: no widening animation and no wait before it (the global rule below already makes every transition instant). */

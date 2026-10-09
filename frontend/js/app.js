@@ -122,6 +122,7 @@
       imeGuardianReverse: true,
       aiCorrection: true,
       cursorAura: true,
+      tabDock: true,
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
@@ -497,8 +498,18 @@
     return changed;
   }
 
+  // The Dock's magnification of the index tabs (js/tab_dock.js) is on unless Settings turned it off, or the system asks for less motion.
+  let tabDock = null; // the magnification of the index tabs (js/tab_dock.js), made on the first hover
+  let tabDockLoading = false;
+  function applyTabDock() {
+    const off = !!(config.general && config.general.tabDock === false);
+    document.body.classList.toggle('tab-dock-off', off);
+    if (off && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
+  }
+
   function applyTheme() {
     appearancePreviewing = false;
+    applyTabDock();
     if (window.Appearance) {
       const ap = window.Appearance.fromConfig(config);
       applyAppearance(ap);
@@ -6496,6 +6507,7 @@
   function setPinTabs(pinned) {
     isTabsPinned = !!pinned;
     document.body.classList.toggle('tabs-pinned', isTabsPinned);
+    if (isTabsPinned && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
     if (tabIndexLeft) tabIndexLeft.classList.toggle('is-pinned', isTabsPinned);
     if (btnPinTabs) {
       btnPinTabs.classList.toggle('active', isTabsPinned);
@@ -6508,6 +6520,104 @@
   }
   function togglePinTabs() {
     setPinTabs(!isTabsPinned);
+  }
+
+  // The Dock's magnification: tab_dock.js is read the first time the mouse reaches a strip (nothing of it is loaded at start-up), and that
+  // first pointer event is handed to it. A pinned strip is a sidebar: the script is not told about it, and ignores a strip that is pinned.
+  function initTabDock() {
+    const strips = [tabIndexLeft, document.getElementById('tab-index-right')].filter(Boolean);
+    const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+    strips.forEach((el) => {
+      el.addEventListener('pointerenter', (e) => {
+        if (tabDock || tabDockLoading || isTabsPinned || e.pointerType === 'touch' || reduced()) return;
+        if (config.general && config.general.tabDock === false) return;
+        tabDockLoading = true;
+        loadScript('js/tab_dock.js?v=1.0.0').then(() => {
+          tabDock = window.TabDock.create({
+            strips: [
+              { el: tabIndexLeft, listEl: tabsListEl, footEl: tabIndexLeft.querySelector('.tab-index-foot') },
+              { el: document.getElementById('tab-index-right'), listEl: document.getElementById('tabs-list-right') }
+            ].filter((s) => s.el && s.listEl),
+            hitWidth: 18,
+            fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
+          });
+          tabDock.enter(el, e);
+        }, () => { tabDockLoading = false; });
+      });
+    });
+  }
+
+  // The width of the pinned strip, dragged at its edge: --tab-pinned-w on the page (css/style.css), kept in the browser's storage as a
+  // per-person convenience. The least width and the "let go" point are TabStrip's (pinnedWidth).
+  const TAB_WIDTH_KEY = 'md-memo-tabs-pinned-w';
+  function setPinnedWidth(px) {
+    const root = document.documentElement;
+    if (root && root.style && typeof root.style.setProperty === 'function') root.style.setProperty('--tab-pinned-w', px + 'px');
+    const handle = document.getElementById('tab-index-resizer');
+    if (handle) {
+      handle.setAttribute('aria-valuenow', String(px));
+      handle.setAttribute('aria-valuemin', String(window.TabStrip.PINNED_MIN));
+      handle.setAttribute('aria-valuemax', String(window.TabStrip.PINNED_MAX));
+    }
+  }
+  function initTabResizer() {
+    const handle = document.getElementById('tab-index-resizer');
+    const strip = tabIndexLeft;
+    if (!handle || !strip || !window.TabStrip) return;
+    const TS = window.TabStrip;
+    let saved = TS.PINNED_DEFAULT;
+    try {
+      const n = parseInt(localStorage.getItem(TAB_WIDTH_KEY), 10);
+      if (isFinite(n)) saved = TS.pinnedWidth(n).width;
+    } catch (_) {}
+    if (saved !== TS.PINNED_DEFAULT) setPinnedWidth(saved); // the default is the CSS's own 200px: nothing to write at start-up
+    const remember = (px) => { try { localStorage.setItem(TAB_WIDTH_KEY, String(px)); } catch (_) {} };
+
+    let dragging = false;
+    let last = { width: saved, unpin: false };
+    handle.addEventListener('pointerdown', (e) => {
+      if (e.button !== 0 || !isTabsPinned) return;
+      dragging = true;
+      last = { width: saved, unpin: false };
+      handle.setPointerCapture(e.pointerId);
+      handle.classList.add('dragging');
+      document.body.classList.add('tabs-resizing');
+      e.preventDefault();
+    });
+    handle.addEventListener('pointermove', (e) => {
+      if (!dragging) return;
+      last = TS.pinnedWidth(e.clientX - strip.getBoundingClientRect().left);
+      handle.classList.toggle('will-unpin', last.unpin);
+      if (!last.unpin) setPinnedWidth(last.width);
+    });
+    const finish = () => {
+      if (!dragging) return;
+      dragging = false;
+      handle.classList.remove('dragging', 'will-unpin');
+      document.body.classList.remove('tabs-resizing');
+      if (last.unpin) {
+        setPinTabs(false);
+        setPinnedWidth(saved); // the next pin starts from the width it had before this drag
+      } else {
+        saved = last.width;
+        remember(saved);
+      }
+    };
+    handle.addEventListener('pointerup', finish);
+    handle.addEventListener('pointercancel', finish);
+    handle.addEventListener('dblclick', () => {
+      saved = TS.PINNED_DEFAULT;
+      setPinnedWidth(saved);
+      remember(saved);
+    });
+    handle.addEventListener('keydown', (e) => {
+      if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+      e.preventDefault();
+      const next = TS.pinnedWidth(saved + (e.key === 'ArrowRight' ? 16 : -16) * (e.shiftKey ? 3 : 1));
+      saved = next.width;
+      setPinnedWidth(saved);
+      remember(saved);
+    });
   }
 
   // --- Full screen: the window covers the whole monitor (the native window does it; the browser API is the fallback) ---
@@ -14165,6 +14275,8 @@ STRICT SYNTAX SAFETY RULES:
     if (rewriteHistDirEl) {
       rewriteHistDirEl.value = (config.general && config.general.rewriteHistoryDir) || 'history';
     }
+    const tabDockEl = document.getElementById('cfg-tab-dock');
+    if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
     const rewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
     if (rewriteHistLinkEl) {
       rewriteHistLinkEl.checked = config.general ? (config.general.rewriteHistoryLink !== false) : true;
@@ -15175,6 +15287,11 @@ STRICT SYNTAX SAFETY RULES:
     const saveRewriteHistDirEl = document.getElementById('cfg-rewrite-history-dir');
     if (saveRewriteHistDirEl) {
       config.general.rewriteHistoryDir = saveRewriteHistDirEl.value.trim() || 'history';
+    }
+    const saveTabDockEl = document.getElementById('cfg-tab-dock');
+    if (saveTabDockEl) {
+      config.general.tabDock = saveTabDockEl.checked;
+      applyTabDock();
     }
     const saveRewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
     if (saveRewriteHistLinkEl) {
@@ -16397,6 +16514,8 @@ STRICT SYNTAX SAFETY RULES:
     if (!restored || tabs.length === 0) {
       createTab();
     }
+    initTabResizer();
+    initTabDock();
     try {
       if (localStorage.getItem('md-memo-tabs-pinned') === '1') {
         setPinTabs(true);

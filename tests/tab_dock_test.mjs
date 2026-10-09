@@ -1,0 +1,43 @@
+// The Dock's magnification of the index tabs (frontend/js/tab_dock.js) and the width rule of a pinned strip (TabStrip.pinnedWidth).
+import assert from 'assert';
+import { createRequire } from 'module';
+import fs from 'fs';
+
+console.log('=== tab dock tests ===');
+const require = createRequire(import.meta.url);
+const D = require('../frontend/js/tab_dock.js');
+const T = require('../frontend/js/tab_strip.js');
+
+// 1. the bell: 1 under the pointer, falling off smoothly and symmetrically
+assert.strictEqual(D.bell(100, 100), 1);
+assert.ok(Math.abs(D.bell(70, 100) - D.bell(130, 100)) < 1e-12);
+assert.ok(D.bell(130, 100) < 1 && D.bell(130, 100) > D.bell(190, 100));
+assert.ok(D.bell(100 + 3 * D.SIGMA, 100) < 0.001, 'three bell widths away is not magnified');
+
+// 2. the width of a row: collapsed -> resting width over the strip -> full under the pointer
+assert.strictEqual(D.rowWidth(18, 90, 200, 0, 0), 18);
+assert.strictEqual(D.rowWidth(18, 90, 200, 1, 0), 90);
+assert.strictEqual(D.rowWidth(18, 90, 200, 1, 1), 200);
+assert.ok(D.rowWidth(18, 90, 200, 1, 0.5) > 90 && D.rowWidth(18, 90, 200, 1, 0.5) < 200);
+assert.strictEqual(D.rowWidth(18, 90, 60, 1, 1), 60, 'a full width below the resting one still wins: the strip never gets wider than it opens');
+
+// 3. the names: hidden on a thin strip, readable at the resting width
+assert.strictEqual(D.textShare(18), 0);
+assert.strictEqual(D.textShare(D.BASE_W), 1);
+assert.ok(D.textShare(70) > 0 && D.textShare(70) < 1);
+
+// 4. a pinned strip: clamped to what holds its buttons, let go when dragged further in
+assert.deepStrictEqual(T.pinnedWidth(200), { width: 200, unpin: false });
+assert.deepStrictEqual(T.pinnedWidth(1000), { width: T.PINNED_MAX, unpin: false });
+assert.deepStrictEqual(T.pinnedWidth(80), { width: T.PINNED_MIN, unpin: false }, 'between the least and the let-go point it holds at the least');
+assert.deepStrictEqual(T.pinnedWidth(T.PINNED_UNPIN - 1), { width: T.PINNED_MIN, unpin: true });
+assert.deepStrictEqual(T.pinnedWidth('x'), { width: T.PINNED_DEFAULT, unpin: false });
+assert.ok(T.PINNED_UNPIN < T.PINNED_MIN && T.PINNED_MIN < T.PINNED_DEFAULT && T.PINNED_DEFAULT < T.PINNED_MAX);
+
+// 5. nothing is loaded at start-up: the page's script list does not name tab_dock.js (app.js loads it on the first hover)
+const html = fs.readFileSync(new URL('../frontend/index.html', import.meta.url), 'utf8');
+assert.ok(!/tab_dock\.js/.test(html), 'tab_dock.js is loaded on the first hover, not by index.html');
+const app = fs.readFileSync(new URL('../frontend/js/app.js', import.meta.url), 'utf8');
+assert.ok(/loadScript\('js\/tab_dock\.js/.test(app), 'app.js loads tab_dock.js on the first hover');
+
+console.log('tab dock tests passed');

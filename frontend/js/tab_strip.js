@@ -7,6 +7,7 @@
 //   keyMove(key, index, count)    arrow keys, Home and End inside a strip (a vertical tablist: Up/Down, wraps around)
 //   dropTarget(rects, y, id)      where a tab dragged to height `y` would land
 //   reorder(ids, from, to, after) the new order of ids after that drop
+//   pinnedWidth(raw)              the width a pinned strip takes for a dragged width: clamped, or 'unpin' when dragged past the least that holds its buttons
 //   reconcile(listEl, items, cache, hooks)
 //                                 keyed update of the tabs: an element per tab that is made once, kept in `cache`, and only written when
 //                                 something about its tab changed. Needs nothing of the DOM but `children`, `appendChild` and `innerHTML = ''`
@@ -152,9 +153,26 @@
     return { structural, created, removed };
   }
 
+  // ---- the width of a pinned strip ----------------------------------------------------------------------------------------------
+
+  // The strip's foot holds three buttons (four while the All tabs button shows); PINNED_MIN is the least width that keeps them whole (about
+  // 24px each). Dragged further than PINNED_UNPIN the strip is let go: it stops being pinned, and the next pin starts from the last width.
+  const PINNED_DEFAULT = 200;
+  const PINNED_MIN = 96;
+  const PINNED_MAX = 480;
+  const PINNED_UNPIN = 72;
+
+  // raw: the width the pointer asks for, in px. -> { width, unpin }: width is the clamped one, unpin is true past PINNED_UNPIN.
+  function pinnedWidth(raw) {
+    const n = Number(raw);
+    if (!isFinite(n)) return { width: PINNED_DEFAULT, unpin: false };
+    return { width: Math.round(Math.min(PINNED_MAX, Math.max(PINNED_MIN, n))), unpin: n < PINNED_UNPIN };
+  }
+
   const api = {
     MIX_FLOOR, MIX_BASE, MIX_STEP, MAX_DISTANCE,
-    stripsFor, distanceOf, mixFor, keyMove, dropTarget, reorder, reconcile
+    PINNED_DEFAULT, PINNED_MIN, PINNED_MAX, PINNED_UNPIN,
+    stripsFor, distanceOf, mixFor, keyMove, dropTarget, reorder, reconcile, pinnedWidth
   };
   global.TabStrip = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;

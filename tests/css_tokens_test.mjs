@@ -295,7 +295,7 @@ check('tokens.css: the canvas colours exist on :root (the page background before
 
 check('every var(--name) of the style sheet, index.html and the scripts is a token that tokens.css defines (or one of the few set elsewhere)', () => {
   // set by a script at run time, or a typeface rather than a colour
-  const ELSEWHERE = new Set(['font-mono', 'ghost-diff-duration', 'editor-font-user', 'tab-scrollbar-w']); // editor-font-user: a typeface (Settings > Appearance), set on <html> by js/appearance.js; tab-scrollbar-w: the width of the system's scrollbar, measured by app.js (measureStripGap) when the right strip is first shown, set on that strip only
+  const ELSEWHERE = new Set(['font-mono', 'ghost-diff-duration', 'editor-font-user', 'tab-scrollbar-w', 'tab-pinned-w', 'rw', 'st', 'bgs']); // editor-font-user: a typeface (Settings > Appearance), set on <html> by js/appearance.js; tab-scrollbar-w: the width of the system's scrollbar, measured by app.js (measureStripGap) when the right strip is first shown, set on that strip only; tab-pinned-w: the width a pinned strip was dragged to, set on <html> by app.js (initTabResizer); rw / st / bgs: a tab's width, how much of its name shows and how much of it the base colour covers, set per row by js/tab_dock.js while the mouse is over a strip
   const defined = new Set(base.keys());
   for (const r of rules) for (const k of r.decls.keys()) defined.add(k.slice(2));
   defined.add('canvas-bg'); defined.add('canvas-fg');

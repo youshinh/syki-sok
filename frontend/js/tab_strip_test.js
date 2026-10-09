@@ -243,7 +243,7 @@ check('loading the module defines TabStrip and starts nothing', () => {
   const ctx = vm.createContext({});
   vm.runInContext(src, ctx); // an empty world: no document, no window, no module
   assert.strictEqual(typeof ctx.TabStrip, 'object');
-  assert.deepStrictEqual(Object.keys(ctx.TabStrip).sort(), ['MAX_DISTANCE', 'MIX_BASE', 'MIX_FLOOR', 'MIX_STEP', 'distanceOf', 'dropTarget', 'keyMove', 'mixFor', 'reconcile', 'reorder', 'stripsFor']);
+  assert.deepStrictEqual(Object.keys(ctx.TabStrip).sort(), ['MAX_DISTANCE', 'MIX_BASE', 'MIX_FLOOR', 'MIX_STEP', 'PINNED_DEFAULT', 'PINNED_MAX', 'PINNED_MIN', 'PINNED_UNPIN', 'distanceOf', 'dropTarget', 'keyMove', 'mixFor', 'pinnedWidth', 'reconcile', 'reorder', 'stripsFor']);
   assert.ok(!/document|innerHTML\s*=\s*[^'']/.test(src.replace(/\/\/.*$/gm, '').replace("innerHTML = ''", '')), 'it touches no document and writes no markup');
 });
 

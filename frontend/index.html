@@ -184,6 +184,8 @@
             </svg>
           </button>
         </div>
+        <!-- The edge of the pinned strip, dragged to set its width (app.js initTabResizer); only there while the strip is pinned. -->
+        <div id="tab-index-resizer" class="tab-index-resizer" role="separator" aria-orientation="vertical" tabindex="0" data-i18n-title="tabResizerTitle" title="Drag to resize"></div>
       </div>
       <div id="tab-index-right" class="tab-index" data-side="right" hidden>
         <div id="tabs-scroll-right">
@@ -858,6 +860,12 @@
                 <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after rewritten block</span>
               </label>
               <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file at the end of rewritten paragraphs.</small>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
+              </label>
+              <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
             </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
