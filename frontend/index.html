@@ -794,6 +794,35 @@
               </select>
               <small data-i18n="mermaidToneHint">If a diagram is hard to read, choose a light tone. The button on each diagram in the preview switches between dark and light.</small>
             </div>
+            <div class="settings-subhead" data-i18n="subheadCursor">Cursor</div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-cursor-aura" checked> <span data-i18n="cursorAuraLabel">Subtle cursor aura on idle</span>
+              </label>
+            </div>
+            <div class="settings-subhead" data-i18n="subheadIndexTabs">Index tabs</div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
+              </label>
+              <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
+              <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
+                <input type="checkbox" id="cfg-tab-dock-follow-os"> <span data-i18n="tabDockFollowOsLabel">Follow the system's "reduce motion"</span>
+              </label>
+              <small data-i18n="tabDockFollowOsHint">When on, the tabs switch at once instead of easing out.</small>
+              <div class="settings-slider-row">
+                <label for="cfg-tab-dock-strength" data-i18n="tabDockStrengthLabel">Strength</label>
+                <input type="range" id="cfg-tab-dock-strength" min="20" max="100" step="5" value="100">
+                <output id="cfg-tab-dock-strength-value" for="cfg-tab-dock-strength">100%</output>
+              </div>
+              <div class="settings-slider-row">
+                <label for="cfg-tab-strip-width" data-i18n="tabStripWidthLabel">Width of the tab edge</label>
+                <input type="range" id="cfg-tab-strip-width" min="12" max="48" step="2" value="24">
+                <output id="cfg-tab-strip-width-value" for="cfg-tab-strip-width">24px</output>
+              </div>
+              <small data-i18n="tabStripWidthHint">How wide the strip at the window's edge is while it is closed. The narrowest, 12px, is the old width; a wider one is easier to reach with the pointer, and covers the line numbers.</small>
+            </div>
+            <div class="settings-subhead" data-i18n="subheadStartup">Language &amp; start-up</div>
             <div class="form-group">
               <label for="cfg-language" data-i18n="languageLabel">Language:</label>
               <select id="cfg-language" class="form-select">
@@ -827,7 +856,8 @@
                 <input type="checkbox" id="cfg-autosave" checked> <span data-i18n="autoSaveLabel">Autosave existing files on 1.5s pause</span>
               </label>
             </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
+            <div class="settings-subhead" data-i18n="subheadIme">Japanese input (IME)</div>
+            <div class="form-group inline-group">
               <label>
                 <input type="checkbox" id="cfg-ime-guardian"> <span data-i18n="imeGuardianLabel">Japanese Romaji-to-Hiragana conversion (IME Guardian)</span>
               </label>
@@ -845,48 +875,8 @@
               </label>
               <small data-i18n="imeReverseHint">When you confirm an English word that was typed with Japanese input on, the keys it was typed with are shown as [Tab: hello]. Tab puts the English word in place of the kana and switches input to half-width. It only applies to words that cannot be read as romaji.</small>
             </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
-              <label>
-                <input type="checkbox" id="cfg-ai-correction" checked> <span data-i18n="aiCorrectionLabel">Enable AI typo & error correction (Alt+C)</span>
-              </label>
-            </div>
-            <div class="form-group" style="margin-top: 10px;">
-              <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Rewrite backup folder:</label>
-              <input type="text" id="cfg-rewrite-history-dir" placeholder="history (relative to note, or 'source', '_history')" value="history">
-              <small data-i18n="rewriteHistoryDirHint">Folder name where the original text is archived before a rewrite replaces it. Saved relative to the edited file.</small>
-            </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
-              <label>
-                <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after a rewrite</span>
-              </label>
-              <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file after the rewritten text: on a line of its own under a paragraph, at the end of the line for a single line. The preview does not show it.</small>
-            </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
-              <label>
-                <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
-              </label>
-              <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
-              <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
-                <input type="checkbox" id="cfg-tab-dock-follow-os"> <span data-i18n="tabDockFollowOsLabel">Follow the system's "reduce motion" (the tabs then switch at once)</span>
-              </label>
-              <div class="settings-slider-row">
-                <label for="cfg-tab-dock-strength" data-i18n="tabDockStrengthLabel">Strength</label>
-                <input type="range" id="cfg-tab-dock-strength" min="20" max="100" step="5" value="100">
-                <output id="cfg-tab-dock-strength-value" for="cfg-tab-dock-strength">100%</output>
-              </div>
-              <div class="settings-slider-row">
-                <label for="cfg-tab-strip-width" data-i18n="tabStripWidthLabel">Width of the tab edge</label>
-                <input type="range" id="cfg-tab-strip-width" min="12" max="48" step="2" value="24">
-                <output id="cfg-tab-strip-width-value" for="cfg-tab-strip-width">24px</output>
-              </div>
-              <small data-i18n="tabStripWidthHint">How wide the strip at the window's edge is while it is closed. The narrowest, 12px, is the old width; a wider one is easier to reach with the pointer, and covers the line numbers.</small>
-            </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
-              <label>
-                <input type="checkbox" id="cfg-cursor-aura" checked> <span data-i18n="cursorAuraLabel">Subtle cursor aura on idle</span>
-              </label>
-            </div>
-            <div class="form-group inline-group" style="margin-top: 10px;">
+            <div class="settings-subhead" data-i18n="subheadPaste">Paste &amp; comments</div>
+            <div class="form-group inline-group">
               <label>
                 <input type="checkbox" id="cfg-paste-html-md" checked> <span data-i18n="pasteHtmlMdLabel">Ctrl+V turns web, Word and Excel content into Markdown</span>
               </label>
@@ -1021,6 +1011,24 @@
             <div class="form-group">
               <label for="cfg-system-prompt" data-i18n="systemPromptLabel">System Prompt:</label>
               <textarea id="cfg-system-prompt" rows="2" placeholder="You are a helpful assistant. Provide concise, accurate markdown responses."></textarea>
+            </div>
+
+            <div class="settings-subhead" data-i18n="subheadRewrite">Rewrite &amp; correction</div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-ai-correction" checked> <span data-i18n="aiCorrectionLabel">Enable AI typo & error correction (Alt+C)</span>
+              </label>
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+              <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Rewrite backup folder:</label>
+              <input type="text" id="cfg-rewrite-history-dir" placeholder="history (relative to note, or 'source', '_history')" value="history">
+              <small data-i18n="rewriteHistoryDirHint">Folder name where the original text is archived before a rewrite replaces it. Saved relative to the edited file.</small>
+            </div>
+            <div class="form-group inline-group" style="margin-top: 10px;">
+              <label>
+                <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after a rewrite</span>
+              </label>
+              <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file after the rewritten text: on a line of its own under a paragraph, at the end of the line for a single line. The preview does not show it.</small>
             </div>
 
             <!-- Autocomplete -->

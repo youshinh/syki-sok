@@ -103,4 +103,20 @@ assert.ok(iDock > 0 && iDock < iOs && iOs < iStr && iStr < iWid, 'the width of t
 assert.ok(/<div class="settings-slider-row">\s*<label for="cfg-tab-dock-strength"/.test(html) && /<div class="settings-slider-row">\s*<label for="cfg-tab-strip-width"/.test(html), 'both sliders are slider rows');
 assert.ok(/\.settings-slider-row > input\[type="range"\],[^{]*\{[^}]*padding: 0;[^}]*border: 0;/.test(css), 'a slider has no box padding, so the thumb reaches both ends');
 
+// 11. the settings are in groups by what they are about: the cursor, the index tabs and the start-up in Appearance & window; the Japanese input and
+// paste in Editor & input; rewrite and correction with the AI text settings
+{
+  const at = (needle) => html.indexOf(needle);
+  assert.ok(at('id="cfg-cursor-aura"') < at('id="cfg-tab-dock"') && at('id="cfg-tab-dock"') < at('id="cfg-language"') && at('id="cfg-language"') < at('data-i18n="sectionEditor"'), 'the cursor and the index tabs are in Appearance & window, before the language and start-up');
+  assert.ok(at('data-i18n="subheadStartup"') > at('id="cfg-tab-strip-width"') && at('data-i18n="subheadStartup"') < at('id="cfg-language"'), 'the language is not read as part of the index tabs');
+  assert.ok(at('data-i18n="sectionEditor"') < at('id="cfg-autosave"') && at('id="cfg-autosave"') < at('id="cfg-ime-guardian"') && at('id="cfg-ime-guardian"') < at('id="cfg-paste-html-md"') && at('id="cfg-paste-html-md"') < at('id="cfg-comment-style"') && at('id="cfg-comment-style"') < at('data-i18n="sectionUpdatesPrivacy"'), 'Editor & input holds saving, the Japanese input, paste and comments');
+  assert.ok(at('data-i18n="sectionTextLLM"') < at('id="cfg-ai-correction"') && at('id="cfg-ai-correction"') < at('id="cfg-rewrite-history-dir"') && at('id="cfg-rewrite-history-dir"') < at('id="cfg-rewrite-history-link"') && at('id="cfg-rewrite-history-link"') < at('data-i18n="sectionAutocomplete"'), 'the correction and the rewrite backup are with the AI text settings');
+  const i18nSrc = fs.readFileSync(new URL('../frontend/js/i18n.js', import.meta.url), 'utf8');
+  assert.ok(!/aiCorrectionLabel: "[^"]*\(Alt\+C\)/.test(i18nSrc), 'a shortcut that Settings > Shortcuts can change is not written into a label');
+  assert.ok(!/commentStyleHint: "[^"]*\(Ctrl\+\/\)/.test(i18nSrc), 'nor into a hint');
+  for (const key of ['subheadCursor', 'subheadIndexTabs', 'subheadStartup', 'subheadRewrite', 'subheadIme', 'subheadPaste', 'tabDockFollowOsHint']) {
+    assert.strictEqual((i18nSrc.match(new RegExp('\n    ' + key + ': ', 'g')) || []).length, 2, key + ' exists in both languages');
+  }
+}
+
 console.log('tab dock tests passed');

@@ -3044,6 +3044,18 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   #settings-modal input[type="checkbox"]::after { transition: none; }
 }
 
+/* A small heading inside a section of the settings: it names a group of rows (the Japanese input, the index tabs) without being a section. */
+#settings-modal .settings-subhead {
+  margin: 18px 0 2px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  color: var(--text-muted, var(--text-main));
+}
+#settings-modal .settings-subhead:first-child {
+  margin-top: 6px;
+}
+
 /* A slider row of the settings: the name, the slider, the value, in that order. It is not a switch row (those put the words at the left and the
    control at the right, in reverse order), and the slider has no padding, border or ring of an input box: with them its thumb stopped short of
    the ends, so a slider at its maximum did not look like one. */
