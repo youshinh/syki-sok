@@ -40,13 +40,9 @@ brew install --cask youshinh/tap/syki
 
 ### Docs for AI
 
-Feed these directly into your AI (Claude, ChatGPT, Gemini, Ollama) to ask anything:
+Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, Ollama) to ask anything. Complete specification, shortcuts, and APIs are self-contained in this single file.
 
-- **[`llms.txt`](llms.txt)**: Standard context index for AI crawlers & LLMs
-- **[`AI_MANUAL.md`](AI_MANUAL.md)**: AI manual & system instructions
-- **[`skills/syki/SKILL.md`](skills/syki/SKILL.md)**: Agent skill definition & JSON-RPC spec
-
-*Human docs: [Web Manual](https://youshinh.github.io/syki-sok/manual.html) • [Features](docs/features.md) • [日本語 README](README_JA.md)*
+*Human docs: [Web Manual](https://youshinh.github.io/syki-sok/manual.html) • [日本語 README](README_JA.md)*
 
 ---
 

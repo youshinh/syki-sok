@@ -40,13 +40,9 @@ brew install --cask youshinh/tap/syki
 
 ### Docs for AI
 
-設定や使い方の詳細は、以下のファイルをそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。
+詳細や設定は、**[`llms.txt`](llms.txt)** をそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。全仕様・ショートカット・APIが1ファイルに網羅されています。
 
-- **[`llms.txt`](llms.txt)**: AI用コンテキスト・インデックス
-- **[`AI_MANUAL.md`](AI_MANUAL.md)**: AI専用マニュアル ＆ システムプロンプト
-- **[`skills/syki/SKILL.md`](skills/syki/SKILL.md)**: エージェント向け操作スキル定義 ＆ JSON-RPC 仕様
-
-*人間用: [Webマニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [全機能リファレンス](docs/features_ja.md) • [English README](README.md)*
+*人間用: [Webマニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [English README](README.md)*
 
 ---
 
