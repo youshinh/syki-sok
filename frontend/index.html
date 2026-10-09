@@ -866,6 +866,11 @@
                 <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
               </label>
               <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
+              <label for="cfg-tab-dock-strength" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                <span data-i18n="tabDockStrengthLabel">Strength</span>
+                <input type="range" id="cfg-tab-dock-strength" min="20" max="100" step="5" value="100" style="flex: 1; min-width: 80px; max-width: 240px;">
+                <output id="cfg-tab-dock-strength-value" for="cfg-tab-dock-strength" style="min-width: 3.2em; text-align: right;">100%</output>
+              </label>
             </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>

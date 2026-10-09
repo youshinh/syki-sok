@@ -123,6 +123,7 @@
       aiCorrection: true,
       cursorAura: true,
       tabDock: true,
+      tabDockStrength: 100, // 20..100: the share of the full magnification (js/tab_dock.js)
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
@@ -6539,6 +6540,7 @@
               { el: document.getElementById('tab-index-right'), listEl: document.getElementById('tabs-list-right') }
             ].filter((s) => s.el && s.listEl),
             hitWidth: 18,
+            strength: () => (config.general && config.general.tabDockStrength) || 100,
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
           });
           tabDock.enter(el, e);
@@ -14277,6 +14279,20 @@ STRICT SYNTAX SAFETY RULES:
     }
     const tabDockEl = document.getElementById('cfg-tab-dock');
     if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
+    const tabDockStrengthEl = document.getElementById('cfg-tab-dock-strength');
+    if (tabDockStrengthEl) {
+      const strength = (config.general && Number(config.general.tabDockStrength)) || 100;
+      tabDockStrengthEl.value = String(Math.max(20, Math.min(100, strength)));
+      tabDockStrengthEl.disabled = !tabDockEl.checked;
+      const out = document.getElementById('cfg-tab-dock-strength-value');
+      const show = () => { if (out) out.textContent = tabDockStrengthEl.value + '%'; };
+      show();
+      if (!tabDockStrengthEl.dataset.wired) {
+        tabDockStrengthEl.dataset.wired = '1';
+        tabDockStrengthEl.addEventListener('input', show);
+        tabDockEl.addEventListener('change', () => { tabDockStrengthEl.disabled = !tabDockEl.checked; });
+      }
+    }
     const rewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
     if (rewriteHistLinkEl) {
       rewriteHistLinkEl.checked = config.general ? (config.general.rewriteHistoryLink !== false) : true;
@@ -15291,6 +15307,8 @@ STRICT SYNTAX SAFETY RULES:
     const saveTabDockEl = document.getElementById('cfg-tab-dock');
     if (saveTabDockEl) {
       config.general.tabDock = saveTabDockEl.checked;
+      const saveStrengthEl = document.getElementById('cfg-tab-dock-strength');
+      if (saveStrengthEl) config.general.tabDockStrength = Math.max(20, Math.min(100, parseInt(saveStrengthEl.value, 10) || 100));
       applyTabDock();
     }
     const saveRewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');

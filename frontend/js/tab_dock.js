@@ -37,6 +37,15 @@
     return Math.max(0, Math.min(1, (w - TEXT_FROM) / TEXT_SPAN));
   }
 
+  // The strength the person set (Settings), kept where the dock still looks right: below MIN_STRENGTH the wave is too small to see, and the
+  // widest tab cannot pass the strip's own width, so there is no strength above 100.
+  const MIN_STRENGTH = 20;
+  function strengthOf(v) {
+    const n = Number(v);
+    if (!isFinite(n)) return 100;
+    return Math.max(MIN_STRENGTH, Math.min(100, Math.round(n)));
+  }
+
   // How much of a row the base colour covers: none while the row is a thin edge, all of it a few pixels further out.
   function fillShare(w, hit) {
     return Math.max(0, Math.min(1, (w - hit) / 20));
@@ -44,7 +53,7 @@
 
   // ---- DOM ----------------------------------------------------------------------------------------------------------------------
 
-  // opts: { strips: [{ el, listEl, footEl? }], hitWidth, fullWidth(): px }. Returns { destroy, enter }.
+  // opts: { strips: [{ el, listEl, footEl? }], hitWidth, fullWidth(): px, strength?(): 20..100 (the share of the full magnification, default 100) }. Returns { destroy, enter }.
   function create(opts) {
     const win = global;
     const states = opts.strips.map((s) => ({ s, hover: false, h: 0, y: 0, m: new WeakMap(), styled: new Set(), live: false }));
@@ -71,7 +80,10 @@
     function frame() {
       raf = 0;
       let busy = false;
-      const full = Math.max(opts.hitWidth, opts.fullWidth());
+      const k = strengthOf(opts.strength ? opts.strength() : 100) / 100;
+      const open = Math.max(opts.hitWidth, opts.fullWidth());
+      const full = Math.min(open, BASE_W) + (open - Math.min(open, BASE_W)) * k; // how far the tab under the pointer comes out
+      const extraH = EXTRA_H * k;
       states.forEach((st) => {
         if (!st.live) return;
         const rows = rowsOf(st);
@@ -81,7 +93,7 @@
         let above = 0;
         const centres = rows.map((r) => {
           const b = r.getBoundingClientRect();
-          const extra = EXTRA_H * (st.m.get(r) || 0);
+          const extra = extraH * (st.m.get(r) || 0);
           const c = b.top + b.height / 2 - above - extra / 2;
           above += extra;
           return c;
@@ -99,7 +111,7 @@
           r.style.setProperty('--rw', w.toFixed(1) + 'px');
           r.style.setProperty('--st', textShare(w).toFixed(3));
           r.style.setProperty('--bgs', fillShare(w, opts.hitWidth).toFixed(3));
-          r.style.setProperty('--rx', (EXTRA_H * m).toFixed(1) + 'px');
+          r.style.setProperty('--rx', (extraH * m).toFixed(1) + 'px');
           st.styled.add(r);
         });
         if (st.hover) busy = true;
@@ -137,7 +149,7 @@
     };
   }
 
-  const api = { BASE_W, SIGMA, EXTRA_H, bell, rowWidth, textShare, fillShare, create };
+  const api = { BASE_W, SIGMA, EXTRA_H, MIN_STRENGTH, strengthOf, bell, rowWidth, textShare, fillShare, create };
   global.TabDock = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

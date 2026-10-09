@@ -21,6 +21,15 @@ assert.strictEqual(D.rowWidth(18, 90, 200, 1, 1), 200);
 assert.ok(D.rowWidth(18, 90, 200, 1, 0.5) > 90 && D.rowWidth(18, 90, 200, 1, 0.5) < 200);
 assert.strictEqual(D.rowWidth(18, 90, 60, 1, 1), 60, 'a full width below the resting one still wins: the strip never gets wider than it opens');
 
+// 2b. the strength the person sets: kept between the least that still shows and 100, a bad value is the full strength
+assert.strictEqual(D.strengthOf(100), 100);
+assert.strictEqual(D.strengthOf(60), 60);
+assert.strictEqual(D.strengthOf(0), D.MIN_STRENGTH);
+assert.strictEqual(D.strengthOf(500), 100);
+assert.strictEqual(D.strengthOf('x'), 100);
+assert.strictEqual(D.strengthOf(undefined), 100);
+assert.ok(D.MIN_STRENGTH >= 10 && D.MIN_STRENGTH <= 30);
+
 // 3. the names: hidden on a thin strip, readable at the resting width
 assert.strictEqual(D.textShare(18), 0);
 assert.strictEqual(D.textShare(D.BASE_W), 1);
@@ -39,5 +48,6 @@ const html = fs.readFileSync(new URL('../frontend/index.html', import.meta.url),
 assert.ok(!/tab_dock\.js/.test(html), 'tab_dock.js is loaded on the first hover, not by index.html');
 const app = fs.readFileSync(new URL('../frontend/js/app.js', import.meta.url), 'utf8');
 assert.ok(/loadScript\('js\/tab_dock\.js/.test(app), 'app.js loads tab_dock.js on the first hover');
+assert.ok(/id="cfg-tab-dock-strength" min="20" max="100"/.test(html), 'Settings has the strength slider next to the on/off box, within the range the dock allows');
 
 console.log('tab dock tests passed');
