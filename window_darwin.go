@@ -382,8 +382,8 @@ static void setupMacEditMenu(void) {
 
             // 1. Application Menu
             NSMenuItem *appMenuItem = [[NSMenuItem alloc] init];
-            NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"syki::sok"];
-            NSString *appName = @"syki::sok";
+            NSMenu *appMenu = [[NSMenu alloc] initWithTitle:@"syki"];
+            NSString *appName = @"syki";
             [appMenu addItemWithTitle:[NSString stringWithFormat:@"About %@", appName]
                                action:@selector(orderFrontStandardAboutPanel:)
                         keyEquivalent:@""];
@@ -608,7 +608,7 @@ func runPlatformWindow(app *App, serverURL string) {
 	// function's and main's defers run and ipc-session.json is removed.
 	setOSQuitHandler(func() { closePlatformWindow(app) })
 
-	w.SetTitle("syki::sok")
+	w.SetTitle("syki")
 	w.SetSize(1050, 720, webview.HintNone)
 
 	// The window and web view start in the colour of the saved look, and follow it when the settings are saved with another one.

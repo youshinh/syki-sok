@@ -223,7 +223,7 @@ func addTrayIcon(hwnd windows.Handle, hIcon windows.Handle) {
 		nid.UCallbackMessage = WM_TRAYICON
 		nid.HIcon = hIcon
 
-		tip, _ := windows.UTF16FromString("syki::sok")
+		tip, _ := windows.UTF16FromString("syki")
 		copy(nid.SzTip[:], tip)
 
 		_, _, _ = procShell_NotifyIconW.Call(NIM_ADD, uintptr(unsafe.Pointer(&nid)))
@@ -306,7 +306,7 @@ func handleTrayMenu(hwnd windows.Handle) {
 		quickLabel += "\t" + quickShortcut
 	}
 
-	openText, _ := windows.UTF16PtrFromString("Open syki::sok")
+	openText, _ := windows.UTF16PtrFromString("Open syki")
 	quickText, _ := windows.UTF16PtrFromString(quickLabel)
 	inboxText, _ := windows.UTF16PtrFromString("Open inbox folder")
 	quitText, _ := windows.UTF16PtrFromString("Quit")
@@ -648,7 +648,7 @@ func checkSingleInstance() bool {
 			_, _, _ = procPostMessageW.Call(0xFFFF /* HWND_BROADCAST */, uintptr(msgID), 0, 0)
 		}
 		// Also try FindWindow fallback just in case
-		title, _ := windows.UTF16PtrFromString("syki::sok")
+		title, _ := windows.UTF16PtrFromString("syki")
 		hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
 		if hwnd != 0 {
 			showAndRestoreWindow(windows.Handle(hwnd))
@@ -734,7 +734,7 @@ func runPlatformWindow(app *App, serverURL string) {
 		AutoFocus: true,
 		DataPath:  webViewDataPath,
 		WindowOptions: webview2.WindowOptions{
-			Title:  "syki::sok",
+			Title:  "syki",
 			Width:  1050,
 			Height: 720,
 			IconId: 1,

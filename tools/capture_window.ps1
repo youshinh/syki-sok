@@ -1,7 +1,7 @@
 # tools/capture_window.ps1
 # High-fidelity DirectComposition / WebView2 window capture with normalized target resolution
 param(
-    [string]$WindowTitle = "syki::sok",
+    [string]$WindowTitle = "syki",
     [string]$OutputFile = "test.png",
     [int]$TargetWidth = 1120,
     [int]$TargetHeight = 720
