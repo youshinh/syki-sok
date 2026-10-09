@@ -59,4 +59,10 @@ assert.ok(/loadScript\('js\/tab_dock\.js/.test(app), 'app.js loads tab_dock.js o
 assert.ok(/id="cfg-tab-dock-follow-os"/.test(html) && /tabDockFollowOs: false/.test(app), 'following the reduce-motion setting of the system is a setting, off unless chosen: the magnification eases by default');
 assert.ok(/id="cfg-tab-dock-strength" min="20" max="100"/.test(html), 'Settings has the strength slider next to the on/off box, within the range the dock allows');
 
+// 6. unpinning closes the strips: the focus leaves them and they stop answering the pointer until it has been out of them
+const css = fs.readFileSync(new URL('../frontend/css/style.css', import.meta.url), 'utf8');
+assert.ok(/\.tab-index\.tabs-away\s*\{\s*--tab-hit:\s*none;/.test(css), 'a strip just unpinned takes no pointer events');
+assert.ok(/function closeStripsAfterUnpin\(\)/.test(app) && /if \(wasPinned && !isTabsPinned\) closeStripsAfterUnpin\(\);/.test(app), 'setPinTabs closes the strips when it unpins');
+assert.ok(/focused\.blur\(\)/.test(app), 'the focus leaves the strip (the pin button would hold it open)');
+
 console.log('tab dock tests passed');

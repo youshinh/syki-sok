@@ -6506,8 +6506,30 @@
 
   // --- Pinned Index Tabs: keep open as a persistent sidebar ---
   let isTabsPinned = false;
+  // Unpinning closes the strips at once. The pin button still has the focus and the pointer is still over the strip, and either keeps a strip
+  // open (:focus-within, :hover) until the person clicks into the note. So the focus leaves the strip, and the strip is deaf to the pointer
+  // (class tabs-away: css/style.css) until the pointer has been out of it; the keyboard (F6, Tab) still opens it.
+  function closeStripsAfterUnpin() {
+    const strips = [tabIndexLeft, document.getElementById('tab-index-right')].filter(Boolean);
+    const focused = document.activeElement;
+    if (focused && focused !== document.body && strips.some((el) => el.contains(focused))) focused.blur();
+    strips.forEach((el) => el.classList.add('tabs-away'));
+    const release = (e) => {
+      const over = strips.some((el) => {
+        const b = el.getBoundingClientRect();
+        return e.clientX >= b.left && e.clientX <= b.right && e.clientY >= b.top && e.clientY <= b.bottom;
+      });
+      if (over) return;
+      strips.forEach((el) => el.classList.remove('tabs-away'));
+      document.removeEventListener('pointermove', release, true);
+    };
+    document.addEventListener('pointermove', release, true);
+  }
+
   function setPinTabs(pinned) {
+    const wasPinned = isTabsPinned;
     isTabsPinned = !!pinned;
+    if (wasPinned && !isTabsPinned) closeStripsAfterUnpin();
     document.body.classList.toggle('tabs-pinned', isTabsPinned);
     if (isTabsPinned && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
     if (tabIndexLeft) tabIndexLeft.classList.toggle('is-pinned', isTabsPinned);

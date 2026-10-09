@@ -517,6 +517,13 @@ body.tabs-pinned #header #header-title {
   visibility: hidden;
 }
 
+/* Just unpinned (app.js closeStripsAfterUnpin): the strip closes although the pointer is still over it, and stays closed until the pointer has
+   been out of it. The rows and buttons take no pointer events, so nothing is under the pointer to hold the strip open. The keyboard
+   (:focus-within) opens it as ever. */
+.tab-index.tabs-away {
+  --tab-hit: none;
+}
+
 /* The Dock's magnification (js/tab_dock.js, loaded the first time the mouse reaches a strip; Settings can turn it off: body.tab-dock-off).
    While the mouse is over a strip the script puts .dock-live on it and sets --rw (the row's width) and --st (how much of its name shows) on
    every row each frame: the tab under the pointer is the widest, its neighbours follow on a bell curve, and all of them are wide enough to
