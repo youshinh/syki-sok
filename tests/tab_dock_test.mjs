@@ -56,6 +56,7 @@ const html = fs.readFileSync(new URL('../frontend/index.html', import.meta.url),
 assert.ok(!/tab_dock\.js/.test(html), 'tab_dock.js is loaded on the first hover, not by index.html');
 const app = fs.readFileSync(new URL('../frontend/js/app.js', import.meta.url), 'utf8');
 assert.ok(/loadScript\('js\/tab_dock\.js/.test(app), 'app.js loads tab_dock.js on the first hover');
+assert.ok(/id="cfg-tab-dock-follow-os"/.test(html) && /tabDockFollowOs: false/.test(app), 'following the reduce-motion setting of the system is a setting, off unless chosen: the magnification eases by default');
 assert.ok(/id="cfg-tab-dock-strength" min="20" max="100"/.test(html), 'Settings has the strength slider next to the on/off box, within the range the dock allows');
 
 console.log('tab dock tests passed');

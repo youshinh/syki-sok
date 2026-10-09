@@ -123,6 +123,7 @@
       aiCorrection: true,
       cursorAura: true,
       tabDock: true,
+      tabDockFollowOs: false, // true: the system's "reduce motion" makes the magnification switch at once instead of easing
       tabDockStrength: 100, // 20..100: the share of the full magnification (js/tab_dock.js)
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
@@ -6527,7 +6528,8 @@
   // first pointer event is handed to it. A pinned strip is a sidebar: the script is not told about it, and ignores a strip that is pinned.
   function initTabDock() {
     const strips = [tabIndexLeft, document.getElementById('tab-index-right')].filter(Boolean);
-    // With the system asking for less motion the tabs still come out under the pointer (that is the feature, not an animation), but at once.
+    // The magnification is the feature, and it eases whatever the system says, unless Settings asks to follow the system's "reduce motion":
+    // then the tabs still come out under the pointer, but at once.
     const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     strips.forEach((el) => {
       el.addEventListener('pointerenter', (e) => {
@@ -6542,7 +6544,7 @@
             ].filter((s) => s.el && s.listEl),
             hitWidth: 18,
             strength: () => (config.general && config.general.tabDockStrength) || 100,
-            instant: reduced,
+            instant: () => !!(config.general && config.general.tabDockFollowOs) && reduced(),
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
           });
           tabDock.enter(el, e);
@@ -14281,18 +14283,24 @@ STRICT SYNTAX SAFETY RULES:
     }
     const tabDockEl = document.getElementById('cfg-tab-dock');
     if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
+    const tabDockOsEl = document.getElementById('cfg-tab-dock-follow-os');
+    if (tabDockOsEl) tabDockOsEl.checked = !!(config.general && config.general.tabDockFollowOs);
     const tabDockStrengthEl = document.getElementById('cfg-tab-dock-strength');
     if (tabDockStrengthEl) {
       const strength = (config.general && Number(config.general.tabDockStrength)) || 100;
       tabDockStrengthEl.value = String(Math.max(20, Math.min(100, strength)));
       tabDockStrengthEl.disabled = !tabDockEl.checked;
+      if (tabDockOsEl) tabDockOsEl.disabled = !tabDockEl.checked;
       const out = document.getElementById('cfg-tab-dock-strength-value');
       const show = () => { if (out) out.textContent = tabDockStrengthEl.value + '%'; };
       show();
       if (!tabDockStrengthEl.dataset.wired) {
         tabDockStrengthEl.dataset.wired = '1';
         tabDockStrengthEl.addEventListener('input', show);
-        tabDockEl.addEventListener('change', () => { tabDockStrengthEl.disabled = !tabDockEl.checked; });
+        tabDockEl.addEventListener('change', () => {
+          tabDockStrengthEl.disabled = !tabDockEl.checked;
+          if (tabDockOsEl) tabDockOsEl.disabled = !tabDockEl.checked;
+        });
       }
     }
     const rewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
@@ -15309,6 +15317,8 @@ STRICT SYNTAX SAFETY RULES:
     const saveTabDockEl = document.getElementById('cfg-tab-dock');
     if (saveTabDockEl) {
       config.general.tabDock = saveTabDockEl.checked;
+      const saveOsEl = document.getElementById('cfg-tab-dock-follow-os');
+      if (saveOsEl) config.general.tabDockFollowOs = saveOsEl.checked;
       const saveStrengthEl = document.getElementById('cfg-tab-dock-strength');
       if (saveStrengthEl) config.general.tabDockStrength = Math.max(20, Math.min(100, parseInt(saveStrengthEl.value, 10) || 100));
       applyTabDock();

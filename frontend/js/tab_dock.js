@@ -20,7 +20,7 @@
   const BASE_W = 90;       // the width every tab has while the mouse is over the strip (px)
   const SIGMA = 62;        // the bell's width in px of distance from the pointer: about two tabs on each side
   const TAU_ROW = 60;      // ms: the time a tab takes to cover about two thirds of the way to its target
-  const TAU_ALL = 75;      // ms: the same for the strip as a whole coming out / going back
+  const TAU_ALL = 95;      // ms: the same for the strip as a whole coming out / going back (about a quarter of a second to arrive)
   const MAX_DT = 50;       // ms: a frame later than this counts as this (a stalled page must not jump)
   const TEXT_FROM = 50;    // the width at which a name starts to show, and
   const TEXT_SPAN = 40;    // the width span over which it fades in
