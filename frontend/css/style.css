@@ -530,6 +530,16 @@ body.tabs-pinned #header #header-title {
   width: var(--rw, var(--tab-hit-w));
   transition: none;
 }
+.tab-index.dock-live .tab-item {
+  flex-basis: calc(var(--tab-h) + var(--rx, 0px));
+  min-height: calc(var(--tab-h-min) + var(--rx, 0px)); /* a column squeezed to its least still lets the tab under the pointer stand taller */
+}
+.tab-index.dock-live .tab-index-foot {
+  height: calc(var(--tab-h) + var(--rx, 0px));
+}
+.tab-index.dock-live .tab-index-btn {
+  height: 100%;
+}
 .tab-index.dock-live[data-side="right"] .tab-item {
   align-self: flex-end;
 }

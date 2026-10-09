@@ -2,8 +2,7 @@
 //
 // While the mouse is over an index strip, every tab comes out to a resting width (BASE_W: the names can be read) and the tab under the pointer
 // comes out the furthest, to the full open width; its neighbours follow on a bell curve, so a wave of tabs rises under the pointer and follows
-// it up and down the strip. When the mouse leaves, the strip eases back to its thin edge. Only widths change: no shading, no heights, so the
-// scrolling column (tab_overflow.js) is not disturbed.
+// it up and down the strip, and it is a little taller too. When the mouse leaves, the strip eases back to its thin edge. Nothing is shaded.
 //
 // Cost model: this file is loaded the first time the mouse reaches a strip, never at start-up. Nothing runs while the mouse is elsewhere;
 // while it is over a strip one requestAnimationFrame loop reads the rows' positions once and writes three custom properties on the rows
@@ -19,6 +18,7 @@
   const EASE_ALL = 0.2;  // the same for the strip as a whole coming out / going back
   const TEXT_FROM = 50;  // the width at which a name starts to show, and
   const TEXT_SPAN = 40;  // the width span over which it fades in
+  const EXTRA_H = 12;    // how much taller the tab under the pointer gets (px)
 
   // The share (0..1) of the full magnification a row whose centre is `centre` gets with the pointer at `y`.
   function bell(centre, y, sigma) {
@@ -61,6 +61,7 @@
         r.style.removeProperty('--rw');
         r.style.removeProperty('--st');
         r.style.removeProperty('--bgs');
+        r.style.removeProperty('--rx');
       });
       st.styled.clear();
       st.h = 0;
@@ -74,8 +75,17 @@
       states.forEach((st) => {
         if (!st.live) return;
         const rows = rowsOf(st);
-        // read, then write: one layout for the frame
-        const centres = rows.map((r) => { const b = r.getBoundingClientRect(); return b.top + b.height / 2; });
+        // read, then write: one layout for the frame. The bell is measured on the rows as they would stand without magnification (a taller
+        // row pushes the ones below it down, and a pointer that is held still must not see them move under it), so the height each row
+        // has added so far is taken out of its position.
+        let above = 0;
+        const centres = rows.map((r) => {
+          const b = r.getBoundingClientRect();
+          const extra = EXTRA_H * (st.m.get(r) || 0);
+          const c = b.top + b.height / 2 - above - extra / 2;
+          above += extra;
+          return c;
+        });
         const hTarget = st.hover ? 1 : 0;
         st.h += (hTarget - st.h) * EASE_ALL;
         if (Math.abs(hTarget - st.h) < 0.002) st.h = hTarget; else busy = true;
@@ -89,6 +99,7 @@
           r.style.setProperty('--rw', w.toFixed(1) + 'px');
           r.style.setProperty('--st', textShare(w).toFixed(3));
           r.style.setProperty('--bgs', fillShare(w, opts.hitWidth).toFixed(3));
+          r.style.setProperty('--rx', (EXTRA_H * m).toFixed(1) + 'px');
           st.styled.add(r);
         });
         if (st.hover) busy = true;
@@ -126,7 +137,7 @@
     };
   }
 
-  const api = { BASE_W, SIGMA, bell, rowWidth, textShare, fillShare, create };
+  const api = { BASE_W, SIGMA, EXTRA_H, bell, rowWidth, textShare, fillShare, create };
   global.TabDock = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
