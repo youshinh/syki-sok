@@ -53,7 +53,7 @@
 
   // ---- DOM ----------------------------------------------------------------------------------------------------------------------
 
-  // opts: { strips: [{ el, listEl, footEl? }], hitWidth, fullWidth(): px, strength?(): 20..100 (the share of the full magnification, default 100) }. Returns { destroy, enter }.
+  // opts: { strips: [{ el, listEl, footEl? }], hitWidth, fullWidth(): px, strength?(): 20..100 (the share of the full magnification, default 100), instant?(): true when the system asks for less motion: the tabs then take their size at once instead of easing to it }. Returns { destroy, enter }.
   function create(opts) {
     const win = global;
     const states = opts.strips.map((s) => ({ s, hover: false, h: 0, y: 0, m: new WeakMap(), styled: new Set(), live: false }));
@@ -81,6 +81,9 @@
       raf = 0;
       let busy = false;
       const k = strengthOf(opts.strength ? opts.strength() : 100) / 100;
+      const instant = !!(opts.instant && opts.instant());
+      const easeAll = instant ? 1 : EASE_ALL;
+      const easeRow = instant ? 1 : EASE_ROW;
       const open = Math.max(opts.hitWidth, opts.fullWidth());
       const full = Math.min(open, BASE_W) + (open - Math.min(open, BASE_W)) * k; // how far the tab under the pointer comes out
       const extraH = EXTRA_H * k;
@@ -99,12 +102,12 @@
           return c;
         });
         const hTarget = st.hover ? 1 : 0;
-        st.h += (hTarget - st.h) * EASE_ALL;
+        st.h += (hTarget - st.h) * easeAll;
         if (Math.abs(hTarget - st.h) < 0.002) st.h = hTarget; else busy = true;
         rows.forEach((r, k) => {
           const target = st.hover ? bell(centres[k], st.y) : 0;
           let m = st.m.get(r) || 0;
-          m += (target - m) * EASE_ROW;
+          m += (target - m) * easeRow;
           if (Math.abs(target - m) < 0.002) m = target; else busy = true;
           st.m.set(r, m);
           const w = rowWidth(opts.hitWidth, BASE_W, full, st.h, m);

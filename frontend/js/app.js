@@ -6527,10 +6527,11 @@
   // first pointer event is handed to it. A pinned strip is a sidebar: the script is not told about it, and ignores a strip that is pinned.
   function initTabDock() {
     const strips = [tabIndexLeft, document.getElementById('tab-index-right')].filter(Boolean);
+    // With the system asking for less motion the tabs still come out under the pointer (that is the feature, not an animation), but at once.
     const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     strips.forEach((el) => {
       el.addEventListener('pointerenter', (e) => {
-        if (tabDock || tabDockLoading || isTabsPinned || e.pointerType === 'touch' || reduced()) return;
+        if (tabDock || tabDockLoading || isTabsPinned || e.pointerType === 'touch') return;
         if (config.general && config.general.tabDock === false) return;
         tabDockLoading = true;
         loadScript('js/tab_dock.js?v=1.0.0').then(() => {
@@ -6541,10 +6542,11 @@
             ].filter((s) => s.el && s.listEl),
             hitWidth: 18,
             strength: () => (config.general && config.general.tabDockStrength) || 100,
+            instant: reduced,
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
           });
           tabDock.enter(el, e);
-        }, () => { tabDockLoading = false; });
+        }, (err) => { tabDockLoading = false; console.warn('tab_dock.js did not load:', err); });
       });
     });
   }
