@@ -50,4 +50,14 @@ assert.strictEqual(F.archivePaths({ tabPath: 'nofolder.md', tabTitle: 'x', stamp
   assert.strictEqual(F.archivePaths({ tabPath: '/n/.md', tabTitle: 'x', stamp: 'S' }).fileName, 'note_history_S.md');
 }
 
+// 6. the link goes in after every rewrite that was archived, not only after a block: under a block, at the end of a single line
+{
+  const fs = await import('fs');
+  const app = fs.readFileSync(new URL('../frontend/js/app.js', import.meta.url), 'utf8');
+  assert.ok(/if \(shouldInsertLink\) \{\s*if \(isMultiLineBlock\) \{/.test(app), 'the link no longer depends on the rewrite having several lines');
+  assert.ok(/cleanedResult \+= ` \[\$\{shortTitle\}\]\(\$\{archive\.linkTarget\}\)`;/.test(app), 'a single line gets the link at its end');
+  const i18n = fs.readFileSync(new URL('../frontend/js/i18n.js', import.meta.url), 'utf8');
+  assert.strictEqual((i18n.match(/historyArchiveLinkShort:/g) || []).length, 2, 'the short link text exists in both languages');
+}
+
 console.log('rewrite archive tests passed');

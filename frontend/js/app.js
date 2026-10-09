@@ -5157,9 +5157,16 @@
             const shouldInsertLink = config.general ? (config.general.rewriteHistoryLink !== false) : true;
             const isMultiLineBlock = (reqInfo.originalText && reqInfo.originalText.includes('\n')) ||
               (cleanedResult && cleanedResult.includes('\n'));
-            if (shouldInsertLink && isMultiLineBlock) {
-              const linkTitle = t('historyArchiveLink', { file: archive.fileName }) || `📜 History: ${archive.fileName}`;
-              cleanedResult += `\n\n[${linkTitle}](${archive.linkTarget})`;
+            if (shouldInsertLink) {
+              if (isMultiLineBlock) {
+                // a block: the link stands on a line of its own under it
+                const linkTitle = t('historyArchiveLink', { file: archive.fileName }) || `📜 History: ${archive.fileName}`;
+                cleanedResult += `\n\n[${linkTitle}](${archive.linkTarget})`;
+              } else {
+                // one line: the link follows it on the same line (a line of its own would add two lines to a one-line rewrite)
+                const shortTitle = t('historyArchiveLinkShort') || '📜 History';
+                cleanedResult += ` [${shortTitle}](${archive.linkTarget})`;
+              }
             }
           }
         } catch (histErr) {

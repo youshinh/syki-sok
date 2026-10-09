@@ -851,15 +851,15 @@
               </label>
             </div>
             <div class="form-group" style="margin-top: 10px;">
-              <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Ctrl+K Rewrite backup folder:</label>
+              <label for="cfg-rewrite-history-dir" data-i18n="rewriteHistoryDirLabel">Rewrite backup folder:</label>
               <input type="text" id="cfg-rewrite-history-dir" placeholder="history (relative to note, or 'source', '_history')" value="history">
-              <small data-i18n="rewriteHistoryDirHint">Folder name where original text is archived before Ctrl+K replacement. Saved relative to the edited file.</small>
+              <small data-i18n="rewriteHistoryDirHint">Folder name where the original text is archived before a rewrite replaces it. Saved relative to the edited file.</small>
             </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
-                <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after rewritten block</span>
+                <input type="checkbox" id="cfg-rewrite-history-link" checked> <span data-i18n="rewriteHistoryLinkOptionLabel">Insert history link after a rewrite</span>
               </label>
-              <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file at the end of rewritten paragraphs.</small>
+              <small data-i18n="rewriteHistoryLinkOptionHint">Adds a Markdown link to the archived history file after the rewritten text: on a line of its own under a paragraph, at the end of the line for a single line.</small>
             </div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
