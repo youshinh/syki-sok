@@ -92,4 +92,9 @@ assert.ok(/tabStripWidth: 24,/.test(app) && /--tab-fill-w: 24px;/.test(css) && /
 assert.ok(/--tab-strip-w: 12px;/.test(css) && /#editor-pane \{[^}]*padding-left: var\(--tab-strip-w\)/.test(css), 'the layout keeps its 12px: a wider strip covers the line numbers instead of pushing the text');
 assert.ok(/Math\.round\(n \* 1\.5\)/.test(app), 'the hit area stays half as wide again as the fill');
 
+// 9. the side preview moves the editor only while the person is moving the preview: a redraw clamps the preview's scroll position, and that
+// event used to carry the editor away from the line being typed on (found in a note whose preview was scrolled to the end: the editor jumped to the top)
+assert.ok(/let previewUserActive = false;/.test(app) && /secondaryPreviewPane\.addEventListener\('scroll', \(\) => \{\s*if \(!shouldSyncScroll\(\) \|\| isSyncingPreviewScroll \|\| !previewUserActive\) return;/.test(app), 'the preview-to-editor sync waits for the person');
+assert.ok(/\['wheel', 'touchstart', 'touchmove', 'keydown'\]/.test(app) && /addEventListener\('pointerdown', \(\) => markPreviewUser\(true\)/.test(app), 'the wheel, a touch, a key and the scrollbar mark the preview as moved by the person');
+
 console.log('tab dock tests passed');

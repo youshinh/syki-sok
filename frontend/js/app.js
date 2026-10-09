@@ -4071,8 +4071,22 @@
     setTimeout(() => { isSyncingPreviewScroll = false; }, 40);
   });
 
+  // The preview moves the editor only when the person is moving the preview (the wheel, a touch, a key, the scrollbar dragged). A preview that is
+  // drawn again changes its own height (a diagram is a few lines of text for a moment and then a picture), the browser clamps its scroll position,
+  // and that scroll event used to carry the editor away from the line being typed on, which is then out of sight.
+  let previewUserActive = false;
+  let previewUserTimer = 0;
+  const markPreviewUser = (hold) => {
+    previewUserActive = true;
+    clearTimeout(previewUserTimer);
+    if (!hold) previewUserTimer = setTimeout(() => { previewUserActive = false; }, 300);
+  };
+  ['wheel', 'touchstart', 'touchmove', 'keydown'].forEach((type) => secondaryPreviewPane.addEventListener(type, () => markPreviewUser(false), { passive: true }));
+  secondaryPreviewPane.addEventListener('pointerdown', () => markPreviewUser(true), { passive: true });
+  document.addEventListener('pointerup', () => { if (previewUserActive) markPreviewUser(false); }, true);
+
   secondaryPreviewPane.addEventListener('scroll', () => {
-    if (!shouldSyncScroll() || isSyncingPreviewScroll) return;
+    if (!shouldSyncScroll() || isSyncingPreviewScroll || !previewUserActive) return;
     isSyncingEditorScroll = true;
     const maxPreviewScroll = secondaryPreviewPane.scrollHeight - secondaryPreviewPane.clientHeight;
     if (maxPreviewScroll > 0) {
