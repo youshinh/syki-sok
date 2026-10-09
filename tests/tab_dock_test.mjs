@@ -65,4 +65,10 @@ assert.ok(/\.tab-index\.tabs-away\s*\{\s*--tab-hit:\s*none;/.test(css), 'a strip
 assert.ok(/function closeStripsAfterUnpin\(\)/.test(app) && /if \(wasPinned && !isTabsPinned\) closeStripsAfterUnpin\(\);/.test(app), 'setPinTabs closes the strips when it unpins');
 assert.ok(/focused\.blur\(\)/.test(app), 'the focus leaves the strip (the pin button would hold it open)');
 
+// 7. the three buttons under the tabs wear the accent like the tabs (not the bare wall colour, black in the ink look), open, pinned and magnified
+assert.ok(/.tab-index-btn::before\s*\{[^}]*background:\s*var\(--tab-accent\)/.test(css), 'the buttons have the accent tint');
+assert(/\.tab-index:is\(:hover, :focus-within\) \.tab-index-btn::before\s*\{\s*opacity:\s*0\.2/.test(css), 'open: tinted');
+assert(/body\.tabs-pinned \.tab-index \.tab-index-btn::before\s*\{\s*opacity:\s*0\.2/.test(css), 'pinned: tinted');
+assert(/\.tab-index\.dock-live \.tab-index-btn::before\s*\{\s*opacity:\s*calc\(var\(--bgs, 0\) \* 0\.2\)/.test(css), 'magnified: tinted with the fill');
+
 console.log('tab dock tests passed');

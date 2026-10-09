@@ -363,6 +363,26 @@ body.dark-theme {
   pointer-events: var(--tab-hit, auto);
   transition: background-color var(--tab-open-ms) ease var(--tab-delay);
 }
+/* The tint of the tabs: an open row is the wall colour under the accent at --tab-o, and the three buttons wear the same accent at the strength of
+   the farthest tab (0.2), so they follow the look (ink or paper) and the accent like the tabs above them, instead of the bare wall colour
+   (black in the ink look). It is there while the strip is open and pinned, and follows the Dock's fill (--bgs) while magnified. */
+.tab-index-btn {
+  position: relative;
+  isolation: isolate;
+}
+.tab-index-btn::before {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: var(--tab-accent);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--tab-open-ms) ease var(--tab-delay);
+}
+.tab-index:is(:hover, :focus-within) .tab-index-btn::before {
+  opacity: 0.2;
+}
 .tab-index-btn svg {
   flex: none;
   margin: 0 auto;
@@ -460,6 +480,10 @@ body.tabs-pinned .tab-index .tab-item:is(:hover, :focus-visible, .active) .tab-c
 }
 body.tabs-pinned .tab-index .tab-index-btn {
   background-color: var(--tab-base) !important;
+}
+body.tabs-pinned .tab-index .tab-index-btn::before {
+  opacity: 0.2 !important;
+  transition: none !important;
 }
 body.tabs-pinned .tab-index .tab-index-btn svg {
   opacity: 1 !important;
@@ -574,6 +598,10 @@ body.tabs-pinned #header #header-title {
   background-image: linear-gradient(var(--tab-base), var(--tab-base));
   background-repeat: no-repeat;
   background-size: calc(100% * var(--bgs, 0)) 100%;
+  transition: none;
+}
+.tab-index.dock-live .tab-index-btn::before {
+  opacity: calc(var(--bgs, 0) * 0.2);
   transition: none;
 }
 .tab-index.dock-live .tab-index-btn svg {
