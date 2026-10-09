@@ -38,6 +38,21 @@ const twoFrames = 1 - (1 - D.easeShare(8, 60)) * (1 - D.easeShare(8, 60));
 assert.ok(Math.abs(twoFrames - D.easeShare(16, 60)) < 1e-12, 'two 8ms frames move a tab as far as one 16ms frame');
 assert.strictEqual(D.easeShare(5000, 60), D.easeShare(50, 60), 'a stalled page does not jump');
 
+// 2d. the pointer in the unmagnified layout: with nothing added it is where it is; with height added above, the row on screen under the
+// pointer maps to that row's own centre (so the widest tab is the one under the pointer, not one below it)
+{
+  const centres = [15, 45, 75, 105, 135];
+  assert.strictEqual(D.toUnmagnified(centres, [0, 0, 0, 0, 0], 80), 80);
+  const extras = [2, 6, 12, 6, 2]; // heights added so far
+  let above = 0; const shown = centres.map((c, i) => { const v = c + above + extras[i] / 2; above += extras[i]; return v; });
+  centres.forEach((c, i) => assert.ok(Math.abs(D.toUnmagnified(centres, extras, shown[i]) - c) < 1e-9, 'the centre of row ' + i + ' on screen is its own centre'));
+  const mid = (shown[1] + shown[2]) / 2;
+  assert.ok(Math.abs(D.toUnmagnified(centres, extras, mid) - 60) < 1e-9, 'half way between two rows on screen is half way between their centres');
+  assert.ok(D.toUnmagnified(centres, extras, shown[0] - 10) < centres[0], 'above the first row');
+  assert.ok(D.toUnmagnified(centres, extras, shown[4] + 10) > centres[4], 'below the last row');
+  assert.strictEqual(D.toUnmagnified([], [], 50), 50);
+}
+
 // 3. the names: hidden on a thin strip, readable at the resting width
 assert.strictEqual(D.textShare(18), 0);
 assert.strictEqual(D.textShare(D.BASE_W), 1);

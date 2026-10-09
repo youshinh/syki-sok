@@ -57,6 +57,30 @@
     return Math.max(0, Math.min(1, (w - hit) / 20));
   }
 
+  // Where the pointer is in the rows' unmagnified layout. The rows below a taller one are pushed down, so the row that is on screen under
+  // the pointer is not the row whose unmagnified centre is at the pointer's height: left alone, the widest tab would stand about a row below the
+  // pointer. `centres` are the unmagnified centres, `extras` the height each row has added; a row's centre on screen is its own centre plus the
+  // heights added above it plus half its own. The pointer's height is mapped through those, so the widest tab is the one under it.
+  function toUnmagnified(centres, extras, y) {
+    const n = centres.length;
+    if (n === 0) return y;
+    let above = 0;
+    let prevShown = 0;
+    let prevBase = 0;
+    for (let i = 0; i < n; i++) {
+      const shown = centres[i] + above + extras[i] / 2;
+      if (y <= shown) {
+        if (i === 0) return centres[0] + (y - shown);
+        const span = shown - prevShown;
+        return span > 0 ? prevBase + (centres[i] - prevBase) * ((y - prevShown) / span) : centres[i];
+      }
+      prevShown = shown;
+      prevBase = centres[i];
+      above += extras[i];
+    }
+    return prevBase + (y - prevShown);
+  }
+
   // The share of the way to its target a value moves in `dt` ms with time constant `tau` ms (1 when there is no easing).
   function easeShare(dt, tau) {
     if (!(tau > 0)) return 1;
@@ -136,10 +160,13 @@
         const rows = rowsOf(st);
         if (!st.centres || st.count !== rows.length) { st.centres = measure(st, rows, extraH); st.count = rows.length; }
         const hTarget = st.hover ? 1 : 0;
+        const pointer = st.hover
+          ? toUnmagnified(st.centres, rows.map((r) => extraH * (st.m.get(r) || 0)), st.y)
+          : 0;
         st.h += (hTarget - st.h) * easeAll;
         if (Math.abs(hTarget - st.h) < 0.002) st.h = hTarget; else busy = true;
         rows.forEach((r, i) => {
-          const target = st.hover ? bell(st.centres[i], st.y) : 0;
+          const target = st.hover ? bell(st.centres[i], pointer) : 0;
           let m = st.m.get(r) || 0;
           if (m === target && st.h === hTarget && st.written.has(r)) return; // this row has settled: nothing to compute or write
           m += (target - m) * easeRow;
@@ -162,6 +189,9 @@
     function begin(st, e) {
       st.hover = true;
       st.y = e.clientY;
+      // The loop sleeps when everything has settled. The first frame after it wakes is a normal frame, not one that covers the whole time asleep:
+      // that would be capped at MAX_DT and move the tabs more than twice as far as a frame should, a lurch every time the pointer starts again.
+      if (!raf) st.prevTs = 0;
       if (!st.live) { st.s.el.classList.add('dock-live'); st.live = true; st.centres = null; }
       kick();
     }
@@ -190,7 +220,7 @@
     };
   }
 
-  const api = { BASE_W, SIGMA, EXTRA_H, MIN_STRENGTH, strengthOf, bell, rowWidth, textShare, fillShare, easeShare, create };
+  const api = { BASE_W, SIGMA, EXTRA_H, MIN_STRENGTH, strengthOf, toUnmagnified, bell, rowWidth, textShare, fillShare, easeShare, create };
   global.TabDock = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);
