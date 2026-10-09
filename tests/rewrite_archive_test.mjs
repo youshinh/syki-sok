@@ -60,4 +60,38 @@ assert.strictEqual(F.archivePaths({ tabPath: 'nofolder.md', tabTitle: 'x', stamp
   assert.strictEqual((i18n.match(/historyArchiveLinkShort:/g) || []).length, 2, 'the short link text exists in both languages');
 }
 
+// 7. the preview does not show the history link; the editor text is not touched; code keeps an example of one
+{
+  const L = '[📜 変更前の履歴: メモ_history_20261010_001607.md](history/%E3%83%A1%E3%83%A2_history_20261010_001607.md)';
+  const S = '[📜 履歴](history/a%20b_history_20261010_001607.md)';
+  // a block: the link's own line goes, the rest stays
+  assert.strictEqual(F.stripHistoryLinks('前\n書き換え\n\n' + L + '\n後'), '前\n書き換え\n\n後');
+  // a single line: the link and the space before it go
+  assert.strictEqual(F.stripHistoryLinks('書き換えました。 ' + S + '\n次'), '書き換えました。\n次');
+  // an older link, written with raw spaces
+  assert.strictEqual(F.stripHistoryLinks('x [📜 履歴](history/2026-10-08 21-54_history_20261008_215400.md)'), 'x');
+  // a link the person wrote is theirs
+  assert.strictEqual(F.stripHistoryLinks('[資料](history/notes.md) と [📜 履歴](other/readme.md)'), '[資料](history/notes.md) と [📜 履歴](other/readme.md)');
+  // code is left alone
+  const fenced = '```\n' + L + '\n```';
+  assert.strictEqual(F.stripHistoryLinks(fenced), fenced);
+  assert.strictEqual(F.stripHistoryLinks('例: `' + S + '` です'), '例: `' + S + '` です');
+  // nothing to do: the same string comes back untouched
+  assert.strictEqual(F.stripHistoryLinks('ただの文章'), 'ただの文章');
+  assert.strictEqual(F.stripHistoryLinks(''), '');
+  // a Windows full path (a note with no file yet)
+  assert.strictEqual(F.stripHistoryLinks('本文 [📜 履歴](C:/Users/a/scraps/history/Untitled%201_history_20261010_001607.md)'), '本文');
+}
+
+// 8. a click still opens the history link an older version wrote (a raw space in the name made it no link at all)
+{
+  const old = '[📜 変更前の履歴: 2026-10-08 21-54_history_20261008_215400.md](history/2026-10-08 21-54_history_20261008_215400.md)';
+  const link = F.findLinkAt(old, old.indexOf('](') + 5);
+  assert.ok(link, 'the older link is found');
+  assert.strictEqual(link.target, 'history/2026-10-08 21-54_history_20261008_215400.md');
+  assert.ok(!link.remote);
+  // an ordinary parenthesis after a word is not taken for one
+  assert.strictEqual(F.findLinkAt('見て [a](b c) です', 5), null);
+}
+
 console.log('rewrite archive tests passed');

@@ -382,8 +382,19 @@ func revealCommandFor(goos, path string) (string, []string) {
 	}
 }
 
-// OpenPath opens target (a file:// URL, an absolute path, or a baseDir-relative path) with the
-// OS default application. The target must exist.
+// isNoteTextFile says whether a file is a note this app edits itself: a Markdown or plain text file. Ctrl+Click on a link to one opens it in a
+// tab here (the history file of a rewrite is one) instead of handing it to whatever the system has for .md, which is often nothing.
+func isNoteTextFile(path string) bool {
+	switch strings.ToLower(filepath.Ext(path)) {
+	case ".md", ".markdown", ".txt":
+		return true
+	}
+	return false
+}
+
+// OpenPath opens target (a file:// URL, an absolute path, or a baseDir-relative path). A Markdown or text note opens in a tab of this app
+// (one that is already open comes forward); anything else, and a note the app cannot show, opens with the OS default application.
+// The target must exist.
 func (a *App) OpenPath(target, baseDir string) error {
 	p, err := resolveTargetPath(target, baseDir)
 	if err != nil {
@@ -395,6 +406,9 @@ func (a *App) OpenPath(target, baseDir string) error {
 	}
 	if _, err := os.Stat(abs); err != nil {
 		return fmt.Errorf("ファイルが見つかりません: %w", err)
+	}
+	if isNoteTextFile(abs) && a.OpenPathInNewTab(abs) == nil {
+		return nil
 	}
 	name, args := openCommandFor(runtime.GOOS, abs)
 	return inputsStartProcess(name, args...)

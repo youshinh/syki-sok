@@ -3705,6 +3705,11 @@
       rawText = window.HtmlComments.removeComments(rawText);
     }
 
+    // 0b. The history link a rewrite leaves is for the editor: the preview does not show it (file_anchor.js stripHistoryLinks; code is left alone).
+    if (window.FileAnchor && typeof window.FileAnchor.stripHistoryLinks === 'function') {
+      rawText = window.FileAnchor.stripHistoryLinks(rawText);
+    }
+
     // 1. Protect fenced code blocks (```...``` / ~~~...~~~) and inline code (`...`)
     const codeSnippets = [];
     rawText = rawText.replace(/(`{3,}[\s\S]*?`{3,}|~{3,}[\s\S]*?~{3,}|`[^`\n]+`)/g, (match) => {
@@ -17582,6 +17587,10 @@ STRICT SYNTAX SAFETY RULES:
     // save a photo or voice note it could not OCR / transcribe next to the note.
     getNoteDir: function () {
       return getNoteDir();
+    },
+    // The folder of the note shown in `editor` (the primary or the secondary pane): what a relative link written in that note is read against.
+    getNoteDirForEditor: function (editor) {
+      return getNoteDir(getTab(getTabIdForEditor(editor)));
     },
 
     newTab: function (title, content, path) {

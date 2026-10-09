@@ -871,3 +871,37 @@ func TestResolveTargetPath_LiteralPercentNameWins(t *testing.T) {
 		t.Errorf("got %q, %v; want %q", got, err, literal)
 	}
 }
+
+// A link to a Markdown or text note opens that note in a tab of this app; any other file goes to the system.
+func TestIsNoteTextFile(t *testing.T) {
+	for _, name := range []string{"a.md", "A.MD", "x.markdown", "n.txt", filepath.Join("history", "メモ (1)_history_20261010_001607.md")} {
+		if !isNoteTextFile(name) {
+			t.Errorf("%s should open in the app", name)
+		}
+	}
+	for _, name := range []string{"a.png", "doc.pdf", "sheet.xlsx", "noext", "x.md.bak", ""} {
+		if isNoteTextFile(name) {
+			t.Errorf("%s should open with the system", name)
+		}
+	}
+}
+
+// With no window to open it in (a test, or the window being closed), a note is handed to the system as before instead of failing.
+func TestOpenPath_NoteWithoutAWindowFallsBackToTheSystem(t *testing.T) {
+	calls := withStubbedStartProcess(t)
+	dir := t.TempDir()
+	target := filepath.Join(dir, "history", "メモ_history_20261010_001607.md")
+	if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(target, []byte("before"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	app := &App{}
+	if err := app.OpenPath("history/%E3%83%A1%E3%83%A2_history_20261010_001607.md", dir); err != nil {
+		t.Fatalf("OpenPath failed: %v", err)
+	}
+	if len(*calls) != 1 {
+		t.Fatalf("expected the system to be asked once, got %v", *calls)
+	}
+}

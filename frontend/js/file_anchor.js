@@ -47,7 +47,9 @@
 
   // Bare (non-angle-wrapped) targets never contain a literal space or ')' - those cases must be
   // percent-encoded or wrapped in <...>, matching the spec's own guidance.
-  const LINK_RE = /(!)?\[([^\]]*)\]\(\s*(?:<([^>]*)>|([^\s()]*))(?:\s+"[^"]*")?\s*\)/g;
+  // The third form of the target is the history link of an older version, which wrote the note's name into it with its spaces: "(history/a b_history_X.md)".
+  // CommonMark does not read it as a link, but a click should still open it. It has to end in a note file name and have no parentheses.
+  const LINK_RE = /(!)?\[([^\]]*)\]\(\s*(?:<([^>]*)>|([^\s()]*)|([^()<>\n"]*?\.(?:md|markdown|txt)))(?:\s+"[^"]*")?\s*\)/g;
 
   function isRemoteScheme(target) {
     return /^(https?:|mailto:)/i.test(target);
@@ -86,7 +88,7 @@
       LINK_RE.lastIndex = 0;
       let m;
       while ((m = LINK_RE.exec(text))) {
-        const target = m[3] !== undefined ? m[3] : m[4];
+        const target = m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : m[5]);
         if (!target || !isOpenableTarget(target)) continue;
         out.push({
           start: m.index, end: m.index + m[0].length, label: m[2], target: target,
@@ -160,7 +162,7 @@
     let m;
     while ((m = LINK_RE.exec(text))) {
       if (!m[1]) continue; // not an image
-      const target = m[3] !== undefined ? m[3] : m[4];
+      const target = m[3] !== undefined ? m[3] : (m[4] !== undefined ? m[4] : m[5]);
       if (!target || isRemoteScheme(target) || isNetworkPath(target)) continue;
       out.push({ start: m.index, end: m.index + m[0].length, target: target });
       if (out.length > MAX_HOVER_LINKS) break;
@@ -255,9 +257,15 @@
 
   // ---- click: Ctrl/Cmd+Click open, Alt+Click reveal --------------------------------------------
 
-  async function openOrReveal(target, wantOpen, bridge) {
+  // The folder a relative link in `editor` is read against: that pane's own note (the right pane has its own), not the one that is selected.
+  async function noteDirOf(bridge, editor) {
+    if (editor && typeof bridge.getNoteDirForEditor === 'function') return bridge.getNoteDirForEditor(editor);
+    return bridge.getNoteDir ? bridge.getNoteDir() : '';
+  }
+
+  async function openOrReveal(target, wantOpen, bridge, editor) {
     try {
-      const noteDir = bridge.getNoteDir ? await bridge.getNoteDir() : '';
+      const noteDir = await noteDirOf(bridge, editor);
       const backend = global.backend;
       if (wantOpen) {
         if (backend && typeof backend.openPath === 'function') await backend.openPath(target, noteDir);
@@ -285,7 +293,7 @@
       openInBrowser(link.target, bridge);
       return true;
     }
-    openOrReveal(link.target, wantOpen, bridge);
+    openOrReveal(link.target, wantOpen, bridge, editor);
     return true;
   }
 
@@ -843,6 +851,36 @@
     return { fileName: fileName, fullPath: fullPath, linkTarget: encodeLinkTarget(target) };
   }
 
+  // The history link a rewrite leaves (js/app.js): a pointer to the text it replaced, for the editor. The preview and anything made from it leave it out.
+  // A link whose target ends in _history_<date>_<time>.md, with its label and the space before it on the same line. Code is left alone (a fenced block,
+  // and a span of inline code), so a note that shows an example of one keeps it.
+  const HISTORY_LINK_RE = /[ \t]*\[[^\]\n]*\]\(\s*(?:<[^>\n]*_history_\d{8}_\d{6}\.md>|[^()\n]*_history_\d{8}_\d{6}\.md)\s*\)/g;
+  const FENCE_LINE_RE = /^ {0,3}(`{3,}|~{3,})/;
+  function stripHistoryLinks(text) {
+    if (typeof text !== 'string' || text.indexOf('_history_') === -1) return text;
+    const lines = text.split('\n');
+    const out = [];
+    let fence = '';
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const f = FENCE_LINE_RE.exec(line);
+      if (fence) {
+        if (f && f[1][0] === fence[0] && f[1].length >= fence.length && /^\s*$/.test(line.slice(f[0].length))) fence = '';
+        out.push(line);
+        continue;
+      }
+      if (f) { fence = f[1]; out.push(line); continue; }
+      if (line.indexOf('_history_') === -1) { out.push(line); continue; }
+      const spans = [];
+      const masked = line.replace(/(`+)[^`]*?\1/g, (m) => { spans.push(m); return '\u0000' + (spans.length - 1) + '\u0000'; });
+      const stripped = masked.replace(HISTORY_LINK_RE, '');
+      if (stripped === masked) { out.push(line); continue; }
+      if (stripped.trim() === '') continue; // the link stood on a line of its own
+      out.push(stripped.replace(/\u0000(\d+)\u0000/g, (m, k) => spans[Number(k)]));
+    }
+    return out.join('\n');
+  }
+
   function init() {
     bindHoverListeners();
   }
@@ -855,6 +893,7 @@
     handleDrop: handleDrop,
     encodeLinkTarget: encodeLinkTarget,
     archivePaths: archivePaths,
+    stripHistoryLinks: stripHistoryLinks,
     // Refresh the link underlines of an editor (or of both, without an argument) once typing pauses;
     // app.js calls this wherever it sets a note's text itself, which fires no input event.
     scheduleMarks: function (editor) { if (editor) scheduleMarks(editor); else refreshMarks(); }
@@ -867,6 +906,7 @@
       segmentText: segmentText,
       encodeLinkTarget: encodeLinkTarget,
       archivePaths: archivePaths,
+      stripHistoryLinks: stripHistoryLinks,
       collectImageLinks: collectImageLinks,
       pathToFileUrl: pathToFileUrl,
       resolveLocalImageSrc: resolveLocalImageSrc,
