@@ -60,8 +60,9 @@ body.dark-theme {
      --tab-open-w wide open. :is() is Safari 14 / Chrome 88; `contain` is Safari 15.4 (older engines ignore it and lose nothing).
    - Every colour is a token (css/tokens.css: --tab-*). Corners are square. */
 :root {
-  --tab-strip-w: 12px;
-  --tab-hit-w: 18px;
+  --tab-strip-w: 12px; /* the room the layout leaves for a strip: the text starts after it, and it does not change with the width below */
+  --tab-fill-w: 24px; /* the fill of a collapsed strip (Settings can change it); a wider one covers the line numbers, which is allowed */
+  --tab-hit-w: 36px;
   --tab-open-w: 200px;
   --tab-h: 30px;
   --tab-h-min: 20px;
@@ -189,7 +190,7 @@ body.dark-theme {
   left: 0;
   top: 0;
   bottom: 0;
-  width: var(--tab-strip-w);
+  width: var(--tab-fill-w);
   background: var(--tab-accent);
   opacity: var(--tab-o);
   box-shadow: inset 0 -1px 0 var(--tab-hair);
@@ -203,7 +204,7 @@ body.dark-theme {
 .tab-item.has-conflict::after {
   content: '';
   position: absolute;
-  left: calc((var(--tab-strip-w) - var(--tab-dot)) / 2);
+  left: calc((var(--tab-fill-w) - var(--tab-dot)) / 2);
   top: 50%;
   width: var(--tab-dot);
   height: var(--tab-dot);
@@ -240,7 +241,7 @@ body.dark-theme {
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin: 0 6px 0 calc(var(--tab-strip-w) + 8px);
+  margin: 0 6px 0 calc(var(--tab-fill-w) + 8px);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.15s ease;
@@ -431,10 +432,10 @@ body.dark-theme {
 .tab-index[data-side="right"] .tab-item.is-dirty::after,
 .tab-index[data-side="right"] .tab-item.has-conflict::after {
   left: auto;
-  right: calc((var(--tab-strip-w) - var(--tab-dot)) / 2);
+  right: calc((var(--tab-fill-w) - var(--tab-dot)) / 2);
 }
 .tab-index[data-side="right"] .tab-title {
-  margin: 0 calc(var(--tab-strip-w) + 8px) 0 6px;
+  margin: 0 calc(var(--tab-fill-w) + 8px) 0 6px;
   text-align: right;
 }
 .tab-index[data-side="right"] .tab-item .tab-dirty-dot {
@@ -580,7 +581,7 @@ body.tabs-pinned #header #header-title {
   background-size: calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)) 100%;
 }
 .tab-index.dock-live .tab-item::before {
-  width: max(var(--tab-strip-w), calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)));
+  width: max(var(--tab-fill-w), calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)));
   transition: none;
 }
 .tab-index.dock-live .tab-title {

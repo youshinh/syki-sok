@@ -86,4 +86,10 @@ assert(/\.tab-index:is\(:hover, :focus-within\) \.tab-index-btn::before\s*\{\s*o
 assert(/body\.tabs-pinned \.tab-index \.tab-index-btn::before\s*\{\s*opacity:\s*0\.2/.test(css), 'pinned: tinted');
 assert(/\.tab-index\.dock-live \.tab-index-btn::before\s*\{\s*opacity:\s*calc\(var\(--bgs, 0\) \* 0\.2\)/.test(css), 'magnified: tinted with the fill');
 
+// 8. the thin width of the strips is a setting from 12px (the old width) up, and the default is the style sheet's own
+assert.ok(/id="cfg-tab-strip-width" min="12" max="48"/.test(html), 'Settings has the width of the tab edge, the old 12px as the least');
+assert.ok(/tabStripWidth: 24,/.test(app) && /--tab-fill-w: 24px;/.test(css) && /--tab-hit-w: 36px;/.test(css), 'the default is 24px (fill) and 36px (hit area), twice the old width');
+assert.ok(/--tab-strip-w: 12px;/.test(css) && /#editor-pane \{[^}]*padding-left: var\(--tab-strip-w\)/.test(css), 'the layout keeps its 12px: a wider strip covers the line numbers instead of pushing the text');
+assert.ok(/Math\.round\(n \* 1\.5\)/.test(app), 'the hit area stays half as wide again as the fill');
+
 console.log('tab dock tests passed');

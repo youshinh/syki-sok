@@ -68,7 +68,7 @@ function styleProblems({ style, chrome, print }) {
   const p = [];
   const css = noComments(style);
   const root = prop(declarations(style, ':root'), '--tab-strip-w') !== null ? declarations(style, ':root') : null;
-  const want = { '--tab-strip-w': '12px', '--tab-hit-w': '18px', '--tab-open-w': '200px', '--tab-h': '30px', '--tab-h-min': '20px', '--tab-open-ms': '220ms', '--tab-open-delay': '120ms', '--tab-mix-floor': '0.2', '--tab-mix-base': '0.68', '--tab-mix-step': '0.12', '--tab-strip-top': 'var(--ov-top)', '--tab-strip-bottom': 'var(--ov-bottom)', '--tab-strip-gap-right': '9px', '--tab-strip-pane-head': 'var(--pane-band-h)' };
+  const want = { '--tab-strip-w': '12px', '--tab-fill-w': '24px', '--tab-hit-w': '36px', '--tab-open-w': '200px', '--tab-h': '30px', '--tab-h-min': '20px', '--tab-open-ms': '220ms', '--tab-open-delay': '120ms', '--tab-mix-floor': '0.2', '--tab-mix-base': '0.68', '--tab-mix-step': '0.12', '--tab-strip-top': 'var(--ov-top)', '--tab-strip-bottom': 'var(--ov-bottom)', '--tab-strip-gap-right': '9px', '--tab-strip-pane-head': 'var(--pane-band-h)' };
   if (!root) p.push('style.css has no :root with --tab-strip-w');
   else for (const [k, v] of Object.entries(want)) if (prop(root, k) !== v) p.push(k + ' is ' + prop(root, k) + ', expected ' + v + ' (the sizes are variables, 6 / 12 / 200 px to start with: the owner sets them by looking at the app)');
   // the shading numbers are the ones tab_strip.js tests with
@@ -96,7 +96,7 @@ function styleProblems({ style, chrome, print }) {
   const fill = declarations(style, '.tab-item::before');
   if (prop(fill, 'opacity') !== 'var(--tab-o)' || prop(fill, 'background') !== 'var(--tab-accent)') p.push('the fill is not the ::before in --tab-accent at --tab-o (an opacity on the row itself would fade its text)');
   if (prop(fill, 'z-index') !== '-1' || prop(tab, 'isolation') !== 'isolate') p.push('the fill is not behind the name (z-index -1 in an isolated row)');
-  if (prop(fill, 'width') !== 'var(--tab-strip-w)') p.push('the collapsed fill is not --tab-strip-w wide');
+  if (prop(fill, 'width') !== 'var(--tab-fill-w)') p.push('the collapsed fill is not --tab-fill-w wide');
   if (prop(declarations(style, '.tab-index:is(:hover, :focus-within) .tab-item::before'), 'width') !== '100%') p.push('the open fill does not cover the row');
   if (prop(tab, 'flex') !== '0 1 var(--tab-h)' || prop(tab, 'min-height') !== 'var(--tab-h-min)') p.push('a tab is not --tab-h squeezed to --tab-h-min');
   if (prop(tab, 'width') !== '100%' || prop(tab, 'padding') !== '0') p.push('a tab is as wide as its strip with no padding of its own (a row wider than its strip would scroll the strip sideways when it takes the focus)');

@@ -89,7 +89,7 @@
 
   // ---- DOM ----------------------------------------------------------------------------------------------------------------------
 
-  // opts: { strips: [{ el, listEl, footEl?, scrollEl? }], hitWidth, fullWidth(): px, strength?(): 20..100 (the share of the full magnification,
+  // opts: { strips: [{ el, listEl, footEl?, scrollEl? }], hitWidth (px, or a function giving it), fullWidth(): px, strength?(): 20..100 (the share of the full magnification,
   // default 100), instant?(): true when the system asks for less motion: the tabs then take their size at once instead of easing to it }.
   // Returns { destroy, enter }.
   function create(opts) {
@@ -98,6 +98,13 @@
       s, hover: false, h: 0, y: 0, m: new WeakMap(), written: new WeakMap(), styled: new Set(), live: false,
       centres: null, count: -1, prevTs: 0
     }));
+    // The thin width (Settings can change it) and the open width, read when a pointer arrives: a style read inside a frame would flush the style every frame.
+    let hit = 0;
+    let openW = 0;
+    const readSizes = () => {
+      hit = typeof opts.hitWidth === 'function' ? opts.hitWidth() : opts.hitWidth;
+      openW = opts.fullWidth();
+    };
     let raf = 0;
 
     function rowsOf(st) {
@@ -148,7 +155,7 @@
       let busy = false;
       const k = strengthOf(opts.strength ? opts.strength() : 100) / 100;
       const instant = !!(opts.instant && opts.instant());
-      const open = Math.max(opts.hitWidth, opts.fullWidth());
+      const open = Math.max(hit, openW);
       const full = Math.min(open, BASE_W) + (open - Math.min(open, BASE_W)) * k; // how far the tab under the pointer comes out
       const extraH = EXTRA_H * k;
       states.forEach((st) => {
@@ -172,10 +179,10 @@
           m += (target - m) * easeRow;
           if (Math.abs(target - m) < 0.002) m = target; else busy = true;
           st.m.set(r, m);
-          const w = rowWidth(opts.hitWidth, BASE_W, full, st.h, m);
+          const w = rowWidth(hit, BASE_W, full, st.h, m);
           put(r, st, '--rw', w.toFixed(1) + 'px');
           put(r, st, '--st', textShare(w).toFixed(2));
-          put(r, st, '--bgs', fillShare(w, opts.hitWidth).toFixed(2));
+          put(r, st, '--bgs', fillShare(w, hit).toFixed(2));
           put(r, st, '--rx', (extraH * m).toFixed(1) + 'px');
           st.styled.add(r);
         });
@@ -192,7 +199,7 @@
       // The loop sleeps when everything has settled. The first frame after it wakes is a normal frame, not one that covers the whole time asleep:
       // that would be capped at MAX_DT and move the tabs more than twice as far as a frame should, a lurch every time the pointer starts again.
       if (!raf) st.prevTs = 0;
-      if (!st.live) { st.s.el.classList.add('dock-live'); st.live = true; st.centres = null; }
+      if (!st.live) { readSizes(); st.s.el.classList.add('dock-live'); st.live = true; st.centres = null; }
       kick();
     }
 

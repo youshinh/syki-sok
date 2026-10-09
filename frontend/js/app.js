@@ -124,6 +124,7 @@
       cursorAura: true,
       tabDock: true,
       tabDockFollowOs: false, // true: the system's "reduce motion" makes the magnification switch at once instead of easing
+      tabStripWidth: 24, // 12..48 (px): the width of the fill of a collapsed index tab strip; its hit area is half as wide again (css --tab-fill-w, --tab-hit-w). The layout does not move with it: a wider strip covers the line numbers
       tabDockStrength: 100, // 20..100: the share of the full magnification (js/tab_dock.js)
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
@@ -503,6 +504,22 @@
   // The Dock's magnification of the index tabs (js/tab_dock.js) is on unless Settings turned it off, or the system asks for less motion.
   let tabDock = null; // the magnification of the index tabs (js/tab_dock.js), made on the first hover
   let tabDockLoading = false;
+  // The thin width of the index strips (Settings): --tab-fill-w is the fill, --tab-hit-w (half as wide again) is what the pointer can aim at. The style
+  // sheet's own 24px / 36px stand when it is the default, so nothing is written at start-up for most people.
+  const TAB_STRIP_DEFAULT = 24;
+  function applyTabStripWidth() {
+    const root = document.documentElement;
+    if (!root || !root.style || typeof root.style.setProperty !== 'function') return;
+    const n = Math.max(12, Math.min(48, Math.round(Number(config.general && config.general.tabStripWidth) || TAB_STRIP_DEFAULT)));
+    if (n === TAB_STRIP_DEFAULT) {
+      root.style.removeProperty('--tab-fill-w');
+      root.style.removeProperty('--tab-hit-w');
+    } else {
+      root.style.setProperty('--tab-fill-w', n + 'px');
+      root.style.setProperty('--tab-hit-w', Math.round(n * 1.5) + 'px');
+    }
+  }
+
   function applyTabDock() {
     const off = !!(config.general && config.general.tabDock === false);
     document.body.classList.toggle('tab-dock-off', off);
@@ -512,6 +529,7 @@
   function applyTheme() {
     appearancePreviewing = false;
     applyTabDock();
+    applyTabStripWidth();
     if (window.Appearance) {
       const ap = window.Appearance.fromConfig(config);
       applyAppearance(ap);
@@ -6576,7 +6594,7 @@
               { el: tabIndexLeft, listEl: tabsListEl, footEl: tabIndexLeft.querySelector('.tab-index-foot') },
               { el: document.getElementById('tab-index-right'), listEl: document.getElementById('tabs-list-right') }
             ].filter((s) => s.el && s.listEl),
-            hitWidth: 18,
+            hitWidth: () => parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-hit-w')) || 36,
             strength: () => (config.general && config.general.tabDockStrength) || 100,
             instant: () => !!(config.general && config.general.tabDockFollowOs) && reduced(),
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
@@ -14317,6 +14335,17 @@ STRICT SYNTAX SAFETY RULES:
     }
     const tabDockEl = document.getElementById('cfg-tab-dock');
     if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
+    const tabStripWidthEl = document.getElementById('cfg-tab-strip-width');
+    if (tabStripWidthEl) {
+      tabStripWidthEl.value = String(Math.max(12, Math.min(48, Math.round(Number(config.general && config.general.tabStripWidth) || 24))));
+      const widthOut = document.getElementById('cfg-tab-strip-width-value');
+      const showWidth = () => { if (widthOut) widthOut.textContent = tabStripWidthEl.value + 'px'; };
+      showWidth();
+      if (!tabStripWidthEl.dataset.wired) {
+        tabStripWidthEl.dataset.wired = '1';
+        tabStripWidthEl.addEventListener('input', showWidth);
+      }
+    }
     const tabDockOsEl = document.getElementById('cfg-tab-dock-follow-os');
     if (tabDockOsEl) tabDockOsEl.checked = !!(config.general && config.general.tabDockFollowOs);
     const tabDockStrengthEl = document.getElementById('cfg-tab-dock-strength');
@@ -15351,6 +15380,11 @@ STRICT SYNTAX SAFETY RULES:
     const saveTabDockEl = document.getElementById('cfg-tab-dock');
     if (saveTabDockEl) {
       config.general.tabDock = saveTabDockEl.checked;
+      const saveWidthEl = document.getElementById('cfg-tab-strip-width');
+      if (saveWidthEl) {
+        config.general.tabStripWidth = Math.max(12, Math.min(48, parseInt(saveWidthEl.value, 10) || 24));
+        applyTabStripWidth();
+      }
       const saveOsEl = document.getElementById('cfg-tab-dock-follow-os');
       if (saveOsEl) config.general.tabDockFollowOs = saveOsEl.checked;
       const saveStrengthEl = document.getElementById('cfg-tab-dock-strength');

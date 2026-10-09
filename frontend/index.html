@@ -866,6 +866,12 @@
                 <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
               </label>
               <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
+              <label for="cfg-tab-strip-width" style="display: flex; align-items: center; gap: 10px; margin-top: 8px;">
+                <span data-i18n="tabStripWidthLabel">Width of the tab edge</span>
+                <input type="range" id="cfg-tab-strip-width" min="12" max="48" step="2" value="24" style="flex: 1; min-width: 80px; max-width: 240px;">
+                <output id="cfg-tab-strip-width-value" for="cfg-tab-strip-width" style="min-width: 3.2em; text-align: right;">24px</output>
+              </label>
+              <small data-i18n="tabStripWidthHint">How wide the strip at the window's edge is while it is closed. The narrowest, 12px, is the old width; a wider one is easier to reach with the pointer, and covers the line numbers.</small>
               <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                 <input type="checkbox" id="cfg-tab-dock-follow-os"> <span data-i18n="tabDockFollowOsLabel">Follow the system's "reduce motion" (the tabs then switch at once)</span>
               </label>
