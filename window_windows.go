@@ -86,6 +86,8 @@ const (
 	GCLP_HBRBACKGROUND = ^uintptr(9) // -10 in 2's complement
 
 	WM_DESTROY      = 0x0002
+	WM_SIZE         = 0x0005
+	sizeMinimized   = 1 // WM_SIZE wParam: the window was minimized
 	WM_CLOSE        = 0x0010
 	WM_LBUTTONUP    = 0x0202
 	WM_LBUTTONDBLCLK = 0x0203
@@ -210,6 +212,10 @@ func trimProcessWorkingSet() {
 	h := windows.CurrentProcess()
 	if procEmptyWorkingSet.Find() == nil {
 		_, _, _ = procEmptyWorkingSet.Call(uintptr(h))
+	}
+	// Most of the memory is in the WebView2 processes (webview_trim.go), not in this one. Settings can turn their trim off.
+	if webViewSettingsNow().TrimWhenHidden {
+		trimWebViewWorkingSets()
 	}
 }
 
@@ -366,6 +372,16 @@ func trayWndProc(hwnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr
 		} else if wParam == HOTKEY_ID_QUICKCAPTURE {
 			showQuickCapturePopup()
 			return 0
+		}
+
+	case WM_SIZE:
+		// Minimized: the window is not on screen, like one hidden to the tray, and its memory is given back after the same short wait. Any other
+		// size means it is on screen again (a window hidden to the tray gets no WM_SIZE of this kind).
+		if wParam == sizeMinimized {
+			setWindowVisible(false)
+			scheduleWorkingSetTrim()
+		} else if v, _, _ := procIsWindowVisible.Call(uintptr(hwnd)); v != 0 {
+			setWindowVisible(true)
 		}
 
 	case WM_CLOSE:
@@ -675,8 +691,14 @@ func runPlatformWindow(app *App, serverURL string) {
 
 	// Keep essential security & silence flags, but remove --disable-http-cache and --disable-gpu-shader-disk-cache
 	// so WebView2 can leverage disk caches for instantaneous sub-100ms cold boots.
+	// Off unless Settings turns it on (and the app is started again): one process less, at the price that a fault of the graphics driver
+	// then takes the whole page with it, which is why it is not the default.
+	gpuArg := ""
+	if parseWebViewSettings(app.readConfigCached()).InProcessGPU {
+		gpuArg = "--in-process-gpu "
+	}
 	_ = os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
-		"--force-dark-mode "+
+		gpuArg+"--force-dark-mode "+
 			"--disable-background-networking "+
 			"--disable-sync "+
 			"--disable-translate "+

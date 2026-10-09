@@ -114,6 +114,8 @@
       pasteHtmlAsMarkdown: true,
       restoreSession: true,
       trayResident: true,
+      trimWebViewWhenHidden: true, // Windows: the WebView2 processes give back unused memory while the window is hidden or minimized
+      webViewInProcessGpu: false, // Windows: the GPU work runs in the browser process (one process less); read at start-up
       splitViewOnStartup: false,
       checkUpdates: true, // ask GitHub for the latest release ~2.5 s after start-up; false = no request at start-up (About > Check now still works)
       cloudConsent: {}, // cloud hosts the ask / rewrite bars may send text to: { "host": "date allowed" }; kept on this PC, never exported
@@ -14508,6 +14510,10 @@ STRICT SYNTAX SAFETY RULES:
     if (commentStyleSelect) {
       commentStyleSelect.value = config.general.commentStyle === 'block' ? 'block' : 'line';
     }
+    const trimWebViewEl = document.getElementById('cfg-trim-webview');
+    if (trimWebViewEl) trimWebViewEl.checked = config.general.trimWebViewWhenHidden !== false;
+    const webViewGpuEl = document.getElementById('cfg-webview-inproc-gpu');
+    if (webViewGpuEl) webViewGpuEl.checked = config.general.webViewInProcessGpu === true;
     const trayResidentCheckbox = document.getElementById('cfg-tray-resident');
     if (trayResidentCheckbox) {
       trayResidentCheckbox.checked = config.general.trayResident !== false;
@@ -15531,6 +15537,10 @@ STRICT SYNTAX SAFETY RULES:
         triggerCursorAuraDebounced();
       }
     }
+    const trimWebViewSaveEl = document.getElementById('cfg-trim-webview');
+    if (trimWebViewSaveEl) config.general.trimWebViewWhenHidden = trimWebViewSaveEl.checked;
+    const webViewGpuSaveEl = document.getElementById('cfg-webview-inproc-gpu');
+    if (webViewGpuSaveEl) config.general.webViewInProcessGpu = webViewGpuSaveEl.checked;
     const trayResidentSaveCheckbox = document.getElementById('cfg-tray-resident');
     if (trayResidentSaveCheckbox) {
       config.general.trayResident = trayResidentSaveCheckbox.checked;
