@@ -97,4 +97,10 @@ assert.ok(/Math\.round\(n \* 1\.5\)/.test(app), 'the hit area stays half as wide
 assert.ok(/let previewUserActive = false;/.test(app) && /secondaryPreviewPane\.addEventListener\('scroll', \(\) => \{\s*if \(!shouldSyncScroll\(\) \|\| isSyncingPreviewScroll \|\| !previewUserActive\) return;/.test(app), 'the preview-to-editor sync waits for the person');
 assert.ok(/\['wheel', 'touchstart', 'touchmove', 'keydown'\]/.test(app) && /addEventListener\('pointerdown', \(\) => markPreviewUser\(true\)/.test(app), 'the wheel, a touch, a key and the scrollbar mark the preview as moved by the person');
 
+// 10. the sliders of the settings are rows of their own (name, slider, value), in this order: dock switch, follow-the-system, strength, then width
+const iDock = html.indexOf('id="cfg-tab-dock"'), iOs = html.indexOf('id="cfg-tab-dock-follow-os"'), iStr = html.indexOf('id="cfg-tab-dock-strength"'), iWid = html.indexOf('id="cfg-tab-strip-width"');
+assert.ok(iDock > 0 && iDock < iOs && iOs < iStr && iStr < iWid, 'the width of the tab edge is under the strength');
+assert.ok(/<div class="settings-slider-row">\s*<label for="cfg-tab-dock-strength"/.test(html) && /<div class="settings-slider-row">\s*<label for="cfg-tab-strip-width"/.test(html), 'both sliders are slider rows');
+assert.ok(/\.settings-slider-row > input\[type="range"\],[^{]*\{[^}]*padding: 0;[^}]*border: 0;/.test(css), 'a slider has no box padding, so the thumb reaches both ends');
+
 console.log('tab dock tests passed');

@@ -3044,6 +3044,48 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   #settings-modal input[type="checkbox"]::after { transition: none; }
 }
 
+/* A slider row of the settings: the name, the slider, the value, in that order. It is not a switch row (those put the words at the left and the
+   control at the right, in reverse order), and the slider has no padding, border or ring of an input box: with them its thumb stopped short of
+   the ends, so a slider at its maximum did not look like one. */
+#settings-modal .settings-slider-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 36px;
+  margin-top: 4px;
+}
+#settings-modal .settings-slider-row > label {
+  flex: 0 0 8em;
+  font-size: 13px;
+  color: var(--text-main);
+}
+#settings-modal .settings-slider-row > output {
+  flex: 0 0 3.6em;
+  text-align: right;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-main);
+}
+#settings-modal .settings-slider-row > input[type="range"],
+#settings-modal .settings-slider-row > input[type="range"]:focus {
+  flex: 1 1 auto;
+  min-width: 80px;
+  width: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  accent-color: var(--accent-color);
+}
+#settings-modal .settings-slider-row > input[type="range"]:focus-visible {
+  outline: 2px solid var(--accent-hover, var(--accent-color));
+  outline-offset: 2px;
+}
+#settings-modal .settings-slider-row > input[type="range"]:disabled {
+  opacity: 0.5;
+}
+
 /* Footer: 56px. Save is the one filled button; Cancel is an outline; Export / Import are pale grey buttons (a light fill, so
    they still read as buttons, but quieter than the outline). */
 #settings-modal .modal-footer {
