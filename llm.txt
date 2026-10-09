@@ -1,105 +1,185 @@
-# syki::sok
+# syki::sok — Complete Machine-Readable Knowledge Base & Specification
 
-> An instant, featherweight Markdown scratchpad with AI right at your cursor.
-> Go core + OS native WebView (WebView2 on Windows, WKWebView on macOS). Zero Electron.
-> Memory: 5–15 MB idle. Wake time: < 15 ms. Storage: Plain local `.md` files.
-
----
-
-## 1. System Overview & Philosophy
-
-syki::sok is designed as a zero-resistance buffer for thoughts before opening heavy knowledge bases like Obsidian or Notion.
-- **In-Place AI (No Chat Windows)**: AI operates directly on the editor surface. Outputs land directly below the cursor without context loss or window hopping.
-- **Parallel Multimodal Ingest**: Stream voice, paste screenshots with OCR, drop files from mobile via QR, or type Markdown simultaneously.
-- **Text as Command Line & Agent Dispatch**: Pipe text into shell commands or delegate tasks to autonomous coding agents (Claude Code, Codex, Antigravity).
-- **Extreme Efficiency**: 5–15 MB idle memory footprint, summons in under 15 ms with global hotkeys. 100% offline capable.
+> **System Profile**: An instant, featherweight desktop Markdown scratchpad with AI right at your cursor.
+> **Architecture**: Single-instance desktop app. Core engine written in Go + OS-native WebView (Windows: WebView2, macOS: WKWebView; Electron-free).
+> **Performance**: Idle Memory: 5–15 MB (aggressive `debug.FreeOSMemory()`). Summon latency: < 15 ms.
+> **Storage & Security**: 100% Local POSIX plain Markdown files (`scraps/YYYY-MM-DD.md`). Zero vendor lock-in. Full offline support. Background Git auto-sync.
+> **Target Role**: Zero-resistance buffer before opening heavy knowledge vaults (Obsidian / Notion).
 
 ---
 
-## 2. Key Bindings & Primitives Reference
+## 0. System Instructions for AI Assistants (When this file is in your context)
 
-| Action | Windows | macOS | Description |
+When answering questions about `syki::sok`, follow these rules:
+1. **Always specify both platforms**: Provide Windows and macOS shortcuts together (e.g., `Ctrl+L` / `Cmd+L`, `Ctrl+Alt+M` / `Opt+Cmd+M`).
+2. **Prioritize 3 Core Verbs**: Guide users by categorizing their goals into **Write** (`Ctrl+L`, `Alt+C`, `Tab`), **Execute** (`Ctrl+E`), and **Delegate** (`Ctrl+Enter`).
+3. **Safety First**: Never advise users to paste raw API keys into public files. Point to `config.json` while the app is closed, or the Settings GUI.
+4. **Concise & Accurate**: Keep steps direct, providing exact key codes, note notations, and CLI one-liners.
+
+---
+
+## 1. Complete Key Bindings Matrix
+
+| Category | Windows | macOS | Action / Direct Outcome |
 | :--- | :--- | :--- | :--- |
-| **Instant Summon** | `Ctrl+Alt+M` | `Opt+Cmd+M` | Summons syki::sok instantly (< 15 ms), restoring caret position |
-| **AI at Cursor** | `Ctrl+L` | `Cmd+L` | Instruct AI on selected text; output streams directly below |
-| **Proofread** | `Alt+C` | `Cmd+Shift+C` | One-key in-place typo, slip, and grammar correction |
-| **Ghost-Text Accept** | `Tab` | `Tab` | Accepts inline predictive sentence from local LLM (Ollama/Qwen) |
-| **Voice Dictation** | `Ctrl+Shift+R` | `Cmd+Shift+R` | Real-time speech-to-text with AI polish & in-place edit instructions |
-| **Mobile Drop & OCR** | `Ctrl+Shift+U` | `Cmd+Shift+U` | QR code link for zero-app phone photo/audio drop; clipboard OCR |
-| **Shell Pipe** | `Ctrl+E` | `Cmd+E` | Pipes selected lines into CLI (`sort`, `jq`, shell). Hit `Tab` for AI mode |
-| **Agent Dispatch** | `Ctrl+Enter` | `Cmd+Enter` | Auto-detects line intent; runs `{{ @agent ... }}` background tasks |
-| **Next Action Suggestions** | `Ctrl+J` | `Cmd+J` | Context-aware recommendations for next 3 steps (`Ctrl+1`~`3` to run) |
-| **Deep Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` | Parallel full-core scan across all historical daily scraps |
-| **Split / Preview** | `Ctrl+\` / `Ctrl+Alt+V` | `Cmd+\` / `Cmd+Opt+V` | Split 2 notes side-by-side or open live Markdown & Mermaid preview |
-| **Command Palette** | `Ctrl+Shift+P` | `Cmd+Shift+P` | Fuzzy search and run all commands |
+| **Summon & Hide** | `Ctrl+Alt+M` | `Opt+Cmd+M` | Summons window instantly (< 15 ms) and restores caret position. Window close (`X`) minimizes to tray/background; quit via tray right-click or `Cmd+Q`. |
+| **In-Place AI** | `Ctrl+L` | `Cmd+L` | Opens mini prompt for selected text or current line. Result streams directly below without overwriting source text. |
+| **Proofread** | `Alt+C` | `Cmd+Shift+C` | One-key in-place correction of typos, slips, and grammar without typing any prompt. |
+| **Ghost-Text Accept** | `Tab` | `Tab` | Accepts inline grey predicted text proposed in real time by local LLMs (Ollama / Qwen). |
+| **Voice Dictation** | `Ctrl+Shift+R` | `Cmd+Shift+R` | Real-time speech-to-text with automated AI polishing. Acts as voice editing prompt when text is selected. |
+| **Mobile Drop** | `Ctrl+Shift+U` | `Cmd+Shift+U` | Displays temporary QR code to transfer photos, voice memos, and text from smartphone camera directly into active note (zero app needed). |
+| **Command Bar** | `Ctrl+E` | `Cmd+E` | Pipes selection into shell command (`sort`, `jq`). Hit `Tab` to switch to AI Mode for natural language command generation. |
+| **Auto Selector** | `Ctrl+Enter` | `Cmd+Enter` | Evaluates line intent: auto-runs built-in LLM, shell task `[[ $ ]]`, or delegates `{{ @agent }}` to background agents. |
+| **Next Actions** | `Ctrl+J` | `Cmd+J` | Recommends up to 3 context-aware next steps based on document content (`Ctrl+1`~`3` to execute). |
+| **Scraps Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` | Multi-core parallel scan over thousands of daily scrap files (< 150 ms). Supports `--ranked` and tag filtering. |
+| **Split Editor** | `Ctrl+\` | `Cmd+\` | Splits editor into 2 notes side-by-side with adjustable divider gutter. |
+| **Mermaid Preview** | `Ctrl+Alt+V` | `Cmd+Opt+V` | Opens live Markdown & Mermaid diagram preview pane on the right side. |
+| **Comment Toggle** | `Ctrl+/` | `Cmd+/` | Toggles `<!-- -->` comment on selected lines. Commented tasks are skipped by Auto Selector. |
+| **Task Panel** | `Alt+T` | `Opt+T` | Opens running background agent tasks panel, view execution logs, or trigger "Lessons". |
+| **Quick Capture** | `Ctrl+Shift+Q` | *(Win only)* | Desktop-wide global popup to jot ideas, AI Send, or grab screen capture (`Ctrl+Shift+Enter`). |
+| **Command Palette** | `Ctrl+Shift+P` | `Cmd+Shift+P` | Fuzzy search and run all commands, tag edits, and settings. |
 
 ---
 
-## 3. Core Functional Details
+## 2. In-Note Syntaxes & Execution Primitives
 
-### 3.1 In-Place AI (`Ctrl+L`)
-- Select text (or leave cursor on line) and press `Ctrl+L`.
-- Type instruction (e.g., "Translate to English", "Summarize as bullets", "Make concise").
-- Output streams directly below selection wrapped in a transient glow. The original text is preserved.
+### 2.1 In-Place AI Generation (`Ctrl+L`)
+- Select text (or leave caret on a line) -> Press `Ctrl+L` -> Type instruction (e.g. `Translate to Japanese`, `Summarize into 3 bullets`).
+- The generated response is inserted directly underneath the selection with a transient visual pulse. The original draft is never erased.
 
-### 3.2 Ghost-Text Inline Prediction (`Tab`)
-- Powered by local models (e.g., Ollama with Qwen 2.5 / Gemma 4).
-- As you type, upcoming phrasing appears as faint grey text.
-- Hit `Tab` to accept immediately, or keep typing to ignore.
+### 2.2 Proofreading & Typo Repair (`Alt+C`)
+- Zero-prompt single key action. Detects grammar mistakes, Japanese particles errors (助詞), typos, and punctuation, replacing text in-place.
 
-### 3.3 Voice & Vision Ingest
-- **Voice Rescue (`Ctrl+Shift+R`)**: Real-time microphone audio transcription with automated grammar cleanup. When text is selected, voice acts as a direct editing prompt.
-- **Smart Paste (`Ctrl+V`)**: HTML and spreadsheets convert to clean Markdown tables automatically. Image pastes trigger local OCR.
-- **Mobile Drop (`Ctrl+Shift+U`)**: Displays a local QR code. Scan with a smartphone camera to transfer photos, voice memos, and notes directly into today's note without installing an app.
-- **Hot Folder**: Drop media files into the configured `inbox` directory for automatic background transcription and OCR.
+### 2.3 Ghost-Text Predictive Typing (`Tab`)
+- Integrates with local inference servers (Ollama `qwen2.5:coder`, `gemma:2b`, LM Studio).
+- Proposes upcoming text in muted grey as you pause typing. Hit `Tab` to commit; continue typing to discard.
 
-### 3.4 Command Bar & Agent Delegation (`Ctrl+E` / `Ctrl+Enter`)
-- **CLI Pipe (`Ctrl+E`)**: Selected lines stream as stdin to any shell command (`jq`, `sort -u`, `prettier --stdin-filepath foo.json`).
-- **AI Shell Generator (`Ctrl+E` -> `Tab`)**: Describe what you want in natural language (e.g., "Extract email addresses"); AI generates the verified one-liner with AST safety guardrails.
-- **Agent Slots (`{{ @claude ... }}`)**: Pressing `Ctrl+Enter` runs autonomous coding agents in the background. Results append into `<!-- syki:res -->` blocks.
-- **Lessons Invariant (`lessons/<agent>.md`)**: If an agent fails, save a lesson rule. Up to 30 verified rules auto-inject into future agent prompts to prevent repeat mistakes.
+### 2.4 Auto Selector & Result Blocks (`Ctrl+Enter`)
+- When pressed on any line, local heuristics determine intent:
+  1. **Instruction to LLM**: Queries built-in LLM and inserts result below.
+  2. **Shell Command**: Wraps into `[[ $ command ]]` syntax (press `Ctrl+Enter` again to run after AST safety check).
+  3. **Agent Delegation**: Wraps into `{{ @agent instruction }}` syntax and dispatches to background worker.
+  4. **Ambiguous text**: Pops up `Ctrl+L` prompt for human confirmation.
+- Output lands wrapped in result block markers:
+  ```markdown
+  <!-- syki:res <id> -->
+  Generated response content appears here...
+  <!-- /syki:res -->
+  ```
+- Editor gutter highlights result blocks with green bars. Hide/remove/commit markers via Command Palette.
+
+### 2.5 Agent Slots & Self-Correcting Lessons (`{{ @agent ... }}`)
+- Dispatch long-running tasks to background autonomous agent CLIs:
+  ```markdown
+  {{ @claude Scan the codebase and report outdated dependencies }}
+  {{ @codex Refactor main.go to improve error handling }}
+  ```
+- **Task Panel (`Alt+T`)**: Monitor execution in real time.
+- **Lessons Engine (`lessons/<agent>.md`)**: If an agent fails, click **Lessons** in the task card. AI proposes a 1-sentence behavioral rule based on the failure log (keys and secrets redacted). Once approved, up to 30 recent rules are automatically prepended to future prompts for that agent, preventing repetitive failure loops.
+
+### 2.6 Tag System (`<!-- tags: ... -->`)
+- Tag syntax uses pure HTML comments:
+  ```markdown
+  <!-- tags: work, roadmap, urgent -->
+  ```
+- Placed above first heading / `---`: Tags the **entire note**.
+- Placed below a section heading (`##`): Tags that **specific entry and all nested subheadings**.
+- Preview and print completely hide tag lines. Search (`Ctrl+Shift+F` or `syki scrap search --tag work`) filters instantaneously.
 
 ---
 
-## 4. Headless Control, CLI & JSON-RPC API
+## 3. Parallel Multimodal Ingest
 
-syki::sok can be controlled programmatically from terminal pipelines and external AI agents:
+syki::sok allows simultaneous ingestion of thoughts across media channels:
+
+1. **Voice Dictation & Rescue (`Ctrl+Shift+R`)**:
+   - Streams microphone input through whisper/cloud audio engines with automated syntactic cleanup.
+   - If text is highlighted, your voice is interpreted as an in-place editing instruction (e.g. "make this paragraph friendlier").
+2. **Smart Paste & OCR (`Ctrl+V`)**:
+   - HTML web snippets and spreadsheet cells paste as pristine Markdown tables.
+   - Image files pasted from clipboard automatically trigger OCR to append extracted text.
+3. **Mobile Drop (`Ctrl+Shift+U`)**:
+   - Displays a dynamic QR code on screen.
+   - Point your phone camera to open a lightweight local web upload page. Transfer photos, audio memos, and raw text directly into today's note without installing mobile apps.
+4. **Hot Folder (`inbox/`)**:
+   - Any file dropped into the configured `inbox` directory is processed in background (Images -> OCR, Audio -> Whisper transcription) and appended to today's scrap.
+5. **IME Guardian (Japanese input protection)**:
+   - Within inline code (`` ` ``), code blocks (```), and URLs, full-width Japanese IME input is intercepted with 11µs latency to force ASCII characters, eliminating full-width symbol corruption.
+
+---
+
+## 4. Headless Control, CLI & JSON-RPC 2.0 API
+
+syki::sok exposes local command-line and network surfaces for scripts and autonomous agents:
 
 ### 4.1 Shell Pipe
 ```bash
-cat build.log | syki "Build Output"    # Streams terminal log directly into active daily note
-git status | syki "Git Snapshot"       # Appends with markdown heading
+# Pipe terminal output directly into today's scrap file with title
+cat build.log | syki "Build Logs"
+git status | syki "Git Snapshot"
 ```
 
-### 4.2 CLI (`syki-cli`)
+### 4.2 CLI Commands (`syki` / `syki-cli`)
 ```bash
-syki-cli buffer get                    # Read active editor content
-echo "- [ ] Task" | syki buffer append # Append text to current buffer
-syki-cli agent install-skill           # Install Claude Code / Codex skill definitions
+syki buffer get                        # Print active editor content as text
+syki buffer get --json                 # Get content with SHA-256 hash and cursor position
+syki buffer set "New text content"     # Overwrite active buffer (pass --expected-hash)
+syki buffer append "Appended line"     # Append to active note
+syki buffer replace-selection "Text"   # Replace current selection
+syki buffer save --as notes/plan.md    # Save buffer to specific file
+syki tab list                          # List all open tabs
+syki tab switch <id>                   # Switch active tab
+syki tab new --background              # Open new scratch tab
+syki scrap list                        # List all daily scrap files
+syki scrap search "keyword" --ranked   # Search scraps with word ranking
+syki scrap tags                        # List all tags in use with frequency
+syki scrap tag add "urgent" <file> --write # Add tag to file
+syki config get                        # Show settings with secrets redacted (<set>/<unset>)
+syki lessons list                      # List learned rules per agent
+syki ocr path/to/image.png             # Standalone OCR into today's scrap
+syki jev verify "rm -rf /"             # AST security verification for shell one-liners
+syki agent install-skill --claude      # Equip Claude Code with native syki::sok skill
 ```
 
-### 4.3 JSON-RPC Protocol (Local Port / Socket)
-- `buffer.get`: Returns current active document text and cursor position.
-- `buffer.append`: Appends text to document with optional heading.
-- `buffer.replaceSelection`: Replaces or inserts text at caret.
-- `note.search`: Fast indexed search across all scrap files.
+### 4.3 JSON-RPC 2.0 TCP Protocol
+- Runs on local port specified in `%AppData%\syki\ipc-session.json` (Windows) or `~/Library/Application Support/syki/ipc-session.json` (macOS).
+- All write requests require `"auth": "<token>"` matching the session token.
+- **Core Methods**:
+  - `buffer.get` / `buffer.set` / `buffer.append` / `buffer.replace_selection`
+  - `tab.list` / `tab.switch` / `tab.new` / `tab.close`
+  - `scrap.append` / `scrap.search` / `scrap.tags` / `scrap.tag_edit`
+  - `deepsearch.plan` (dry-run query breakdown without sending content)
+  - `print.pdf` (prints active note preview to PDF, Windows)
+  - `git.status` / `git.sync` (triggers background Git commit & push)
 
 ---
 
-## 5. Storage & Configuration
+## 5. Storage, File Hierarchy & Configuration
 
-- **Daily Scraps**: Stored as plain `.md` files at `scraps/YYYY-MM-DD.md`.
-- **Git Sync**: Automatic background commit & push supported on every edit or timer.
-- **Obsidian / Logseq Compatible**: Set storage root directly to your existing Obsidian Vault.
-- **Config**: JSON file storing model endpoints (Ollama, OpenAI, Anthropic, Gemini, DeepSeek, LocalAI), shortcuts, and theme colors.
+### 5.1 Storage Layout
+```
+<Storage Root>/
+├── scraps/
+│   ├── YYYY-MM-DD.md          # Daily scrap notes (auto-opened on launch)
+│   ├── YYYY-MM-DD_title.md    # Named notes
+│   └── assets/                # Dropped images and audio attachments
+├── inbox/                     # Hot folder for background OCR & audio drop
+└── .git/                      # Optional Git repository for auto-sync
+```
+
+### 5.2 Settings Location
+- **Windows**: `%AppData%\syki\config.json`, `agents.yaml`, `lessons/<agent>.md`
+- **macOS**: `~/Library/Application Support/syki/config.json`, `agents.yaml`
+- **Important**: Edit `config.json` only when the app is completely closed.
+
+### 5.3 Supported AI Providers
+- **Local**: Ollama (`http://127.0.0.1:11434`), LM Studio, LocalAI.
+- **Cloud**: OpenAI (GPT-4o, o3-mini), Anthropic (Claude 3.7 / 3.5), Google Gemini (Gemini 2.5/2.0), DeepSeek (with automated `<think>` tag stripping), OpenRouter.
 
 ---
 
-## 6. Full Documentation Links
+## 6. Full Documentation Pointers
 
-- **[`AI_MANUAL.md`](AI_MANUAL.md)**: Exhaustive Japanese knowledge base and support prompt for LLMs
-- **[`skills/syki/SKILL.md`](skills/syki/SKILL.md)**: Agent skill definition and JSON-RPC API schema
-- **[`docs/features_ja.md`](docs/features_ja.md)**: Complete Japanese specification of all 50+ features
-- **[`README.md`](README.md)**: English project overview
-- **[`README_JA.md`](README_JA.md)**: Japanese project overview
-- **Official Web Manual**: https://youshinh.github.io/syki-sok/manual.html (Japanese: manual_ja.html)
+- **Official Web Manual (Interactive & Screenshots)**: https://youshinh.github.io/syki-sok/manual.html ([日本語](https://youshinh.github.io/syki-sok/manual_ja.html))
+- **Source Feature Specification**: `docs/features_ja.md` (English: `docs/features.md`)
+- **Agent Skill Reference**: `skills/syki/SKILL.md`
