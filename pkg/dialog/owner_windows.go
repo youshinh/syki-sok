@@ -2,7 +2,10 @@
 
 package dialog
 
-import "sync/atomic"
+import (
+	"sync/atomic"
+	"unsafe"
+)
 
 var (
 	procIsWindow        = user32.NewProc("IsWindow")
@@ -34,4 +37,24 @@ func owner() uintptr {
 		return 0
 	}
 	return h
+}
+
+var (
+	procGetCursorPos = user32.NewProc("GetCursorPos")
+	procSetCursorPos = user32.NewProc("SetCursorPos")
+)
+
+type cursorPoint struct{ x, y int32 }
+
+// showPointer makes sure the mouse pointer is on screen when a dialog opens. Windows hides the pointer while text is being typed ("Hide pointer while
+// typing" in the mouse settings; the text box of the page does it) and shows it again at the next movement of the mouse. A dialog that is opened from
+// the keyboard (Ctrl+S, Ctrl+O) after some typing therefore comes up with no pointer in sight, and the person cannot tell where it is. A movement of
+// the mouse is what brings it back, so the pointer is moved one pixel and put back, which ends the hiding without being seen.
+func showPointer() {
+	var p cursorPoint
+	if ok, _, _ := procGetCursorPos.Call(uintptr(unsafe.Pointer(&p))); ok == 0 {
+		return
+	}
+	_, _, _ = procSetCursorPos.Call(uintptr(p.x+1), uintptr(p.y))
+	_, _, _ = procSetCursorPos.Call(uintptr(p.x), uintptr(p.y))
 }

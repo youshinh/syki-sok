@@ -63,6 +63,7 @@ const (
 // OpenFileDialog shows native Windows Open File dialog supporting all text and code files.
 func OpenFileDialog(title string) (string, error) {
 	procReleaseCapture.Call()
+	showPointer()
 	ofn, fileBuf := newOpenFileName(title, owner())
 
 	ret, _, _ := procGetOpenFileName.Call(uintptr(unsafe.Pointer(&ofn)))
@@ -99,6 +100,7 @@ func newOpenFileName(title string, hwndOwner uintptr) (ofn openFileName, fileBuf
 // SaveFileDialog shows native Windows Save File dialog.
 func SaveFileDialog(title, defaultName string) (string, error) {
 	procReleaseCapture.Call()
+	showPointer()
 	ofn, fileBuf, defaultExt := newSaveFileName(title, defaultName, owner())
 
 	ret, _, _ := procGetSaveFileName.Call(uintptr(unsafe.Pointer(&ofn)))
@@ -240,6 +242,7 @@ func OpenFolderDialog(title string) (string, error) {
 		}
 	}
 	procReleaseCapture.Call()
+	showPointer()
 	hr, _, _ = syscall.SyscallN(vtbl.Show, dialog, ownerHWND)
 	if hr != 0 {
 		// Cancelled by user
