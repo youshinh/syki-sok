@@ -539,7 +539,7 @@ body.tabs-pinned #header #header-title {
   background-size: calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)) 100%;
 }
 .tab-index.dock-live .tab-item::before {
-  width: calc(var(--rw, var(--tab-hit-w)) - (var(--tab-hit-w) - var(--tab-strip-w)));
+  width: max(var(--tab-strip-w), calc(var(--rw, var(--tab-hit-w)) * var(--bgs, 0)));
   transition: none;
 }
 .tab-index.dock-live .tab-title {
