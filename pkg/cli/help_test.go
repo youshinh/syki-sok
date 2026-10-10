@@ -2,8 +2,13 @@ package cli
 
 import (
 	"bytes"
+	"io/fs"
+	"regexp"
+	"strconv"
 	"strings"
 	"testing"
+
+	"syki-sok/skills"
 )
 
 func TestHelpRequestTopLevel(t *testing.T) {
@@ -276,4 +281,35 @@ func firstLine(s string) string {
 		return s[:i]
 	}
 	return s
+}
+
+// The help states how big the built-in skill is ("about 0.5 MB"). It said 320 KB for a long time after the skill had grown to half a megabyte, and
+// it pointed at "the release zip from v1.7.1", a number of a version scheme this program no longer has: numbers in the help are checked here.
+func TestHelpStatesTheSkillSizeAndNoStaleVersion(t *testing.T) {
+	text, ok := HelpRequest([]string{"agent", "-h"}, "9.9.9")
+	if !ok {
+		t.Fatal("agent -h is not a help request")
+	}
+	m := regexp.MustCompile(`about ([0-9.]+) MB`).FindStringSubmatch(text)
+	if m == nil {
+		t.Fatal(`the install-skill help does not say how big the skill is ("about N MB")`)
+	}
+	claimed, _ := strconv.ParseFloat(m[1], 64)
+	var total int64
+	_ = fs.WalkDir(skills.Skill(), ".", func(p string, d fs.DirEntry, err error) error {
+		if err == nil && !d.IsDir() {
+			if info, e := d.Info(); e == nil {
+				total += info.Size()
+			}
+		}
+		return nil
+	})
+	actual := float64(total) / (1024 * 1024)
+	if claimed < actual-0.1 || claimed > actual+0.1 {
+		t.Errorf("the help says the skill is about %.1f MB, it is %.2f MB: update the help (and the comment of skills/embed.go)", claimed, actual)
+	}
+	top, _ := HelpRequest([]string{"--help"}, "9.9.9")
+	if regexp.MustCompile(`from v[0-9]+\.[0-9]+\.[0-9]+`).MatchString(top) {
+		t.Error(`the help names a release by number ("from v1.7.1"): the zip carries the skill in every release now`)
+	}
 }

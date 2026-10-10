@@ -216,7 +216,7 @@ Safe editing of the open note (optimistic lock):
 Help for one command: syki help buffer   (also: buffer --help, tab -h, ...)
 Help for the other surfaces: syki help pipe | syki help rpc
 Manual: https://youshinh.github.io/syki-sok/manual.html#headless-cli
-Agent skill: syki agent install-skill (built in), or skills/syki/SKILL.md (repository, and the release zip from v1.7.1)
+Agent skill: syki agent install-skill (built in), or skills/syki/SKILL.md (repository, and the release zip)
 `
 }
 
@@ -261,9 +261,11 @@ const rpcHelp = `JSON-RPC 2.0 over local TCP (what buffer/tab/ui use; call it di
              The note, the caret and the view (all need the token):
              buffer.cursor {tab_id?} -> {start, end, has_selection, line, col, end_line, end_col, length}
              buffer.select {tab_id?, start, end?  |  start_line, start_col, end_line?, end_col?, scroll?, focus?}
-             buffer.find {pattern, regex?, case_sensitive?, whole_word?, limit?, tab_id?}  -> matches with offsets, lines, columns
+             buffer.find {pattern, regex?, case_sensitive?, whole_word?, limit?, tab_id?}  -> matches {start, end, line, col, end_line, end_col, text, line_text}
+                  (limit: default 200, at most 5000)
              buffer.replace_all {pattern, replace, regex?, case_sensitive?, whole_word?, expected_hash?, tab_id?}  one write
-             ui.state  ui.set_view {preview?: off|full|side, split?, zen?}  task.list  task.cancel {id}
+             ui.state -> {active_tab_id, split, secondary_tab_id, preview: off|full|side, zen, fullscreen (null when the page cannot tell)}
+             ui.set_view {preview?: off|full|side, split?, zen?}  task.list  task.cancel {id}
              ui.open_panel {name, query?, mode?}   shows a panel; for scraps_search, mode exact|meaning and query
                   put the notes search in that mode with that text and start it (a search: the Deep search button stays the person's)
              The scraps and the machine (all need the token; the first four answer like the commands of the same name):
@@ -456,7 +458,7 @@ Runs on its own (syki::sok need not be running).
       waits if stdin is a terminal). JSON: {original_length, pruned_length, ratio, content}.
 
   agent install-skill [--claude | --codex | --dir <path>] [--force] [--link] [--json|--text]
-      Install the agent skill (SKILL.md and references/, about 320 KB) that is built into this
+      Install the agent skill (SKILL.md and references/, about 0.5 MB) that is built into this
       program, so an agent such as Claude Code can read it. No repository or zip needed: this is
       the way for a Homebrew install, which does not carry the folder. It does not run
       syki::sok, an agent or the network, and it never reads config.json.
