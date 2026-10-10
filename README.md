@@ -1,7 +1,6 @@
 # syki::sok
 
 An instant, featherweight Markdown scratchpad with AI right at your cursor.  
-No chat bubble. No copy-paste.
 
 <p align="center">
   <img src="img/poster_minimal.svg" width="960" alt="syki::sok architecture & primitives">
@@ -40,7 +39,7 @@ brew install --cask youshinh/tap/syki
 
 ### Docs for AI
 
-Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, Ollama) to ask anything. Complete specification, shortcuts, and APIs are self-contained in this single file.
+Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, Ollama) to ask anything.
 
 *Human docs: [Web Manual](https://youshinh.github.io/syki-sok/manual.html) • [日本語 README](README_JA.md)*
 
