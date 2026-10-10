@@ -740,8 +740,14 @@
     const bridge = global.MdMemoBridge;
     if (!bridge) return;
     const backendNow = global.backend;
-    if (backendNow && typeof backendNow.startMeetingRecording === 'function' &&
-        resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {}).systemAudio) {
+    const voiceNow = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
+    // With "record the PC's sound too" on, every recording is a meeting, and a meeting leaves the selected text alone and writes after it. But text that is
+    // selected while the second stage is on is the person's way of saying "do this to that": what they say is an instruction, and the PC's sound has no
+    // part in it. So a selection (and not the raw dictation, which never edits) is spoken to edit, with the microphone alone.
+    const pickedEditor = bridge.getActiveEditor && bridge.getActiveEditor();
+    const speaksToEdit = !!(pickedEditor && typeof pickedEditor.selectionStart === 'number' &&
+      pickedEditor.selectionEnd > pickedEditor.selectionStart && voiceNow.refine.enabled && !(opts && opts.raw));
+    if (backendNow && typeof backendNow.startMeetingRecording === 'function' && voiceNow.systemAudio && !speaksToEdit) {
       await startMeeting(bridge);
       return;
     }
