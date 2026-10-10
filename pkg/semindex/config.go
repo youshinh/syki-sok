@@ -40,7 +40,7 @@ func (e *ConsentError) Is(target error) bool { return target == ErrNeedsConsent 
 
 // EnvAPIKey is the environment variable that supplies the API key of the embedding model when config.json holds none, so that a key
 // need not be stored in a file (a build machine, a scheduled task).
-const EnvAPIKey = "MD_MEMO_EMBED_API_KEY"
+const EnvAPIKey = "SYKI_EMBED_API_KEY"
 
 // Config is the "semantic" section, read.
 type Config struct {

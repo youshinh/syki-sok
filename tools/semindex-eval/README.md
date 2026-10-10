@@ -23,7 +23,7 @@ node tools/semindex-eval/gen.mjs tools/semindex-eval/data/mixed/scraps 300 mixed
 go run ./tools/semindex-eval -scraps tools/semindex-eval/data/mixed/scraps -chunks 150 -weights -1,0.05,0.1
 
 # another model or server (an OpenAI-compatible server is used for any port but Ollama's 11434; the key is read from
-# MD_MEMO_EMBED_API_KEY, never from a flag). The synthetic notes are sent there.
+# SYKI_EMBED_API_KEY, never from a flag). The synthetic notes are sent there.
 go run ./tools/semindex-eval -scraps tools/semindex-eval/data/scraps -base https://api.openai.com/v1 -model text-embedding-3-small
 ```
 

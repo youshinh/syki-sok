@@ -639,7 +639,7 @@ words; put -- before a search text that starts with a dash.
       done). --force reads every file again. --settle leaves files changed less than MIN minutes
       ago. A model that is not on this machine is used only for a host named in
       semantic.privacy.cloudConsent, its API key comes from semantic.model.apiKey, the key of a
-      text or vision model on the same host, or the environment variable MD_MEMO_EMBED_API_KEY,
+      text or vision model on the same host, or the environment variable SYKI_EMBED_API_KEY,
       and a run that would send more than 1000 chunk texts needs --yes. JSON: {scrap_dir,
       index_dir, model, local, files, files_changed, files_removed, chunks, chunks_new,
       chunks_reused, embedded, seconds, ...}.

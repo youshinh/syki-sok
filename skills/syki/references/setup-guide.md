@@ -185,7 +185,7 @@ Experimental and OFF by default; the notes are searched by meaning, and the Deep
 |---|---|---|---|
 | `semantic.enabled` | bool | `false` | Master switch. Off: no index is read or built, the notes search has no Meaning mode, `scrap search --semantic` says it is off. |
 | `semantic.model.baseUrl`, `semantic.model.model` | string | `""` | The embedding model: for Ollama `http://localhost:11434` and `bge-m3` (pull it first: `ollama pull bge-m3`). An OpenAI-compatible or Gemini host works too. |
-| `semantic.model.apiKey` | string | `""` | Only for a cloud host. If empty: the key of the `text`, `vision` or `autocomplete` section whose base URL is on the SAME host, then the environment variable `MD_MEMO_EMBED_API_KEY`. A key is never sent to another host. |
+| `semantic.model.apiKey` | string | `""` | Only for a cloud host. If empty: the key of the `text`, `vision` or `autocomplete` section whose base URL is on the SAME host, then the environment variable `SYKI_EMBED_API_KEY`. A key is never sent to another host. |
 | `semantic.model.dimensions` | number | `0` | 0 = what the model answers. |
 | `semantic.schedule.settleMinutes` | number | `10` | A file changed less than this many minutes ago is left for the next update. |
 | `semantic.privacy.cloudConsent` | object | `{}` | Hosts that may receive the notes' text to embed: `{"generativelanguage.googleapis.com": "2026-10-02"}`. A model that is not on this machine is not used for a host that is not listed. Never exported in a settings package. |
