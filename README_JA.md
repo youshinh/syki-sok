@@ -42,12 +42,12 @@ brew install --cask youshinh/tap/syki
 
 詳細や設定は、**[`llms.txt`](llms.txt)** をそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。同梱のskillを使ってagentから各種設定ができます。
 
-*人間用: [Webマニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [English README](README.md)*
+*参照用: [Webマニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [English README](README.md)*
 
 ---
 
 <p align="center">
-  <img src="img/screen_app.png" width="960" alt="syki::sok 左右分割エディタ">
+  <img src="img/screen_app.png" width="960" alt="syki::sok エディタ画面">
 </p>
 
 ---
