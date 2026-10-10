@@ -10,9 +10,9 @@ import (
 
 // TestResolveActiveSlotConfig_ExpandsTildeScrapDir covers the bug where the scrap directory
 // handed to slotagent.FindAgentConfigFile was used verbatim. The default configured value is
-// the literal string "~/Documents/md-memo/scraps", and FindAgentConfigFile only os.Stats its
+// the literal string "~/Documents/syki-sok/scraps", and FindAgentConfigFile only os.Stats its
 // candidates - so for every user who never changed the scrap directory (i.e. the default
-// path), <scraps>/.md-memo/agents.yaml was silently never found.
+// path), <scraps>/.syki/agents.yaml was silently never found.
 //
 // TestMain points appdir's home and config overrides at one temp directory, so "~" here
 // expands inside that temp tree and nothing outside it is touched.
@@ -22,9 +22,9 @@ func TestResolveActiveSlotConfig_ExpandsTildeScrapDir(t *testing.T) {
 		t.Fatalf("appdir.HomeDir failed: %v", err)
 	}
 
-	const relDir = "Documents/md-memo/scraps"
+	const relDir = "Documents/syki-sok/scraps"
 	scrapAbs := filepath.Join(home, filepath.FromSlash(relDir))
-	agentsDir := filepath.Join(scrapAbs, ".md-memo")
+	agentsDir := filepath.Join(scrapAbs, ".syki")
 	if err := os.MkdirAll(agentsDir, 0755); err != nil {
 		t.Fatalf("failed to create %s: %v", agentsDir, err)
 	}

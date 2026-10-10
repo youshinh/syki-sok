@@ -2,7 +2,7 @@
 
 作成 2026-10-04（アーキテクト）。設計は `docs/design/v2-visual-2026-10.md` §3・§4.1・§4.2・§4.6・§4.7・§6・§7、決まりは `docs/design/v2-implementation-contract.md`。これは**計画**で、ソース・テスト・CSS は変えていない。
 
-読んだ場所: worktree `md-memo-v2`（ブランチ `v2`、HEAD `24da27b`）の `frontend/index.html`、`frontend/css/style.css`・`print.css`、`frontend/js/app.js` と関連モジュール、`tests/`、`tests/smoke/`、`tools/docshots/`。P1a が `style.css`・`tokens.css`・`index.html` を並行して書き換えるので、**行番号は書かず、セレクタ・id・関数名で参照する**（これらは変わらない）。
+読んだ場所: worktree `syki-v2`（ブランチ `v2`、HEAD `24da27b`）の `frontend/index.html`、`frontend/css/style.css`・`print.css`、`frontend/js/app.js` と関連モジュール、`tests/`、`tests/smoke/`、`tools/docshots/`。P1a が `style.css`・`tokens.css`・`index.html` を並行して書き換えるので、**行番号は書かず、セレクタ・id・関数名で参照する**（これらは変わらない）。
 
 ---
 
@@ -93,7 +93,7 @@
 描画: `renderPreview`、`renderSecondaryPreview`、`renderMarkdownContentTo`、`renderHtmlPreviewTo`、`debouncedLivePreview`（再描画の待ちは描画費用の 3 倍、120ms〜2s）。
 同期: `shouldSyncScroll` と `editorEl`・`secondaryPreviewPane` の `scroll` リスナー（**比率**で同期。40ms の抑止）、`window` の `message`（HTML プレビューの `previewScroll`）。
 印刷: `startPrint`（`btnPreviewPrint` のクロージャ内）、`printTarget`、`document.body.dataset.printPane = 'secondary'`、`printPdfForRpc`。
-行番号・測定: `updateSecondaryLineNumbers`、`applyFontSize`（localStorage `md_memo_font_size`。5 つの要素の `style.fontSize`、`invalidateCharPixelMirrors`、`FileAnchor.scheduleMarks`、`scheduleUpdateLineNumbers`）、`getCharPixelCoords`（`charMirrors`、幅と世代でキャッシュ）、`gutterResizeObserver`（`editorEl`・`editorSecondary`、80ms のデバウンス）、`syncGhostGutter`。
+行番号・測定: `updateSecondaryLineNumbers`、`applyFontSize`（localStorage `syki_font_size`。5 つの要素の `style.fontSize`、`invalidateCharPixelMirrors`、`FileAnchor.scheduleMarks`、`scheduleUpdateLineNumbers`）、`getCharPixelCoords`（`charMirrors`、幅と世代でキャッシュ）、`gutterResizeObserver`（`editorEl`・`editorSecondary`、80ms のデバウンス）、`syncGhostGutter`。
 状態の保存・外部: `getSessionData`・`getSessionDataJson`・`restoreSessionFromData`、`rpcPreviewState`・`rpcUiState`・`setUiStateForRpc`（RPC `ui.state` / `ui.set_view`。`preview: off|full|side`、`split`）、`window.__testHelper`（`openPreviewToSide` など。docshots が使う）。
 設定: `syncBackendConfig`、`loadLocalConfigSync`、`savePersistentConfig`、`restoreLiveConfigFromSnapshot`（設定画面で即時に反映した値を取り消しで戻す）、`config.general.splitViewOnStartup`（`restoreSession === false` のときだけ効く）。
 パネルの位置: `dockPanelBar`（`editor.getBoundingClientRect()` と `workspaceEl.getBoundingClientRect()`）。
@@ -110,7 +110,7 @@
 | プレビューのみ | false | （無関係） | true | `#editor-pane.hidden`、`#preview-pane` 表示 |
 
 - 変数: `isSplitMode`、`secondaryViewMode`、`isPreviewMode`、`activePane`（`'primary'|'secondary'`）、`secondaryTabId`、`splitRatio`、`syncScrollEnabled`。
-- 永続: セッション（`localStorage md_memo_session_v1` と `backend.saveSession`）に `isSplitMode`・`secondaryTabId`・`secondaryViewMode`・`activePane`・`isPreviewMode` が入る。復元は `restoreSessionFromData` が `openPreviewToSide` / `openSplitEditor` / `togglePreview` を呼ぶ。**`splitRatio` は入らない**（F2）。
+- 永続: セッション（`localStorage syki_session_v1` と `backend.saveSession`）に `isSplitMode`・`secondaryTabId`・`secondaryViewMode`・`activePane`・`isPreviewMode` が入る。復元は `restoreSessionFromData` が `openPreviewToSide` / `openSplitEditor` / `togglePreview` を呼ぶ。**`splitRatio` は入らない**（F2）。
 - 設定: `config.general.splitViewOnStartup`（セッション復元オフのときだけ）。
 - 外部: RPC `ui.state`（`splitMode`・`secondaryTabId`・`preview`）と `ui.set_view`、CLI の同名。**4 つの表示は RPC の形（`preview: off|full|side` と `split`）にそのまま写る**ので、RPC の契約は変えない。
 

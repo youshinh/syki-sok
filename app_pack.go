@@ -114,13 +114,13 @@ func packAppAgentsFile() string {
 	return packFirstAgentsFile(dir, true)
 }
 
-// packProjectAgentsFile is <project>/.md-memo/agents.*. A project can be someone else's
+// packProjectAgentsFile is <project>/.syki/agents.*. A project can be someone else's
 // checkout, so links are refused: a link there must not pull an arbitrary file into a pack.
 func packProjectAgentsFile(projectRoot string) string {
-	if projectRoot == "" || packLinkOnPath(projectRoot, ".md-memo") != nil {
+	if projectRoot == "" || packLinkOnPath(projectRoot, ".syki") != nil {
 		return ""
 	}
-	return packFirstAgentsFile(filepath.Join(projectRoot, ".md-memo"), false)
+	return packFirstAgentsFile(filepath.Join(projectRoot, ".syki"), false)
 }
 
 func packLinkOnPath(base, rel string) error {
@@ -170,7 +170,7 @@ func packWriteFile(path string, data []byte, perm fs.FileMode) error {
 
 // packWriteAtomic renames over path so a failed write never leaves a half-written file.
 func packWriteAtomic(path string, perm fs.FileMode, fill func(io.Writer) error) (err error) {
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".mdmemo-pack-*.tmp")
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".syki-pack-*.tmp")
 	if err != nil {
 		return err
 	}
@@ -292,7 +292,7 @@ func (a *App) PackExport(selectionJSON, configJSON string) (string, error) {
 	}
 
 	if sel.Format == "json" {
-		path, err := packSaveDialog("設定をエクスポート", "md-memo-config.json")
+		path, err := packSaveDialog("設定をエクスポート", "syki-config.json")
 		if err != nil {
 			return "", fmt.Errorf("ファイルダイアログエラー: %w", err)
 		}
@@ -361,7 +361,7 @@ func (a *App) PackExport(selectionJSON, configJSON string) (string, error) {
 		return "", packErr("書き出す項目がありません", "nothing selected to export", nil)
 	}
 
-	path, err := packSaveDialog("パッケージを書き出し", "md-memo-"+packNow().Format("20060102")+".mdmemopack")
+	path, err := packSaveDialog("パッケージを書き出し", "syki-"+packNow().Format("20060102")+".sykipack")
 	if err != nil {
 		return "", fmt.Errorf("ファイルダイアログエラー: %w", err)
 	}
@@ -565,7 +565,7 @@ type packSkipped struct {
 	Reason string `json:"reason"`
 }
 
-// packBackup copies what an import overwrites into <config>/md-memo/pack_backups/<timestamp>/,
+// packBackup copies what an import overwrites into <config>/syki-sok/pack_backups/<timestamp>/,
 // outside the project so skill folders never pick up clutter.
 type packBackup struct {
 	dir string
@@ -772,11 +772,11 @@ func packImportAgents(pk *configpack.Pack, it *configpack.Item, root string, bk 
 		if root == "" {
 			return packApplied{}, packReasonNoProject
 		}
-		if err := packLinkOnPath(root, ".md-memo/agents.yaml"); err != nil {
+		if err := packLinkOnPath(root, ".syki/agents.yaml"); err != nil {
 			return packApplied{}, "シンボリックリンクの中には書き込みません / refusing to write through a symbolic link"
 		}
-		target = filepath.Join(root, ".md-memo", "agents.yaml")
-		backupRel = filepath.Join("project", ".md-memo", "agents.yaml")
+		target = filepath.Join(root, ".syki", "agents.yaml")
+		backupRel = filepath.Join("project", ".syki", "agents.yaml")
 	}
 
 	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
@@ -838,7 +838,7 @@ func packImportSkill(pk *configpack.Pack, it *configpack.Item, root string, bk *
 
 	// Unpack beside the target first (same volume, dot-named so skill discovery ignores it), so a
 	// failure half-way leaves the existing skill untouched.
-	stage, err := os.MkdirTemp(rootDir, ".mdmemo-import-*")
+	stage, err := os.MkdirTemp(rootDir, ".syki-import-*")
 	if err != nil {
 		return packApplied{}, "作業フォルダを作れません / cannot create a working folder: " + err.Error()
 	}

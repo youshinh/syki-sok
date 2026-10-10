@@ -1,4 +1,4 @@
-/* MD-Memo colour tokens: every colour of the app is defined here, once, and nowhere else.
+/* syki colour tokens: every colour of the app is defined here, once, and nowhere else.
    style.css (and the few inline styles in index.html and the scripts) only use var(--name). Nothing in this file is
    used before it is needed: a token costs one custom property on <body>, no script runs. The role of each token
    is in docs/design/v2-tokens.md. print.css keeps its own paper colours on purpose.

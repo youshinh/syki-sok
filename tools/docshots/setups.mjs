@@ -200,13 +200,13 @@ export const SETUPS = {
 
   // A1: the very first launch (boot fresh=1 + nosession=1: no settings, no tabs, no folder): one editable Welcome note.
   async welcomeNote(ctx) {
-    await ctx.waitFor("window.MdMemoBridge && MdMemoBridge.getActiveTab() && MdMemoBridge.getActiveTab().title === " + JSON.stringify(ctx.pick('Welcome', 'ようこそ')), { label: 'the Welcome note' });
+    await ctx.waitFor("window.SykiBridge && SykiBridge.getActiveTab() && SykiBridge.getActiveTab().title === " + JSON.stringify(ctx.pick('Welcome', 'ようこそ')), { label: 'the Welcome note' });
     await quietStatus(ctx);
   },
 
   // A2: the first Ctrl+L with the built-in model (local Ollama, qwen2.5) still untouched: the one-time choice inside the ask bar.
   async askBarChoice(ctx) {
-    await ctx.ev("(function(){var c=MdMemoBridge.getConfig();c.text.baseUrl='http://localhost:11434';c.text.model='qwen2.5:latest';c.text.apiKey='';delete c.general.aiChoiceMade;return true;})()");
+    await ctx.ev("(function(){var c=SykiBridge.getConfig();c.text.baseUrl='http://localhost:11434';c.text.model='qwen2.5:latest';c.text.apiKey='';delete c.general.aiChoiceMade;return true;})()");
     await ctx.ev('__docshot.scrollToLine(1, 0)');
     await ctx.ev('(function(){var a=__docshot.lineStart(3), b=__docshot.lineEnd(3); __docshot.setCaret(a,b);})()');
     await ctx.key('l', { ctrl: true });
@@ -256,13 +256,13 @@ export const SETUPS = {
     await caretAtEndOf(ctx, MAIN_LINES.checklistLast);
     await ctx.key('Enter');
     // The marker's wording follows the UI language (voice_input.js).
-    await ctx.ev(`MdMemoBridge.insertTextWithUndo('\\u2985${ctx.pick('Recording...', '音声入力中...')} [id:a1b2]\\u2986', __docshot.editor())`);
+    await ctx.ev(`SykiBridge.insertTextWithUndo('\\u2985${ctx.pick('Recording...', '音声入力中...')} [id:a1b2]\\u2986', __docshot.editor())`);
   },
 
   // The recording indicator in the status bar. A silent stand-in replaces the microphone (and the silence timeout is long, so
   // the recording does not stop by itself); the indicator is drawn by the application's own voice input code.
   async voiceIndicator(ctx) {
-    await ctx.ev("(function(){var c=MdMemoBridge.getConfig();c.voice=c.voice||{};c.voice.silence_timeout_sec=120;var ac=new (window.AudioContext||window.webkitAudioContext)();navigator.mediaDevices.getUserMedia=function(){return Promise.resolve(ac.createMediaStreamDestination().stream);};return true;})()");
+    await ctx.ev("(function(){var c=SykiBridge.getConfig();c.voice=c.voice||{};c.voice.silence_timeout_sec=120;var ac=new (window.AudioContext||window.webkitAudioContext)();navigator.mediaDevices.getUserMedia=function(){return Promise.resolve(ac.createMediaStreamDestination().stream);};return true;})()");
     await ctx.ev('__docshot.scrollToLine(14, 0)');
     await caretAtEndOf(ctx, MAIN_LINES.checklistLast);
     await ctx.ev('__docshot.editor().focus()');
@@ -275,12 +275,12 @@ export const SETUPS = {
     await ctx.ev('__docshot.scrollToLine(14, 0)');
     await caretAtEndOf(ctx, MAIN_LINES.checklistLast);
     await ctx.key('Enter');
-    await ctx.ev(`MdMemoBridge.insertTextWithUndo('\\u2985${ctx.pick('Transcription failed: [Retry(id:a1b2)] [Save audio] [Discard]', '文字起こし失敗: [再試行(id:a1b2)] [音声保存] [破棄]')}\\u2986', __docshot.editor())`);
+    await ctx.ev(`SykiBridge.insertTextWithUndo('\\u2985${ctx.pick('Transcription failed: [Retry(id:a1b2)] [Save audio] [Discard]', '文字起こし失敗: [再試行(id:a1b2)] [音声保存] [破棄]')}\\u2986', __docshot.editor())`);
   },
 
   // The command bar (Ctrl+E) opens in the mode used last; a fresh profile has none, so it opens in the manual CLI mode.
   async cliBar(ctx) {
-    await ctx.ev("(function(){try{localStorage.removeItem('md_memo_cmdbar_mode');}catch(e){}})()");
+    await ctx.ev("(function(){try{localStorage.removeItem('syki_cmdbar_mode');}catch(e){}})()");
     await ctx.ev('__docshot.scrollToLine(14, 0)');
     await caretAtEndOf(ctx, 20);
     await ctx.key('e', { ctrl: true });
@@ -290,7 +290,7 @@ export const SETUPS = {
 
   // Same key, then Tab in the field switches to the AI mode (clicking the badge does the same).
   async aiCliBar(ctx) {
-    await ctx.ev("(function(){try{localStorage.removeItem('md_memo_cmdbar_mode');}catch(e){}})()");
+    await ctx.ev("(function(){try{localStorage.removeItem('syki_cmdbar_mode');}catch(e){}})()");
     await ctx.ev('__docshot.scrollToLine(14, 0)');
     await caretAtEndOf(ctx, 20);
     await ctx.key('e', { ctrl: true });
@@ -340,7 +340,7 @@ export const SETUPS = {
       '- [x] Draft the API design\n- [ ] Review rate limits at the weekly review\n- [ ] Prepare the release notes',
     ))}`);
     await ctx.key('Enter', { ctrl: true });
-    await ctx.waitFor("__docshot.editor().value.indexOf('<!-- /md-memo:res') !== -1", { timeout: 8000, label: 'result block' });
+    await ctx.waitFor("__docshot.editor().value.indexOf('<!-- /syki:res') !== -1", { timeout: 8000, label: 'result block' });
     await ctx.sleep(600);
     await ctx.ev("__docshot.pin('#stat-message', '')"); // the autosave toast is not part of the picture
   },
@@ -536,7 +536,7 @@ export const SETUPS = {
     // opened the way a file from the scraps folder is (a saved note: no dot of unsaved changes), through the page's own tab function
     const tabsBefore = await ctx.ev("document.querySelectorAll('#tabs-list .tab-item').length");
     // (the mock's "disk" gets the same text first, or the app would find the file empty and say it changed)
-    const notePath = 'C:\\\\Users\\\\demo\\\\Documents\\\\md-memo\\\\scraps\\\\2026-09-18.md';
+    const notePath = 'C:\\\\Users\\\\demo\\\\Documents\\\\syki-sok\\\\scraps\\\\2026-09-18.md';
     await ctx.ev(`(function(){ __docshot.boot.noteFiles.push({ path: '${notePath}', title: '2026-09-18.md', content: ${JSON.stringify(note)} }); __testHelper.createTab('2026-09-18.md', ${JSON.stringify(note)}, '${notePath}', 'UTF-8'); return 1; })()`);
     await ctx.waitFor(`document.querySelectorAll('#tabs-list .tab-item').length === ${tabsBefore + 1} && document.getElementById('editor').value.indexOf('## [10:24:07]') !== -1`, { label: 'the note is open' });
     // the caret on the first line of the second entry's text (line 12)
@@ -599,7 +599,7 @@ export const SETUPS = {
         '### 加工', '割った竹は、かんなをかける前に一か月ほど乾かす。', '切れ端は炭にする。', '',
         '### 使いみち', '床材、棚、天井板。', '']).join('\n');
     const tabsBefore = await ctx.ev("document.querySelectorAll('#tabs-list .tab-item').length");
-    const notePath = 'C:\\\\Users\\\\demo\\\\Documents\\\\md-memo\\\\scraps\\\\2026-09-18.md';
+    const notePath = 'C:\\\\Users\\\\demo\\\\Documents\\\\syki-sok\\\\scraps\\\\2026-09-18.md';
     await ctx.ev(`(function(){ __docshot.boot.noteFiles.push({ path: '${notePath}', title: '2026-09-18.md', content: ${JSON.stringify(note)} }); __testHelper.createTab('2026-09-18.md', ${JSON.stringify(note)}, '${notePath}', 'UTF-8'); return 1; })()`);
     await ctx.waitFor(`document.querySelectorAll('#tabs-list .tab-item').length === ${tabsBefore + 1} && document.getElementById('editor').value.indexOf('### ') !== -1`, { label: 'the note is open' });
     // the caret in the middle sub-section (the text line under its heading, line 11)
@@ -906,7 +906,7 @@ export const SETUPS = {
     await ctx.ev(`(function(){
       var sections = ['models', 'integration', 'other'];
       // a key saved for the current server, so the picture shows that a new server takes it away (a fake one, never displayed)
-      MdMemoBridge.getConfig().text.apiKey = 'DEMO-KEY-NOT-REAL-0000';
+      SykiBridge.getConfig().text.apiKey = 'DEMO-KEY-NOT-REAL-0000';
       var cfg = {
         text: { baseUrl: 'https://llm.partner-gateway.example/v1', model: 'partner-model', apiKey: '' },
         autoSelector: { enabled: true, agentConfirm: false },
@@ -915,8 +915,8 @@ export const SETUPS = {
       };
       window.backend.packInspect = function () {
         return Promise.resolve(JSON.stringify({
-          packPath: 'C:/Users/demo/Desktop/partner-gateway.mdmemopack', legacy: false, projectRoot: '',
-          manifest: { format: 'md-memo-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.10.5', includesSecrets: false, configSections: sections, items: [] },
+          packPath: 'C:/Users/demo/Desktop/partner-gateway.sykipack', legacy: false, projectRoot: '',
+          manifest: { format: 'syki-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.10.5', includesSecrets: false, configSections: sections, items: [] },
           items: [{ id: 'config', kind: 'config', sections: sections }], warnings: []
         }));
       };

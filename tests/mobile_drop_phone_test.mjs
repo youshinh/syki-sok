@@ -10,7 +10,7 @@ const goSource = fs.readFileSync('pkg/dropzone/html.go', 'utf8').replace(/\r\n/g
 const start = goSource.indexOf('<script>') + '<script>'.length;
 const end = goSource.indexOf('</script>');
 assert.ok(start > 8 && end > start, 'phone page script not found in pkg/dropzone/html.go');
-const script = goSource.slice(start, end).replace('__MD_MEMO_TOKEN__', '"tok"');
+const script = goSource.slice(start, end).replace('__SYKI_TOKEN__', '"tok"');
 
 let failures = 0;
 function check(name, fn) {

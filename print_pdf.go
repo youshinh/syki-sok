@@ -33,7 +33,7 @@ import (
 //	PrintSavePdfAsync   make the PDF again and write it to that path
 //	PrintPreviewClose   forget the PDF kept for the preview
 //
-// The three async calls answer through window.__onPrintPdfResult(reqID, result, errMsg) (the shims' __mdmemoSettle).
+// The three async calls answer through window.__onPrintPdfResult(reqID, result, errMsg) (the shims' __sykiSettle).
 
 const (
 	printPDFTimeout  = 90 * time.Second
@@ -301,7 +301,7 @@ func (a *App) PrintSavePdfAsync(reqID, optsJSON, path string) {
 			a.dispatchPrintResult(reqID, nil, err)
 			return
 		}
-		if err := atomicfile.Write(path, pdf, ".md-memo-pdf-*"); err != nil {
+		if err := atomicfile.Write(path, pdf, ".syki-pdf-*"); err != nil {
 			a.dispatchPrintResult(reqID, nil, fmt.Errorf("the PDF could not be written: %w", err))
 			return
 		}

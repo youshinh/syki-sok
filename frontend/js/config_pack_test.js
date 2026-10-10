@@ -168,13 +168,13 @@ function fullBackend(h, over) {
   const o = Object.assign({
     list: { projectRoot: 'C:\\proj', agents: [
       { id: 'agents:app', scope: 'app', path: 'C:\\cfg\\agents.yaml', bytes: 2048 },
-      { id: 'agents:project', scope: 'project', path: 'C:\\proj\\.md-memo\\agents.yaml', bytes: 900 }
+      { id: 'agents:project', scope: 'project', path: 'C:\\proj\\.syki\\agents.yaml', bytes: 900 }
     ], skills: [
       { id: 'skill:skills/foo', root: 'skills', name: 'foo', entry: 'dir', files: 3, bytes: 5000 },
       { id: 'skill:.claude/skills/bar', root: '.claude/skills', name: 'bar', entry: 'dir', files: 1, bytes: 100 },
       { id: 'skill:skills/note.md', root: 'skills', name: 'note.md', entry: 'file', files: 1, bytes: 300 }
     ], warnings: [] },
-    exportResult: { ok: true, path: 'C:\\out\\md-memo-20260921.mdmemopack', counts: { config: 1, agents: 2, skills: 1, files: 7, bytes: 9000 }, secretsStripped: 2 }
+    exportResult: { ok: true, path: 'C:\\out\\syki-20260921.sykipack', counts: { config: 1, agents: 2, skills: 1, files: 7, bytes: 9000 }, secretsStripped: 2 }
   }, over || {});
   h.backend.packListExportable = async (hint) => { h.calls.push(['list', hint]); if (o.listThrows) throw new Error(o.listThrows); return JSON.stringify(o.list); };
   h.backend.packExport = async (sel, cfg) => { h.calls.push(['export', JSON.parse(sel), JSON.parse(cfg)]); if (o.exportThrows) throw new Error(o.exportThrows); return JSON.stringify(o.exportResult); };
@@ -445,7 +445,7 @@ test('ingestList derives root/name from the id when the scan omits them, and dro
 
 test('import state: sections come from the manifest, project items need a project, legacy lists every section', () => {
   const info = {
-    packPath: 'C:\\in\\p.mdmemopack', legacy: false, projectRoot: '',
+    packPath: 'C:\\in\\p.sykipack', legacy: false, projectRoot: '',
     manifest: { createdAt: '2026-09-21T10:00:00+09:00', appVersion: '1.5.5', includesSecrets: true, configSections: ['general', 'sync', 'future-thing'] },
     items: [
       { id: 'config', kind: 'config', sections: ['general', 'sync', 'future-thing'] },
@@ -528,11 +528,11 @@ test('export: rows, defaults, and what is sent to packExport / packListExportabl
   assert(confirmBtn(h).hasClass('hidden'));
   assert.strictEqual(cancelBtn(h).textContent, EN.packBtnClose);
   const text = body(h).textContent;
-  assert(text.includes('C:\\out\\md-memo-20260921.mdmemopack'), 'the path is shown');
+  assert(text.includes('C:\\out\\syki-20260921.sykipack'), 'the path is shown');
   assert(text.includes(EN.packResultSecretsLeftOut.replace('{count}', '2')), 'says how many secrets were left out');
   assert(text.includes('7 files, 8.8 KB'));
   assert.strictEqual(h.messages.length, 1);
-  assert(h.messages[0].includes('md-memo-20260921.mdmemopack'), 'the toast names the file');
+  assert(h.messages[0].includes('syki-20260921.sykipack'), 'the toast names the file');
 
   cancelBtn(h).click();
   assert(!isOpen(h));
@@ -543,7 +543,7 @@ test('export: rows, defaults, and what is sent to packExport / packListExportabl
 
 test('export: the API-keys box is honoured and flagged, secret warnings are reported', async () => {
   const h = makeHarness();
-  fullBackend(h, { exportResult: { ok: true, path: 'C:\\o\\a.mdmemopack', counts: { config: 1, files: 1, bytes: 10 }, secretsStripped: 0, secretWarnings: 1, warnings: ['heads up'] } });
+  fullBackend(h, { exportResult: { ok: true, path: 'C:\\o\\a.sykipack', counts: { config: 1, files: 1, bytes: 10 }, secretsStripped: 0, secretWarnings: 1, warnings: ['heads up'] } });
   await h.dialog.openExport();
   await settle();
   const keys = inputOf(h, EN.packIncludeKeys);
@@ -671,7 +671,7 @@ test('export: native dialog cancelled -> the dialog stays open; a failure shows 
   assert.deepStrictEqual(notes(h), [EN.packExportFailed.replace('{err}', () => 'disk full: $& $1')], 'error text is shown verbatim, "$&" is not a replacement pattern');
   assert(!confirmBtn(h).disabled);
 
-  h.backend.packExport = async () => JSON.stringify({ ok: true, path: 'C:\\x\\ok.mdmemopack', counts: {} });
+  h.backend.packExport = async () => JSON.stringify({ ok: true, path: 'C:\\x\\ok.sykipack', counts: {} });
   confirmBtn(h).click();
   await settle();
   assert.strictEqual(h.doc.getElementById('pack-title').textContent, EN.packResultTitleExport);
@@ -749,7 +749,7 @@ test('Escape closes only this dialog (and swallows the key), but not while an ex
   assert(!other.prevented && isOpen(h), 'other keys are left alone');
 
   let release;
-  h.backend.packExport = () => new Promise((r) => { release = () => r(JSON.stringify({ ok: true, path: 'C:\\a.mdmemopack', counts: {} })); });
+  h.backend.packExport = () => new Promise((r) => { release = () => r(JSON.stringify({ ok: true, path: 'C:\\a.sykipack', counts: {} })); });
   confirmBtn(h).click();
   await settle();
   const busy = h.keyTarget.press('Escape');
@@ -816,8 +816,8 @@ test('export never puts package text into markup (only static icons are written 
 // ---- import ------------------------------------------------------------------------------------------
 function packInspectInfo(over) {
   return Object.assign({
-    packPath: 'C:\\in\\team.mdmemopack', legacy: false, projectRoot: 'C:\\proj',
-    manifest: { format: 'md-memo-pack', version: 1, createdAt: '2026-09-21T10:00:00+09:00', appVersion: '1.5.5', includesSecrets: false, configSections: ['general', 'models', 'sync'] },
+    packPath: 'C:\\in\\team.sykipack', legacy: false, projectRoot: 'C:\\proj',
+    manifest: { format: 'syki-pack', version: 1, createdAt: '2026-09-21T10:00:00+09:00', appVersion: '1.5.5', includesSecrets: false, configSections: ['general', 'models', 'sync'] },
     items: [
       { id: 'config', kind: 'config', sections: ['general', 'models', 'sync'] },
       { id: 'agents:app', kind: 'agents', scope: 'app', bytes: 2048, exists: true },
@@ -864,7 +864,7 @@ test('import: lists the package with overwrite badges, and sends the chosen item
   assert.strictEqual(h.doc.getElementById('pack-title').textContent, EN.packImportTitle);
   assert.strictEqual(confirmBtn(h).textContent, EN.packBtnImport);
   const text = body(h).textContent;
-  assert(text.includes('team.mdmemopack') && text.includes('syki::sok 1.5.5'));
+  assert(text.includes('team.sykipack') && text.includes('syki::sok 1.5.5'));
   assert(notes(h).includes(EN.packNoKeysNote), 'a package without keys says your keys stay');
   assert(notes(h).includes(EN.packSkillsWarn), 'skills come with the trust warning');
   assert(notes(h).includes(EN.packAgentsWarn), 'agent definitions come with the trust warning (they contain commands that will run)');
@@ -886,7 +886,7 @@ test('import: lists the package with overwrite badges, and sends the chosen item
   await settle();
 
   const [, packPath, sel, hint] = h.calls.find((c) => c[0] === 'import');
-  assert.strictEqual(packPath, 'C:\\in\\team.mdmemopack');
+  assert.strictEqual(packPath, 'C:\\in\\team.sykipack');
   assert.deepStrictEqual(sel, { config: true, agents: ['agents:app', 'agents:project'], skills: ['skill:skills/foo'] });
   assert.strictEqual(hint, 'C:\\proj\\notes');
 
@@ -968,7 +968,7 @@ test('import: Import is disabled when nothing is ticked, and settings can be ski
 
 test('import: legacy single-JSON files show every section and merge like a package', async () => {
   const h = makeHarness();
-  const info = { packPath: 'C:\\in\\md-memo-config.json', legacy: true, projectRoot: '', manifest: {}, items: [{ id: 'config', kind: 'config', sections: [] }], warnings: [] };
+  const info = { packPath: 'C:\\in\\syki-config.json', legacy: true, projectRoot: '', manifest: {}, items: [{ id: 'config', kind: 'config', sections: [] }], warnings: [] };
   fullBackend(h, { inspect: info, importResult: { ok: true, configJSON: JSON.stringify({ general: { theme: 'charcoal' }, text: { model: 'old', apiKey: 'sk-old' }, mystery: 1 }), configSections: [], applied: {}, skipped: [] } });
   await h.dialog.openImport();
   assert(notes(h).includes(EN.packLegacyNote));
@@ -1030,21 +1030,21 @@ test('import: a config that is not valid JSON is reported as a settings failure,
 
 test('import: a package path or name with "$&" or markup is shown as plain text', async () => {
   const h = makeHarness();
-  const evil = 'C:\\in\\<b onmouseover=alert(1)>x $& $1.mdmemopack';
+  const evil = 'C:\\in\\<b onmouseover=alert(1)>x $& $1.sykipack';
   fullBackend(h, { inspect: packInspectInfo({ packPath: evil }), importResult: { ok: true, configJSON: '', applied: {}, skipped: [] } });
   await h.dialog.openImport();
   const writes = [];
   body(h).walk((n) => n.htmlWrites.forEach((w) => writes.push(w)));
   assert(writes.every((w) => w.startsWith('<svg')));
-  assert(body(h).textContent.includes('<b onmouseover=alert(1)>x $& $1.mdmemopack'));
+  assert(body(h).textContent.includes('<b onmouseover=alert(1)>x $& $1.sykipack'));
   confirmBtn(h).click();
   await settle();
-  assert(h.messages[0].includes('$& $1.mdmemopack'), 'the toast keeps "$&" literally');
+  assert(h.messages[0].includes('$& $1.sykipack'), 'the toast keeps "$&" literally');
 });
 
 test('import: an empty package says there is nothing to import', async () => {
   const h = makeHarness();
-  fullBackend(h, { inspect: { packPath: 'C:\\e.mdmemopack', legacy: false, projectRoot: '', manifest: { includesSecrets: false }, items: [] } });
+  fullBackend(h, { inspect: { packPath: 'C:\\e.sykipack', legacy: false, projectRoot: '', manifest: { includesSecrets: false }, items: [] } });
   await h.dialog.openImport();
   assert(body(h).textContent.includes(EN.packNothingInPackage));
   assert(confirmBtn(h).disabled);
@@ -1237,7 +1237,7 @@ test('B26: on a PC that is not a Mac, shortcuts made on a Mac are not taken; Ctr
 
 // ---- the dialog ----
 const partnerInspect = () => packInspectInfo({
-  manifest: { format: 'md-memo-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.10.5', includesSecrets: false, configSections: ['models', 'integration', 'other'] },
+  manifest: { format: 'syki-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.10.5', includesSecrets: false, configSections: ['models', 'integration', 'other'] },
   items: [{ id: 'config', kind: 'config', sections: ['models', 'integration', 'other'] }]
 });
 const partnerHarness = (over) => {
@@ -1394,7 +1394,7 @@ test('B19: if the settings cannot be written the result says so; if the app refu
 test('B26: importing a Mac package on a PC that is not a Mac leaves the shortcuts alone and says so; on a Mac they are taken', async () => {
   const cfg = { shortcuts: { zenMode: 'Shift+F11', toggleFullscreen: 'F11', find: 'Ctrl+F', quickCapture: 'Ctrl+Shift+Q' }, general: { theme: 'olive' } };
   const info = packInspectInfo({
-    manifest: { format: 'md-memo-pack', version: 1, configSections: ['shortcuts'] },
+    manifest: { format: 'syki-pack', version: 1, configSections: ['shortcuts'] },
     items: [{ id: 'config', kind: 'config', sections: ['shortcuts'] }]
   });
   const mac = JSON.stringify({ shortcuts: MAC_SHORTCUTS });
@@ -1411,7 +1411,7 @@ test('B26: importing a Mac package on a PC that is not a Mac leaves the shortcut
 
   const withGeneral = makeHarness({ config: JSON.parse(JSON.stringify(cfg)) });
   fullBackend(withGeneral, {
-    inspect: packInspectInfo({ manifest: { format: 'md-memo-pack', version: 1, configSections: ['general', 'shortcuts'] }, items: [{ id: 'config', kind: 'config', sections: ['general', 'shortcuts'] }] }),
+    inspect: packInspectInfo({ manifest: { format: 'syki-pack', version: 1, configSections: ['general', 'shortcuts'] }, items: [{ id: 'config', kind: 'config', sections: ['general', 'shortcuts'] }] }),
     importResult: { ok: true, configJSON: JSON.stringify({ general: { theme: 'blue' }, shortcuts: MAC_SHORTCUTS }), applied: {}, skipped: [] }
   });
   await withGeneral.dialog.openImport();

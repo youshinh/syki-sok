@@ -19,16 +19,16 @@ import (
 
 // The RPC methods that change a note or a tab (buffer.set / append / replace / replace_selection /
 // save, tab.new / close). app_rpc.go routes them here; the work inside the page is
-// window.__mdMemoRPC in frontend/js/app.js.
+// window.__sykiRPC in frontend/js/app.js.
 
 // rpcWriteMu makes the write methods run one at a time. That keeps globalBufferGen (the number of RPC
 // writes so far) exact when two clients write together, and makes "check expected_generation, then
 // write" one step. It is held while waiting for the page, at most the 5 s of the request.
 var rpcWriteMu sync.Mutex
 
-// errPageNotReady is returned when the page has not defined window.__mdMemoRPC yet (start-up) or
+// errPageNotReady is returned when the page has not defined window.__sykiRPC yet (start-up) or
 // answered nothing.
-var errPageNotReady = errors.New("the editor page is not ready (window.__mdMemoRPC is not available yet)")
+var errPageNotReady = errors.New("the editor page is not ready (window.__sykiRPC is not available yet)")
 
 // Every call into the page goes through this wrapper. CallJSWithResponse evaluates an expression
 // with eval and, if that THROWS, runs the same code again as a function body (so that `ui.eval` can
@@ -36,11 +36,11 @@ var errPageNotReady = errors.New("the editor page is not ready (window.__mdMemoR
 // append). An async arrow function never throws to its caller, it returns a rejected promise, which
 // CallJSWithResponse reports as the error without a second run.
 const (
-	rpcCallPrefix = "(async () => window.__mdMemoRPC && window.__mdMemoRPC."
+	rpcCallPrefix = "(async () => window.__sykiRPC && window.__sykiRPC."
 	rpcCallSuffix = ")()"
 )
 
-// rpcCallExpr builds the JS that calls window.__mdMemoRPC.<fn>(args...). Every argument is passed
+// rpcCallExpr builds the JS that calls window.__sykiRPC.<fn>(args...). Every argument is passed
 // as JSON, so text with quotes, backslashes, line breaks or characters outside the BMP cannot break
 // out of the expression.
 func rpcCallExpr(fn string, args ...interface{}) string {
@@ -55,7 +55,7 @@ func rpcCallExpr(fn string, args ...interface{}) string {
 	return rpcCallPrefix + fn + "(" + strings.Join(parts, ", ") + ")" + rpcCallSuffix
 }
 
-// callRPCJS runs one window.__mdMemoRPC function in the page and returns the JSON of its result.
+// callRPCJS runs one window.__sykiRPC function in the page and returns the JSON of its result.
 // A page that has no such object yet, or a function that returned nothing, is errPageNotReady.
 func (a *App) callRPCJS(ctx context.Context, fn string, args ...interface{}) (string, error) {
 	res, err := a.CallJSWithResponse(ctx, rpcCallExpr(fn, args...))

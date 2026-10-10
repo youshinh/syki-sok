@@ -17,7 +17,7 @@ import (
 
 // ErrRebuildNeeded means the index was made with another model or another way of cutting the text than the one asked for now: its
 // vectors cannot be mixed with new ones. Update refuses; Rebuild makes a new index (the old one stays in use until it is done).
-var ErrRebuildNeeded = errors.New("the semantic index was made with another model or chunking; rebuild it (md-memo scrap index --rebuild)")
+var ErrRebuildNeeded = errors.New("the semantic index was made with another model or chunking; rebuild it (syki scrap index --rebuild)")
 
 // Options of Update and Rebuild.
 type Options struct {
@@ -77,14 +77,14 @@ type fileInfo struct {
 
 // ---- which files are indexed ----------------------------------------------------------------------------------------------------
 
-// ignoreRules are the lines of the .md-memo-ignore file in the scrap folder (it is synced by Git, so two PCs agree): "name" or
+// ignoreRules are the lines of the .syki-ignore file in the scrap folder (it is synced by Git, so two PCs agree): "name" or
 // "*.glob" matches a file or folder of that name anywhere, "dir/" a folder and what is in it, "a/b.md" a path. "#" starts a comment.
 type ignoreRules struct{ patterns []string }
 
 func loadIgnore(root string) ignoreRules {
 	raw, err := os.ReadFile(filepath.Join(root, ".syki-ignore"))
 	if err != nil {
-		raw, err = os.ReadFile(filepath.Join(root, ".md-memo-ignore"))
+		raw, err = os.ReadFile(filepath.Join(root, ".syki-ignore"))
 	}
 	if err != nil {
 		return ignoreRules{}
@@ -133,7 +133,7 @@ func (r ignoreRules) matches(rel string) bool {
 
 // Excluded says whether a file (rel: its path inside the scrap folder, with "/") is outside what the semantic index covers, and so
 // outside what a deep search may send to a model: a folder starting with "." (.git and the like), the assets folder, the "(sync
-// conflict ...)" copies that Git sync makes, and what .md-memo-ignore names. The ignore file is read once, when Excluded is called.
+// conflict ...)" copies that Git sync makes, and what .syki-ignore names. The ignore file is read once, when Excluded is called.
 func Excluded(scrapDir string) func(rel string) bool {
 	ign := loadIgnore(filepath.Clean(scrapDir))
 	return func(rel string) bool {
@@ -154,7 +154,7 @@ func Excluded(scrapDir string) func(rel string) bool {
 
 // listFiles lists the scrap files the index covers: the .md files of the scrap folder, except folders starting with "." (.git and the
 // like) and the assets folder, the "(sync conflict …)" copies Git sync makes (they would only repeat a note), and what
-// .md-memo-ignore names.
+// .syki-ignore names.
 func listFiles(scrapDir string) ([]fileInfo, error) {
 	root := filepath.Clean(scrapDir)
 	if fi, err := os.Stat(root); err != nil || !fi.IsDir() {

@@ -88,7 +88,7 @@ func writeScrap(t *testing.T, dir, name, text string) {
 	}
 }
 
-// pageMock stands in for the page: it answers the window.__mdMemoRPC calls of the new methods and records them.
+// pageMock stands in for the page: it answers the window.__sykiRPC calls of the new methods and records them.
 type pageMock struct {
 	app     *App
 	mu      sync.Mutex
@@ -96,7 +96,7 @@ type pageMock struct {
 	calls   []string // "fn(args)"
 }
 
-var pageCallRE = regexp.MustCompile(`__mdMemoRPC\.(\w+)\((.*)\)\)\(\)$`)
+var pageCallRE = regexp.MustCompile(`__sykiRPC\.(\w+)\((.*)\)\)\(\)$`)
 
 func (m *pageMock) Dispatch(f func()) { go f() }
 

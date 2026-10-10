@@ -168,7 +168,7 @@ func TestBuildSourcesShortEntryBringsItsNeighbours(t *testing.T) {
 // is on. A note that is a log itself is a source as it is.
 func TestBuildSourcesDoesNotBringPipedLogsAsNeighbours(t *testing.T) {
 	dir := t.TempDir()
-	write(t, dir, "2026-09-02.md", "# 2026-09-02 08:00\n\n朝のメモ。短い。\n\n# 2026-09-02 09:00\n\n竹の在庫を確認した。\n\n---\n## [12:54:13] CLI Pipe\n```text\nok  md-memo/pkg/mod0 1.095s\nok  md-memo/pkg/mod1 0.408s\n```\n\n---\n## [13:00:00] CLI Pipe\n```text\nFAIL md-memo/pkg/modX\n```\n\n# 2026-09-02 15:00\n\n夕方のメモ。\n")
+	write(t, dir, "2026-09-02.md", "# 2026-09-02 08:00\n\n朝のメモ。短い。\n\n# 2026-09-02 09:00\n\n竹の在庫を確認した。\n\n---\n## [12:54:13] CLI Pipe\n```text\nok  syki/pkg/mod0 1.095s\nok  syki/pkg/mod1 0.408s\n```\n\n---\n## [13:00:00] CLI Pipe\n```text\nFAIL syki/pkg/modX\n```\n\n# 2026-09-02 15:00\n\n夕方のメモ。\n")
 	src, _ := BuildSources([]Hit{{Rel: "2026-09-02.md", Line: 7}}, testOptions(dir))
 	if len(src) != 1 {
 		t.Fatalf("%d sources", len(src))
@@ -223,10 +223,10 @@ func TestBuildSourcesCutsALongEntryAroundTheHit(t *testing.T) {
 
 func TestBuildSourcesLeavesOutWhatMustNotBeSent(t *testing.T) {
 	dir := t.TempDir()
-	write(t, dir, ".md-memo-ignore", "private/\n")
+	write(t, dir, ".syki-ignore", "private/\n")
 	write(t, dir, "private/diary.md", "# 2026-09-01 08:00\n\n秘密の日記。\n")
 	write(t, dir, "assets/x.md", "# a\n\nx\n")
-	write(t, dir, "2026-09-03.md", "# 2026-09-03 09:00\n\n通常のメモ。これは送ってよい内容です。\n\n---\n## [10:00:00] AI\n<!-- md-memo:res 1 -->\nAIの答え。\n<!-- /md-memo:res -->\n")
+	write(t, dir, "2026-09-03.md", "# 2026-09-03 09:00\n\n通常のメモ。これは送ってよい内容です。\n\n---\n## [10:00:00] AI\n<!-- syki:res 1 -->\nAIの答え。\n<!-- /syki:res -->\n")
 	write(t, dir, "2026-09-04.md", scrap.DeepSearchMarker+"\n# 深掘り: 竹\n\n要約の本文。\n")
 	write(t, filepath.Dir(dir), "outside.md", "# a\n\nフォルダの外。\n")
 	o := testOptions(dir)

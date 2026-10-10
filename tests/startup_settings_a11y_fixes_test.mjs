@@ -206,7 +206,7 @@ check('C11-11: start-up notices take turns: the second waits for the first to ru
   // wired in: both notices go through it, and the "seen" marks are set when they are shown
   assert.match(fnSrc('announceAgentIssues'), /showStartupNotice\(t\('agentIssuesStartup'[^]*?\(\) => \{\s*config\.agentNotice = due\.state;/);
   const badge = fnSrc('applyUpdateBadge');
-  assert.match(badge, /showStartupNotice\(t\('updateFoundHidden'[^]*?mdmemo_dismissed_update_version/);
+  assert.match(badge, /showStartupNotice\(t\('updateFoundHidden'[^]*?syki_dismissed_update_version/);
   assert.match(badge, /updateNoticeQueuedFor !== updateState\.latest/, 'a second check while it waits does not queue it twice');
   assert.ok(!/showMessage\(t\('updateFoundHidden'/.test(app));
 });
@@ -366,9 +366,9 @@ check('C14-02: a settings-package failure shows the half of "日本語 / English
     vm.runInContext(configPackCode, ctx);
     return ctx.ConfigPack.errMessage(e);
   };
-  const failure = new Error('ファイルを開けません / cannot open the file: open C:\\a.mdmemopack: no such file');
-  assert.equal(run('en', failure), 'cannot open the file: open C:\\a.mdmemopack: no such file');
-  assert.equal(run('ja', failure), 'ファイルを開けません: open C:\\a.mdmemopack: no such file');
+  const failure = new Error('ファイルを開けません / cannot open the file: open C:\\a.sykipack: no such file');
+  assert.equal(run('en', failure), 'cannot open the file: open C:\\a.sykipack: no such file');
+  assert.equal(run('ja', failure), 'ファイルを開けません: open C:\\a.sykipack: no such file');
   assert.equal(run('en', 'plain text'), 'plain text', 'a string, not an Error');
   assert.match(configPackCode, /d\.toLocaleString\(uiLang\(\) === 'ja' \? 'ja-JP' : 'en-US'\)/, 'the created-at line is formatted for the UI language, not the operating system\'s');
   assert.ok(!/\.toLocaleString\(\)/.test(configPackCode));

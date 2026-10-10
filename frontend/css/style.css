@@ -5377,7 +5377,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   cursor: default;
 }
 
-/* ---- Help menu (the ? button) and About MD-Memo (js/about_dialog.js) ----
+/* ---- Help menu (the ? button) and About syki (js/about_dialog.js) ----
    The same measures and parts as the other dialogs (docs/design/settings-dialog.md): 560px wide, a 48px header, 36px rows, 28px buttons,
    section names in the bright accent over a rule, a filled main button and outlined or pale secondary ones. The body scrolls; the
    header and footer stay. */

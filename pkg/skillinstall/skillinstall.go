@@ -1,11 +1,11 @@
 // Package skillinstall puts the agent skill (a folder of Markdown files, SKILL.md at its root)
-// into an agent's skills folder, the way `md-memo agent install-skill` does.
+// into an agent's skills folder, the way `syki agent install-skill` does.
 //
 // A copy is written into a temporary sibling folder and renamed into place, so an agent that is
 // reading the skills folder never sees a half-written skill. Every installed folder carries a
-// small marker file (MarkerFile) with the md-memo version, a hash of the content and the hash of
+// small marker file (MarkerFile) with the syki version, a hash of the content and the hash of
 // each file, which is how a later run tells "an older copy nobody touched" (replaced) from "a
-// folder somebody edited, or that md-memo never wrote" (left alone unless Force says otherwise).
+// folder somebody edited, or that syki never wrote" (left alone unless Force says otherwise).
 //
 // The package knows nothing about which agent the folder belongs to: the caller picks Base.
 package skillinstall
@@ -47,9 +47,9 @@ const (
 
 // Options is what the caller decides.
 type Options struct {
-	// Base is the agent's skills folder; the skill lands in Base/md-memo. It is created when missing.
+	// Base is the agent's skills folder; the skill lands in Base/syki. It is created when missing.
 	Base string
-	// Version is the md-memo version written into the marker.
+	// Version is the syki version written into the marker.
 	Version string
 	// Force replaces a folder that has local edits, has no marker, is newer, or is a link.
 	Force bool
@@ -103,7 +103,7 @@ type Marker struct {
 	Note    string            `json:"note"`
 }
 
-const markerNote = "Written by md-memo agent install-skill. Delete this file and md-memo will treat the folder as yours: it will not overwrite it without --force."
+const markerNote = "Written by syki agent install-skill. Delete this file and syki will treat the folder as yours: it will not overwrite it without --force."
 
 type file struct {
 	path string
@@ -246,7 +246,7 @@ func diff(want, have map[string]string) []string {
 	return out
 }
 
-// Install copies the skill in src to Base/md-memo, as described in the package comment.
+// Install copies the skill in src to Base/syki, as described in the package comment.
 func Install(src fs.FS, opt Options) (*Result, error) {
 	if opt.Base == "" {
 		return nil, errors.New("no target folder")
@@ -287,7 +287,7 @@ func Install(src fs.FS, opt Options) (*Result, error) {
 	switch {
 	case ex.link:
 		if !opt.Force {
-			return nil, &ConflictError{Path: target, Reason: "it is a link, not a folder md-memo wrote"}
+			return nil, &ConflictError{Path: target, Reason: "it is a link, not a folder syki wrote"}
 		}
 		res.Discarded = []string{"a link"}
 	case ex.notDir:
@@ -312,7 +312,7 @@ func Install(src fs.FS, opt Options) (*Result, error) {
 			if !opt.Force {
 				return nil, &ConflictError{
 					Path:   target,
-					Reason: "it has no " + MarkerFile + " (md-memo did not write it, or the marker was deleted) and differs from the skill in this build",
+					Reason: "it has no " + MarkerFile + " (syki did not write it, or the marker was deleted) and differs from the skill in this build",
 					Files:  changes,
 				}
 			}
@@ -322,14 +322,14 @@ func Install(src fs.FS, opt Options) (*Result, error) {
 		res.PreviousVersion = ex.marker.Version
 		if local := diff(ex.marker.Files, ex.files); len(local) > 0 {
 			if !opt.Force {
-				return nil, &ConflictError{Path: target, Reason: "it has been edited since md-memo installed it", Files: local}
+				return nil, &ConflictError{Path: target, Reason: "it has been edited since syki installed it", Files: local}
 			}
 			res.Discarded = local
 			break
 		}
 		if newer(ex.marker.Version, opt.Version) {
 			if !opt.Force {
-				return nil, &ConflictError{Path: target, Reason: "it comes from a newer md-memo (" + ex.marker.Version + ", this one is " + opt.Version + ")"}
+				return nil, &ConflictError{Path: target, Reason: "it comes from a newer syki (" + ex.marker.Version + ", this one is " + opt.Version + ")"}
 			}
 			break // a downgrade the user asked for: reported as "replaced"
 		}
@@ -355,7 +355,7 @@ func LinksSupported() bool { return linksAllowed }
 // ErrLinkUnsupported is returned by Link where a link cannot be made without extra rights.
 var ErrLinkUnsupported = errors.New("--link is not supported on Windows: a symbolic link needs administrator rights or Developer Mode, and a directory junction cannot be created without extra tools. Run it without --link to install a copy")
 
-// Link makes Base/md-memo a symbolic link to source (a folder with SKILL.md), so the agent always
+// Link makes Base/syki-sok a symbolic link to source (a folder with SKILL.md), so the agent always
 // reads the checkout's current text. No marker is written: the folder is not a copy.
 func Link(source string, opt Options) (*Result, error) {
 	if !linksAllowed {
@@ -369,7 +369,7 @@ func Link(source string, opt Options) (*Result, error) {
 		return nil, err
 	}
 	if !looksLikeSkill(source) {
-		return nil, fmt.Errorf("%s is not the md-memo skill folder (no SKILL.md with name: md-memo)", source)
+		return nil, fmt.Errorf("%s is not the syki skill folder (no SKILL.md with name: syki)", source)
 	}
 	target := filepath.Join(opt.Base, SkillName)
 	res := &Result{Action: Linked, Path: target, Version: opt.Version, LinkTarget: source}
@@ -409,7 +409,7 @@ func Link(source string, opt Options) (*Result, error) {
 	return res, nil
 }
 
-// FindSource looks for a real skills/md-memo folder on disk, starting at each of dirs and going up
+// FindSource looks for a real skills/syki folder on disk, starting at each of dirs and going up
 // (so a checkout, an unpacked release zip and the folder around syki::sok.app are all found). It
 // returns "" when there is none.
 func FindSource(dirs ...string) string {

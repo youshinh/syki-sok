@@ -4,7 +4,7 @@ import "strings"
 
 // ASTCommandVerifier provides the deterministic, syntax-directed guardrail as a CommandVerifier. It is
 // ModeStrict of VerifyCommand: the judgement itself lives in guard.go and guard_ast.go, so this type,
-// `md-memo jev verify`, the GUI run gate and the hook runner can never disagree about a command.
+// `syki jev verify`, the GUI run gate and the hook runner can never disagree about a command.
 type ASTCommandVerifier struct {
 	// allowUnquotedVars disables the "unquoted-var" rule. It is a style/injection-hygiene rule,
 	// used as-is for one-click Quick Actions, but too strict for a bar where the user

@@ -40,7 +40,7 @@ func askFrontendNoteDir(a *App) string {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), mobileDropNoteDirTimeout)
 	defer cancel()
-	resJSON, err := a.CallJSWithResponse(ctx, "window.__mdMemoRPC && window.__mdMemoRPC.getNoteDir()")
+	resJSON, err := a.CallJSWithResponse(ctx, "window.__sykiRPC && window.__sykiRPC.getNoteDir()")
 	if err != nil {
 		return ""
 	}

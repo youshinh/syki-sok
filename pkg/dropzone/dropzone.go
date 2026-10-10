@@ -1,6 +1,6 @@
 // Package dropzone implements the "Mobile Drop" QR-sync feature: an ephemeral,
 // token-gated HTTP server that lets a phone on the same LAN push a photo,
-// piece of text, or small file into the currently running md-memo instance.
+// piece of text, or small file into the currently running syki instance.
 //
 // The package is intentionally dependency-free (standard library only) so it
 // can be unit tested without network access to the Go module proxy. QR code

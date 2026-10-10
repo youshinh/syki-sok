@@ -166,7 +166,7 @@ func (a *App) correctQuickCaptureText(text string) string {
 }
 
 // quickCaptureAccent returns the popup's accent and accent-hover colors (R, G, B) for one of
-// md-memo's color themes - the same values as --accent-color / --accent-hover in
+// syki's color themes - the same values as --accent-color / --accent-hover in
 // frontend/css/style.css, so the native popup follows whichever theme the main window uses.
 // Unknown or empty theme names fall back to the default (olive).
 func quickCaptureAccent(theme string) (accent, hover [3]uint8) {
@@ -185,7 +185,7 @@ func quickCaptureAccent(theme string) (accent, hover [3]uint8) {
 // defaultQuickCaptureShortcut must match DEFAULT_SHORTCUTS_WIN.quickCapture in frontend/js/app.js.
 // It is Q, not O: Ctrl+Shift+O is already this app's in-app "Open Folder" shortcut, and a global
 // OS-level RegisterHotKey on the same combo would swallow that keystroke everywhere, including while
-// md-memo itself has focus, before the WebView's own keydown handler ever saw it.
+// syki itself has focus, before the WebView's own keydown handler ever saw it.
 const defaultQuickCaptureShortcut = "Ctrl+Shift+Q"
 
 // parseQuickCaptureShortcut extracts shortcuts.quickCapture from config.json's contents. Unlike the
@@ -208,7 +208,7 @@ func parseQuickCaptureShortcut(configJSON string) string {
 }
 
 // parseQuickCaptureTheme extracts general.theme from config.json's contents, returning "olive"
-// (md-memo's own default) when the key is missing or the JSON is unreadable.
+// (syki's own default) when the key is missing or the JSON is unreadable.
 func parseQuickCaptureTheme(configJSON string) string {
 	var raw struct {
 		General struct {

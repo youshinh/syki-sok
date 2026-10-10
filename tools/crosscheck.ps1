@@ -41,7 +41,7 @@ function Run-Target {
     }
 
     if (-not $SkipTestCompile) {
-        $outDir = Join-Path $env:TEMP "md-memo-crosscheck-$Goos-$Goarch"
+        $outDir = Join-Path $env:TEMP "syki-crosscheck-$Goos-$Goarch"
         New-Item -ItemType Directory -Force -Path $outDir | Out-Null
         & go test -c -o "$outDir/" @Packages
         if ($LASTEXITCODE -ne 0) {

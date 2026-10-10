@@ -24,7 +24,7 @@ import (
 //
 //	<settings folder>/lessons/<agent key>.md
 //	    # Lessons for claude-code
-//	    <!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->
+//	    <!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->
 //	    - Do not include ADF.h: the build fails on this machine. <!-- 2026-10-03 -->
 //
 // Nothing here runs until an agent is started (one stat of the file) or the person asks for a list or saves a rule. syki::sok writes the
@@ -282,7 +282,7 @@ func ApplyLessons(dir, key string, def AgentDef, sys string) (out string, applie
 
 // ---- what is reported ----------------------------------------------------------------------------------------------------------
 
-// LessonsInfo describes one agent's file: the answer of `md-memo lessons list`, of the JSON-RPC method lessons.list and of the window's
+// LessonsInfo describes one agent's file: the answer of `syki lessons list`, of the JSON-RPC method lessons.list and of the window's
 // lessonsInfo. Count is the rules the file holds, Applied and Skipped what a run would get and leave out (both 0 when the agent has
 // `lessons: false`, Disabled).
 type LessonsInfo struct {
@@ -492,7 +492,7 @@ func AppendLessons(dir, key string, rules []string, now time.Time, validate Less
 	b.Write(old)
 	if len(old) == 0 {
 		fmt.Fprintf(&b, "# Lessons for %s%s", headerKey(key), eol)
-		fmt.Fprintf(&b, "<!-- md-memo lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->%s", eol)
+		fmt.Fprintf(&b, "<!-- syki lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->%s", eol)
 	} else if !bytes.HasSuffix(old, []byte("\n")) {
 		b.WriteString(eol)
 	}
@@ -503,7 +503,7 @@ func AppendLessons(dir, key string, rules []string, now time.Time, validate Less
 	if err := os.MkdirAll(dir, 0o755); err != nil {
 		return LessonsSaved{}, fmt.Errorf("cannot make the lessons folder: %v", err)
 	}
-	if err := atomicfile.Write(path, b.Bytes(), ".md-memo-lessons-*.tmp"); err != nil {
+	if err := atomicfile.Write(path, b.Bytes(), ".syki-lessons-*.tmp"); err != nil {
 		return LessonsSaved{}, fmt.Errorf("cannot write %s: %v", filepath.Base(path), err)
 	}
 	return LessonsSaved{Path: path, Count: len(have) + len(add), Added: len(add)}, nil

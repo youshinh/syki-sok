@@ -295,7 +295,7 @@ func (a *App) DispatchRPCOperation(req *ipc.RPCRequest) (resp *ipc.RPCResponse) 
 		})
 
 	case "tab.list":
-		jsCall := "window.__mdMemoRPC && window.__mdMemoRPC.getTabs()"
+		jsCall := "window.__sykiRPC && window.__sykiRPC.getTabs()"
 		resJSON, err := a.CallJSWithResponse(ctx, jsCall)
 		if err != nil {
 			return errorResponse(req.ID, ipc.ErrCodeInternalError, fmt.Sprintf("failed to list tabs: %v", err))
@@ -326,7 +326,7 @@ func (a *App) DispatchRPCOperation(req *ipc.RPCRequest) (resp *ipc.RPCResponse) 
 		return a.rpcTabClose(ctx, req)
 
 	case "ui.toggle_split":
-		jsCall := "window.__mdMemoRPC && window.__mdMemoRPC.toggleSplit()"
+		jsCall := "window.__sykiRPC && window.__sykiRPC.toggleSplit()"
 		_, err := a.CallJSWithResponse(ctx, jsCall)
 		if err != nil {
 			return errorResponse(req.ID, ipc.ErrCodeInternalError, fmt.Sprintf("failed to toggle split: %v", err))

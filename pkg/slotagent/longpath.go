@@ -4,7 +4,7 @@ import "os"
 
 // The unsaved note is handed to the agent as a temporary file. On Windows os.TempDir() can be a short (8.3) path
 // (C:\Users\LONGNA~1\AppData\Local\Temp) when the user name is long: the same folder under a name Claude Code cannot allow-list
-// (skills/md-memo/references/claude-code-integration.md, trap 6). The path handed to the agent, in {file}, in the note-path
+// (skills/syki/references/claude-code-integration.md, trap 6). The path handed to the agent, in {file}, in the note-path
 // hint and as the working folder, is therefore the long form.
 
 // expandLongPath turns a short (8.3) path into the long one; the file or folder must exist. It is a variable so the logic

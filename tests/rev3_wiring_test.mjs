@@ -53,17 +53,17 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   console.log('PASS: WebView2 permissions are left to the built-in prompt.');
 }
 
-// ---- 4. MdMemoBridge shape ------------------------------------------------------------------
+// ---- 4. SykiBridge shape ------------------------------------------------------------------
 {
   for (const key of ['getActiveEditor', 'getActiveTab', 'getTabIdForEditor', 'insertTextWithUndo',
     'replaceAnchor', 'notifyEdited', 't', 'showMessage', 'getConfig', 'getNoteDir']) {
-    assert(new RegExp(`\\b${key}\\s*:`).test(appJs.slice(appJs.indexOf('window.MdMemoBridge = {'), appJs.indexOf('window.MdMemoBridge = {') + 1200)),
-      `window.MdMemoBridge must expose ${key}`);
+    assert(new RegExp(`\\b${key}\\s*:`).test(appJs.slice(appJs.indexOf('window.SykiBridge = {'), appJs.indexOf('window.SykiBridge = {') + 1200)),
+      `window.SykiBridge must expose ${key}`);
   }
   assert(appJs.includes('replaceAnchor: applyAnchorReplacement'), 'replaceAnchor must reuse the same anchor-replacement logic as __onLLMResult');
   assert(appJs.includes('window.__onLLMResult(reqId, resultText, errorText) {') || /applyAnchorReplacement\(reqInfo\.tabId, (?:reqInfo\.anchorId|landOn), replacement/.test(appJs),
     '__onLLMResult must go through applyAnchorReplacement');
-  console.log('PASS: MdMemoBridge shape and __onLLMResult/replaceAnchor share applyAnchorReplacement.');
+  console.log('PASS: SykiBridge shape and __onLLMResult/replaceAnchor share applyAnchorReplacement.');
 }
 
 // ---- 5. decidePasteAction: pure function extraction + truth table --------------------------
@@ -232,9 +232,9 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
 
 // ---- 9. Selection RPC: getSelection / replaceSelection behave against a mock textarea ------
 {
-  const start = appJs.indexOf('window.__mdMemoRPC = {');
+  const start = appJs.indexOf('window.__sykiRPC = {');
   const end = appJs.indexOf('\n  };', start) + 4;
-  assert(start > 0 && end > start, '__mdMemoRPC block not found');
+  assert(start > 0 && end > start, '__sykiRPC block not found');
   const rpcSrc = appJs.slice(start, end);
 
   function makeEditor(value, start, end) {
@@ -261,9 +261,9 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
       ed.value = ed.value.slice(0, s) + text + ed.value.slice(e);
       ed.selectionStart = s; ed.selectionEnd = s + text.length;
     }
-    const fn = new Function(...Object.keys(scope), `${rpcSrc}\nreturn window.__mdMemoRPC;`);
+    const fn = new Function(...Object.keys(scope), `${rpcSrc}\nreturn window.__sykiRPC;`);
     const fakeWindow = {};
-    const withWindow = new Function('window', ...Object.keys(scope), `${rpcSrc}\nreturn window.__mdMemoRPC;`);
+    const withWindow = new Function('window', ...Object.keys(scope), `${rpcSrc}\nreturn window.__sykiRPC;`);
     return withWindow(fakeWindow, ...Object.values(scope));
   }
 
@@ -430,7 +430,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   const startFn = appJs.slice(appJs.indexOf('async function startMobileDrop()'), appJs.indexOf('function cancelMobileDrop()'));
   assert(startFn.includes('window.VoiceInput.configJSON(config, { timeout: 0 })'), 'Mobile Drop builds the voice config through VoiceInput.configJSON');
   assert(!/Object\.assign\(\{\}, config\.voice/.test(startFn), 'no second, inline voice-config builder');
-  assert(/getNoteDir: function \(\) \{\s*return getNoteDir\(\);\s*\}/.test(appJs), 'window.__mdMemoRPC.getNoteDir is what the Go side asks for');
+  assert(/getNoteDir: function \(\) \{\s*return getNoteDir\(\);\s*\}/.test(appJs), 'window.__sykiRPC.getNoteDir is what the Go side asks for');
   assert(/mobileDropReceivedFallback', \{ count: kept \}/.test(appJs), 'the received callback reports the kept items');
   console.log('PASS: Mobile Drop shares the voice-config builder and exposes getNoteDir over RPC.');
 }
@@ -535,7 +535,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
     const body = voiceJs.slice(s, voiceJs.indexOf('\n  }\n', s));
     assert(body.includes('notifyState();'), `${fn}() must report the recording state`);
   }
-  assert(/MdMemoBridge = \{[\s\S]{0,1600}isEditorVisible: function \(\) \{ return !isPreviewMode; \}/.test(appJs), 'the bridge tells voice input whether the editor is visible');
+  assert(/SykiBridge = \{[\s\S]{0,1600}isEditorVisible: function \(\) \{ return !isPreviewMode; \}/.test(appJs), 'the bridge tells voice input whether the editor is visible');
   console.log('PASS: toolbar button, right-click item, palette entry and the recording-state hook are wired.');
 }
 

@@ -35,7 +35,7 @@
   // file in index.html). Falls back to 'Alt' when platform.js hasn't run, e.g.
   // this file required standalone under the Node unit tests.
   function getAltLabel() {
-    return (global.MDMemoPlatform && global.MDMemoPlatform.altLabel) || 'Alt';
+    return (global.SykiPlatform && global.SykiPlatform.altLabel) || 'Alt';
   }
 
   // Bilingual-safe fallback (always Japanese, matching what this file always

@@ -23,7 +23,7 @@ window.backend.saveFileChecked = function (p, content, enc, sig) {
   window.__disk[p] = content;
   return Promise.resolve({ path: p, title: 'crlf.md', success: true, sig: DiskSync.sum(content) });
 };
-window.__mdMemoRPC.openTab({ title: 'crlf.md', path: ${JSON.stringify(PATH)}, content: window.__disk[${JSON.stringify(PATH)}] });`;
+window.__sykiRPC.openTab({ title: 'crlf.md', path: ${JSON.stringify(PATH)}, content: window.__disk[${JSON.stringify(PATH)}] });`;
 
 // something else rewrites the file, and the watcher tells the page (as Go's file watcher does)
 const externalWrite = (s, text) => s.ev(`window.__disk[${JSON.stringify(PATH)}] = ${JSON.stringify(text)}; window.__onExternalFileChanged(${JSON.stringify(PATH)})`);

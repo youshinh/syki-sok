@@ -3,7 +3,7 @@
 // Links in the editor are also marked: a thin underline under every clickable link (dotted for a
 // local image, which previews on hover), drawn by a transparent copy of the note behind the
 // textarea, and a hint while the pointer rests on one.
-// Uses window.MdMemoBridge / window.backend only; never touches app.js internals directly.
+// Uses window.SykiBridge / window.backend only; never touches app.js internals directly.
 (function (global) {
   'use strict';
 
@@ -282,7 +282,7 @@
     if (!editor || typeof editor.value !== 'string' || typeof editor.selectionStart !== 'number') return false;
     const link = findLinkAt(editor.value, editor.selectionStart);
     if (!link) return false;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge) return false;
     const wantOpen = !!(event.ctrlKey || event.metaKey);
     const wantReveal = !wantOpen && !!event.altKey;
@@ -396,7 +396,7 @@
   // The image-only preview for a note that has no mark layer (a huge note): it finds the image link
   // from character coordinates, which are estimates there.
   async function checkHoverLegacy(editor, clientX, clientY) {
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge || typeof global.getCharPixelCoords !== 'function') return;
     const text = editor.value || '';
     if (text.indexOf('](') === -1) return;
@@ -641,7 +641,7 @@
     if (!layer || layer.spans.length === 0) return checkHoverLegacy(editor, clientX, clientY);
     const item = hitTest(editor, clientX, clientY);
     if (!item) { hideTooltip(); return; }
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const link = item.link;
     const hint = tr(bridge, link.remote ? 'fanchorHintRemote' : 'fanchorHintLocal', { mod: modKey() });
     let src = '';
@@ -736,7 +736,7 @@
     if (!event || !editor) return false;
     if (!hasFiles(event.dataTransfer)) return false;
     if (typeof event.preventDefault === 'function') event.preventDefault();
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const wrapper = editor.parentElement;
     if (wrapper && wrapper.classList) {
       ensureStyles();
@@ -800,7 +800,7 @@
     if (typeof event.preventDefault === 'function') event.preventDefault();
     clearDropFeedback();
 
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge) return false;
     const files = Array.from((event.dataTransfer && event.dataTransfer.files) || []);
     if (files.length === 0) return false;

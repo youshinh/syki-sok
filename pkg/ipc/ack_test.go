@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// TestSend_AcknowledgedByRealServer is the happy path: a real md-memo server answers with the
+// TestSend_AcknowledgedByRealServer is the happy path: a real syki server answers with the
 // one-line ack, so Send reports success and main is entitled to exit.
 func TestSend_AcknowledgedByRealServer(t *testing.T) {
 	received := make(chan *Message, 1)
@@ -115,7 +115,7 @@ func TestSend_PeerAcceptsButNeverAcks(t *testing.T) {
 }
 
 // TestSend_PeerRepliesWithGarbage covers a peer that does write something back, but is not
-// md-memo.
+// syki.
 func TestSend_PeerRepliesWithGarbage(t *testing.T) {
 	ln, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -136,7 +136,7 @@ func TestSend_PeerRepliesWithGarbage(t *testing.T) {
 
 	port := ln.Addr().(*net.TCPAddr).Port
 	if err := Send(port, &Message{Action: "activate"}, time.Second); err == nil {
-		t.Fatal("Send accepted a non-md-memo reply as an acknowledgement")
+		t.Fatal("Send accepted a non-syki reply as an acknowledgement")
 	}
 }
 

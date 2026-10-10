@@ -1,7 +1,7 @@
 // syki::sok settings: the "Semantic search" section of the AI Models tab - the switch, the embedding model, where the notes go (and the
 // consent for a host that is not this PC), and the index (its state, "Update now", "Rebuild"). docs/design/semantic-search-2026-10.md
 // section 9. It talks to window.backend only (semanticStatus, semanticUpdate, cancelSemanticUpdate: app_semantic.go, which uses the
-// same code as `md-memo scrap index`); app.js calls init() and load() when the Settings dialog opens, and save() when it is saved.
+// same code as `syki scrap index`); app.js calls init() and load() when the Settings dialog opens, and save() when it is saved.
 //
 // The buttons act on the section AS IT IS ON THE SCREEN (it is passed to the backend), so they work before Save. Nothing here is
 // written to config.json until Save, and nothing is written at all when the person did not touch the section (a person who never uses

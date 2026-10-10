@@ -1,4 +1,4 @@
-// Two page calls of the JSON-RPC server (window.__mdMemoRPC), behind `print.pdf` and `ui.open_panel`:
+// Two page calls of the JSON-RPC server (window.__sykiRPC), behind `print.pdf` and `ui.open_panel`:
 //  - printPdf(tabId, settings, outPath): a note as a PDF. The tab's preview is shown, the diagrams are light for the paper, the engine is asked
 //    (backend.printSavePdf, the mock here) with the note's name and folder and the settings, and afterwards the window is as it was: the tab
 //    that was active, the preview (off, full or side) and the diagrams' tone. A second call while one runs, an HTML page and an unknown tab
@@ -110,7 +110,7 @@ export default {
     r = await rpc(s, `printPdf("tab_nope", ${JSON.stringify(settings)}, ${JSON.stringify(OUT)})`);
     assert.equal(r.kind, 'not_found', JSON.stringify(r));
     await s.ev('window.__docshot.print.delays = [800]; window.__docshot.print.saveDelay = 800; 1');
-    const first = s.ev(`window.__mdMemoRPC.printPdf("", ${JSON.stringify(settings)}, ${JSON.stringify(OUT)}).then(function () { return 'done'; }, function (e) { return 'ERR ' + e.message; })`);
+    const first = s.ev(`window.__sykiRPC.printPdf("", ${JSON.stringify(settings)}, ${JSON.stringify(OUT)}).then(function () { return 'done'; }, function (e) { return 'ERR ' + e.message; })`);
     await s.waitFor('document.getElementById("btn-preview-print").disabled === true', { timeout: 10000 });
     r = await rpc(s, `printPdf("", ${JSON.stringify(settings)}, ${JSON.stringify(OUT)})`);
     assert.equal(r.kind, 'conflict', `a second print while one is in progress: ${JSON.stringify(r)}`);

@@ -16,7 +16,7 @@ import (
 )
 
 // TestMain makes the package hermetic: the IPC session file (which the tests write and the
-// program reads) goes into a temp folder, never the developer's %AppData%\md-memo, so a running
+// program reads) goes into a temp folder, never the developer's %AppData%\syki, so a running
 // syki::sok on this PC is neither read nor overwritten.
 func TestMain(m *testing.M) {
 	root, err := os.MkdirTemp("", "syki-cli-cmd-test-")
@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// fakeApp is a stand-in for a running md-memo: a real ipc server (so the real acknowledgement
+// fakeApp is a stand-in for a running syki: a real ipc server (so the real acknowledgement
 // handshake runs) whose legacy messages land on a channel.
 type fakeApp struct {
 	srv  *ipc.Server

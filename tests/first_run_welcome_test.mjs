@@ -200,10 +200,10 @@ async function createEnv(opts = {}) {
   const el = (id) => documentMock.getElementById(id);
   const env = {
     window: windowMock, elements, messages, llmCalls, saved, sessionsSaved, store, scrolled, el,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     editor: el('editor'),
-    tab: () => windowMock.MdMemoBridge.getActiveTab(),
+    tab: () => windowMock.SykiBridge.getActiveTab(),
     key(init) {
       const e = Object.assign({ key: '', code: '', keyCode: 0, isComposing: false, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false,
         defaultPrevented: false, preventDefault() { this.defaultPrevented = true; }, stopPropagation() {} }, init);
@@ -289,7 +289,7 @@ check('a settings copy in localStorage means the app was used: no Welcome, even 
 });
 
 check('a saved session (localStorage or the backend file) is restored as it was, without a Welcome note', async () => {
-  const local = await createEnv({ localStorage: { md_memo_session_v1: JSON.stringify(SESSION) } });
+  const local = await createEnv({ localStorage: { syki_session_v1: JSON.stringify(SESSION) } });
   assert.equal(local.tab().content, 'my own words');
   assert.equal(local.editor.value, 'my own words');
   assert.deepEqual(plain(local.saved), []);
@@ -300,7 +300,7 @@ check('a saved session (localStorage or the backend file) is restored as it was,
 });
 
 check('a remembered workspace folder means it is not the first start', async () => {
-  const env = await createEnv({ localStorage: { md_memo_workspace_folder: 'C:\\Users\\me\\notes' }, backend: { scanFolderFiles: async () => [] } });
+  const env = await createEnv({ localStorage: { syki_workspace_folder: 'C:\\Users\\me\\notes' }, backend: { scanFolderFiles: async () => [] } });
   assert.ok(DATE_HEADER.test(env.editor.value));
   assert.deepEqual(plain(env.saved), []);
 });
@@ -333,7 +333,7 @@ check('a second note opened before the backend answered also stops it', async ()
   env.window.__testHelper.createTab();
   release();
   await env.flush();
-  assert.equal(env.window.MdMemoBridge.getActiveTab().title === 'Welcome', false);
+  assert.equal(env.window.SykiBridge.getActiveTab().title === 'Welcome', false);
   assert.deepEqual(plain(env.saved), []);
 });
 

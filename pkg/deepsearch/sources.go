@@ -44,7 +44,7 @@ type Source struct {
 // Stats says what BuildSources used and what it left out.
 type Stats struct {
 	Used       int // sources
-	Ignored    int // hits in files the person excluded (.md-memo-ignore, hidden folders, assets, conflict copies)
+	Ignored    int // hits in files the person excluded (.syki-ignore, hidden folders, assets, conflict copies)
 	AI         int // hits in an AI's text (a result block, a deep search note)
 	Unreadable int // the file is gone, too big, outside the scrap folder, or has no entry at the hit's line
 	Merged     int // hits in an entry that is already a source (or the neighbour of one)
@@ -115,7 +115,7 @@ var (
 )
 
 // aiMark opens a result block an AI wrote (and the app put in the note).
-const aiMark = "<!-- md-memo:res"
+const aiMark = "<!-- syki:res"
 
 // isAIEntry looks in the entry as it is in the file: entryLines takes the HTML comments out, and the mark is one.
 func isAIEntry(fd *fileData, e search.Entry) bool {

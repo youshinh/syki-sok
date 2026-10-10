@@ -16,7 +16,7 @@ async function setLanguage(s, lang) {
 async function expectLanguage(s, lang, where) {
   const want = await s.ev(`(function () {
     var T = I18N[${JSON.stringify(lang)}];
-    var model = (MdMemoBridge.getConfig().text || {}).model || '';
+    var model = (SykiBridge.getConfig().text || {}).model || '';
     return {
       aiLabel: T.statAiLocal,
       aiTitle: T.statAiTitleLocal.replace('{model}', model),

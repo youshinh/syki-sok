@@ -1,6 +1,6 @@
 # v2 P3 実装計画: タブを窓の端の細い索引にする（2026-10-04、設計担当）
 
-状態: **計画。コードは変えていない。** 設計書 `v2-visual-2026-10.md`（§3 の 2・3、§4.2、§4.3、§6、§7）と `v2-implementation-contract.md` に従う。ここに書いたコードの場所は、関数名・id・セレクタで指す（P1a が `style.css` / `index.html` / JS の色を書き換えている最中で、行番号は動くため）。現行の挙動は、worktree `md-memo-v2`（branch `v2`、v1.14.0 と同じ見た目）のコードを読んで確かめた。**実アプリでは動かしていない**（読んだだけ）。
+状態: **計画。コードは変えていない。** 設計書 `v2-visual-2026-10.md`（§3 の 2・3、§4.2、§4.3、§6、§7）と `v2-implementation-contract.md` に従う。ここに書いたコードの場所は、関数名・id・セレクタで指す（P1a が `style.css` / `index.html` / JS の色を書き換えている最中で、行番号は動くため）。現行の挙動は、worktree `syki-v2`（branch `v2`、v1.14.0 と同じ見た目）のコードを読んで確かめた。**実アプリでは動かしていない**（読んだだけ）。
 
 ---
 
@@ -77,7 +77,7 @@
 | ファイルのドロップ | `window` の `drop`: エディタ上でなければ（帯・ヘッダーを含む）、テキストファイルを `createTab` で開く（`looksLikeTextFile`）。帯に固有の処理は無い | 帯は窓の一部なので変更なし。ただし**帯の上でドロップしても新しいタブになる**ことをスモークで確かめる |
 | `restoreSessionFromData` | 起動時に `renderTabs()` → `selectTab()`（→ `renderTabs()`）→ 分割なら `openSplitEditor` / `openPreviewToSide`（→ `renderTabs()`） | 起動の最初の描画で帯が揃う。測る（§5） |
 | `applyLanguage` | `[data-i18n-title]` を訳し直す（×のツールチップ）。`btnNewTab.title` は別の行で `newTabTitle (Ctrl+N)` を組む | 新しい文字列は両言語に（§2.7） |
-| 公開 API | `window.__testHelper.createTab / openSplitEditor / openPreviewToSide / closeSecondaryPane / toggleSplitMode`、`__mdMemoRPC`（`getTabs`、`switchTab`＝左のペインだけ、`openTab`、`closeTabChecked`、`getUiState`、`setUiState`、`openPanel('all_tabs')`）、`MdMemoBridge.getActiveTab` | 変更なし。`switchTab` は引き続き左（`selectTab`）。右のタブを RPC で変える入口は元から無い（`ui.set_view` の `split` / `preview` のみ） |
+| 公開 API | `window.__testHelper.createTab / openSplitEditor / openPreviewToSide / closeSecondaryPane / toggleSplitMode`、`__sykiRPC`（`getTabs`、`switchTab`＝左のペインだけ、`openTab`、`closeTabChecked`、`getUiState`、`setUiState`、`openPanel('all_tabs')`）、`SykiBridge.getActiveTab` | 変更なし。`switchTab` は引き続き左（`selectTab`）。右のタブを RPC で変える入口は元から無い（`ui.set_view` の `split` / `preview` のみ） |
 
 **`a11y.js`**: `markTabs` が `#tabs-list` を **id で決め打ち**して `role="tablist"`、`aria-label`（`allTabsHead`）を付け、`.tab-item` ごとに `role="tab"`、`aria-selected`（`.active`）、`aria-label`（`.tab-title` の文字＋未保存なら「Unsaved changes」）、`.tab-close` に `role="button"` と「Close <name>」を付ける。`MutationObserver`（childList・subtree・`class` 属性）で再適用。言語切り替えで `A11y.refresh()`。**タブに `tabindex` は付かない**。
 
@@ -124,7 +124,7 @@
 | `tools/docshots/shots.json` | `ui-map` の番号 1（`#btn-new-tab`）、`welcome` の番号 1（`.tab-item.active`）、`tabs-overflow`（`#tabs-scroll` / `#btn-new-tab` / `#btn-all-tabs`、`requires: ["btn-all-tabs"]`）、`tabs-overflow-narrow`、`tabs-all-list`、`header-calm` / `header-calm-narrow`（`requires`）、`zen-mode`（「toolbar, tabs and status bar hidden」）。`requires` は `index.html` に id の文字列があるかだけを見る（無いと**撮影が飛ばされる**） | 説明文と矢印の向きを直す。**帯を見せる全図（`size: full` が 57 枚）は P6 で撮り直し**（設計 §6）。P3 では上の 7 図の定義だけ更新し、新しい図を足す（展開、左右、数が多い） |
 | `tools/docshots/mock/backend.js` の `D.isReady` | `document.querySelectorAll('#tabs-list .tab-item').length >= 1` を**全図の「準備完了」の条件**に使う | id と class を保てば変更不要。**変えると全図が止まる**ので S7 まで触らない |
 | `tools/docshots/gifs/scenarios.mjs` | `#tabs-list .tab-item` が 4 つ以上 | 同上 |
-| 文書 | `manual.html`（8 か所）、`manual_ja.html`（7）、`skills/md-memo/references/interfaces.md` の §4.11「Toolbar defaults and the tab strip」（`#tabs-scroll` などの記述と、`each tab is still one .tab-item … inside #tabs-list` の明記）と 560 行・736 行目、`troubleshooting.md`（1）、`img/manual/shots.md`（生成物）、`docs/design/ux-review-2026-09.md`（経緯、直さない） | S7 で更新（`docs/maintenance/after-a-big-change.md` のチェックリスト） |
+| 文書 | `manual.html`（8 か所）、`manual_ja.html`（7）、`skills/syki/references/interfaces.md` の §4.11「Toolbar defaults and the tab strip」（`#tabs-scroll` などの記述と、`each tab is still one .tab-item … inside #tabs-list` の明記）と 560 行・736 行目、`troubleshooting.md`（1）、`img/manual/shots.md`（生成物）、`docs/design/ux-review-2026-09.md`（経緯、直さない） | S7 で更新（`docs/maintenance/after-a-big-change.md` のチェックリスト） |
 
 `tests/smoke` の新しい流れの番号は **108 以降**（107 まで使用済み）。`smoke_suite_shape_test.mjs` が「番号の重複なし、`t.step(` を使う、固定 sleep なし、絵文字なし」を見る。ドラッグの実マウスは、`tools/docshots/cdp.mjs` の `page.move` と `page.cdp.send('Input.dispatchMouseEvent', …)`（`buttons` を付ける）。
 

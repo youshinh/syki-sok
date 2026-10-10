@@ -83,7 +83,7 @@ type SlotConfig struct {
 // check it). Definitions shipped before are listed in legacyAgentDefaults (safety.go), so a user copy is reported.
 // None of them skips the CLI's permission prompts. Not run on the maintainer's machine: claude -p (Claude Code's print
 // mode, as reported by the maintainer), agy -p and codex exec (both listed by their --help, see
-// skills/md-memo/references/setup-guide.md).
+// skills/syki/references/setup-guide.md).
 func DefaultSlotConfig() SlotConfig {
 	return SlotConfig{
 		Version:             2,

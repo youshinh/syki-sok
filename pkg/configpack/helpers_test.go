@@ -60,7 +60,7 @@ func writeZipFile(t *testing.T, ents []zent) string {
 
 func saveTemp(t *testing.T, data []byte) string {
 	t.Helper()
-	p := filepath.Join(t.TempDir(), "test.mdmemopack")
+	p := filepath.Join(t.TempDir(), "test.sykipack")
 	if err := os.WriteFile(p, data, 0o600); err != nil {
 		t.Fatal(err)
 	}

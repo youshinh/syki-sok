@@ -9,7 +9,7 @@ import (
 	"syki-sok/pkg/cli"
 )
 
-// `md-memo --help` documents the JSON-RPC methods by hand. This keeps that text honest: a method
+// `syki --help` documents the JSON-RPC methods by hand. This keeps that text honest: a method
 // added to app_rpc.go without a line in the help (the text an AI agent reads first) fails here.
 func TestHelpListsEveryRPCMethod(t *testing.T) {
 	src, err := os.ReadFile("app_rpc.go")
@@ -23,7 +23,7 @@ func TestHelpListsEveryRPCMethod(t *testing.T) {
 	usage := cli.TopLevelUsage(AppVersion)
 	for _, m := range methods {
 		if !strings.Contains(usage, m[1]) {
-			t.Errorf("RPC method %s is handled in app_rpc.go but missing from `md-memo --help`", m[1])
+			t.Errorf("RPC method %s is handled in app_rpc.go but missing from `syki --help`", m[1])
 		}
 	}
 }

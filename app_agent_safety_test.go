@@ -85,7 +85,7 @@ func containsKey(raw []byte, key string) bool {
 	return ok
 }
 
-// withAgentsFile points config.json at a temporary scraps folder whose .md-memo/agents.yaml holds yamlText (plus any
+// withAgentsFile points config.json at a temporary scraps folder whose .syki/agents.yaml holds yamlText (plus any
 // extra config.json fields), for the duration of the test.
 func withAgentsFile(t *testing.T, yamlText, extraConfig string) {
 	t.Helper()
@@ -104,7 +104,7 @@ func withAgentsFile(t *testing.T, yamlText, extraConfig string) {
 		t.Fatal(err)
 	}
 	if yamlText != "" {
-		dir := filepath.Join(scrapDir, ".md-memo")
+		dir := filepath.Join(scrapDir, ".syki")
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			t.Fatal(err)
 		}

@@ -402,7 +402,7 @@ func TestSemanticSearchWithNoIndexFallsBackAndSaysSo(t *testing.T) {
 	dir := semanticSandbox(t, localModel(srv.URL))
 	seedScraps(t, dir)
 	res := semSearch(t, "夕食 カレー")
-	if res.Semantic || res.Count != 1 || len(res.Notes) != 1 || !strings.Contains(res.Notes[0], "index is empty") || !strings.Contains(res.Notes[0], "md-memo scrap index") {
+	if res.Semantic || res.Count != 1 || len(res.Notes) != 1 || !strings.Contains(res.Notes[0], "index is empty") || !strings.Contains(res.Notes[0], "syki scrap index") {
 		t.Errorf("%+v", res)
 	}
 	if srv.reqs() != 1 { // the query was embedded before the empty index was noticed... or not at all: either way at most the query

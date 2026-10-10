@@ -1,5 +1,5 @@
 // syki::sok voice input: anchor-protected async voice recording with rescue recovery.
-// Spec: 機能 3 (堅牢な非同期バッチ音声入力). Uses window.MdMemoBridge / window.backend only;
+// Spec: 機能 3 (堅牢な非同期バッチ音声入力). Uses window.SykiBridge / window.backend only;
 // never touches app.js internals directly.
 (function (global) {
   'use strict';
@@ -11,7 +11,7 @@
   const DEFAULT_BASE_URL = 'https://generativelanguage.googleapis.com';
   const DEFAULT_MODEL = 'gemini-3.5-transcribe';
   const DEFAULT_PROMPT = 'この音声を正確に文字起こししてください。前置きや解説は不要です。句読点を含む自然な日本語テキストのみを出力してください。';
-  const CACHE_KEY = 'md_memo_voice_cache_v1';
+  const CACHE_KEY = 'syki_voice_cache_v1';
   // A request that has not answered this long after its own timeout is given up on, so the note never keeps
   // "文字起こし中" for good (a lost callback, or an app restart, would otherwise leave it there for ever).
   const TRANSCRIBE_GRACE_MS = 20000;
@@ -437,7 +437,7 @@
     if (!entry || entry.timedOut) return;
     clearInflightTimer(entry);
     entry.timedOut = true;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const tabId = pending.has(id) ? pending.get(id) : entry.tabId;
     if (tabId != null && bridge && typeof bridge.replaceAnchor === 'function') {
       bridge.replaceAnchor(tabId, buildTranscribingAnchor(id), buildRescueAnchor(id));
@@ -700,7 +700,7 @@
   // The recording is over: hand it to the backend, which stops the devices, transcribes the pieces and answers through
   // __onVoiceResult like a dictation does.
   function finishMeeting() {
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const id = currentId;
     const tabId = currentTabId;
     const anchorText = currentAnchor;
@@ -737,7 +737,7 @@
 
   async function start(opts) {
     if (recording || starting) return;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge) return;
     const backendNow = global.backend;
     const voiceNow = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
@@ -863,7 +863,7 @@
   function abort() {
     if (!recording) return;
     if (meetingMode) {
-      const bridge = global.MdMemoBridge;
+      const bridge = global.SykiBridge;
       const id = currentId;
       const tabId = currentTabId;
       const anchorText = currentAnchor;
@@ -877,7 +877,7 @@
       return;
     }
     aborting = true;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const tabId = currentTabId;
     const anchorText = currentAnchor;
     stopTracks();
@@ -899,7 +899,7 @@
     notifyState();
     if (aborting) { aborting = false; return; }
 
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const id = currentId;
     const tabId = currentTabId;
     const anchorText = currentAnchor;
@@ -956,7 +956,7 @@
   global.__onVoiceResult = function (reqId, text, err, cachePath, refineErr) {
     const id = idFromReqId(reqId);
     if (!id) return;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     const tabId = pending.has(id) ? pending.get(id) : null;
     pending.delete(id);
     const entry = inflight.get(id);
@@ -1071,7 +1071,7 @@
   // an editor click; the text is only searched when the marker text is there at all.
   function sweepStaleTranscribing(editor) {
     if (editor.value.indexOf('⦅文字起こし中') === -1 && editor.value.indexOf('⦅Transcribing') === -1) return;
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge || typeof bridge.replaceAnchor !== 'function') return;
     const tabId = bridge.getTabIdForEditor ? bridge.getTabIdForEditor(editor) : null;
     if (tabId == null) return;
@@ -1101,7 +1101,7 @@
       sweepStaleTranscribing(editor);
       return false;
     }
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     if (!bridge) return false;
     const anchorText = editor.value.slice(found.anchorStart, found.anchorEnd);
     const tabId = bridge.getTabIdForEditor ? bridge.getTabIdForEditor(editor) : null;

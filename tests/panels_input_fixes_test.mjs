@@ -287,7 +287,7 @@ async function createEnv(opts = {}) {
 
   const env = {
     window: windowMock, messages, el, backend,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     editor: el('editor'),
     doc: documentMock,

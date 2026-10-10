@@ -6,7 +6,7 @@ import (
 )
 
 // Links to what a search found. Every hit of `scrap search` and scrap.search carries what a summary (or any note) needs to cite it as a
-// clickable link, in the forms the editor's own links take (docs: skills/md-memo/references/interfaces.md 3.3):
+// clickable link, in the forms the editor's own links take (docs: skills/syki/references/interfaces.md 3.3):
 //
 //	url    the file:// URL of the file, written like the editor writes one (file_anchor.js pathToFileUrl: every path segment percent-
 //	       encoded, so spaces, Japanese and brackets round-trip and nothing breaks a Markdown link);

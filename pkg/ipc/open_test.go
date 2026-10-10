@@ -67,7 +67,7 @@ func TestSendOpenIsAcknowledged(t *testing.T) {
 	}
 	defer srv.Close()
 
-	const wantPath = "/tmp/md-memo-open-test.md"
+	const wantPath = "/tmp/syki-open-test.md"
 	if err := Send(srv.Port(), &Message{Action: ActionOpen, Path: wantPath}, 2*time.Second); err != nil {
 		t.Fatalf("Send(open) failed: %v", err)
 	}

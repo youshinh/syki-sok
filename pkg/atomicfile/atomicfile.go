@@ -11,7 +11,7 @@ import (
 //
 // An existing file keeps its permission bits; a new one gets 0644 (the temporary file itself is
 // created 0600). tmpPattern is the os.CreateTemp pattern of the temporary file (for example
-// ".md-memo-save-*.tmp"): it lets the caller's leftovers be told apart. The folder must already
+// ".syki-save-*.tmp"): it lets the caller's leftovers be told apart. The folder must already
 // exist: nothing is created. On any error the temporary file is removed and path is untouched.
 func Write(path string, data []byte, tmpPattern string) error {
 	return WriteMode(path, data, tmpPattern, 0o644)

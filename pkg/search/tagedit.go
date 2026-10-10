@@ -10,7 +10,7 @@ import (
 )
 
 // Adding and removing tags (docs/design/tag-filter-2026-10.md section 10). The rule for where a tag goes is written once, here: the
-// window's command palette, `md-memo scrap tag` and the JSON-RPC method scrap.tag_edit all call EditTags, and none of them copies the
+// window's command palette, `syki scrap tag` and the JSON-RPC method scrap.tag_edit all call EditTags, and none of them copies the
 // scope rules of section 2.3. EditTags is a pure function of the text: it reads and writes no file and no window. It answers with a
 // patch (which lines of the text are replaced by which), so the window can apply it to the open tab as one undo step, and with
 // Apply for everyone who wants the new text.

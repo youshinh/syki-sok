@@ -7,7 +7,7 @@ import (
 )
 
 // The semantic index for the Settings screen (docs/design/semantic-search-2026-10.md section 9): the same status and the same update as
-// `md-memo scrap index`, as values. The screen holds the "semantic" section while the person is still editing it, so the section can be
+// `syki scrap index`, as values. The screen holds the "semantic" section while the person is still editing it, so the section can be
 // passed in; it is laid over the saved config.json (the other sections stay: the key of a text model on the same host counts).
 
 // SemanticConfigWith is the semantic configuration, the scrap folder and the index folder, with section (the "semantic" object as the
@@ -27,7 +27,7 @@ func SemanticConfigWith(section map[string]interface{}) (sc semindex.Config, scr
 	return semindex.ParseConfig(values), scrapDir, semindex.IndexDir(scrapDir)
 }
 
-// SemanticIndexStatus is `md-memo scrap index --status` for section (nil: as saved). It calls no model. ConsentGiven says whether notes
+// SemanticIndexStatus is `syki scrap index --status` for section (nil: as saved). It calls no model. ConsentGiven says whether notes
 // may be sent to the model's host (always for a model on this machine).
 func SemanticIndexStatus(section map[string]interface{}) (IndexStatus, error) {
 	sc, scrapDir, idxDir := SemanticConfigWith(section)

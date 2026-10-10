@@ -255,7 +255,7 @@ func TestLegacyMessagesStayUnauthenticated(t *testing.T) {
 	}
 	defer srv.Close()
 
-	// The one-line messages of `cmd | syki` and `md-memo <file>` carry no token.
+	// The one-line messages of `cmd | syki` and `syki <file>` carry no token.
 	for _, msg := range []*Message{{Action: ActionActivate}, {Action: ActionPipe, Content: "x"}, {Action: ActionOpen, Path: "/x.md"}} {
 		if err := Send(srv.Port(), msg, time.Second); err != nil {
 			t.Errorf("Send(%s) without a token: %v", msg.Action, err)

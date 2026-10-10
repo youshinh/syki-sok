@@ -200,7 +200,7 @@ func TestAppendMarkdownAtKeepsTheContentUnfenced(t *testing.T) {
 
 func TestIsDeepSearchNote(t *testing.T) {
 	yes := []string{DeepSearchMarker + "\n# x", "\ufeff" + DeepSearchMarker, "\r\n\r\n  " + DeepSearchMarker + "\r\n"}
-	no := []string{"", "# a note\n" + DeepSearchMarker, "<!-- md-memo:res 1 -->\nx", "text " + DeepSearchMarker, "<!-- md-memo:deepsearc -->"}
+	no := []string{"", "# a note\n" + DeepSearchMarker, "<!-- syki:res 1 -->\nx", "text " + DeepSearchMarker, "<!-- syki:deepsearc -->"}
 	for _, s := range yes {
 		if !IsDeepSearchNote([]byte(s)) {
 			t.Errorf("%q is a deep search note", s)

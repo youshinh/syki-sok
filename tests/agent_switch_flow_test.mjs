@@ -57,7 +57,7 @@ function parseSlots(text, cfg) {
     return null;
   };
   const excluded = [];
-  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- md-memo:res [\s\S]*?<!-- \/md-memo:res -->/g]) {
+  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- syki:res [\s\S]*?<!-- \/syki:res -->/g]) {
     for (const m of text.matchAll(re)) excluded.push([m.index, m.index + m[0].length]);
   }
   excluded.push(...HC.htmlCommentRanges(text));
@@ -307,7 +307,7 @@ async function createEnv(opts = {}) {
   const editor = el('editor');
   const env = {
     window: windowMock, backend, calls, messages, store, el, editor, clock, undoStack,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     slotAgent: windowMock.SlotAgent,
     taskManager: windowMock.TaskManager,
@@ -367,14 +367,14 @@ async function createEnv(opts = {}) {
   return env;
 }
 
-const RUN_MARKER = /<!-- md-memo:run ([a-z0-9]+)((?: [a-z0-9_]+=[a-z0-9_]+)*) -->/;
+const RUN_MARKER = /<!-- syki:run ([a-z0-9]+)((?: [a-z0-9_]+=[a-z0-9_]+)*) -->/;
 const idOf = (text) => {
-  const m = RUN_MARKER.exec(text) || /<!-- md-memo:res ([a-z0-9]+)/.exec(text);
+  const m = RUN_MARKER.exec(text) || /<!-- syki:res ([a-z0-9]+)/.exec(text);
   assert.ok(m, `no marker in ${JSON.stringify(text)}`);
   return m[1];
 };
-const run = (id, attrs = '') => `<!-- md-memo:run ${id}${attrs} -->`;
-const res = (id, body, attrs = '') => `<!-- md-memo:res ${id}${attrs} -->\n${body}\n<!-- /md-memo:res -->`;
+const run = (id, attrs = '') => `<!-- syki:run ${id}${attrs} -->`;
+const res = (id, body, attrs = '') => `<!-- syki:res ${id}${attrs} -->\n${body}\n<!-- /syki:res -->`;
 
 const popup = (env) => env.window.document.body.children.find((c) => c.id === 'slot-quick-selector');
 

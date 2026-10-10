@@ -96,7 +96,7 @@ func NewWatcher(dir string, handlers Handlers, debounce time.Duration) (*Watcher
 	}
 	go w.loop()
 
-	// One-time startup scan: a file dropped in while md-memo wasn't running would otherwise
+	// One-time startup scan: a file dropped in while syki wasn't running would otherwise
 	// never be noticed, since fsnotify only reports events from here on. This is a single pass
 	// over the directory listing, not a recurring poll.
 	if entries, err := os.ReadDir(dir); err == nil {

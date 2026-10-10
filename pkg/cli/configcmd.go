@@ -12,7 +12,7 @@ import (
 	"syki-sok/pkg/configpack"
 )
 
-// `md-memo config get [key.path]` shows config.json with every secret hidden. It exists so that an
+// `syki config get [key.path]` shows config.json with every secret hidden. It exists so that an
 // AI agent (or anyone) can see the settings without ever being handed the file itself, which holds
 // API keys and the Discord bot token. Nothing it prints can carry a secret, because the whole
 // document is redacted BEFORE a key path picks a part of it: there is no path that reaches a

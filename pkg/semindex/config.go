@@ -23,7 +23,7 @@ import (
 //	}
 
 // ErrNotEnabled means the section is missing or "enabled" is not true.
-var ErrNotEnabled = errors.New(`semantic search is off; set "semantic": {"enabled": true} in config.json (see md-memo config get semantic)`)
+var ErrNotEnabled = errors.New(`semantic search is off; set "semantic": {"enabled": true} in config.json (see syki config get semantic)`)
 
 // ErrNeedsConsent is matched (errors.Is) by the error ConsentError: the model is not on this machine and its host has not been allowed.
 var ErrNeedsConsent = errors.New("the embedding model's host has not been allowed")

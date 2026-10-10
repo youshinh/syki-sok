@@ -4,7 +4,7 @@
 export const FIXED_CLOCK = { y: 2026, m: 8, d: 18, h: 10, mi: 24 }; // 2026-09-18 10:24 (month is 0-based)
 
 const ROOT = 'C:\\Users\\demo\\Documents\\notes';
-const SCRAP_DIR = '~/Documents/md-memo/scraps';
+const SCRAP_DIR = '~/Documents/syki-sok/scraps';
 const P = (name) => ROOT + '\\' + name;
 
 const MAIN_EN = [
@@ -221,8 +221,8 @@ export const SLOT_CONFIG = {
 
 // Settings package (export / import) demo: a project with three skills spread over two skill roots, an app-level and a
 // project-level agents file, and a package on the desktop whose agents file and two skills already exist ("will overwrite").
-const APP_DIR = 'C:\\Users\\demo\\AppData\\Roaming\\md-memo';
-const PACK_PATH = 'C:\\Users\\demo\\Desktop\\md-memo-20260918.mdmemopack';
+const APP_DIR = 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok';
+const PACK_PATH = 'C:\\Users\\demo\\Desktop\\syki-20260918.sykipack';
 
 function packDemo() {
   const skill = (root, name, files, bytes) => ({ id: `skill:${root}/${name}`, root, name, entry: 'dir', files, bytes });
@@ -237,7 +237,7 @@ function packDemo() {
       projectRoot: ROOT,
       agents: [
         { id: 'agents:app', scope: 'app', path: APP_DIR + '\\agents.yaml', bytes: 2048 },
-        { id: 'agents:project', scope: 'project', path: ROOT + '\\.md-memo\\agents.yaml', bytes: 912 },
+        { id: 'agents:project', scope: 'project', path: ROOT + '\\.syki\\agents.yaml', bytes: 912 },
       ],
       skills,
       warnings: [],
@@ -252,7 +252,7 @@ function packDemo() {
       legacy: false,
       projectRoot: ROOT,
       manifest: {
-        format: 'md-memo-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.5.5',
+        format: 'syki-pack', version: 1, createdAt: '2026-09-18T09:40:00+09:00', appVersion: '1.5.5',
         includesSecrets: false, configSections: sections, items: [],
       },
       items: [

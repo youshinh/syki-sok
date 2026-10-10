@@ -306,7 +306,7 @@
   }
 
   X.state = function () {
-    var rpc = window.__mdMemoRPC;
+    var rpc = window.__sykiRPC;
     var rows = [];
     try { rows = rpc ? rpc.getTabs() : []; } catch (e) { rows = []; }
     var activeTabId = null;

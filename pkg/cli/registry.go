@@ -8,9 +8,9 @@ import "strings"
 //
 // A command is one of two kinds:
 //   - standalone: it runs inside this process, with the GUI not involved. main hands the
-//     arguments straight to HeadlessRunner.Run, so md-memo need not be running (jev, agent, ocr, info, scrap, config).
+//     arguments straight to HeadlessRunner.Run, so syki need not be running (jev, agent, ocr, info, scrap, config).
 //   - app: it talks to the running app over JSON-RPC. main loads the session first and answers
-//     "md-memo is not running" without one (buffer, tab, ui). A few of their options do local work
+//     "syki is not running" without one (buffer, tab, ui). A few of their options do local work
 //     on top (buffer get --out writes the file in this process) but the note itself always comes
 //     from the app.
 

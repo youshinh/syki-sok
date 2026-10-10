@@ -1,5 +1,5 @@
 // Package discordbridge lets one paired Discord account append to today's scrap file from
-// anywhere, even while md-memo was closed, by polling the bot's own DM channel over plain
+// anywhere, even while syki was closed, by polling the bot's own DM channel over plain
 // HTTPS. There is no inbound port, no relay server, and no hosted infrastructure to run: the
 // only new account involved is the free Discord bot the user creates for themselves, and its
 // token lives in config.json next to the app's other API keys.
@@ -49,7 +49,7 @@ func (c *Client) do(ctx context.Context, method, path string, body io.Reader) (*
 	}
 	req.Header.Set("Authorization", "Bot "+c.Token)
 	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("User-Agent", "md-memo-discord-bridge (https://github.com/youshinh/syki-sok, 1.0)")
+	req.Header.Set("User-Agent", "syki-discord-bridge (https://github.com/youshinh/syki-sok, 1.0)")
 	return c.HTTPClient.Do(req)
 }
 

@@ -46,7 +46,7 @@ func TestStartDetachedAndReap_NoZombie(t *testing.T) {
 // even start (unknown executable) must still return an error, not silently swallow it now that
 // the success path backgrounds the Wait().
 func TestStartDetachedAndReap_PropagatesStartError(t *testing.T) {
-	cmd := exec.Command("md-memo-does-not-exist-xyz")
+	cmd := exec.Command("syki-does-not-exist-xyz")
 	if err := startDetachedAndReap(cmd); err == nil {
 		t.Fatal("expected an error starting a nonexistent executable, got nil")
 	}

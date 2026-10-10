@@ -197,7 +197,7 @@ for (const [kind, spec] of Object.entries(KINDS)) {
   check(`${kind}: another note is on screen when the run is canceled: the run's own note is put back, the one shown is not touched`, async () => {
     const note = notes(spec.slot).lf;
     const env = await createEnv({ language: 'ja' });
-    const rpc = env.window.__mdMemoRPC;
+    const rpc = env.window.__sykiRPC;
     const tabA = env.bridge.getActiveTab().id;
     const run = await startRun(env, note, spec.slot);
     rpc.newTab('B.md', 'B の内容\nsecond line');
@@ -224,14 +224,14 @@ check('a note that holds a dollar sign pattern in its instruction comes back as 
   const slot = '[>> price is $& then $$ and $` and $\' ]';
   const note = `top\n${slot}\nbottom`;
   const env = await createEnv({ language: 'ja' });
-  const rpc = env.window.__mdMemoRPC;
+  const rpc = env.window.__sykiRPC;
   const tabA = env.bridge.getActiveTab().id;
   const run = await startRun(env, note, slot);
   env.abort(run.reqId);
   assert.equal(env.editor.value, note, 'on screen');
 
   const env2 = await createEnv({ language: 'ja' });
-  const rpc2 = env2.window.__mdMemoRPC;
+  const rpc2 = env2.window.__sykiRPC;
   const tabA2 = env2.bridge.getActiveTab().id;
   const run2 = await startRun(env2, note, slot);
   rpc2.newTab('B.md', 'b');
@@ -243,7 +243,7 @@ check('a note that holds a dollar sign pattern in its instruction comes back as 
 check('a note that was closed while its run went: the cancel has nothing to restore and says nothing', async () => {
   const note = notes(KINDS.recipe.slot).lf;
   const env = await createEnv({ language: 'ja' });
-  const rpc = env.window.__mdMemoRPC;
+  const rpc = env.window.__sykiRPC;
   const tabA = env.bridge.getActiveTab().id;
   const run = await startRun(env, note, KINDS.recipe.slot);
   const tabAObject = env.bridge.getActiveTab();
@@ -314,7 +314,7 @@ check('the backend writes the note file when a run starts and the file watcher r
     const spec = KINDS[kind];
     const note = `top\n${spec.slot}\nbottom`;
     const env = await createEnv({ language: 'ja', backend: { readFileByPath: async () => ({ content: note }), watchActiveFile: () => {}, unwatchActiveFile: () => {} } });
-    env.window.__mdMemoRPC.newTab('A.md', note, 'C:\\notes\\A.md');
+    env.window.__sykiRPC.newTab('A.md', note, 'C:\\notes\\A.md');
     const run = await startRun(env, note, spec.slot);
     const running = env.editor.value;
     env.window.__onExternalFileChanged('C:\\notes\\A.md');

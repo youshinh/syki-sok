@@ -401,9 +401,9 @@ func (a *App) resolveActiveSlotConfig(configJSON string) slotagent.SlotConfig {
 	} else {
 		cfgStr, _ := a.GetConfig()
 		// Expand "~" the same way the scrap engine does. The configured value defaults to
-		// the literal "~/Documents/md-memo/scraps", and FindAgentConfigFile only does
+		// the literal "~/Documents/syki-sok/scraps", and FindAgentConfigFile only does
 		// os.Stat probes - so without this every user on the default path silently never
-		// had their <scraps>/.md-memo/agents.yaml found.
+		// had their <scraps>/.syki/agents.yaml found.
 		scrapDir = scrap.ResolveScrapDir(a.parseScrapConfig(cfgStr).ScrapDir)
 	}
 

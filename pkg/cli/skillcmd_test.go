@@ -74,7 +74,7 @@ func embeddedFileCount(t *testing.T) int {
 	return n
 }
 
-// The real embedded skill is complete: every file of skills/md-memo is in the binary.
+// The real embedded skill is complete: every file of skills/syki is in the binary.
 func TestEmbeddedSkillHasTheWholeSkill(t *testing.T) {
 	for _, name := range []string{"SKILL.md", "references/interfaces.md", "references/setup-guide.md", "references/troubleshooting.md"} {
 		data, err := fs.ReadFile(skills.Skill(), name)

@@ -738,7 +738,7 @@ func TestMobileDropAssetExt(t *testing.T) {
 	}
 }
 
-// The default note-folder lookup goes through the RPC bridge (window.__mdMemoRPC.getNoteDir).
+// The default note-folder lookup goes through the RPC bridge (window.__sykiRPC.getNoteDir).
 type noteDirMockWebView struct {
 	app   *App
 	reply string // JSON reply; "" means never answer

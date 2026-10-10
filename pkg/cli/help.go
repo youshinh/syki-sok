@@ -2,8 +2,8 @@ package cli
 
 import "strings"
 
-// This file answers `md-memo --help`, `md-memo -h`, `md-memo help [command]` and
-// `md-memo --version` before main() reaches any GUI, single-instance or pipe logic. Those flags
+// This file answers `syki --help`, `syki -h`, `syki help [command]` and
+// `syki --version` before main() reaches any GUI, single-instance or pipe logic. Those flags
 // used to fall straight through to a normal GUI start, so an agent probing the CLI
 // would open (or raise) the user's window instead of getting usage text.
 
@@ -53,7 +53,7 @@ func leadingHelpFlag(args []string) bool {
 //
 // `jev verify` is deliberately never intercepted past its action word. Its exit status is a
 // verdict (0 = safe), and a hook that passes an unquoted command through it must keep
-// failing closed: `md-memo jev verify -h && rm -rf /` has always been rejected by the flag
+// failing closed: `syki jev verify -h && rm -rf /` has always been rejected by the flag
 // parser, and printing help with exit 0 there would turn it into "safe".
 func HelpRequest(args []string, version string) (string, bool) {
 	if len(args) == 0 {
@@ -76,8 +76,8 @@ func HelpRequest(args []string, version string) (string, bool) {
 	}
 
 	if !IsSubcommand(first) {
-		// `md-memo rpc --help`, `md-memo pipe -h`, and any other word an agent may guess
-		// (`md-memo share --help`): the explicit help flag right after it is a request for
+		// `syki rpc --help`, `syki pipe -h`, and any other word an agent may guess
+		// (`syki share --help`): the explicit help flag right after it is a request for
 		// usage, not for a GUI start. A file name followed by -h is not a realistic call.
 		if len(args) > 1 && isHelpFlag(args[1]) && !strings.HasPrefix(first, "-") {
 			if text := SubcommandUsage(first); text != "" {

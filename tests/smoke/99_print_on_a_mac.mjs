@@ -32,7 +32,7 @@ export default {
     });
     await s.page.navigate(`${s.base}/?lang=${s.lang}`);
     await s.waitFor('window.__docshot && window.__docshot.isReady()', { timeout: 30000 });
-    assert.equal(await s.ev('window.MDMemoPlatform.isMac'), true);
+    assert.equal(await s.ev('window.SykiPlatform.isMac'), true);
     await s.ev('window.__printCalls = 0; window.print = function () { window.__printCalls++; }; 1');
 
     t.step('the button is there with the preview (it was hidden on a Mac before the native dialog)');

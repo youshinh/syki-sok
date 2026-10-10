@@ -248,7 +248,7 @@ func TestDeepSearchPlanAndRunEndToEnd(t *testing.T) {
 		t.Errorf("sizes: %+v", plan)
 	}
 	for _, n := range plan.Notes {
-		if strings.Contains(n, "--cutoff") || strings.Contains(n, "md-memo scrap") {
+		if strings.Contains(n, "--cutoff") || strings.Contains(n, "syki scrap") {
 			t.Errorf("a note written for the command line reached the dialog: %q", n)
 		}
 	}
@@ -267,7 +267,7 @@ func TestDeepSearchPlanAndRunEndToEnd(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if !strings.HasPrefix(got.Markdown, "<!-- md-memo:deepsearch -->\n") {
+	if !strings.HasPrefix(got.Markdown, "<!-- syki:deepsearch -->\n") {
 		t.Errorf("the note must start with the mark that keeps it out of the index:\n%s", got.Markdown)
 	}
 	if !strings.Contains(got.Markdown, "](file:///") || !strings.Contains(got.Markdown, "2026-09-01.md") {
@@ -546,7 +546,7 @@ func TestSemanticPanelResultGroupsHitsByFile(t *testing.T) {
 	// counts travel as numbers: the sentences of the command line that repeat them (with its flags in them) do not reach the window
 	counted := semanticPanelResult(cli.ScrapSearchResult{Semantic: true, Pending: 3, LeftOut: 2, Notes: []string{
 		"2 lower-scoring notes were left out (below 85% of the best score; --cutoff 0 shows them)",
-		"3 files are not indexed yet (md-memo scrap index, or --update); they were searched by words, and the notes that hold every word come first",
+		"3 files are not indexed yet (syki scrap index, or --update); they were searched by words, and the notes that hold every word come first",
 		"the index update was cut short (x)",
 	}})
 	if counted.LeftOut != 2 || counted.Pending != 3 || len(counted.Notes) != 1 || counted.Notes[0] != "the index update was cut short (x)" {

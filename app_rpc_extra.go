@@ -153,7 +153,7 @@ func (a *App) rpcScrapSearch(ctx context.Context, req *ipc.RPCRequest) *ipc.RPCR
 	return successResponse(req.ID, res)
 }
 
-// rpcScrapTags lists the tags written in the notes (cli.ScrapTags, which `md-memo scrap tags` prints): the folder is walked when this is
+// rpcScrapTags lists the tags written in the notes (cli.ScrapTags, which `syki scrap tags` prints): the folder is walked when this is
 // called and never otherwise. A big folder can take longer than the 5 seconds a call is given.
 func (a *App) rpcScrapTags(ctx context.Context, req *ipc.RPCRequest) *ipc.RPCResponse {
 	res, err := cli.ScrapTags(ctx)
@@ -166,7 +166,7 @@ func (a *App) rpcScrapTags(ctx context.Context, req *ipc.RPCRequest) *ipc.RPCRes
 	return successResponse(req.ID, res)
 }
 
-// rpcScrapTagEdit works out how the tags of a note change (cli.ScrapTagEdit, which `md-memo scrap tag` prints): a calculation on the
+// rpcScrapTagEdit works out how the tags of a note change (cli.ScrapTagEdit, which `syki scrap tag` prints): a calculation on the
 // text in the params. It reads no file and writes none, and it touches no tab: a client that wants the open note changed reads it with
 // buffer.get and writes it back with buffer.set / buffer.replace, with the hash it read.
 func (a *App) rpcScrapTagEdit(req *ipc.RPCRequest) *ipc.RPCResponse {
@@ -599,7 +599,7 @@ func (a *App) rpcBufferReplaceAll(ctx context.Context, req *ipc.RPCRequest) *ipc
 	})
 }
 
-// ---- the caret, the view, the tasks (the page does the work: window.__mdMemoRPC in frontend/js/app.js) ----------------------------
+// ---- the caret, the view, the tasks (the page does the work: window.__sykiRPC in frontend/js/app.js) ----------------------------
 
 // utf16Len is the length of s in UTF-16 units, the unit the page counts columns and offsets in.
 func utf16Len(s string) int {
@@ -642,7 +642,7 @@ type cursorResult struct {
 	Length       int    `json:"length"`
 }
 
-// pageCursor is what window.__mdMemoRPC.getCursor / setCursor return.
+// pageCursor is what window.__sykiRPC.getCursor / setCursor return.
 type pageCursor struct {
 	TabID        string `json:"tabId"`
 	Start        int    `json:"start"`

@@ -1934,7 +1934,7 @@
         <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/auto-sel-result.png" alt="Ctrl+Enterで実行したあとのノート。指示の行が [[ @llm ... ]] に変わり、その下に、2つのコメント行ではさまれた英訳の結果が入っている" loading="lazy" width="1120" height="720"></div><figcaption>Ctrl + Enter：指示の行が <code>[[ @llm ... ]]</code> に変わり、答えが下の結果ブロックに入ったところ</figcaption>
           <ol class="fig-legend">
             <li><strong>指示の行</strong> <code>[[ @llm ... ]]</code> に書き換わり、そのまま残ります</li>
-            <li><strong>結果ブロックの始まり</strong> <code>md-memo:res</code> のコメント行です。ノートの中の文字として残ります</li>
+            <li><strong>結果ブロックの始まり</strong> <code>syki:res</code> のコメント行です。ノートの中の文字として残ります</li>
             <li><strong>答え</strong> 2つのコメント行の間に入ります</li>
             <li><strong>結果ブロックの終わり</strong> 閉じるコメント行です</li>
           </ol></figure>
@@ -2014,18 +2014,18 @@
           </ul>
           <p><strong>結果ブロックの形</strong></p>
           <pre class="code-block"><code>[[ @llm 英語に翻訳して ]]
-&lt;!-- md-memo:res a1b2 --&gt;
+&lt;!-- syki:res a1b2 --&gt;
 結果の本文
-&lt;!-- /md-memo:res --&gt;</code></pre>
+&lt;!-- /syki:res --&gt;</code></pre>
           <ul>
-            <li><strong>実行中:</strong> 指示行の直下に、1行の目印 <code>&lt;!-- md-memo:run a1b2 --&gt;</code> が入ります。終わると、結果ブロックに置き換わります。<code>a1b2</code> の部分は、英数字の短い id です。</li>
+            <li><strong>実行中:</strong> 指示行の直下に、1行の目印 <code>&lt;!-- syki:run a1b2 --&gt;</code> が入ります。終わると、結果ブロックに置き換わります。<code>a1b2</code> の部分は、英数字の短い id です。</li>
             <li><strong>指示行と結果:</strong> 指示行そのものは、実行しても書き換わりません。結果は、前後の空白を落として入ります。ブロックの中に、空行は足されません。</li>
             <li><strong>コマンドの結果:</strong> 出力に含まれるバッククォートの連続より長いフェンスで囲んだ、コードブロックです。失敗したときは、出力・標準エラー・<code>exit code N</code> の行が、同じブロックに入ります。</li>
             <li><strong>LLM・エージェントの失敗:</strong> LLM は <code>[LLMエラー: メッセージ]</code>、エージェントは <code>[エージェント名 エラー: メッセージ]</code> の1行が入ります。メッセージは1行にまとめられます。AI の要求では、何が起きたか（たとえば接続できない）を画面の言語の平易な文で示し、API キーが入ることはありません。</li>
             <li><strong>コメント行:</strong> 結果ブロックの前後のコメント行は、ノートの中の普通の文字です。エディタには見えますが、syki::sok のプレビューでは隠れます。消しても、ほかには影響しません（実行中に消したときは、答えがノートの末尾に追加されます）。</li>
             <li><strong>再実行:</strong> 実行済みの指示行で <span class="kbd">Ctrl + Enter</span> を押すと、下の結果ブロックを置き換えます（クラッシュなどで残った目印も同じです）。積み重なりません。実行中に押すと、「このスロットはすでに実行中です」と出ます。</li>
             <li><strong>中止:</strong> タスクパネル（<span class="kbd">Alt + T</span>）の「中断」で、実行中の目印が消えます（指示行は残ります）。LLM は提供元に中止を伝えられないので、目印を消し、遅れて届いた答えを捨てる動きです。コマンドとエージェントは、実行を止めます。再実行の途中で中止すると、置き換えた古い結果は戻りません。</li>
-            <li><strong>文脈（<code>ctx=above</code>）:</strong> 質問バーで記録した指示の目印には、<code>ctx=above n=行数</code> が付きます（例: <code>&lt;!-- md-memo:res a1b2 ctx=above n=1 --&gt;</code>）。再実行では、指示行の真上にある、空白でない行（最大 n 行）を、対象のテキストとして再び送ります。間に別の指示行や結果ブロックがあれば、飛び越えます（最大80行・8000文字）。手書きの指示、ひな形から作った指示、行の書き換えで作った指示には付かず、書いた文言だけが送られます。周りの文章を、暗黙に送ることはありません。</li>
+            <li><strong>文脈（<code>ctx=above</code>）:</strong> 質問バーで記録した指示の目印には、<code>ctx=above n=行数</code> が付きます（例: <code>&lt;!-- syki:res a1b2 ctx=above n=1 --&gt;</code>）。再実行では、指示行の真上にある、空白でない行（最大 n 行）を、対象のテキストとして再び送ります。間に別の指示行や結果ブロックがあれば、飛び越えます（最大80行・8000文字）。手書きの指示、ひな形から作った指示、行の書き換えで作った指示には付かず、書いた文言だけが送られます。周りの文章を、暗黙に送ることはありません。</li>
             <li><strong>結果ブロックの中:</strong> カーソルが結果ブロックの中にあるときは、「これは実行結果のブロックです。指示はブロックの外に書いてください。」と出て、何も起きません。結果に <code>{{ }}</code> が含まれていても、実行されません。</li>
           </ul>
           <p><strong>結果を探す・扱う</strong></p>
@@ -2444,7 +2444,7 @@
           </p>
           <pre class="code-block"><code>{{ ⚠ エラー: エージェント起動失敗: ... (再試行: Ctrl+Enter) }}</code></pre>
           <ul>
-            <li><strong>作業ディレクトリ:</strong> ノートのある場所から上へたどって見つかった<strong>プロジェクトルート</strong>です。<code>.syki/</code>、<code>.md-memo/</code>、<code>agents.yaml</code>（<code>agents.yml</code> / <code>agents.json</code> でも可）、<code>AGENTS.md</code>、<code>skills/</code>、<code>.git/</code> のいずれかがあるフォルダで、どれも見つからなければノートのあるフォルダです。</li>
+            <li><strong>作業ディレクトリ:</strong> ノートのある場所から上へたどって見つかった<strong>プロジェクトルート</strong>です。<code>.syki/</code>、<code>.syki/</code>、<code>agents.yaml</code>（<code>agents.yml</code> / <code>agents.json</code> でも可）、<code>AGENTS.md</code>、<code>skills/</code>、<code>.git/</code> のいずれかがあるフォルダで、どれも見つからなければノートのあるフォルダです。</li>
             <li><strong>.env:</strong> プロジェクトルートに <code>.env</code> があれば、その内容が環境変数としてエージェントへ渡されます（読み込まれるのはこのファイルだけです）。</li>
           </ul>
         </div></details>
@@ -2682,7 +2682,7 @@ recipes:
         </ol>
         <ul>
           <li><strong>まとめて 1 つのコメントにする:</strong> 設定 → 一般 →「コメントの切り替えで書く形」を「複数行をまとめて 1 つのコメント」にすると、最初の行の前に <code>&lt;!-- </code>、最後の行の後ろに <code> --&gt;</code> を書きます。同じキーで、そのコメントを外します。</li>
-          <li><strong>そのままにする行:</strong> 空の行、実行結果のマーカー (<code>&lt;!-- md-memo:... --&gt;</code>)、すでに <code>--&gt;</code> を含む行（コメントがそこで終わってしまうため）、複数行にわたるコメントの一部の行です。ステータスバーに行番号を表示します。ノートの前の方に閉じていない <code>&lt;!--</code> があるとき（新しい <code>--&gt;</code> がそれを閉じて、間をすべて隠してしまうため）と、行がコードブロックの中にあるとき（そこでは <code>&lt;!--</code> はただの文字）は、メッセージを出して何も変えません。</li>
+          <li><strong>そのままにする行:</strong> 空の行、実行結果のマーカー (<code>&lt;!-- syki:... --&gt;</code>)、すでに <code>--&gt;</code> を含む行（コメントがそこで終わってしまうため）、複数行にわたるコメントの一部の行です。ステータスバーに行番号を表示します。ノートの前の方に閉じていない <code>&lt;!--</code> があるとき（新しい <code>--&gt;</code> がそれを閉じて、間をすべて隠してしまうため）と、行がコードブロックの中にあるとき（そこでは <code>&lt;!--</code> はただの文字）は、メッセージを出して何も変えません。</li>
           <li><strong>コメントにしたタスクは実行されません:</strong> コメントの中の <code>[[ @llm ]]</code>、<code>[[ $ ]]</code>、<code>{{ @agent }}</code>、<code>{{ }}</code> 形式のスロット、レシピの承認ゲートは、<span class="kbd">Ctrl + Enter</span>、実行ボタン、スロットの解析のどれからも無視されます。カーソルがコメントの中にあるときの <span class="kbd">Ctrl + Enter</span> は何もせず（ほかのスロットを代わりに実行することもありません）、ステータスバーにそう表示します。</li>
           <li><strong>プレビューはコメントを表示しません:</strong> コメントだけの行は、前後の段落を分けずに消えます。コードブロックやインラインコードの中の <code>&lt;!--</code> はコードなので、そのまま表示します。</li>
           <li><strong>タグの行はそのままです:</strong> <code>&lt;!-- tags: 仕事 --&gt;</code> のようなタグの行（<a href="#tag-commands" style="color: var(--accent);">タグを付ける・外す</a>）には触れません。コメントにも、コメントを外すこともしません（外すと、タグがプレビューに出て、タグでなくなってしまうためです）。タグの行だけを選んでいるときは何も変えず、そう伝えます。ほかの行がまじっているときは、ほかの行だけが切り替わります。</li>
@@ -3445,7 +3445,7 @@ syki ocr --json memo.png</code></pre>
             <li><strong>表示しないノート:</strong> 最良のものより、一致の度合いがかなり低いノートは、表示から除きます。その件数は、一覧に一言（「一致の度合いがかなり低い n 件は表示していません。」）出ます。</li>
             <li><strong>索引にまだないノート:</strong> 最後に <code>syki scrap index</code> を実行したあとに書いたノートは、もう一度実行するまで、単語で探します（「n 件のノートは索引にまだありません（単語で探しました）。」と出ます）。意味検索そのものが使えないとき（索引が空、別のモデルで作った索引、モデルに届かない）も、単語でノートを選び、その旨が一言出ます。</li>
             <li><strong>このパソコンにないモデル:</strong> クラウドなどのモデルは、そのホストを許可するまで、何も送りません（設定で、モデルの下に出るチェックで許可します。許可は <code>config.json</code> の <code>semantic.privacy.cloudConsent</code> に残ります）。許可するまで、「今すぐ更新」も押せません。</li>
-            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>syki scrap index</code> で作り直せます）。<code>.syki-ignore</code>（または <code>.md-memo-ignore</code>）に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
+            <li><strong>索引:</strong> このパソコンの中の、スクラップのフォルダの外に作られ、Git では同期されません。いつ消しても構いません（<code>syki scrap index</code> で作り直せます）。<code>.syki-ignore</code>（または <code>.syki-ignore</code>）に書いたファイル、隠しフォルダ、AI の結果ブロックは、送りません。設定のパッケージ（エクスポート / インポート）に、<code>semantic</code> は含まれません。</li>
             <li><strong>オンにしないとき:</strong> ノート検索は、これまでどおりのパネルです。意味検索のために、起動時に何かをすることもありません。</li>
             <li><strong>ほかの使い方:</strong> 同じ検索は、<code>syki scrap search --semantic</code> と、JSON-RPC の <code>scrap.search</code> でも使えます（<a href="#headless-cli" style="color: var(--accent);">Headless CLI</a>、<a href="#json-rpc" style="color: var(--accent);">JSON-RPC</a>）。</li>
             <li><strong>macOS:</strong> Windows と同じコードなので、動く見込みですが、実際の Mac では、まだ確かめていません。</li>
@@ -3483,7 +3483,7 @@ syki ocr --json memo.png</code></pre>
         <details class="more"><summary>制限・詳しい仕様（送るもの・送り先・時間）</summary><div class="more-body">
           <ul>
             <li><strong>送る前:</strong> 「実行」を押すまで、何も送りません。準備した抜粋の有効期限は15分です。切れたあとで「実行」を押すと、「準備した抜粋の有効期限が切れました。もう一度準備します...」と出て、準備し直します。</li>
-            <li><strong>送らないもの:</strong> <code>.syki-ignore</code>（または <code>.md-memo-ignore</code>）に書いたファイルと、フォルダの規則で除くもの、AI の結果ブロック、読めないファイル、大きさの上限を超える分、以前の深掘りのノート、隠しフォルダは、送りません。抜粋の中のキー、トークン、パスワードは、伏せ字にしてから送ります。</li>
+            <li><strong>送らないもの:</strong> <code>.syki-ignore</code>（または <code>.syki-ignore</code>）に書いたファイルと、フォルダの規則で除くもの、AI の結果ブロック、読めないファイル、大きさの上限を超える分、以前の深掘りのノート、隠しフォルダは、送りません。抜粋の中のキー、トークン、パスワードは、伏せ字にしてから送ります。</li>
             <li><strong>絞り込みをしているとき:</strong> ノート検索で<a href="#search-filter" style="color: var(--accent);">絞り込み</a>（期間・タグ）をしているときは、同じ絞り込みで抜粋を集めます。短い抜粋に足す隣のノートの文章も、絞り込みに合うものだけで、絞り込みの外にあるものは、送る対象になりません。</li>
             <li><strong>送り先:</strong> 設定 → AIモデル → テキスト のモデルです（Base URL とモデル名の、両方が必要です）。設定していないと、「AIモデルがまだ設定されていません。」と出て、「設定する」ボタンが付きます。</li>
             <li><strong>このパソコンと、そのほか:</strong> このパソコンの中（<code>127.0.0.1</code>、<code>localhost</code>、<code>::1</code>）にあるモデルだけが、ローカルです。同じネットワーク内のほかのマシンを含め、それ以外のホストへは、初めて送るときに許可を求めます。「許可して実行」を選ぶと、そのホストを記憶します（「AIに質問」のバーと同じ <code>general.cloudConsent</code> の一覧です）。</li>
@@ -4048,7 +4048,7 @@ syki ocr --json memo.png</code></pre>
         </ul>
 
         <p>
-          設定画面の下にある「エクスポート...」「インポート...」は、設定・エージェント定義・スキルを 1 つのパッケージ（<code>.mdmemopack</code>）で持ち運ぶ機能です。詳しくは <a href="#cfg-pack" style="color: var(--accent);">6. 設定のエクスポート / インポート</a>。
+          設定画面の下にある「エクスポート...」「インポート...」は、設定・エージェント定義・スキルを 1 つのパッケージ（<code>.sykipack</code>）で持ち運ぶ機能です。詳しくは <a href="#cfg-pack" style="color: var(--accent);">6. 設定のエクスポート / インポート</a>。
         </p>
       </section>
 
@@ -4512,12 +4512,12 @@ syki ocr --json memo.png</code></pre>
       <!-- 6. 設定のエクスポート / インポート（パッケージ） -->
       <section class="doc-section" id="cfg-pack">
         <h3>6. 設定のエクスポート / インポート（パッケージ）</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 設定・エージェント定義・スキルを 1 つのファイル（<code>.mdmemopack</code>）にまとめて、ほかの PC に持ち運べます。設定画面の下にある「エクスポート...」「インポート...」から使います。 <span class="pill ok">API キーは、最初は入りません</span></div></div>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 設定・エージェント定義・スキルを 1 つのファイル（<code>.sykipack</code>）にまとめて、ほかの PC に持ち運べます。設定画面の下にある「エクスポート...」「インポート...」から使います。 <span class="pill ok">API キーは、最初は入りません</span></div></div>
 
         <p><strong>書き出す</strong>（設定 → エクスポート...）</p>
         <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/pack-export.png" alt="パッケージを書き出すダイアログの上のほう。形式の選択と、設定の区分ごとのチェックボックスが並び、「同期」に「この PC 専用」の印が付いている" loading="lazy" width="1120" height="720"></div><figcaption>「パッケージを書き出し」の上のほう。形式と、設定の区分を選びます</figcaption>
           <ol class="fig-legend">
-            <li><strong>形式</strong> パッケージ（.mdmemopack）か、設定だけの JSON かを選びます</li>
+            <li><strong>形式</strong> パッケージ（.sykipack）か、設定だけの JSON かを選びます</li>
             <li><strong>設定</strong> 区分ごとにチェックを付けます。右上の「すべて」「なし」でまとめて切り替えられます</li>
             <li><strong>同期</strong> 「この PC 専用」の印が付き、最初はオフです。スクラップフォルダのパスなど、PC ごとに違う値だからです</li>
           </ol></figure>
@@ -4532,7 +4532,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>「エクスポート...」を押す</strong><span>設定画面の左下にあります。「パッケージを書き出し」が開きます</span></li>
           <li><strong>入れるものを選ぶ</strong><span>設定の区分、エージェント定義、スキルにチェックを付けます。「同期」とスキルは、最初はオフです</span></li>
           <li><strong>「API キーを含める」はオフのまま</strong><span>人に渡すファイルにキーが入らないようにするためです。自分の別の PC に移すときだけオンにします</span></li>
-          <li><strong>「書き出す」を押す</strong><span>保存先を選ぶと <code>syki-sok-年月日.mdmemopack</code> が作られ、内訳が表示されます</span></li>
+          <li><strong>「書き出す」を押す</strong><span>保存先を選ぶと <code>syki-sok-年月日.sykipack</code> が作られ、内訳が表示されます</span></li>
         </ol>
 
         <p><strong>読み込む</strong>（設定 → インポート...）</p>
@@ -4557,7 +4557,7 @@ syki ocr --json memo.png</code></pre>
             <li><strong>チェックしたものを適用 / 今のままにする</strong> 「チェックしたものを適用」はチェックしたものだけを反映します。「今のままにする」（Esc も同じ）はどれも反映しません。パッケージのほかの部分は、どちらでも反映されます</li>
           </ol></figure>
         <ol class="steps">
-          <li><strong>「インポート...」を押してファイルを選ぶ</strong><span><code>.mdmemopack</code> のほか、以前の設定 JSON も読み込めます</span></li>
+          <li><strong>「インポート...」を押してファイルを選ぶ</strong><span><code>.sykipack</code> のほか、以前の設定 JSON も読み込めます</span></li>
           <li><strong>中身を確かめる</strong><span>「上書きされます」の印が付いた項目は、いまあるものを置き換えます。パッケージの API キー欄が空のときは、いまのキーは消えません</span></li>
           <li><strong>読み込むものにチェックを付ける</strong><span>信頼できない相手のエージェント定義とスキルは、チェックを外します</span></li>
           <li><strong>「読み込む」を押す</strong><span>設定はすぐ反映されます（一部は再起動後）。エージェント定義とスキルは、次のエージェント実行から使われます</span></li>
@@ -4603,7 +4603,7 @@ syki ocr --json memo.png</code></pre>
             <li>設定の一部は、syki::sok を再起動すると反映されます。読み込み後の画面に案内が出ます。</li>
           </ul>
           <p><strong>「プロジェクト」とは</strong></p>
-          <p>開いているノートのフォルダ（保存前のノートは、開いているフォルダ、それも無ければスクラップフォルダ）から上へたどり、<wbr><code>.syki</code>、<code>.md-memo</code>、<code>agents.yaml</code>、<code>AGENTS.md</code>、<code>skills</code>、<wbr><code>.git</code> のどれかがある最初のフォルダです。ホームフォルダはプロジェクトとして扱いません（全体のスキルを持ち出さないためです）。決まらないときは、プロジェクトの項目に「プロジェクトが必要」と出て、選べません。</p>
+          <p>開いているノートのフォルダ（保存前のノートは、開いているフォルダ、それも無ければスクラップフォルダ）から上へたどり、<wbr><code>.syki</code>、<code>.syki</code>、<code>agents.yaml</code>、<code>AGENTS.md</code>、<code>skills</code>、<wbr><code>.git</code> のどれかがある最初のフォルダです。ホームフォルダはプロジェクトとして扱いません（全体のスキルを持ち出さないためです）。決まらないときは、プロジェクトの項目に「プロジェクトが必要」と出て、選べません。</p>
           <p><strong>上限と安全</strong></p>
           <ul>
             <li>パッケージは 50 MB・3000 ファイルまで、1 ファイルは 10 MB まで、展開後の合計は 100 MB までです。設定は 2 MB、エージェント定義は 1 ファイル 1 MB までです。上限を超えるスキルは、注意を出して書き出しから外します。</li>
@@ -5453,7 +5453,7 @@ command! SykiSend :w !syki</code></pre>
               <tr>
                 <td><strong>結果ブロック（result block）</strong></td>
                 <td><a href="#auto-selector" style="color: var(--accent);">自動セレクター</a></td>
-                <td>指示行の下に入る結果のことです。<code>&lt;!-- md-memo:res ... --&gt;</code> と <code>&lt;!-- /md-memo:res --&gt;</code> の2つのコメント行ではさまれています。実行中は、1行の目印 <code>&lt;!-- md-memo:run ... --&gt;</code> が入ります。</td>
+                <td>指示行の下に入る結果のことです。<code>&lt;!-- syki:res ... --&gt;</code> と <code>&lt;!-- /syki:res --&gt;</code> の2つのコメント行ではさまれています。実行中は、1行の目印 <code>&lt;!-- syki:run ... --&gt;</code> が入ります。</td>
               </tr>
               <tr>
                 <td><strong>スニペット（snippet）</strong></td>

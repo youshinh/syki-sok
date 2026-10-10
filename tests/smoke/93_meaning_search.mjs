@@ -110,6 +110,6 @@ export default {
     await typeQuery(s, 'bamboo stalks');
     await waitMeaningList(s);
     assert.deepEqual(await noteLines(), [await phrase(s, 'scrapsSearchPending', { n: '3' }), await phrase(s, 'scrapsSearchLeftOut', { n: '2' })]);
-    assert.ok(!/--|md-memo scrap/.test(await s.ev("document.getElementById('scraps-search-results').innerText")), 'no command-line jargon in the panel');
+    assert.ok(!/--|syki scrap/.test(await s.ev("document.getElementById('scraps-search-results').innerText")), 'no command-line jargon in the panel');
   }
 };

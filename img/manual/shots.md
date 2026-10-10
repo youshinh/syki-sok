@@ -222,10 +222,10 @@ annotation text. Everything shown is demo data on a fixed date (2026-09-18).
 - Size: 1120x720 px (ja 32 KB, en 32 KB)
 - Kind: full picture
 - State: Ctrl+Enter on a request line (Translate the checklist above ...): the line became [[ @llm ... ]] and the answer arrived below it, between two comment lines.
-- Note: The two comment lines (md-memo:res) are plain text in the note. They show in the editor; the preview hides them (AutoSelector.stripMarkers runs before the Markdown is rendered). The answer is a canned mock reply.
+- Note: The two comment lines (syki:res) are plain text in the note. They show in the editor; the preview hides them (AutoSelector.stripMarkers runs before the Markdown is rendered). The answer is a canned mock reply.
 - Markers:
   1. The instruction line: it was rewritten into [[ @llm ... ]] and stays in the note as it is.
-  2. Opening comment line of the result block (md-memo:res).
+  2. Opening comment line of the result block (syki:res).
   3. The answer, between the two comment lines.
   4. Closing comment line.
 
@@ -643,7 +643,7 @@ annotation text. Everything shown is demo data on a fixed date (2026-09-18).
 - State: Settings -> Export...: the Export package dialog, top part: the format list and the settings sections, with Sync marked this PC only and unticked.
 - Note: The dialog is taller than the window and scrolls inside, so it is shown in two pictures (see pack-export-items for the lower part). Demo project: three skills in skills and .claude/skills.
 - Markers:
-  1. Format: package (.mdmemopack) or plain JSON with the settings only.
+  1. Format: package (.sykipack) or plain JSON with the settings only.
   2. Settings: one tick per section; All and None on the right.
   3. Sync is marked this PC only and starts unticked.
 

@@ -11,13 +11,13 @@
 //
 // style 'line' (the default): one comment per line, "  <!-- - item -->" (the indentation stays outside). When every
 // line that can be toggled is already a one-line comment, they are all uncommented; otherwise every line that is not
-// commented yet is commented. Empty lines, md-memo marker lines and tag lines (see below) are never touched. A line
+// commented yet is commented. Empty lines, syki marker lines and tag lines (see below) are never touched. A line
 // that contains "-->" (the comment would end there) or that is part of a comment spanning several lines stays as it is
 // and is listed in `skipped` (1-based line numbers).
 //
 // style 'block': one comment around the lines, "<!-- " before the first line's text and " -->" after the last's; when
 // the lines already are exactly one comment it is taken off. Refused when the lines contain "-->" ('terminator') or an
-// md-memo marker ('marker'), or touch a comment that goes on outside them ('overlap').
+// syki marker ('marker'), or touch a comment that goes on outside them ('overlap').
 //
 // Tag lines: a line that is a whole tag comment, "<!-- tags: a, b -->" (key "tags" or "tag" in any case, white space around
 // it allowed: search.IsTagCommentLine) is how a note carries its tags (docs/design/tag-filter-2026-10.md). Ctrl+/ leaves it
@@ -35,7 +35,7 @@
 (function (global) {
   'use strict';
 
-  const MARKER = /<!--\s*\/?md-memo:/;
+  const MARKER = /<!--\s*\/?syki:/;
   const ONE_LINE = /^(\s*)<!--(\s?)([\s\S]*?)\s?-->(\s*)$/;
   const OPEN = '<!-- ';
   const CLOSE = ' -->';

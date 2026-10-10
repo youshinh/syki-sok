@@ -103,13 +103,13 @@ func CollectTags(ctx context.Context, scrapDir string) ([]TagCount, error)
 - 語の検索の日付の範囲は `scrap.DayOfName` を使う（§3.1）。意味検索側の語へのフォールバック（`keepWords`）にも同じ。
 - 意味検索: `semindex.SearchOptions.Keep` にタグの判定（ファイルごとに 1 回だけ読んでキャッシュ）を渡し、索引にまだない/古いファイルのための語の検索にも `Options.Tags` を渡す。
 - `ScrapTags(ctx) (ScrapTagsResult, error)`、`ScrapTagsResult{Tags []search.TagCount \`json:"tags"\`; Files int \`json:"files"\`; Undated int \`json:"undated"\`}`。`Files` は走査した .md の数、`Undated` はそのうち名前に日付がないものの数。`Tags` は空でも `[]`（nil にしない）。
-- CLI: `md-memo scrap search ... --tag <a,b>`（繰り返し可。語・`--ranked`・`--semantic` のどれとも組める）、新しい `md-memo scrap tags [--json|--text]`。`help.go` とスキル（`skills/md-memo/**`）に載せる（整合性テストが全フラグを要求する）。
+- CLI: `syki scrap search ... --tag <a,b>`（繰り返し可。語・`--ranked`・`--semantic` のどれとも組める）、新しい `syki scrap tags [--json|--text]`。`help.go` とスキル（`skills/syki/**`）に載せる（整合性テストが全フラグを要求する）。
 
 ### 4.5 JSON-RPC
 
 - `scrap.search` の params に `tag`（文字列 `"a,b"` または文字列の配列。`kind` と同じ受け方）。
 - 新メソッド `scrap.tags`（params なし。トークン必須）。結果は `ScrapTagsResult`。
-- `docs/features.md` / `features_ja.md` の RPC 表、`manual.html` / `manual_ja.html` の JSON-RPC 表、`skills/md-memo/references/interfaces.md` に載せる（`python tools/check_manual.py` が見ている）。
+- `docs/features.md` / `features_ja.md` の RPC 表、`manual.html` / `manual_ja.html` の JSON-RPC 表、`skills/syki/references/interfaces.md` に載せる（`python tools/check_manual.py` が見ている）。
 
 ### 4.6 画面の bind（Go ↔ ページ）
 
@@ -121,7 +121,7 @@ func CollectTags(ctx context.Context, scrapDir string) ([]TagCount, error)
 
 - `SearchScrapsAsync(reqID, query, maxResults, filterJSON)`: 絞り込みなしは今までと同じ呼び出し（`SearchScrapsWithFallback`）。絞り込みありは `SearchScrapsWithFallbackOptions`。
 - `SearchScrapsSemanticAsync(reqID, query, limit, filterJSON)`、`DeepSearchPlanAsync(reqID, query, limit, filterJSON)`: 同じ `cli.ScrapSearch` に `Tags/From/To` を渡す。**深掘りは、画面で絞り込んだ検索と同じ絞り込みで資料を集める**（絞り込みの外のノートの抜粋を AI に送らない）。
-- 新しい bind `ScrapFilterOptionsAsync(reqID)`: `cli.ScrapTags` の結果を返す。結果の配送は `SearchScrapsSemanticAsync` と同じやり方（既存の `window.__mdmemoAsync` の約束に従う）。
+- 新しい bind `ScrapFilterOptionsAsync(reqID)`: `cli.ScrapTags` の結果を返す。結果の配送は `SearchScrapsSemanticAsync` と同じやり方（既存の `window.__sykiAsync` の約束に従う）。
 - ページ側の `window.backend`: `searchScraps(query, max, filter)`、`searchScrapsSemantic(query, limit, filter)`、`deepSearchPlan(query, limit, filter)`、`scrapFilterOptions()`。`filter` はオブジェクトまたは null。Windows と macOS の両方の薄い橋渡し（`window_windows.go` / `window_darwin.go`）に同じ行を入れる（`platform_bridge_parity_test.go` が見ている）。
 - 絞り込みの JSON に不正な値（日付の書式違い、9 個以上のタグ）があるときは、その検索を失敗させる（エラー文は 1 行）。
 
@@ -249,16 +249,16 @@ func (e TagEdit) Apply(data []byte) []byte   // the new text (uses Eol for the j
 ### 10.4 CLI
 
 ```
-md-memo scrap tag add <tags> [<file>] [--line <n>] [--write] [--json]
-md-memo scrap tag remove <tags> [<file>] [--line <n>] [--write] [--json]
-md-memo scrap tag show [<file>] [--line <n>] [--json|--text]
+syki scrap tag add <tags> [<file>] [--line <n>] [--write] [--json]
+syki scrap tag remove <tags> [<file>] [--line <n>] [--write] [--json]
+syki scrap tag show [<file>] [--line <n>] [--json|--text]
 ```
 
 - `<tags>`: one argument, a list as in `--tag` (`"仕事, 急ぎ"`; a leading `#` is taken off). `<file>`: a path (relative to the current folder); without it the text is read from standard input (a pipe; decoded like the pipe does) and `--write` is an error.
 - Without `--line` the range is the whole note; with `--line n`, the entry holding line n (`entry`; may come back as `note`, §10.2).
 - Output: the new text on standard output, exactly (no extra newline), exit 0; when nothing changed the text is unchanged and a line on standard error says why (`already ...`); `--json` prints the `TagEdit` instead (and with `--text` nothing is added). Exit 1 for a refusal (`front_matter`, `front_matter_tag`, `on_note` / `on_entry`, bad arguments).
 - `--write`: replaces the file in place and prints nothing but the summary on standard error. Safe write: a temporary file in the same folder, the same mode, then rename; the file is read again just before and the write is refused if it changed since it was read. It never creates a file. A file over 16 MB is refused.
-- `help.go`, the skills (`skills/md-memo/**`) and the consistency tests list every flag.
+- `help.go`, the skills (`skills/syki/**`) and the consistency tests list every flag.
 
 ### 10.5 JSON-RPC
 

@@ -13,7 +13,7 @@
 //     the same line closes it, otherwise it is plain text ("it`s" is not code, ``a`b`` is one span). The runs are
 //     read from the line start, or from the end of the last comment on that line. Once a comment has started,
 //     fences and backticks inside it mean nothing.
-//   - md-memo's own markers ("<!-- md-memo:run id -->", "<!-- md-memo:res id -->", "<!-- /md-memo:res -->") are
+//   - syki's own markers ("<!-- syki:run id -->", "<!-- syki:res id -->", "<!-- /syki:res -->") are
 //     the note's structure (result blocks), not hidden text: they are not reported.
 // Every index is a UTF-16 index (what a textarea reports); the Go side uses byte offsets of the same text. Every
 // character the rules look at is ASCII, so both describe the same spans.
@@ -23,7 +23,7 @@
   'use strict';
 
   const FENCE = /^ {0,3}(`{3,}|~{3,})(.*)$/;
-  const MARKER = /<!--\s*\/?md-memo:/y;
+  const MARKER = /<!--\s*\/?syki:/y;
   const BLANK = /^\s*$/;
 
   function str(v) {

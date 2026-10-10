@@ -125,7 +125,7 @@ export function generateNote(opts = {}) {
     switch (kind) {
       case 'go': return pick([`func ${f}${pick(CODE_IDENT)}(${a} int) error {`, `\t${a} := ${f}(${b}, ${n})`, `\tif err != nil { return err }`, `\t// ${pick(EN_VERB)} the ${pick(EN_NOUN)}`, '}']);
       case 'py': return pick([`def ${f}_${a}(${b}, limit=${n}):`, `    ${a} = [${b} for ${b} in range(${n})]`, `    return ${a}`, `    # ${pick(EN_VERB)} the ${pick(EN_NOUN)}`, `for ${a} in ${b}:`]);
-      case 'sh': return pick([`md-memo tab ${f} --index ${n}`, `echo "${pick(EN_VERB)} the ${pick(EN_NOUN)}" | syki scrap append`, `for f in *.md; do wc -l "$f"; done`, `# ${pick(EN_VERB)} the ${pick(EN_NOUN)}`]);
+      case 'sh': return pick([`syki tab ${f} --index ${n}`, `echo "${pick(EN_VERB)} the ${pick(EN_NOUN)}" | syki scrap append`, `for f in *.md; do wc -l "$f"; done`, `# ${pick(EN_VERB)} the ${pick(EN_NOUN)}`]);
       case 'json': return pick([`  "${a}": ${n},`, `  "${b}": "${pick(EN_NOUN)}",`, `  "${f}": { "enabled": ${chance(0.5)}, "limit": ${n} },`, '  "tags": ["a", "b", "c"]']);
       case 'css': return pick([`.${a}-${b} { margin: ${range(0, 24)}px ${range(0, 24)}px; }`, `  color: var(--text-${pick(['main', 'muted', 'faint'])});`, `@media (max-width: ${range(320, 1200)}px) { .${a} { display: none; } }`]);
       default: return pick([`const ${a} = ${f}(${b}, ${n}); // ${pick(EN_VERB)} the ${pick(EN_NOUN)}`, `function ${f}${pick(CODE_IDENT)}(${a}, ${b}) {`, `  return ${a}.map((x) => x + ${n});`, `if (${a} > ${n}) { ${f}(); }`, '}']);

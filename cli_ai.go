@@ -41,7 +41,7 @@ type CliValidationResult struct {
 
 // validateCliCommand inspects command syntax for safety before execution. It is the reviewed-mode
 // verdict of the shared guard (jev.VerifyCommand): the pattern block list, the deterministic AST
-// guardrail and the confirmation-level warnings all live there, so this gate, `md-memo jev verify` and
+// guardrail and the confirmation-level warnings all live there, so this gate, `syki jev verify` and
 // the hook runner cannot disagree about a command.
 //
 // Tiering on this path (the user reviews the command before it runs):

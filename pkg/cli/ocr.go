@@ -27,7 +27,7 @@ var (
 // ocrFileConfig is the slice of config.json this command needs: where to file the resulting
 // note, and how to reach a cloud vision model when the on-device OCR engine is unavailable.
 // Vision mirrors llm.VisionConfig exactly, since it is read from the same config.json a running
-// md-memo instance also reads.
+// syki instance also reads.
 //
 // The file is read through the shared, read-only Config (config.go), so the scrap folder is looked
 // up the way the app does it (the legacy top-level "scrap_dir", overridden by "scraps.scrapDir" -
@@ -63,7 +63,7 @@ func (r *HeadlessRunner) runOCR(args []string) (int, error) {
 	}
 	rest := fs.Args()
 	if len(rest) == 0 {
-		return 1, errors.New("usage: md-memo ocr <imagePath>")
+		return 1, errors.New("usage: syki ocr <imagePath>")
 	}
 	imagePath := rest[0]
 

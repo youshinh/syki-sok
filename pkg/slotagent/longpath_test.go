@@ -41,10 +41,10 @@ func TestCreateTempNoteFile_HandsTheAgentTheLongForm(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if asked == "" || filepath.Dir(asked) != dir || !strings.HasPrefix(filepath.Base(asked), "md-memo-slot-") {
+	if asked == "" || filepath.Dir(asked) != dir || !strings.HasPrefix(filepath.Base(asked), "syki-slot-") {
 		t.Errorf("the expander is asked about the file that was created: %q", asked)
 	}
-	if !strings.HasPrefix(filepath.Base(path), "a-long-name-md-memo-slot-") || filepath.Dir(path) != dir {
+	if !strings.HasPrefix(filepath.Base(path), "a-long-name-syki-slot-") || filepath.Dir(path) != dir {
 		t.Fatalf("the agent must get the expanded path, got %q", path)
 	}
 	if data, err := os.ReadFile(path); err != nil || string(data) != "# 未保存のノート\n" {

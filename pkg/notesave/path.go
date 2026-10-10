@@ -1,5 +1,5 @@
 // Package notesave decides whether a note may be written to a path an outside caller named
-// (`md-memo buffer save --as`, JSON-RPC buffer.save) and writes it, all-or-nothing.
+// (`syki buffer save --as`, JSON-RPC buffer.save) and writes it, all-or-nothing.
 //
 // The caller is not the user at a file dialog, it can be a script or an AI agent, so nothing is
 // taken for granted: the path must be absolute and plain (no network or device path, no alternate

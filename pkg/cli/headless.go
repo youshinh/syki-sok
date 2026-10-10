@@ -29,7 +29,7 @@ type HeadlessRunner struct {
 	// stdin is what `agent prune` reads when no --file is given. nil means os.Stdin (looked up when
 	// it is read), see WithStdin.
 	stdin io.Reader
-	// version is the app version `md-memo info` reports. AppVersion lives in package main and cannot
+	// version is the app version `syki info` reports. AppVersion lives in package main and cannot
 	// be imported from here, so main passes it in (WithVersion), as HelpRequest gets it.
 	version string
 }

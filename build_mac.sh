@@ -83,8 +83,8 @@ CGO_CFLAGS="$NATIVE_CFLAGS" CGO_LDFLAGS="$NATIVE_CFLAGS" GOOS=darwin GOARCH="$NA
     go build -ldflags="-s -w" -trimpath -o "$APP_NAME-$NATIVE_GOARCH" .
 
 IS_UNIVERSAL=0
-if [ "${MDMEMO_NATIVE_ONLY:-0}" = "1" ]; then
-    echo "MDMEMO_NATIVE_ONLY=1: skipping the universal build; shipping native arch ($NATIVE_GOARCH) only."
+if [ "${SYKI_NATIVE_ONLY:-0}" = "1" ]; then
+    echo "SYKI_NATIVE_ONLY=1: skipping the universal build; shipping native arch ($NATIVE_GOARCH) only."
     mv "$APP_NAME-$NATIVE_GOARCH" "$APP_NAME"
 else
     echo "Building other slice ($OTHER_GOARCH) for a universal binary..."

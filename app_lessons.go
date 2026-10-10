@@ -26,7 +26,7 @@ import (
 //	LessonRunAsync    send them to the text model and answer with 0 to 2 proposed rules
 //	CancelLesson      drop the answer of a run in progress
 //	LessonSaveAsync   check the rules again and add them to the agent's file
-//	LessonsInfoAsync  what files there are (cli.LessonsList, the same answer as `md-memo lessons list` and the method lessons.list)
+//	LessonsInfoAsync  what files there are (cli.LessonsList, the same answer as `syki lessons list` and the method lessons.list)
 //
 // All of them answer through window.__onDeepSearchResult(reqID, result, errMsg), like the other async binds. An error is a sentence,
 // except for the codes the window acts on, which are the whole message: "model_not_configured", "consent_required", "plan_expired",
@@ -642,7 +642,7 @@ func (a *App) LessonsInfoAsync(reqID, agent string) {
 	}()
 }
 
-// rpcLessonsList is the JSON-RPC method lessons.list: the same answer as `md-memo lessons list`. There is no method that writes a rule.
+// rpcLessonsList is the JSON-RPC method lessons.list: the same answer as `syki lessons list`. There is no method that writes a rule.
 func (a *App) rpcLessonsList(req *ipc.RPCRequest) *ipc.RPCResponse {
 	var params struct {
 		Agent string `json:"agent"`

@@ -1,4 +1,4 @@
-// The JSON-RPC cursor calls of the page (window.__mdMemoRPC.getCursor / setCursor, behind `cursor.get` / `cursor.set`): where the caret
+// The JSON-RPC cursor calls of the page (window.__sykiRPC.getCursor / setCursor, behind `cursor.get` / `cursor.set`): where the caret
 // or selection of a tab is, in UTF-16 offsets into its LF text with 1-based line / column, and moving it without taking the focus
 // or moving the caret the person is typing at. A tab on screen is changed in place; another tab only has its remembered caret
 // changed (it is brought forward, like getSelection does, only when focus is asked for).
@@ -120,7 +120,7 @@ export default {
     assert.deepEqual([l.start, l.end], [6, 10]);
 
     t.step('scroll: into view by default, left alone with scroll:false, and never a focus change');
-    await s.ev(`window.__mdMemoRPC.switchTab(${JSON.stringify(L)})`);
+    await s.ev(`window.__sykiRPC.switchTab(${JSON.stringify(L)})`);
     await s.waitFor(`window.__explore.state().activeTabId === ${JSON.stringify(L)}`);
     await s.ev("document.getElementById('btn-new-tab').focus()");
     const lastLine = LONG.lastIndexOf('line 300');
@@ -136,12 +136,12 @@ export default {
     await s.waitFor("document.getElementById('editor').scrollTop < 50");
 
     t.step('a tab in the split editor is changed in place, with the primary pane left alone');
-    await s.ev(`window.__mdMemoRPC.switchTab(${JSON.stringify(A)})`);
+    await s.ev(`window.__sykiRPC.switchTab(${JSON.stringify(A)})`);
     await s.waitFor(`window.__explore.state().activeTabId === ${JSON.stringify(A)}`);
     await click(s, 'btn-toggle-split');
     await waitShown(s, 'secondary-pane');
     // the split shows another tab than the active one: the first of the others
-    const secondary = await s.ev("window.__mdMemoRPC.getUiState().secondaryTabId");
+    const secondary = await s.ev("window.__sykiRPC.getUiState().secondaryTabId");
     assert.ok(secondary && secondary !== A, 'the split editor shows another tab');
     const secLen = await s.ev("document.getElementById('editor-secondary').value.length");
     await focusEditor(s);

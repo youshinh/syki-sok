@@ -68,13 +68,13 @@
       localStorage.setItem('md_notepad_config_v3', JSON.stringify(B.config));
     }
     if (!NOSESSION) {
-      localStorage.setItem('md_memo_session_v1', JSON.stringify(B.session));
-      localStorage.setItem('md_memo_workspace_folder', B.workspace.root);
+      localStorage.setItem('syki_session_v1', JSON.stringify(B.session));
+      localStorage.setItem('syki_workspace_folder', B.workspace.root);
       // fresh=1 without nosession is the SECOND start of a new profile: no settings saved, a session left behind, and the mark the first
       // start made (app.js CALM_TOOLBAR_MARK) - so the short first-launch toolbar is still there, next to the demo tabs.
-      if (FRESH) localStorage.setItem('md_memo_calm_toolbar_v1', '1');
+      if (FRESH) localStorage.setItem('syki_calm_toolbar_v1', '1');
     }
-    localStorage.setItem('md_memo_cli_history', JSON.stringify(B.cliHistory));
+    localStorage.setItem('syki_cli_history', JSON.stringify(B.cliHistory));
   } catch (e) { /* storage unavailable: the backend mock below still supplies everything */ }
 
   // ---- backend ------------------------------------------------------------------------------------
@@ -239,7 +239,7 @@
     var q = String(query || '').toLowerCase();
     var out = [];
     B.scraps.concat(D.filter.extra.map(function (f) {
-      return { filePath: 'C:\\Users\\demo\\Documents\\md-memo\\scraps\\' + f.fileName, fileName: f.fileName, content: f.lines.join('\n') };
+      return { filePath: 'C:\\Users\\demo\\Documents\\syki-sok\\scraps\\' + f.fileName, fileName: f.fileName, content: f.lines.join('\n') };
     })).forEach(function (f) {
       var lines = f.content.split('\n');
       var matches = [];
@@ -276,7 +276,7 @@
   function semanticHit(i) {
     var name = '2026-09-' + pad2(28 - i) + '.md';
     return {
-      filePath: 'C:\\Users\\demo\\Documents\\md-memo\\scraps\\' + name, fileName: name,
+      filePath: 'C:\\Users\\demo\\Documents\\syki-sok\\scraps\\' + name, fileName: name,
       matches: [{
         lineNumber: 3, lineText: hitText(i),
         snippet: hitText(i),
@@ -323,7 +323,7 @@
   function deepSearchResult(lang) {
     return {
       title: lang === 'ja' ? '深掘り 竹の話' : 'Deep search bamboo',
-      markdown: '<!-- md-memo:deepsearch -->\n# ' + (lang === 'ja' ? '深掘り: 竹の話' : 'Deep search: bamboo') + '\n\nBamboo grows fast and can be cut after about three years [1][2]. Used as a building material, it has a small environmental load [2].\n\n## Evidence\n> Bamboo grows fast and can be cut after about three years. [1]\n\n## Sources\n\n1. [2026-09-28 09:00](file:///C:/Users/demo/Documents/md-memo/scraps/2026-09-28.md) — lines 3-5\n2. [2026-09-27 10:15](file:///C:/Users/demo/Documents/md-memo/scraps/2026-09-27.md) — lines 3-6\n',
+      markdown: '<!-- syki:deepsearch -->\n# ' + (lang === 'ja' ? '深掘り: 竹の話' : 'Deep search: bamboo') + '\n\nBamboo grows fast and can be cut after about three years [1][2]. Used as a building material, it has a small environmental load [2].\n\n## Evidence\n> Bamboo grows fast and can be cut after about three years. [1]\n\n## Sources\n\n1. [2026-09-28 09:00](file:///C:/Users/demo/Documents/syki-sok/scraps/2026-09-28.md) — lines 3-5\n2. [2026-09-27 10:15](file:///C:/Users/demo/Documents/syki-sok/scraps/2026-09-27.md) — lines 3-6\n',
       stats: { sources: D.deep.sources, cited: 1, unverified: 0, verified: 1, invalid_refs: 0, model: D.deep.model },
     };
   }
@@ -398,8 +398,8 @@
     var s = section || { enabled: true, model: { baseUrl: 'http://localhost:11434', model: 'bge-m3' } }, d = semanticDest(s);
     return resolve(Object.assign({
       enabled: s.enabled === true, model: d.model ? 'ollama:' + d.model : '', model_error: d.model ? '' : 'the embedding model is not set',
-      destination: d.host, local: d.local, consent_given: semanticAllowed(s, d), scrap_dir: 'C:\Users\demo\Documents\md-memo\scraps',
-      index_dir: 'C:\Users\demo\AppData\Roaming\md-memo\index\demo', files_in_folder: 53, index_model: d.model ? 'ollama:' + d.model : '', dim: 1024
+      destination: d.host, local: d.local, consent_given: semanticAllowed(s, d), scrap_dir: 'C:\Users\demo\Documents\syki-sok\scraps',
+      index_dir: 'C:\Users\demo\AppData\Roaming\syki-sok\index\demo', files_in_folder: 53, index_model: d.model ? 'ollama:' + d.model : '', dim: 1024
     }, D.semanticIndex.index));
   }
   function semanticUpdate(section, rebuild, yes) {
@@ -438,7 +438,7 @@
   // planReject / runReject / saveReject / infoReject (a message the call fails with), delayMs (the plan answers late), hold (lessonRun waits until
   // D.lessons.finish(), cancelLesson or expire()). Seen by the tests: plans (the requests), runs, cancels, saved ({ agent, rules }).
   // D.lessons.addCard(opts) puts a card in the task list the way slot_agent.js does when a run ends (status 'failed' | 'completed' | 'canceled' | 'running').
-  var LESSONS_DIR = 'C:\\Users\\demo\\AppData\\Roaming\\md-memo\\lessons\\';
+  var LESSONS_DIR = 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok\\lessons\\';
   D.lessons = {
     model: 'gemma4:e2b', host: '127.0.0.1:11434', local: true, consent: false, modelConfigured: true,
     rules: ['Do not include ADF.h: the build fails on this machine.', 'Run the build with --no-color: the log is read by a program.'], none: false,
@@ -541,7 +541,7 @@
   function lessonsFileText(path) {
     var entry = D.lessons.files.filter(function (f) { return f.path === path; })[0];
     if (!entry) return null;
-    var lines = ['# Lessons for ' + entry.agent, '<!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->'];
+    var lines = ['# Lessons for ' + entry.agent, '<!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->'];
     (entry.rules && entry.rules.length ? entry.rules : ['Do not include ADF.h: the build fails on this machine. <!-- 2026-10-03 -->']).forEach(function (r) { lines.push('- ' + r); });
     return lines.join('\n') + '\n';
   }
@@ -574,8 +574,8 @@
       return resolve({
         version: B.aboutVersion || B.version, commit: 'a8bfea5', builtAt: '2026-09-18T09:00:00Z', os: 'windows', arch: 'amd64',
         executable: 'C:\\Program Files\\syki::sok\\syki.exe',
-        configDir: 'C:\\Users\\demo\\AppData\\Roaming\\md-memo', configFile: 'C:\\Users\\demo\\AppData\\Roaming\\md-memo\\config.json',
-        scrapDir: 'C:\\Users\\demo\\Documents\\md-memo\\scraps', signing: 'unsigned'
+        configDir: 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok', configFile: 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok\\config.json',
+        scrapDir: 'C:\\Users\\demo\\Documents\\syki-sok\\scraps', signing: 'unsigned'
       });
     },
     getPlatformCapabilities: function () { return resolve({ os: 'win32', nativeImeSwitch: true, tray: true, globalHotkey: true }); },
@@ -619,7 +619,7 @@
     checkGitInstalled: function () { return resolve({ installed: true }); },
     getGitRepoStatus: function () { return resolve({ is_git: true, remote_url: 'https://github.com/demo-user/scraps.git' }); },
     testGitRemote: function () { return resolve({ success: true, message: 'ok' }); },
-    testDiscordBridgeConnection: function () { return resolve({ botUsername: 'md-memo-demo-bot' }); },
+    testDiscordBridgeConnection: function () { return resolve({ botUsername: 'syki-demo-bot' }); },
     triggerGitSync: function () { return resolve({ success: true, message: 'up to date' }); },
     searchScraps: function (q, max, filter) {
       var bad = badFilter(filter);

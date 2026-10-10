@@ -12,7 +12,7 @@ import (
 	"syki-sok/pkg/slotagent"
 )
 
-// `md-memo lessons list` (docs/design/lessons-2026-10.md section 6): the lessons files of the agents, read-only. The JSON-RPC method
+// `syki lessons list` (docs/design/lessons-2026-10.md section 6): the lessons files of the agents, read-only. The JSON-RPC method
 // lessons.list answers with LessonsList too (app_lessons_test.go has the method).
 
 func putLessons(t *testing.T, stem, text string) string {

@@ -3,9 +3,9 @@
 // A run of the Auto selector (an AI answer, a command's output, an agent's reply) is written into the note
 // between two comment lines:
 //
-//     <!-- md-memo:res a1b2 -->
+//     <!-- syki:res a1b2 -->
 //     the result
-//     <!-- /md-memo:res -->
+//     <!-- /syki:res -->
 //
 // This module only reads text and returns numbers or strings. It has no DOM and nothing runs until the
 // app calls it, and the common case (a note with no such marker) costs one indexOf.
@@ -13,7 +13,7 @@
 // Rules, kept in step with auto_selector.js (findResultAfter) and pkg/slotagent/parser.go:
 //  - The opener and the closer are whole lines (indent allowed) shaped like the two lines above.
 //  - Once an opener has been seen, the FIRST closer line after it ends the block. Another opener (or a
-//    "md-memo:run" marker) before any closer means the run never finished (a crash): the earlier block is
+//    "syki:run" marker) before any closer means the run never finished (a crash): the earlier block is
 //    "unclosed" and only its opener line is known.
 //  - A marker inside a fenced code block (``` or ~~~) is only text, not a block. The body of a block is
 //    opaque: a fence that starts inside it neither hides its closer nor leaks out of the block.
@@ -25,9 +25,9 @@
 
   // The blank set in the three lines below is space, tab and the ideographic space (U+3000), which a Japanese IME
   // types as an indent.
-  const OPEN_LINE = /^[ \t　]*<!--\s*md-memo:res(?:\s+([^\s>]+)(?:\s+[^\s>]+)*)?\s*-->[ \t　]*$/;
-  const CLOSE_LINE = /^[ \t　]*<!--\s*\/md-memo:res\s*-->[ \t　]*$/;
-  const RUN_LINE = /^[ \t　]*<!--\s*md-memo:run[\s>]/;
+  const OPEN_LINE = /^[ \t　]*<!--\s*syki:res(?:\s+([^\s>]+)(?:\s+[^\s>]+)*)?\s*-->[ \t　]*$/;
+  const CLOSE_LINE = /^[ \t　]*<!--\s*\/syki:res\s*-->[ \t　]*$/;
+  const RUN_LINE = /^[ \t　]*<!--\s*syki:run[\s>]/;
 
   // ---- fenced code -----------------------------------------------------------------------------------
 
@@ -100,9 +100,9 @@
   // closer line likewise; bodyStart..bodyEnd what lies between the two marker lines, without the line break next
   // to each marker (an empty range when there is no body line, or only an empty one: compare closeLine with
   // openLine + 1 to tell them apart). An unclosed block has closeLine, bodyStart, bodyEnd and every close*
-  // offset set to -1. Returns [] at once for a text that has no "md-memo:res" in it.
+  // offset set to -1. Returns [] at once for a text that has no "syki:res" in it.
   function findResultBlocks(text) {
-    if (typeof text !== 'string' || text.indexOf('md-memo:res') === -1) return [];
+    if (typeof text !== 'string' || text.indexOf('syki:res') === -1) return [];
     const blocks = [];
     const fence = makeFenceScanner(text);
 
@@ -126,7 +126,7 @@
       cur = null;
     }
 
-    let p = text.indexOf('md-memo:');
+    let p = text.indexOf('syki:');
     while (p !== -1) {
       const ls = p === 0 ? 0 : text.lastIndexOf('\n', p - 1) + 1;
       let le = text.indexOf('\n', p);
@@ -161,7 +161,7 @@
           if (!fence.inFence()) cur = { id: m[1] || '', line: lineOf(ls), start: ls, end: end, le: le };
         }
       }
-      p = text.indexOf('md-memo:', le + 1);
+      p = text.indexOf('syki:', le + 1);
     }
     if (cur) finishUnclosed();
     return blocks;

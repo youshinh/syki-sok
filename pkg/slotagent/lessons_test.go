@@ -66,7 +66,7 @@ func TestReadLessonsPicksRuleLinesOnly(t *testing.T) {
 	jpLong := strings.Repeat("あ", LessonMaxChars+1) // one character over
 	text := strings.Join([]string{
 		"# Lessons for claude",
-		`<!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->`,
+		`<!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->`,
 		"- Do not include ADF.h: the build fails on this machine. <!-- 2026-10-03 -->",
 		"* not a rule (star)",
 		"  - not a rule (indented)",
@@ -404,7 +404,7 @@ func TestAppendLessonsMakesTheFileAndKeepsIt(t *testing.T) {
 	}
 	data, _ := os.ReadFile(res.Path)
 	want := "# Lessons for claude\n" +
-		"<!-- md-memo lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->\n" +
+		"<!-- syki lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->\n" +
 		"- Do not include ADF.h: the build fails on this machine. <!-- 2026-10-03 -->\n" +
 		"- Use make -j1 <!-- 2026-10-03 -->\n"
 	if string(data) != want {
@@ -477,7 +477,7 @@ func TestAppendLessonsKeepsTheLineEndingsOfTheFile(t *testing.T) {
 		t.Fatal(err)
 	}
 	data, _ = os.ReadFile(path)
-	if !strings.HasPrefix(string(data), "# Lessons for empty\n<!-- md-memo lessons:") || !strings.HasSuffix(string(data), "- first <!-- 2026-10-03 -->\n") {
+	if !strings.HasPrefix(string(data), "# Lessons for empty\n<!-- syki lessons:") || !strings.HasSuffix(string(data), "- first <!-- 2026-10-03 -->\n") {
 		t.Errorf("empty file: %q", data)
 	}
 }

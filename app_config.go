@@ -239,7 +239,7 @@ func (a *App) SaveConfig(configJSON string) (bool, error) {
 
 // ExportConfig exports current settings to a user-chosen JSON file using native save file dialog.
 func (a *App) ExportConfig(configJSON string) (bool, error) {
-	path, err := dialog.SaveFileDialog("設定をエクスポート", "md-memo-config.json")
+	path, err := dialog.SaveFileDialog("設定をエクスポート", "syki-config.json")
 	if err != nil {
 		return false, fmt.Errorf("ファイルダイアログエラー: %w", err)
 	}

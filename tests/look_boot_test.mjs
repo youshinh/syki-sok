@@ -1,6 +1,6 @@
 // v2 P1b: a profile that chose paper (or an accent other than Dark Olive) must not see the ink look for a moment at start. The scripts at the
 // end of index.html run after the first paint, so a very small script at the start of <body> puts the look on the page from a key of its own
-// (md_memo_look), which app.js (applyTheme -> rememberLook) writes only when the look is not the default.
+// (syki_look), which app.js (applyTheme -> rememberLook) writes only when the look is not the default.
 //
 //   1. The script is the first thing in <body>, inline, ES5, and does nothing without the key (the default profile: no read result, no write).
 //   2. For every look and accent, the text Appearance.markerFor makes is turned by that script into the classes appearance.js apply() would set.
@@ -57,17 +57,17 @@ check('the script is the first thing in <body>: inline, before the app markup an
   assert.ok(scriptMatch.index < afterBody.indexOf('<div id="app">'), 'before the app');
   assert.ok(!/<script[^>]*\ssrc=/.test(afterBody.slice(0, scriptMatch.index)), 'before every other script');
   assert.ok(!/=>|\blet\b|\bconst\b|`/.test(SCRIPT), 'plain ES5 (it must run in the oldest WebView)');
-  assert.deepEqual([...SCRIPT.matchAll(/getItem\('([^']+)'\)/g)].map((m) => m[1]), ['md_memo_look'], 'it reads one key, md_memo_look');
+  assert.deepEqual([...SCRIPT.matchAll(/getItem\('([^']+)'\)/g)].map((m) => m[1]), ['syki_look'], 'it reads one key, syki_look');
   assert.ok(!/setItem|removeItem/.test(SCRIPT), 'and never writes');
   assert.ok(SCRIPT.length < 600, 'it is tiny (' + SCRIPT.length + ' characters)');
-  assert.ok(/md_memo_look/.test(appJs.slice(appJs.indexOf('function rememberLook'))), 'app.js writes that key');
+  assert.ok(/syki_look/.test(appJs.slice(appJs.indexOf('function rememberLook'))), 'app.js writes that key');
 });
 
 check('without the key (the default profile) the script changes nothing', () => {
   const r = run(SCRIPT, undefined);
   assert.deepEqual(r.body, ['dark-theme', 'theme-olive']);
   assert.deepEqual(r.html, []);
-  assert.deepEqual(r.reads, ['md_memo_look'], 'one read');
+  assert.deepEqual(r.reads, ['syki_look'], 'one read');
   for (const junk of ['', 'junk', '||', 'light|', 'ink|olive', 'ink|', 'ink|custom', 'ink|<img src=x>', 'paper|"; alert(1)']) {
     const j = run(SCRIPT, junk);
     if (!/^paper/.test(junk)) assert.deepEqual(j.body, ['dark-theme', 'theme-olive'], JSON.stringify(junk) + ' is ignored');
@@ -111,7 +111,7 @@ function extract(source, name) {
 
 function runRemember(source, initial, ap) {
   const store = new Map();
-  if (initial !== undefined) store.set('md_memo_look', initial);
+  if (initial !== undefined) store.set('syki_look', initial);
   const calls = [];
   const localStorage = {
     getItem: (k) => (store.has(k) ? store.get(k) : null),
@@ -121,16 +121,16 @@ function runRemember(source, initial, ap) {
   const ctx = vm.createContext({ window: { Appearance }, localStorage });
   vm.runInContext(extract(source, 'rememberLook') + '\nthis.__f = rememberLook;', ctx);
   ctx.__f(Appearance.normalize(ap));
-  return { calls, value: store.get('md_memo_look') };
+  return { calls, value: store.get('syki_look') };
 }
 
 check('rememberLook writes only what differs, and removes the key for the default look', () => {
   assert.deepEqual(runRemember(appJs, undefined, undefined).calls, [], 'the default profile writes nothing');
-  assert.deepEqual(runRemember(appJs, undefined, { look: 'paper' }).calls, ['set md_memo_look=paper|']);
+  assert.deepEqual(runRemember(appJs, undefined, { look: 'paper' }).calls, ['set syki_look=paper|']);
   assert.deepEqual(runRemember(appJs, 'paper|', { look: 'paper' }).calls, [], 'already there: nothing');
-  assert.deepEqual(runRemember(appJs, 'paper|', { look: 'paper', accent: 'blue' }).calls, ['set md_memo_look=paper|blue']);
-  assert.deepEqual(runRemember(appJs, 'paper|blue', undefined).calls, ['remove md_memo_look'], 'back to the default: the key goes');
-  assert.deepEqual(runRemember(appJs, 'ink|forest', { accent: 'custom', accentCustom: '#123456' }).calls, ['remove md_memo_look'], 'a colour of one\'s own has no marker');
+  assert.deepEqual(runRemember(appJs, 'paper|', { look: 'paper', accent: 'blue' }).calls, ['set syki_look=paper|blue']);
+  assert.deepEqual(runRemember(appJs, 'paper|blue', undefined).calls, ['remove syki_look'], 'back to the default: the key goes');
+  assert.deepEqual(runRemember(appJs, 'ink|forest', { accent: 'custom', accentCustom: '#123456' }).calls, ['remove syki_look'], 'a colour of one\'s own has no marker');
   // a storage that throws
   const ctx = vm.createContext({ window: { Appearance }, localStorage: { getItem() { throw new Error('blocked'); }, setItem() { throw new Error('blocked'); }, removeItem() { throw new Error('blocked'); } } });
   vm.runInContext(extract(appJs, 'rememberLook') + '\nthis.__f = rememberLook;', ctx);
@@ -165,9 +165,9 @@ check('mutation check: a broken script or rememberLook is caught', () => {
   assert.ok(caught(paperOnBoth), 'not putting the look on <html> (the canvas) is caught');
   MUTANT = mutate(SCRIPT, "/^(blue|forest|charcoal|vermilion)$/.test(p[1])", 'true');
   assert.ok(caught(ignoresJunk), 'accepting any accent text is caught');
-  const noRemove = mutate(appJs, "else localStorage.removeItem('md_memo_look');", ';');
-  assert.deepEqual(runRemember(appJs, 'paper|blue', undefined).calls, ['remove md_memo_look']);
-  assert.notDeepEqual(runRemember(noRemove, 'paper|blue', undefined).calls, ['remove md_memo_look'], 'a key that is never removed (the default look would keep a stale paper) is caught');
+  const noRemove = mutate(appJs, "else localStorage.removeItem('syki_look');", ';');
+  assert.deepEqual(runRemember(appJs, 'paper|blue', undefined).calls, ['remove syki_look']);
+  assert.notDeepEqual(runRemember(noRemove, 'paper|blue', undefined).calls, ['remove syki_look'], 'a key that is never removed (the default look would keep a stale paper) is caught');
   const alwaysWrite = mutate(appJs, 'if (want === have) return;', '');
   assert.notDeepEqual(runRemember(alwaysWrite, 'paper|', { look: 'paper' }).calls, [], 'a write on every start is caught');
 });

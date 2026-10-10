@@ -1,4 +1,4 @@
-// The JSON-RPC tab and task listings of the page (window.__mdMemoRPC.getTabs / getTasks / cancelTask, behind `tab.list` / `task.list` /
+// The JSON-RPC tab and task listings of the page (window.__sykiRPC.getTabs / getTasks / cancelTask, behind `tab.list` / `task.list` /
 // `task.cancel`): getTabs also says how each tab's file is read and written (encoding, line ending), whether the file changed under
 // unsaved text, whether it is a scrap and which pane shows it; the task list shows what is running without any prompt or output text,
 // and cancel stops a task the way the Task panel's Cancel button does.
@@ -54,7 +54,7 @@ export default {
     assert.equal(byTitle(list, 'a.md').eol, 'lf');
 
     t.step('a tab whose file changed under unsaved text is diskConflict, and only that tab');
-    await s.ev(`window.__mdMemoRPC.switchTab(${JSON.stringify(crlf.id)})`);
+    await s.ev(`window.__sykiRPC.switchTab(${JSON.stringify(crlf.id)})`);
     await s.waitFor(`window.__explore.state().activeTabId === ${JSON.stringify(crlf.id)}`);
     await s.ev("(function () { var e = document.getElementById('editor'); e.focus(); e.setSelectionRange(e.value.length, e.value.length); })()");
     await s.type(' MINE');
@@ -73,7 +73,7 @@ export default {
     assert.deepEqual(list.filter((x) => x.isScrap).map((x) => x.title), ['2026-10-02.md']);
 
     t.step('pane: the tab in the split\'s right-hand pane says "secondary", exactly one tab per pane');
-    await s.waitFor("window.__mdMemoRPC.getTabs().filter(function (x) { return x.pane === 'primary'; }).length === 1");
+    await s.waitFor("window.__sykiRPC.getTabs().filter(function (x) { return x.pane === 'primary'; }).length === 1");
     await click(s, 'btn-toggle-split');
     await waitShown(s, 'secondary-pane');
     list = await tabs(s);

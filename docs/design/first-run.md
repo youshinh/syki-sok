@@ -16,9 +16,9 @@
 |---|---|
 | 設定ファイル（`config.json`）が無い | バックエンドの `GetConfig()` が空文字を返した。**答えが分からないとき（バックエンドが無い、読み込みに失敗）は初回として扱わない** |
 | `general.welcomeShown` が無い | メモリ上の設定 |
-| ブラウザ側の設定コピーが無い | `localStorage` の `md_notepad_config_v3` / `md_memo_config_v1` |
+| ブラウザ側の設定コピーが無い | `localStorage` の `md_notepad_config_v3` / `syki_config_v1` |
 | 保存されたセッションが無い | `localStorage` のセッション、バックエンドの `session.json` |
-| 覚えているワークスペースフォルダが無い | `localStorage` の `md_memo_workspace_folder` |
+| 覚えているワークスペースフォルダが無い | `localStorage` の `syki_workspace_folder` |
 | 起動時に渡されたファイルが無い | `GetStartupFile()`（ダブルクリック、Open with、コマンドラインのパス） |
 | 最初のノートに手が付いていない | タブが1つ、ファイルなし、未保存の変更なし、中身が空か日付見出しだけ（エディタの現在の値で判断） |
 
@@ -48,7 +48,7 @@
 
 レビューの直し方は「日付見出しをバッファに入れず、プレースホルダーが出るようにする」だったが、変えない。
 
-- **見出しに依存しているもの**（`grep` で確認）: `note_title.js`（無題ノートの名前。見出し以外に何も無いときの名前、保存名 `YYYY-MM-DD_<要約>.md` の日付は見出しから取る）、`app.js` の起動ファイル置換の判定（`content.startsWith('# ')`）、`tests/rpc_write_tabs_test.mjs` / `tests/hot_path_parity_test.mjs` / `frontend/js/note_title_test.js`、マニュアルの「無題ノートの名前の付き方」。`md-memo tab new` も同じ `createTab` を通る。
+- **見出しに依存しているもの**（`grep` で確認）: `note_title.js`（無題ノートの名前。見出し以外に何も無いときの名前、保存名 `YYYY-MM-DD_<要約>.md` の日付は見出しから取る）、`app.js` の起動ファイル置換の判定（`content.startsWith('# ')`）、`tests/rpc_write_tabs_test.mjs` / `tests/hot_path_parity_test.mjs` / `frontend/js/note_title_test.js`、マニュアルの「無題ノートの名前の付き方」。`syki tab new` も同じ `createTab` を通る。
 - 見出しを外すと、タブ名が `untitled-N.md` から始まり、保存名の日付の由来も変わる。全ユーザーの毎日の動作が変わるのに、得られるのは「空のノートに薄いヒントが出る」だけ。
 - 初回の問題（何も案内がない）は、ようこそノートで解く。2枚目以降の新規ノートのヒントは、日付見出しを残したままでは出せない。必要なら別の形（空のノートの一行目に薄い案内を重ねるなど）で検討する（未着手）。
 
@@ -79,7 +79,7 @@
 
 - 実機の WebView2 / WKWebView での見え方と、初回の差し替えが見える長さ（IPC の往復。ここではモックで即時）。macOS 全般。スクリーンリーダー。
 - 実際の Ollama のインストール（ボタンを押したあとの流れは既存の処理で、今回は触れていない）。
-- 別のウィンドウで `md-memo` を起動する CLI 経由の最初の起動（`tab list` に「ようこそ」が出る）は、コードで確認しただけ。
+- 別のウィンドウで `syki` を起動する CLI 経由の最初の起動（`tab list` に「ようこそ」が出る）は、コードで確認しただけ。
 
 ## 残り・引き継ぎ
 

@@ -295,7 +295,7 @@ ID は C9-連番。重大度は案（決めるのはナビゲーター）。証�
 - 原因の仮説: 設計上の判断（隠していない）。書く場所の問題
 - 自動テストにできるか: できない（何を書くかの判断。現状の文言は `frontend/js/first_run_test.js` が固定している）
 
-### C9-14 ようこそが「保存先」を `~/Documents/md-memo/scraps` と書き、Help・マニュアル・About の入口には触れない
+### C9-14 ようこそが「保存先」を `~/Documents/syki-sok/scraps` と書き、Help・マニュアル・About の入口には触れない
 
 - 重大度（案）: P3
 - 気づきの型: OR
@@ -304,7 +304,7 @@ ID は C9-連番。重大度は案（決めるのはナビゲーター）。証�
   1. 新規の人（Windows）で起動し、ようこその「Where your notes are」を読む。
   2. パレット → About を開き、「Daily notes」の行を見る。
 - 期待（オラクル）: 同じ場所は同じ表記。ヘルプの場所が分かる
-- 実際: ようこそはチルダ表記の設定の既定値（`~/Documents/md-memo/scraps`）。About は `C:\Users\…\Documents\md-memo\scraps`。ツールバーの Help ボタンは落ち着いた配置で隠れていて、ようこそにはオンラインマニュアル・About への言及がない（パレットに「Help and manual (web)」と「About」はある）
+- 実際: ようこそはチルダ表記の設定の既定値（`~/Documents/syki-sok/scraps`）。About は `C:\Users\…\Documents\syki-sok\scraps`。ツールバーの Help ボタンは落ち着いた配置で隠れていて、ようこそにはオンラインマニュアル・About への言及がない（パレットに「Help and manual (web)」と「About」はある）
 - 環境: 1.10.5 (a8bfea5) · 探索キット · en / ja
 - 再現性: 毎回（t01、t08、t14 の 3 回）
 - 証拠: `t01-launch-en.png`、`t08-about-en.png`

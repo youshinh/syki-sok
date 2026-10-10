@@ -369,7 +369,7 @@ func (r *Runner) ExecuteSlotAsync(
 // on Windows it is the long form of the path even when %TEMP% is a short (8.3) one (longpath.go). If that cannot be
 // worked out the path is the one os.CreateTemp made: the run never fails over it.
 func CreateTempNoteFile(content string) (string, func(), error) {
-	tmpFile, err := os.CreateTemp("", "md-memo-slot-*.md")
+	tmpFile, err := os.CreateTemp("", "syki-slot-*.md")
 	if err != nil {
 		return "", nil, err
 	}
@@ -394,7 +394,7 @@ func CreateTempNoteFile(content string) (string, func(), error) {
 
 // FindProjectRoot recursively searches upward from filePath to find the project root directory.
 // A project root is identified by the presence of:
-// - .md-memo/
+// - .syki/
 // - agents.yaml, agents.yml, AGENTS.md, or agents.json
 // - skills/
 // - .git/
@@ -425,7 +425,7 @@ func FindProjectRoot(filePath string) string {
 	rootMarkers := []string{
 		".syki",
 		".syki-sok",
-		".md-memo",
+		".syki",
 		"agents.yaml",
 		"agents.yml",
 		"AGENTS.md",

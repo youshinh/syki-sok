@@ -1,5 +1,5 @@
 // Unit tests for builtin_ai.js: feature-detection for the (currently
-// unavailable in md-memo's real runtimes) Prompt API and WebMCP shims.
+// unavailable in syki's real runtimes) Prompt API and WebMCP shims.
 const assert = require('assert');
 
 const modulePath = require.resolve('./builtin_ai.js');

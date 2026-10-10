@@ -26,7 +26,7 @@ export default {
     t.step('Meaning list, then Deep search: the backend is asked for a plan of 10 and the dialog opens with the focus on Cancel');
     await deepKnobs(s, { notes: ['4 hits are older than the index.'] });
     await openMeaning(s, 'bamboo');
-    assert.equal(await s.ev("sessionStorage.getItem('md_memo_scraps_search_mode')"), 'meaning', 'the mode is kept for the session');
+    assert.equal(await s.ev("sessionStorage.getItem('syki_scraps_search_mode')"), 'meaning', 'the mode is kept for the session');
     await openDeepDialog(s);
     assert.deepEqual(await planCalls(), [['bamboo', 10]]);
     assert.deepEqual(await runCalls(), [], 'nothing was sent to the AI by opening the dialog');
@@ -142,7 +142,7 @@ export default {
 
     t.step('Cancel there saves no consent; "Allow and run" saves the host to the settings BEFORE the run is asked of the backend');
     await cancelByClick();
-    assert.equal(await s.ev("(MdMemoBridge.getConfig().general.cloudConsent || {})['api.example.com']"), undefined, 'cancelling allowed nothing');
+    assert.equal(await s.ev("(SykiBridge.getConfig().general.cloudConsent || {})['api.example.com']"), undefined, 'cancelling allowed nothing');
     await openDeepDialog(s);
     // the settings file is slow to answer: the run must wait for it (the backend reads the answer from there and refuses without it)
     await s.ev(`window.__saves = [];

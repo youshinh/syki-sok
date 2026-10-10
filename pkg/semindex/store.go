@@ -40,7 +40,7 @@ const (
 
 // ErrCorrupt means the files of the index do not match its manifest (an interrupted compaction, a damaged disk). The index holds only
 // derived data: rebuild it.
-var ErrCorrupt = errors.New("the semantic index is damaged; rebuild it (md-memo scrap index --rebuild)")
+var ErrCorrupt = errors.New("the semantic index is damaged; rebuild it (syki scrap index --rebuild)")
 
 // FileRec is what the index knows of one scrap file: its size and time when it was last read, and the chunk rows made from it.
 type FileRec struct {

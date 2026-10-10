@@ -12,9 +12,9 @@ import (
 	"syki-sok/pkg/ipc"
 )
 
-// fakeRPCPeer is a hermetic stand-in for a running md-memo instance: it speaks the same
+// fakeRPCPeer is a hermetic stand-in for a running syki instance: it speaks the same
 // newline-delimited JSON-RPC protocol as ipc.Server but never touches the real session file
-// (ipc.StartServer writes to the real %AppData%/md-memo/ipc-session.json, which would clobber a
+// (ipc.StartServer writes to the real %AppData%/syki-sok/ipc-session.json, which would clobber a
 // developer's live session; see pkg/ipc's own TestMain for why that must be avoided).
 type fakeRPCPeer struct {
 	listener net.Listener

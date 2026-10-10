@@ -29,8 +29,8 @@ import (
 // the thread exists only while picking.
 
 const (
-	capInputClass = "MDMemoCapInput"
-	capFrameClass = "MDMemoCapFrame"
+	capInputClass = "SykiCapInput"
+	capFrameClass = "SykiCapFrame"
 
 	capWmSetCursor  = 0x0020
 	capWmNcHitTest  = 0x0084

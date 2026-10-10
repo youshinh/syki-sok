@@ -46,7 +46,7 @@ skills が数週間分遅れていたことが分かった（JSON-RPC の 19 メ
       トークン必須（`pkg/ipc/auth.go` は既定で保護）、接続の期限は **10 秒**（`pkg/ipc/ipc.go`）、RPC 自身の上限は 5 秒（長い処理は
       別の上限か、人が確認する画面を開くだけの形にする）。AI の起動・外への送信・シェルの実行は RPC に出さない（`docs/design/rpc-additions-2026-10.md` 4 章）。
 - [ ] **CLI を足した**: `pkg/cli/registry.go`（コマンド語）、`help.go`、`main_skilldocs_test.go` が「フラグが skills に書かれているか」を見る。
-      コマンド語はパイプのタイトル語と衝突しうる（`md-memo pdf` にしなかった理由）。
+      コマンド語はパイプのタイトル語と衝突しうる（`syki pdf` にしなかった理由）。
 - [ ] **ファイルを書く・送る・保存する**: 書く先の検証（絶対パス、拡張子、既存を上書きしない）、秘密の伏せ字、同意（`general.cloudConsent` など）、
       Go 側でも同意を**もう一度**確かめる（ページの言うことを信じない）。
 - [ ] **ノートのファイルを Go が書く新経路**: 「外部変更を上書きしない」仕組みの baseline 更新（`project_disk_sync_crlf` の落とし穴）。
@@ -86,7 +86,7 @@ skills が数週間分遅れていたことが分かった（JSON-RPC の 19 メ
 
 - [ ] `docs/features.md` と `docs/features_ja.md`: 章、末尾の「Windows と macOS で何が動くか」の表の行、スクリプトからの使い方。
 - [ ] **`manual.html` と `manual_ja.html`**（図は `figure.fig` + `ol.fig-legend`、日英で同じ id・同じ図の数）:
-      サイドバー、節（`doc-section`）、「どれを使う？」の表（`which-one`）、「テキストはどこへ行くか」（`about-md-memo`）、
+      サイドバー、節（`doc-section`）、「どれを使う？」の表（`which-one`）、「テキストはどこへ行くか」（`about-syki`）、
       JSON-RPC の表（`json-rpc`）、CLI（`headless-cli`）、用語集（`glossary`）、ショートカットの表（`cfg-shortcuts`）、設定の章（`cfg-*`）。
       **`python tools/check_manual.py`**（id の重複、リンク切れ、タグの閉じ忘れ、図の凡例数 = マーカー数、日英の対応、
       JSON-RPC のメソッドと CLI のコマンドが両方のマニュアルにあること）。
@@ -95,7 +95,7 @@ skills が数週間分遅れていたことが分かった（JSON-RPC の 19 メ
       1120x720 か、実データが写り込んでいないか）。UI を変えたら関係する画像を撮り直す（画像は撮影時のフロントを写す）。
 - [ ] `README.md` / `README_JA.md`（短いまま。1 機能 1 行）、ルートの `index.html` / `index_ja.html`（`frontend/index.html` ではない。
       カード、下の注記、機能の数の表記）。デモ GIF は UI が変わったときだけ撮り直す。
-- [ ] **`skills/md-memo/`**（エージェントが読む。LF）: `SKILL.md`（表の行）、`references/interfaces.md`（0 章の表、1 章 CLI、2.2 RPC の行、
+- [ ] **`skills/syki/`**（エージェントが読む。LF）: `SKILL.md`（表の行）、`references/interfaces.md`（0 章の表、1 章 CLI、2.2 RPC の行、
       4 章 GUI、5 章ファイル、6 章ネットワーク）、`setup-guide.md`（(b) 設定キー、(e) 機能ごとの前提と確認）、`troubleshooting.md`（症状 → 原因 → 直し方）。
       `go test -run "Skill|Help" .` が、コマンド・フラグ・RPC メソッドの書き忘れを見る。
 - [ ] `docs/design/` に**判断の記録**（なぜそうしたか、足さなかったもの、未確認の点）。
@@ -107,12 +107,12 @@ skills が数週間分遅れていたことが分かった（JSON-RPC の 19 メ
 - [ ] 版番号をユーザーに提案して決めてもらう（機能追加は minor、修正は patch）。
 - [ ] 版を上げる場所: `app.go` の `AppVersion`、`app_rpc_test.go`、`frontend/js/app.js` の `currentVersion` 既定値、
       `tests/update_checker_test.mjs`（既定値が現行版と一致するかを見張るテスト）、`manual.html` / `manual_ja.html` のバッジ・例・フッター、
-      `skills/md-memo/SKILL.md`（"Version x"）、`references/interfaces.md`（Basis と例の `"appVersion"`）、`references/setup-guide.md`（Basis）。
+      `skills/syki/SKILL.md`（"Version x"）、`references/interfaces.md`（Basis と例の `"appVersion"`）、`references/setup-guide.md`（Basis）。
       **上げない**: 機能が入った版を示す履歴の言及（"from 1.10.0"）、`docs/design/*.md`、`frontend/index.html` の `?v=`、旧版の設定パッケージを表すダミー。
 - [ ] 機能のコミットと版更新のコミットは**分ける**。コミットは `&&` でつなぐ（`;` だと前段が失敗しても後段が走る）。
 - [ ] push → **CI（Windows と macOS）が緑**になるのを待つ → 注釈付きタグ → Release の成功 → `gh release edit` で英日の本文
       （空で出る）→ zip の `sha256` を `gh release view --json assets` の `digest` と照合 → `syki-cli --version`、`jev verify` の終了コード、
-      macOS の Info.plist、埋め込みの frontend に今回の修正が入っていること（`grep -a -c -F`）→ `packaging/homebrew/md-memo.rb`
+      macOS の Info.plist、埋め込みの frontend に今回の修正が入っていること（`grep -a -c -F`）→ `packaging/homebrew/syki.rb`
       とタップ `youshinh/homebrew-tap`（LF、名義 youshinh）を更新。winget は PR（`packaging/winget`）。
 - [ ] リリースノートに**確認していない点**（実機の Mac など）を書く。
 

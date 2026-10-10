@@ -104,13 +104,13 @@ function show(o) {
   o = toggle('«<!-- a -->\n\n<!-- b -->»');
   assert.strictEqual(o.r.status, 'uncommented');
   assert.strictEqual(o.text, 'a\n\nb');
-  const block = '[[ @llm x ]]\n<!-- md-memo:res ab12 -->\nanswer\n<!-- /md-memo:res -->';
+  const block = '[[ @llm x ]]\n<!-- syki:res ab12 -->\nanswer\n<!-- /syki:res -->';
   o = toggle('«' + block + '»');
-  assert.strictEqual(o.text, '<!-- [[ @llm x ]] -->\n<!-- md-memo:res ab12 -->\n<!-- answer -->\n<!-- /md-memo:res -->', 'markers are never wrapped');
+  assert.strictEqual(o.text, '<!-- [[ @llm x ]] -->\n<!-- syki:res ab12 -->\n<!-- answer -->\n<!-- /syki:res -->', 'markers are never wrapped');
   assert.deepStrictEqual(o.r.skipped, [], 'and not reported: they are structure');
   o = toggle(show(o));
   assert.strictEqual(o.text, block, 'nor unwrapped');
-  o = toggle('<!-- md-memo:run ab12 -->¦');
+  o = toggle('<!-- syki:run ab12 -->¦');
   assert.strictEqual(o.r.status, 'nothing');
   o = toggle('¦');
   assert.strictEqual(o.r.status, 'nothing');
@@ -227,7 +227,7 @@ function show(o) {
   assert.deepStrictEqual([o.r.status, o.r.reason, o.text], ['refused', 'terminator', 'a\nb --> c']);
   o = toggle('«a\n<!-- b -->\nc»', 'block');
   assert.strictEqual(o.r.reason, 'terminator', 'two comments are not one block: -->');
-  o = toggle('«x\n<!-- md-memo:run ab12 -->»', 'block');
+  o = toggle('«x\n<!-- syki:run ab12 -->»', 'block');
   assert.strictEqual(o.r.reason, 'marker');
   o = toggle('<!-- start\n«middle»\nend -->', 'block');
   assert.strictEqual(o.r.reason, 'overlap', 'inside a comment that goes on outside the lines');

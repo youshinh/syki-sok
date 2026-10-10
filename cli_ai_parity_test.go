@@ -57,7 +57,7 @@ var baselineCases = []struct {
 	{cmd: "git commit -m 'update docs'", reviewed: "safe", strictSafe: true, strictRule: ""},
 	{cmd: "git push origin main", reviewed: "safe", strictSafe: true, strictRule: ""},
 	{cmd: "jq -r '(.[0] | keys_unsorted) as $keys | $keys, map([.[]])[] | @tsv' | column -t -s $'\\t'", reviewed: "safe", strictSafe: true, strictRule: ""},
-	{cmd: "printf '%s %s\\n' \"$(date +%F)\" \"$1\" >> \"$HOME/md-memo-saves.log\"", reviewed: "safe", strictSafe: true, strictRule: ""},
+	{cmd: "printf '%s %s\\n' \"$(date +%F)\" \"$1\" >> \"$HOME/syki-saves.log\"", reviewed: "safe", strictSafe: true, strictRule: ""},
 	{cmd: "curl -s https://ipinfo.io/json", reviewed: "safe", strictSafe: true, strictRule: ""},
 	{cmd: "curl -s https://example.com/data.json | jq .", reviewed: "safe", strictSafe: true, strictRule: ""},
 	{cmd: "curl -s https://example.com/data.json | python -m json.tool", reviewed: "safe", strictSafe: true, strictRule: ""},
@@ -141,7 +141,7 @@ var riskRank = map[string]int{"safe": 0, "warning": 1, "blocked": 2}
 // stricterOnPurpose lists the baseline commands whose verdict changed deliberately, with the reason.
 // Anything not listed here must be identical to the baseline.
 //
-// All three are the always-refuse patterns that only the reviewed gate used to apply. `md-memo jev
+// All three are the always-refuse patterns that only the reviewed gate used to apply. `syki jev
 // verify` (strict) is what agents are told to run before registering a command, so it has to refuse
 // what the GUI gate would refuse.
 var stricterOnPurpose = map[string]string{

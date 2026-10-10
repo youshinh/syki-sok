@@ -14,11 +14,11 @@ func setOSOpenHandler(f func(string)) {
 	osOpenHandler.Store(&f)
 }
 
-// mdmemoGoOpenFile is called from Objective-C on the main thread, once per file. It must return
+// sykiGoOpenFile is called from Objective-C on the main thread, once per file. It must return
 // quickly: the handler only queues the path or starts a goroutine.
 //
-//export mdmemoGoOpenFile
-func mdmemoGoOpenFile(path *C.char) {
+//export sykiGoOpenFile
+func sykiGoOpenFile(path *C.char) {
 	if path == nil {
 		return
 	}
@@ -35,13 +35,13 @@ func setOSQuitHandler(f func()) {
 	osQuitHandler.Store(&f)
 }
 
-// mdmemoGoQuit is called from Objective-C on the main thread after the page has saved its
+// sykiGoQuit is called from Objective-C on the main thread after the page has saved its
 // session. It reports 1 when the handler has started the exit, and 0 when there is none yet, in
-// which case the caller lets AppKit terminate the process itself. Like mdmemoGoOpenFile it must
+// which case the caller lets AppKit terminate the process itself. Like sykiGoOpenFile it must
 // return quickly: the handler only schedules the run loop to stop.
 //
-//export mdmemoGoQuit
-func mdmemoGoQuit() C.int {
+//export sykiGoQuit
+func sykiGoQuit() C.int {
 	if h := osQuitHandler.Load(); h != nil {
 		(*h)()
 		return 1

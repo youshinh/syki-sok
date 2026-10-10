@@ -465,7 +465,7 @@ async function runAutoSelectorTests() {
     runCommandTask: () => 'cmd_1',
     t: (key) => (key === 'llmError' ? 'LLM error: ' : key)
   };
-  global.window.MdMemoBridge = bridge;
+  global.window.SykiBridge = bridge;
   global.window.TaskManager = { addTask: (t) => seen.tasks.push(t), updateTask: (id, u) => seen.updated.push(Object.assign({ id }, u)) };
   global.window.showMessage = (msg) => seen.shown.push(msg);
   global.window.backend.parseSlotsRPC = async (text, cursor) => {
@@ -500,7 +500,7 @@ async function runAutoSelectorTests() {
     assert.strictEqual(seen.parse.length, 0, 'no RPC for the decision');
     assert.strictEqual(seen.llm.length, 1);
     const call = seen.llm[0];
-    const id = /^\n<!-- md-memo:run ([a-z0-9]{4}) -->$/.exec(call.anchorText);
+    const id = /^\n<!-- syki:run ([a-z0-9]{4}) -->$/.exec(call.anchorText);
     assert.ok(id, 'the anchor is a line break plus the marker: ' + JSON.stringify(call.anchorText));
     assert.strictEqual(editor.value, '前\n- [[ @llm この文章を要約して ]]' + call.anchorText + '\n後');
     assert.strictEqual(call.prompt, 'この文章を要約して');
@@ -530,14 +530,14 @@ async function runAutoSelectorTests() {
   {
     const editor = makeEditor('この文章を要約して\n\n{{ calc: 1 }}', 0);
     bridge.editor = editor;
-    const saved = global.window.MdMemoBridge;
-    delete global.window.MdMemoBridge;
+    const saved = global.window.SykiBridge;
+    delete global.window.SykiBridge;
     reset();
     keydown(editor);
     await flush();
     assert.strictEqual(seen.parse.length, 1, 'no bridge: the slot parser is asked');
     assert.strictEqual(editor.value.split('\n')[0], 'この文章を要約して');
-    global.window.MdMemoBridge = saved;
+    global.window.SykiBridge = saved;
 
     const savedAS = global.window.AutoSelector;
     delete global.window.AutoSelector;
@@ -591,7 +591,7 @@ async function runAutoSelectorTests() {
     keydown(editor);
     await flush();
     assert.strictEqual(seen.run.length, 1);
-    const marker = /\n<!-- md-memo:run ([a-z0-9]{4}) -->/.exec(editor.value);
+    const marker = /\n<!-- syki:run ([a-z0-9]{4}) -->/.exec(editor.value);
     assert.ok(marker, 'the marker is under the task line');
     assert.strictEqual(editor.value, 'メモ\n{{ @claude READMEを整えて }}' + marker[0] + '\n末尾', 'the task line is not touched, no "running" placeholder');
     assert.strictEqual(seen.run[0].text, editor.value, 'the agent gets the note with the marker');
@@ -624,11 +624,11 @@ async function runAutoSelectorTests() {
     global.__parseAnswer = (t) => ({ targetSlot: Object.assign({}, slot, { endOffset: t.indexOf('}}') + 2 }) });
     keydown(editor);
     await flush();
-    const second = /<!-- md-memo:run ([a-z0-9]{4}) -->/.exec(editor.value);
-    assert.ok(second && !editor.value.includes('md-memo:res'), 're-run: the old block became the new marker');
+    const second = /<!-- syki:run ([a-z0-9]{4}) -->/.exec(editor.value);
+    assert.ok(second && !editor.value.includes('syki:res'), 're-run: the old block became the new marker');
     global.window.__onSlotAgentResult({ reqId: seen.run[0].reqId, outputMode: 'below', status: 'failed', errorMsg: 'boom\nsecond line', exitCode: 1, output: '' });
     assert.ok(editor.value.includes('[claude-code error: boom second line]') || editor.value.includes('autoSelAgentError'), editor.value);
-    assert.strictEqual(editor.value.match(/<!-- md-memo:res /g).length, 1);
+    assert.strictEqual(editor.value.match(/<!-- syki:res /g).length, 1);
 
     // The runner's own failure text starts with a warning sign and "エラー:"; the block already says "<agent> error:", so the lead-in is not repeated.
     // (Written with escapes: the sign is spelled out to keep the sources free of pictographs.)
@@ -639,7 +639,7 @@ async function runAutoSelectorTests() {
       keydown(editor);
       await flush();
       global.window.__onSlotAgentResult({ reqId: seen.run[0].reqId, outputMode: 'below', status: 'failed', errorMsg, exitCode: exitCode === undefined ? 1 : exitCode, output: '' });
-      assert.strictEqual(editor.value.match(/<!-- md-memo:res /g).length, 1, 'one block, not stacked');
+      assert.strictEqual(editor.value.match(/<!-- syki:res /g).length, 1, 'one block, not stacked');
       const lines = editor.value.split('\n').filter((l) => /^\[claude-code (?:error|エラー): /.test(l));
       assert.strictEqual(lines.length, 1, editor.value);
       return lines[0];
@@ -734,7 +734,7 @@ async function runAutoSelectorTests() {
     const call = seen.llm[0];
     assert.ok(call, 'the recorded task ran');
     assert.strictEqual(call.prompt, '【指示】:\n要約して\n\n【対象テキスト】:\n今日は会議が長引いてしまった。');
-    assert.ok(/^\n<!-- md-memo:run [a-z0-9]{4} ctx=above n=1 -->$/.test(call.anchorText), call.anchorText);
+    assert.ok(/^\n<!-- syki:run [a-z0-9]{4} ctx=above n=1 -->$/.test(call.anchorText), call.anchorText);
     assert.strictEqual(editor.value, '今日は会議が長引いてしまった。\n[[ @llm 要約して ]]' + call.anchorText);
     console.log("  PASS: content goes to the ask bar; the answer to it is recorded below the text");
   }
@@ -770,7 +770,7 @@ async function runCommentTests() {
   }
 
   const seen = { parse: [], run: [], llm: [], ask: [], shown: [] };
-  const bridge = global.window.MdMemoBridge;
+  const bridge = global.window.SykiBridge;
   const savedStartLlm = bridge.startLlmTask;
   const savedOpenAsk = bridge.openAskBar;
   bridge.startLlmTask = (o) => { seen.llm.push(o); return 'llm_x'; };

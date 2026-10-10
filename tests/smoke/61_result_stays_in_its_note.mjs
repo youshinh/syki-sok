@@ -57,7 +57,7 @@ export default {
     assert.ok(st.toasts.length > 0, 'a toast says what happened');
 
     t.step('the same with the setting "no result note" (the output would only go into the note)');
-    await s.ev("MdMemoBridge.getConfig().cli = Object.assign({}, MdMemoBridge.getConfig().cli, { openResultInNewTab: false })");
+    await s.ev("SykiBridge.getConfig().cli = Object.assign({}, SykiBridge.getConfig().cli, { openResultInNewTab: false })");
     await goToTab(s, tabA);
     await selectInEditor(s, 'alpha\nmike\nyankee');
     await s.key('e', { ctrl: true });
@@ -89,7 +89,7 @@ export default {
     assert.equal((await tabById(s, tabB)).content, B, 'b.md untouched');
 
     t.step('Quick Actions: start in a.md, open b.md, then the answer arrives');
-    await s.ev("MdMemoBridge.getConfig().cli = Object.assign({}, MdMemoBridge.getConfig().cli, { openResultInNewTab: true })");
+    await s.ev("SykiBridge.getConfig().cli = Object.assign({}, SykiBridge.getConfig().cli, { openResultInNewTab: true })");
     await goToTab(s, tabA);
     await selectInEditor(s, 'mike', { caretOnly: true });
     await s.key('j', { ctrl: true });

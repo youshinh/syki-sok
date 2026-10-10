@@ -23,11 +23,11 @@ static NSWindow *gWindow = nil;
 
 // Forward declaration with external linkage on purpose: hotkey_darwin.go is a separate cgo
 // translation unit and its Carbon hot-key handler calls this function.
-void mdmemoActivateWindow(void);
+void sykiActivateWindow(void);
 
-// mdmemoActivateWindowOnMain brings the app and its window to the front. It touches AppKit
+// sykiActivateWindowOnMain brings the app and its window to the front. It touches AppKit
 // and must therefore only ever be called on the main thread.
-static void mdmemoActivateWindowOnMain(void) {
+static void sykiActivateWindowOnMain(void) {
     NSApplication *app = [NSApplication sharedApplication];
     [app activateIgnoringOtherApps:YES];
     if (gWindow != nil) {
@@ -41,12 +41,12 @@ static void mdmemoActivateWindowOnMain(void) {
 // Defined in Go (openfile_darwin.go, //export): hands one path to the app. It is only declared
 // here because a Go file with //export directives may not define anything in its preamble, and
 // the Objective-C below needs definitions.
-extern void mdmemoGoOpenFile(char *path);
+extern void sykiGoOpenFile(char *path);
 
 // Defined in Go (openfile_darwin.go, //export), declared here for the same reason. It starts the
 // same exit App.CloseWindow uses (closePlatformWindow: stop the run loop so webview_run returns
 // and main's defers run) and returns 1, or returns 0 when Go has no window to stop yet.
-extern int mdmemoGoQuit(void);
+extern int sykiGoQuit(void);
 
 // --- Quitting ----------------------------------------------------------------------------------
 //
@@ -56,11 +56,11 @@ extern int mdmemoGoQuit(void);
 // (its session save is debounced by 500 ms, and WKWebView fires no beforeunload on exit).
 // applicationShouldTerminate: below routes every quit through one path instead:
 //
-//   1. ask the page to save its session (kMDMemoQuitFlushScript), waiting at most
-//      kMDMemoQuitFlushTimeout for the answer;
+//   1. ask the page to save its session (kSykiQuitFlushScript), waiting at most
+//      kSykiQuitFlushTimeout for the answer;
 //   2. a quit the user asked for (Cmd+Q, Dock > Quit) is cancelled as far as AppKit is concerned
 //      and finished by Go the way App.CloseWindow does it, so every defer runs. If the process is
-//      somehow still alive kMDMemoQuitStopTimeout later, AppKit is told to terminate for real;
+//      somehow still alive kSykiQuitStopTimeout later, AppKit is told to terminate for real;
 //   3. a logout, restart or shutdown must never be cancelled (the system would abandon the
 //      logout), so it answers NSTerminateLater and then YES once the page has saved: AppKit exits
 //      as before, minus the lost edits. ipc-session.json may stay behind in that case; the next
@@ -72,33 +72,33 @@ extern int mdmemoGoQuit(void);
 // they did when Cmd+Q simply exited.
 
 enum {
-    kMDMemoQuitIdle = 0,     // no quit requested yet
-    kMDMemoQuitFlushing = 1, // waiting for the page to save (or for the flush timeout)
-    kMDMemoQuitStopping = 2, // Go is stopping the run loop
-    kMDMemoQuitNow = 3       // let AppKit terminate immediately
+    kSykiQuitIdle = 0,     // no quit requested yet
+    kSykiQuitFlushing = 1, // waiting for the page to save (or for the flush timeout)
+    kSykiQuitStopping = 2, // Go is stopping the run loop
+    kSykiQuitNow = 3       // let AppKit terminate immediately
 };
 
 // Main-thread only, like everything else that touches them.
-static int gQuitState = kMDMemoQuitIdle;
+static int gQuitState = kSykiQuitIdle;
 static BOOL gQuitFromSystem = NO;
 // Set by NSWorkspaceWillPowerOffNotification, which is posted before a logout, restart or shutdown
 // asks the apps to quit. A second signal besides the quit event's reason attribute, so a logout
 // is never mistaken for Cmd+Q (and cancelled).
 static BOOL gPoweringOff = NO;
 
-static const double kMDMemoQuitFlushTimeout = 2.0;
-static const double kMDMemoQuitStopTimeout = 3.0;
+static const double kSykiQuitFlushTimeout = 2.0;
+static const double kSykiQuitStopTimeout = 3.0;
 
 // Hands the page's current session to Go (SaveSession) before the app goes away. The listener
 // app.js registers for beforeunload does exactly that, synchronously, so it is simply fired; a
-// window.__mdmemoBeforeQuit function, if the page ever defines one, is preferred. The
+// window.__sykiBeforeQuit function, if the page ever defines one, is preferred. The
 // saveSession message is posted before this script returns, so it reaches Go before the
 // completion handler of evaluateJavaScript runs.
-static NSString *const kMDMemoQuitFlushScript =
+static NSString *const kSykiQuitFlushScript =
     @"(function () {"
     @"  try {"
-    @"    if (typeof window.__mdmemoBeforeQuit === 'function') {"
-    @"      window.__mdmemoBeforeQuit();"
+    @"    if (typeof window.__sykiBeforeQuit === 'function') {"
+    @"      window.__sykiBeforeQuit();"
     @"    } else {"
     @"      window.dispatchEvent(new Event('beforeunload'));"
     @"    }"
@@ -106,12 +106,12 @@ static NSString *const kMDMemoQuitFlushScript =
     @"  return true;"
     @"})();";
 
-// mdmemoQuitIsFromSystem reports whether the quit being handled comes from a logout, restart or
+// sykiQuitIsFromSystem reports whether the quit being handled comes from a logout, restart or
 // shutdown. Cmd+Q and the Quit menu item call terminate: directly (no current Apple Event);
 // Dock > Quit sends a plain quit event; the system's quit event carries a kAEQuitReason
 // attribute. Any reason at all counts as "system": misreading a user quit that way only costs the
 // ipc-session.json cleanup, while misreading a logout as a user quit would cancel the logout.
-static BOOL mdmemoQuitIsFromSystem(void) {
+static BOOL sykiQuitIsFromSystem(void) {
     if (gPoweringOff) {
         return YES;
     }
@@ -122,44 +122,44 @@ static BOOL mdmemoQuitIsFromSystem(void) {
     return [event attributeDescriptorForKeyword:kAEQuitReason] != nil;
 }
 
-// mdmemoFinishQuitOnMain runs once the page has saved, or once the flush timeout fires, whichever
+// sykiFinishQuitOnMain runs once the page has saved, or once the flush timeout fires, whichever
 // comes first; the second call finds the state already moved on and does nothing.
-static void mdmemoFinishQuitOnMain(void) {
-    if (gQuitState != kMDMemoQuitFlushing) {
+static void sykiFinishQuitOnMain(void) {
+    if (gQuitState != kSykiQuitFlushing) {
         return;
     }
     NSApplication *app = [NSApplication sharedApplication];
     if (gQuitFromSystem) {
-        gQuitState = kMDMemoQuitNow;
+        gQuitState = kSykiQuitNow;
         [app replyToApplicationShouldTerminate:YES];
         return;
     }
-    gQuitState = kMDMemoQuitStopping;
-    if (mdmemoGoQuit() == 0) {
-        gQuitState = kMDMemoQuitNow;
+    gQuitState = kSykiQuitStopping;
+    if (sykiGoQuit() == 0) {
+        gQuitState = kSykiQuitNow;
         [app terminate:nil];
         return;
     }
     // Normally the run loop has returned long before this fires (and a stopped run loop never
     // runs it). It is only here so that "the app quits" holds even if stopping failed, e.g.
     // because a modal panel swallowed the stop.
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kMDMemoQuitStopTimeout * NSEC_PER_SEC)),
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kSykiQuitStopTimeout * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         @autoreleasepool {
-            gQuitState = kMDMemoQuitNow;
+            gQuitState = kSykiQuitNow;
             [[NSApplication sharedApplication] terminate:nil];
         }
     });
 }
 
-// mdmemoFlushPageThenFinishQuit asks the page to save and arranges for mdmemoFinishQuitOnMain to
+// sykiFlushPageThenFinishQuit asks the page to save and arranges for sykiFinishQuitOnMain to
 // run afterwards. It never calls it synchronously: applicationShouldTerminate: has to return
 // NSTerminateLater before replyToApplicationShouldTerminate: may be sent.
-static void mdmemoFlushPageThenFinishQuit(void) {
-    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kMDMemoQuitFlushTimeout * NSEC_PER_SEC)),
+static void sykiFlushPageThenFinishQuit(void) {
+    dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(kSykiQuitFlushTimeout * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
         @autoreleasepool {
-            mdmemoFinishQuitOnMain();
+            sykiFinishQuitOnMain();
         }
     });
 
@@ -173,20 +173,20 @@ static void mdmemoFlushPageThenFinishQuit(void) {
     if (webView == nil) {
         dispatch_async(dispatch_get_main_queue(), ^{
             @autoreleasepool {
-                mdmemoFinishQuitOnMain();
+                sykiFinishQuitOnMain();
             }
         });
         return;
     }
-    [webView evaluateJavaScript:kMDMemoQuitFlushScript completionHandler:^(id result, NSError *error) {
-        mdmemoFinishQuitOnMain();
+    [webView evaluateJavaScript:kSykiQuitFlushScript completionHandler:^(id result, NSError *error) {
+        sykiFinishQuitOnMain();
     }];
 }
 
-@interface MDMemoAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
+@interface SykiAppDelegate : NSObject <NSApplicationDelegate, NSWindowDelegate>
 @end
 
-@implementation MDMemoAppDelegate
+@implementation SykiAppDelegate
 // Finder's "Open With", a double-click on a .md file and a drop on the Dock icon arrive here (as
 // an Apple Event, never as a command-line argument). Info.plist declares the document types, so
 // without this method AppKit answers "syki::sok cannot open files in the "Markdown Document" format".
@@ -195,7 +195,7 @@ static void mdmemoFlushPageThenFinishQuit(void) {
     for (NSString *name in filenames) {
         const char *path = [name fileSystemRepresentation];
         if (path != NULL) {
-            mdmemoGoOpenFile((char *)path);
+            sykiGoOpenFile((char *)path);
         }
     }
     [sender replyToOpenOrPrint:NSApplicationDelegateReplySuccess];
@@ -203,18 +203,18 @@ static void mdmemoFlushPageThenFinishQuit(void) {
 
 // See "Quitting" above.
 - (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender {
-    if (gQuitState == kMDMemoQuitNow) {
+    if (gQuitState == kSykiQuitNow) {
         return NSTerminateNow;
     }
-    BOOL fromSystem = mdmemoQuitIsFromSystem();
-    if (gQuitState != kMDMemoQuitIdle) {
+    BOOL fromSystem = sykiQuitIsFromSystem();
+    if (gQuitState != kSykiQuitIdle) {
         // A quit is already under way. A logout must not wait for it; anything else just lets
         // the one in progress finish.
         return fromSystem ? NSTerminateNow : NSTerminateCancel;
     }
-    gQuitState = kMDMemoQuitFlushing;
+    gQuitState = kSykiQuitFlushing;
     gQuitFromSystem = fromSystem;
-    mdmemoFlushPageThenFinishQuit();
+    sykiFlushPageThenFinishQuit();
     return fromSystem ? NSTerminateLater : NSTerminateCancel;
 }
 
@@ -226,7 +226,7 @@ static void mdmemoFlushPageThenFinishQuit(void) {
     // This used to walk [sender windows] and order each one front, which did nothing after
     // the window had been hidden (and nothing at all once it had been destroyed) and never
     // activated the app. Go through the one real activation path instead.
-    mdmemoActivateWindowOnMain();
+    sykiActivateWindowOnMain();
     return YES;
 }
 
@@ -236,9 +236,9 @@ static void mdmemoFlushPageThenFinishQuit(void) {
 }
 @end
 
-static MDMemoAppDelegate *gAppDelegate = nil;
+static SykiAppDelegate *gAppDelegate = nil;
 
-// mdmemoInstallAppDelegate makes MDMemoAppDelegate NSApp's delegate. It must run synchronously on
+// sykiInstallAppDelegate makes SykiAppDelegate NSApp's delegate. It must run synchronously on
 // the main thread BEFORE webview.New, never from a dispatch_async block:
 //
 // When NSApp has no delegate, webview's cocoa engine installs its own (WebviewAppDelegate, which
@@ -256,11 +256,11 @@ static MDMemoAppDelegate *gAppDelegate = nil;
 // by the constructor itself, and setupMacEditMenu sets the activation policy and activates the
 // app. The first [NSApp run] is then w.Run(), after every Bind, and the launch file reaches
 // application:openFiles: there, to wait in the osOpen queue for GetStartupFile.
-static void mdmemoInstallAppDelegate(void) {
+static void sykiInstallAppDelegate(void) {
     @autoreleasepool {
         NSApplication *app = [NSApplication sharedApplication];
         if (gAppDelegate == nil) {
-            gAppDelegate = [[MDMemoAppDelegate alloc] init];
+            gAppDelegate = [[SykiAppDelegate alloc] init];
             [[[NSWorkspace sharedWorkspace] notificationCenter] addObserver:gAppDelegate
                                                                    selector:@selector(workspaceWillPowerOff:)
                                                                        name:NSWorkspaceWillPowerOffNotification
@@ -270,19 +270,19 @@ static void mdmemoInstallAppDelegate(void) {
     }
 }
 
-// mdmemoActivateWindow is the thread-safe entry point used from Go and from the hot-key
+// sykiActivateWindow is the thread-safe entry point used from Go and from the hot-key
 // handler.
-void mdmemoActivateWindow(void) {
+void sykiActivateWindow(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
-            mdmemoActivateWindowOnMain();
+            sykiActivateWindowOnMain();
         }
     });
 }
 
-// mdmemoMinimizeWindow miniaturizes the window to the Dock. There is no tray on macOS, so
+// sykiMinimizeWindow miniaturizes the window to the Dock. There is no tray on macOS, so
 // "minimize" means exactly that.
-static void mdmemoMinimizeWindow(void) {
+static void sykiMinimizeWindow(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
             if (gWindow != nil) {
@@ -292,9 +292,9 @@ static void mdmemoMinimizeWindow(void) {
     });
 }
 
-// mdmemoToggleFullScreen is the macOS counterpart of the Windows maximize/restore toggle.
+// sykiToggleFullScreen is the macOS counterpart of the Windows maximize/restore toggle.
 // It needs NSWindowStyleMaskResizable, which setupMacWindowDelegate guarantees.
-static void mdmemoToggleFullScreen(void) {
+static void sykiToggleFullScreen(void) {
     dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
             if (gWindow != nil) {
@@ -304,10 +304,10 @@ static void mdmemoToggleFullScreen(void) {
     });
 }
 
-// mdmemoApplyBackdrop paints what the OS draws behind the page in the colour of the look (nativelook.go): the window's own background and
+// sykiApplyBackdrop paints what the OS draws behind the page in the colour of the look (nativelook.go): the window's own background and
 // the web view's under-page colour. The colour is sRGB, like the page's canvas (--canvas-bg); the calibrated colour space the code used
 // before is a few steps off. Main queue only.
-static void mdmemoApplyBackdrop(NSWindow *win, double r, double g, double b) {
+static void sykiApplyBackdrop(NSWindow *win, double r, double g, double b) {
     NSColor *colour = [NSColor colorWithSRGBRed:r green:g blue:b alpha:1.0];
 
     // Without it the window paints white for the frames before the page renders.
@@ -331,12 +331,12 @@ static void mdmemoApplyBackdrop(NSWindow *win, double r, double g, double b) {
     }
 }
 
-// mdmemoSetBackdrop follows a look chosen in the settings while the app runs (App.SaveConfig -> noteNativeLook).
-static void mdmemoSetBackdrop(double r, double g, double b) {
+// sykiSetBackdrop follows a look chosen in the settings while the app runs (App.SaveConfig -> noteNativeLook).
+static void sykiSetBackdrop(double r, double g, double b) {
     dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
             if (gWindow != nil) {
-                mdmemoApplyBackdrop(gWindow, r, g, b);
+                sykiApplyBackdrop(gWindow, r, g, b);
             }
         }
     });
@@ -365,7 +365,7 @@ static void setupMacWindowDelegate(void *nsWindow, double r, double g, double b)
                                NSWindowStyleMaskResizable)];
 
             // The colour of the saved look, the same one the page paints as its canvas (nativelook.go).
-            mdmemoApplyBackdrop(win, r, g, b);
+            sykiApplyBackdrop(win, r, g, b);
         }
     });
 }
@@ -376,7 +376,7 @@ static void setupMacEditMenu(void) {
             NSApplication *app = [NSApplication sharedApplication];
             [app setActivationPolicy:NSApplicationActivationPolicyRegular];
 
-            // The app delegate is not installed here any more: see mdmemoInstallAppDelegate.
+            // The app delegate is not installed here any more: see sykiInstallAppDelegate.
 
             NSMenu *mainMenu = [[NSMenu alloc] init];
 
@@ -400,7 +400,7 @@ static void setupMacEditMenu(void) {
                                action:@selector(unhideAllApplications:)
                         keyEquivalent:@""];
             [appMenu addItem:[NSMenuItem separatorItem]];
-            // terminate: is answered by MDMemoAppDelegate's applicationShouldTerminate:, which
+            // terminate: is answered by SykiAppDelegate's applicationShouldTerminate:, which
             // saves the session and exits through the same path as App.CloseWindow.
             [appMenu addItemWithTitle:[NSString stringWithFormat:@"Quit %@", appName]
                                action:@selector(terminate:)
@@ -453,10 +453,10 @@ static void setupMacEditMenu(void) {
 // menu has "Save as PDF" (the paper, the orientation and the scale are chosen there). css/print.css
 // is the paper look (WebKit applies the print media to it) and print_preview.js has already drawn
 // the diagrams light; the page is told how it ended so that they go back (window.__onPrintPdfResult,
-// the shim's __mdmemoSettle). The title is what "Save as PDF" offers as the file name. No header or
+// the shim's __sykiSettle). The title is what "Save as PDF" offers as the file name. No header or
 // footer: WKWebView prints none and has no way to ask for one.
 
-static WKWebView *mdmemoWebView(void) {
+static WKWebView *sykiWebView(void) {
     if (gWindow == nil) {
         return nil;
     }
@@ -467,8 +467,8 @@ static WKWebView *mdmemoWebView(void) {
     return nil;
 }
 
-static void mdmemoReportPrintResult(NSString *reqID, BOOL printed) {
-    WKWebView *webView = mdmemoWebView();
+static void sykiReportPrintResult(NSString *reqID, BOOL printed) {
+    WKWebView *webView = sykiWebView();
     if (webView == nil || reqID == nil) {
         return;
     }
@@ -479,24 +479,24 @@ static void mdmemoReportPrintResult(NSString *reqID, BOOL printed) {
     [webView evaluateJavaScript:script completionHandler:nil];
 }
 
-@interface MDMemoPrintDelegate : NSObject
+@interface SykiPrintDelegate : NSObject
 @end
 
-@implementation MDMemoPrintDelegate
-// contextInfo is the request id, retained by mdmemoPrintWebView.
+@implementation SykiPrintDelegate
+// contextInfo is the request id, retained by sykiPrintWebView.
 - (void)printOperationDidRun:(NSPrintOperation *)printOperation success:(BOOL)success contextInfo:(void *)contextInfo {
     NSString *reqID = (NSString *)contextInfo;
-    mdmemoReportPrintResult(reqID, success);
+    sykiReportPrintResult(reqID, success);
     [reqID release];
 }
 @end
 
-static MDMemoPrintDelegate *gPrintDelegate = nil;
+static SykiPrintDelegate *gPrintDelegate = nil;
 
-// mdmemoPrintWebView opens the print dialog for the page (a sheet on the window; the window not on
+// sykiPrintWebView opens the print dialog for the page (a sheet on the window; the window not on
 // screen gets the application's own panel). It answers the page's request when the dialog is closed:
 // true when it printed or saved, false when it was cancelled or could not be shown.
-static void mdmemoPrintWebView(const char *reqIDC, const char *titleC) {
+static void sykiPrintWebView(const char *reqIDC, const char *titleC) {
     if (reqIDC == NULL) {
         return;
     }
@@ -507,9 +507,9 @@ static void mdmemoPrintWebView(const char *reqIDC, const char *titleC) {
     }
     dispatch_async(dispatch_get_main_queue(), ^{
         @autoreleasepool {
-            WKWebView *webView = mdmemoWebView();
+            WKWebView *webView = sykiWebView();
             if (webView == nil) {
-                mdmemoReportPrintResult(reqID, NO);
+                sykiReportPrintResult(reqID, NO);
                 return;
             }
             if (@available(macOS 11.0, *)) {
@@ -523,7 +523,7 @@ static void mdmemoPrintWebView(const char *reqIDC, const char *titleC) {
                 [info setRightMargin:margin];
                 NSPrintOperation *op = [webView printOperationWithPrintInfo:info];
                 if (op == nil) {
-                    mdmemoReportPrintResult(reqID, NO);
+                    sykiReportPrintResult(reqID, NO);
                     return;
                 }
                 [op setShowsPrintPanel:YES];
@@ -542,7 +542,7 @@ static void mdmemoPrintWebView(const char *reqIDC, const char *titleC) {
                     [printView setFrame:NSMakeRect(0, 0, paper.width, paper.height)];
                 }
                 if (gPrintDelegate == nil) {
-                    gPrintDelegate = [[MDMemoPrintDelegate alloc] init];
+                    gPrintDelegate = [[SykiPrintDelegate alloc] init];
                 }
                 if (gWindow != nil && [gWindow isVisible] && ![gWindow isMiniaturized]) {
                     [op runOperationModalForWindow:gWindow
@@ -551,10 +551,10 @@ static void mdmemoPrintWebView(const char *reqIDC, const char *titleC) {
                                        contextInfo:(void *)[reqID retain]];
                 } else {
                     BOOL printed = [op runOperation];
-                    mdmemoReportPrintResult(reqID, printed);
+                    sykiReportPrintResult(reqID, printed);
                 }
             } else {
-                mdmemoReportPrintResult(reqID, NO);
+                sykiReportPrintResult(reqID, NO);
             }
         }
     });
@@ -579,7 +579,7 @@ func backdropRGB(l nativeLook) (C.double, C.double, C.double) {
 // hops to the main queue itself.
 func setNativeLook(l nativeLook) {
 	r, g, b := backdropRGB(l)
-	C.mdmemoSetBackdrop(r, g, b)
+	C.sykiSetBackdrop(r, g, b)
 }
 
 func runPlatformWindow(app *App, serverURL string) {
@@ -587,9 +587,9 @@ func runPlatformWindow(app *App, serverURL string) {
 	setOSOpenHandler(app.OpenFromOS)
 
 	// Synchronously and before webview.New, so a file that launched the app reaches our
-	// application:openFiles: (see mdmemoInstallAppDelegate). webview_go's init has locked this
+	// application:openFiles: (see sykiInstallAppDelegate). webview_go's init has locked this
 	// goroutine to the main thread.
-	C.mdmemoInstallAppDelegate()
+	C.sykiInstallAppDelegate()
 	C.setupMacEditMenu()
 
 	w := webview.New(false)
@@ -619,7 +619,7 @@ func runPlatformWindow(app *App, serverURL string) {
 
 	// Register the configured global summon shortcut, exactly as the Windows path does. It is
 	// dispatched onto the main queue so it still runs once [NSApp run] has started (webview.New
-	// no longer spins a temporary run loop, see mdmemoInstallAppDelegate), i.e. after
+	// no longer spins a temporary run loop, see sykiInstallAppDelegate), i.e. after
 	// finishLaunching, as it always did.
 	w.Dispatch(func() {
 		if !updateGlobalHotKeyNative(initialGlobalShortcut(app)) {
@@ -636,16 +636,16 @@ func runPlatformWindow(app *App, serverURL string) {
 	// process survived with no window, no Dock reopen path and its HTTP/IPC listeners still
 	// bound - unreachable and unkillable short of Activity Monitor.
 	_ = w.Bind("backend_minimizeWindow", func() error {
-		C.mdmemoMinimizeWindow()
+		C.sykiMinimizeWindow()
 		return nil
 	})
 	_ = w.Bind("backend_toggleMaximize", func() error {
-		C.mdmemoToggleFullScreen()
+		C.sykiToggleFullScreen()
 		return nil
 	})
 	// macOS has one "full screen" (its own space, no title bar, the Dock and menu bar tucked away): the same call.
 	_ = w.Bind("backend_toggleFullscreen", func() error {
-		C.mdmemoToggleFullScreen()
+		C.sykiToggleFullScreen()
 		return nil
 	})
 	_ = w.Bind("backend_forceQuit", app.CloseWindow)
@@ -656,7 +656,7 @@ func runPlatformWindow(app *App, serverURL string) {
 		cTitle := C.CString(title)
 		defer C.free(unsafe.Pointer(cReq))
 		defer C.free(unsafe.Pointer(cTitle))
-		C.mdmemoPrintWebView(cReq, cTitle)
+		C.sykiPrintWebView(cReq, cTitle)
 		return nil
 	})
 	// There is no honest native IME switch on macOS yet (see F9 / GetPlatformCapabilities):
@@ -674,29 +674,29 @@ func runPlatformWindow(app *App, serverURL string) {
 		// frontend-facing API identical: window.backend.<fn>(args) still returns a Promise
 		// that resolves to the same shape and rejects on error. Pending entries are always
 		// removed on resolve, reject, or the safety timeout, so the map cannot leak.
-		window.__mdmemoPending = window.__mdmemoPending || {};
-		window.__mdmemoSeq = 0;
-		window.__mdmemoSettle = function (reqID, result, errMsg) {
-			var p = window.__mdmemoPending[reqID];
+		window.__sykiPending = window.__sykiPending || {};
+		window.__sykiSeq = 0;
+		window.__sykiSettle = function (reqID, result, errMsg) {
+			var p = window.__sykiPending[reqID];
 			if (!p) { return; }
-			delete window.__mdmemoPending[reqID];
+			delete window.__sykiPending[reqID];
 			if (p.timer) { clearTimeout(p.timer); }
 			if (errMsg) { p.reject(new Error(errMsg)); } else { p.resolve(result); }
 		};
-		window.__mdmemoAsync = function (prefix, timeoutMs, invoke) {
-			var reqID = prefix + (++window.__mdmemoSeq) + '_' + Date.now();
+		window.__sykiAsync = function (prefix, timeoutMs, invoke) {
+			var reqID = prefix + (++window.__sykiSeq) + '_' + Date.now();
 			return new Promise(function (resolve, reject) {
 				var entry = { resolve: resolve, reject: reject, timer: null };
 				var fail = function (e) {
-					if (!window.__mdmemoPending[reqID]) { return; }
-					delete window.__mdmemoPending[reqID];
+					if (!window.__sykiPending[reqID]) { return; }
+					delete window.__sykiPending[reqID];
 					if (entry.timer) { clearTimeout(entry.timer); }
 					reject(e);
 				};
 				entry.timer = setTimeout(function () {
 					fail(new Error(prefix + 'request timed out'));
 				}, timeoutMs);
-				window.__mdmemoPending[reqID] = entry;
+				window.__sykiPending[reqID] = entry;
 				var r;
 				try {
 					r = invoke(reqID);
@@ -708,18 +708,18 @@ func runPlatformWindow(app *App, serverURL string) {
 			});
 		};
 		window.__onJevPredictResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		window.__onSearchScrapsResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		// the semantic search panel, the deep search plan and its run all answer here
 		window.__onDeepSearchResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		// the print panel: the preview PDF and the saved PDF answer here
 		window.__onPrintPdfResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 
 		// Tell Go the document is loaded. A cold boot with piped stdin waits for this
@@ -786,26 +786,26 @@ func runPlatformWindow(app *App, serverURL string) {
 			cancelOllamaSetup: (reqID) => window.backend_cancelOllamaSetup(reqID),
 			generateCliCommandAsync: (reqID, prompt, configJson, contextJson) => window.backend_generateCliCommandAsync(reqID, prompt, configJson, contextJson || ""),
 			validateCliCommand: (cmdStr) => window.backend_validateCliCommand(cmdStr),
-			searchScraps: (query, maxResults, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('searchScraps_', 30000, (reqID) => window.backend_searchScrapsAsync(reqID, query, maxResults || 100, f)); },
-			searchScrapsSemantic: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('searchScrapsSemantic_', 30000, (reqID) => window.backend_searchScrapsSemanticAsync(reqID, query, limit || 10, f)); },
-			deepSearchPlan: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('deepSearchPlan_', 30000, (reqID) => window.backend_deepSearchPlanAsync(reqID, query, limit || 10, f)); },
-			scrapFilterOptions: () => window.__mdmemoAsync('scrapFilterOptions_', 30000, (reqID) => window.backend_scrapFilterOptionsAsync(reqID)),
-			tagEdit: (request) => window.__mdmemoAsync('tagEdit_', 30000, (reqID) => window.backend_tagEditAsync(reqID, JSON.stringify(request || {}))),
-			deepSearchRun: (planId, lang) => window.__mdmemoAsync('deepSearchRun_', 600000, (reqID) => window.backend_deepSearchRunAsync(reqID, planId, lang || '')),
+			searchScraps: (query, maxResults, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('searchScraps_', 30000, (reqID) => window.backend_searchScrapsAsync(reqID, query, maxResults || 100, f)); },
+			searchScrapsSemantic: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('searchScrapsSemantic_', 30000, (reqID) => window.backend_searchScrapsSemanticAsync(reqID, query, limit || 10, f)); },
+			deepSearchPlan: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('deepSearchPlan_', 30000, (reqID) => window.backend_deepSearchPlanAsync(reqID, query, limit || 10, f)); },
+			scrapFilterOptions: () => window.__sykiAsync('scrapFilterOptions_', 30000, (reqID) => window.backend_scrapFilterOptionsAsync(reqID)),
+			tagEdit: (request) => window.__sykiAsync('tagEdit_', 30000, (reqID) => window.backend_tagEditAsync(reqID, JSON.stringify(request || {}))),
+			deepSearchRun: (planId, lang) => window.__sykiAsync('deepSearchRun_', 600000, (reqID) => window.backend_deepSearchRunAsync(reqID, planId, lang || '')),
 			cancelDeepSearch: (planId) => window.backend_cancelDeepSearch(planId),
-			lessonPlan: (request) => window.__mdmemoAsync('lessonPlan_', 30000, (reqID) => window.backend_lessonPlanAsync(reqID, JSON.stringify(request || {}))),
-			lessonRun: (planId) => window.__mdmemoAsync('lessonRun_', 120000, (reqID) => window.backend_lessonRunAsync(reqID, planId || '')),
+			lessonPlan: (request) => window.__sykiAsync('lessonPlan_', 30000, (reqID) => window.backend_lessonPlanAsync(reqID, JSON.stringify(request || {}))),
+			lessonRun: (planId) => window.__sykiAsync('lessonRun_', 120000, (reqID) => window.backend_lessonRunAsync(reqID, planId || '')),
 			cancelLesson: (planId) => window.backend_cancelLesson(planId || ''),
-			lessonSave: (request) => window.__mdmemoAsync('lessonSave_', 30000, (reqID) => window.backend_lessonSaveAsync(reqID, JSON.stringify(request || {}))),
-			lessonsInfo: (agent) => window.__mdmemoAsync('lessonsInfo_', 30000, (reqID) => window.backend_lessonsInfoAsync(reqID, agent || '')),
-			semanticStatus: (section) => window.__mdmemoAsync('semanticStatus_', 60000, (reqID) => window.backend_semanticStatusAsync(reqID, section ? JSON.stringify(section) : '')),
-			semanticUpdate: (section, rebuild, yes) => window.__mdmemoAsync('semanticUpdate_', 3600000, (reqID) => window.backend_semanticUpdateAsync(reqID, section ? JSON.stringify(section) : '', !!rebuild, !!yes)),
+			lessonSave: (request) => window.__sykiAsync('lessonSave_', 30000, (reqID) => window.backend_lessonSaveAsync(reqID, JSON.stringify(request || {}))),
+			lessonsInfo: (agent) => window.__sykiAsync('lessonsInfo_', 30000, (reqID) => window.backend_lessonsInfoAsync(reqID, agent || '')),
+			semanticStatus: (section) => window.__sykiAsync('semanticStatus_', 60000, (reqID) => window.backend_semanticStatusAsync(reqID, section ? JSON.stringify(section) : '')),
+			semanticUpdate: (section, rebuild, yes) => window.__sykiAsync('semanticUpdate_', 3600000, (reqID) => window.backend_semanticUpdateAsync(reqID, section ? JSON.stringify(section) : '', !!rebuild, !!yes)),
 			cancelSemanticUpdate: () => window.backend_cancelSemanticUpdate(),
-			printPreview: (opts) => window.__mdmemoAsync('printPreview_', 120000, (reqID) => window.backend_printPreviewAsync(reqID, JSON.stringify(opts || {}))),
+			printPreview: (opts) => window.__sykiAsync('printPreview_', 120000, (reqID) => window.backend_printPreviewAsync(reqID, JSON.stringify(opts || {}))),
 			printPickPdfPath: (name) => window.backend_printPickPdfPath(name || ''),
-			printSavePdf: (opts, path) => window.__mdmemoAsync('printSavePdf_', 120000, (reqID) => window.backend_printSavePdfAsync(reqID, JSON.stringify(opts || {}), path || '')),
+			printSavePdf: (opts, path) => window.__sykiAsync('printSavePdf_', 120000, (reqID) => window.backend_printSavePdfAsync(reqID, JSON.stringify(opts || {}), path || '')),
 			printPreviewClose: () => window.backend_printPreviewClose(),
-			printSystem: (title) => window.__mdmemoAsync('printSystem_', 600000, (reqID) => window.backend_printSystemAsync(reqID, title || '')),
+			printSystem: (title) => window.__sykiAsync('printSystem_', 600000, (reqID) => window.backend_printSystemAsync(reqID, title || '')),
 			triggerGitSync: () => window.backend_triggerGitSync(),
 			getGitRepoStatus: (dir) => window.backend_getGitRepoStatus(dir || ""),
 			setupGitRemote: (dir, remoteUrl, branch) => window.backend_setupGitRemote(dir || "", remoteUrl || "", branch || ""),
@@ -828,7 +828,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			exportAgentsConfigFile: (format) => window.backend_exportAgentsConfigFile(format || "yaml"),
 			importAgentsConfigFile: () => window.backend_importAgentsConfigFile(),
 			openAgentsConfigFile: (scrapDir) => window.backend_openAgentsConfigFile(scrapDir || ""),
-			jevPredict: (contextText, cursorOffset) => window.__mdmemoAsync('jevPredict_', 15000, (reqID) => window.backend_jevPredictAsync(reqID, contextText, cursorOffset || 0)),
+			jevPredict: (contextText, cursorOffset) => window.__sykiAsync('jevPredict_', 15000, (reqID) => window.backend_jevPredictAsync(reqID, contextText, cursorOffset || 0)),
 			jevExecute: (candidateJson, contextText) => window.backend_jevExecute(candidateJson, contextText || ""),
 			jevExecuteAsync: (reqID, candidateJson, contextText) => window.backend_jevExecuteAsync(reqID, candidateJson, contextText || ""),
 			jevVerify: (cmdStr) => window.backend_jevVerify(cmdStr),
@@ -877,5 +877,5 @@ func runPlatformWindow(app *App, serverURL string) {
 // package - still type-check with CGO_ENABLED=0 (see platform_darwin_nocgo.go for the stubs that
 // replace the cgo-only functions that remain here).
 func activatePlatformWindow() {
-	C.mdmemoActivateWindow()
+	C.sykiActivateWindow()
 }

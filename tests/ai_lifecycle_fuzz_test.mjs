@@ -274,8 +274,8 @@ async function createEnv() {
   const el = (id) => documentMock.getElementById(id);
   const env = {
     window: windowMock, llmCalls, tasks, el, errors, undoStack,
-    bridge: windowMock.MdMemoBridge,
-    rpc: windowMock.__mdMemoRPC,
+    bridge: windowMock.SykiBridge,
+    rpc: windowMock.__sykiRPC,
     editor: el('editor'),
     fire(id, evt, init) {
       const e = Object.assign({ key: '', keyCode: 0, isComposing: false, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false,

@@ -84,7 +84,7 @@ func TestInsideHTMLComment_Edges(t *testing.T) {
 			t.Errorf("InsideHTMLComment(%q, %d) = %v, want %v", doc, c.off, got, c.want)
 		}
 	}
-	if InsideHTMLComment("<!-- md-memo:run ab -->", 5) {
+	if InsideHTMLComment("<!-- syki:run ab -->", 5) {
 		t.Errorf("a marker is not a comment")
 	}
 	if InsideHTMLComment("<!-- never closed", 5) {
@@ -100,7 +100,7 @@ func TestParseSlots_SkipsCommentedSlots(t *testing.T) {
 		"{{ cut <!-- }} -->\n" +
 		"`<!--` {{ code: after inline code }}\n" +
 		"```\n<!--\n```\n{{ code: after the fence }}\n" +
-		"<!-- md-memo:run ab12 -->\n"
+		"<!-- syki:run ab12 -->\n"
 	slots := ParseSlots(doc, cfg)
 	var got []string
 	for _, s := range slots {

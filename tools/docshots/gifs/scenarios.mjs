@@ -52,7 +52,7 @@ const askAi = {
     await newNote(env, ASK_NOTE, { caret: 'start' });
     await env.ev(`__docshot.setCaret(__docshot.lineStart(3))`);
     // The default highlight length (the demo config sets a longer one for its still pictures).
-    await env.ev('MdMemoBridge.getConfig().ghost_diff_duration_ms = 4000');
+    await env.ev('SykiBridge.getConfig().ghost_diff_duration_ms = 4000');
     await env.ev(`(function () {
       var answer = ${JSON.stringify(ASK_ANSWER)};
       window.backend.queryLLMAsync = function (reqId) {
@@ -142,7 +142,7 @@ const commandBar = {
   async prepare(env) {
     await newNote(env, CMD_NOTE, { caret: 'start' });
     // Result below the selection, no extra tab, so the whole story stays in one note.
-    await env.ev("(function(){var c=MdMemoBridge.getConfig();c.cli=c.cli||{};c.cli.openResultInNewTab=false;try{localStorage.removeItem('md_memo_cmdbar_mode');}catch(e){}})()");
+    await env.ev("(function(){var c=SykiBridge.getConfig();c.cli=c.cli||{};c.cli.openResultInNewTab=false;try{localStorage.removeItem('syki_cmdbar_mode');}catch(e){}})()");
     // The scripted shell: computes the real result of this pipeline (sort / uniq -c / sort -rn) from the text it is given.
     await env.ev(`(function () {
       function sortLines(lines, flags) {
@@ -257,11 +257,11 @@ const delegateAgent = {
     await page.waitFor("__docshot.editor().value.indexOf('{{ @claude-code') !== -1", { label: 'rewritten as an agent task' });
     await pause(1100);
     await human.press('Enter', { ctrl: true }, 'Ctrl + Enter');
-    await page.waitFor("__docshot.editor().value.indexOf('md-memo:run') !== -1", { label: 'run marker' });
+    await page.waitFor("__docshot.editor().value.indexOf('syki:run') !== -1", { label: 'run marker' });
     await pause(500);
     await human.press('t', { alt: true }, 'Alt + T');
     await page.waitFor("!document.getElementById('running-tasks-panel').classList.contains('hidden')", { label: 'task panel' });
-    await page.waitFor("__docshot.editor().value.indexOf('md-memo:res') !== -1", { timeout: 10000, label: 'result block' });
+    await page.waitFor("__docshot.editor().value.indexOf('syki:res') !== -1", { timeout: 10000, label: 'result block' });
     await pause(1100);
     await human.press('t', { alt: true }, 'Alt + T');
     await pause(1200);
@@ -430,7 +430,7 @@ const proofread = {
   async prepare(env) {
     await newNote(env, PROOF_NOTE, { caret: 'start' });
     await env.ev(`__docshot.setCaret(__docshot.lineStart(3))`);
-    await env.ev('MdMemoBridge.getConfig().ghost_diff_duration_ms = 4000');
+    await env.ev('SykiBridge.getConfig().ghost_diff_duration_ms = 4000');
     // The scripted model: a corrected copy of exactly the two lines it is given.
     await env.ev(`(function () {
       var fixed = ${JSON.stringify(PROOF_FIXED)};
@@ -522,7 +522,7 @@ const mermaidAi = {
     await newNote(env, FLOW_NOTE, { caret: 'start', zoom: 3 });
     await widenPreviewPane(env, 0.34);
     await env.ev(`__docshot.setCaret(__docshot.lineStart(3))`);
-    await env.ev('MdMemoBridge.getConfig().ghost_diff_duration_ms = 4000');
+    await env.ev('SykiBridge.getConfig().ghost_diff_duration_ms = 4000');
     await warmMermaid(env);
     await env.ev(`(function () {
       var block = ${JSON.stringify(FLOW_MERMAID)};
@@ -610,7 +610,7 @@ const pasteImage = {
   crop: [0, 40, 1120, 400],
   async prepare(env) {
     await newNote(env, PASTE_NOTE, { caret: 'end', zoom: 3 });
-    await env.ev('MdMemoBridge.getConfig().ghost_diff_duration_ms = 4000');
+    await env.ev('SykiBridge.getConfig().ghost_diff_duration_ms = 4000');
     await warmMermaid(env);
     const bytes = await env.ev(SKETCH_JS);
     if (!(bytes > 1000)) throw new Error('the sketch PNG was not made');
@@ -688,7 +688,7 @@ const parallel = {
   async prepare(env) {
     await newNote(env, PAR_NOTE, { caret: 'start' });
     await env.ev('__docshot.setCaret(__docshot.lineStart(3))');
-    await env.ev('MdMemoBridge.getConfig().ghost_diff_duration_ms = 4000');
+    await env.ev('SykiBridge.getConfig().ghost_diff_duration_ms = 4000');
     // The scripted model answers each request late and in its own time (the summary at 6 s, the friendlier text at 4.5 s
     // after its own request), through the same callback the Go side uses. The answer is chosen by the instruction.
     await env.ev(`(function () {
@@ -705,7 +705,7 @@ const parallel = {
     // The microphone: a silent stream from the Web Audio API stands in for it (no real microphone is ever opened); the
     // recorder, the indicator and the note markers are the application's own. The silence auto-stop is set long.
     await env.ev(`(function () {
-      var c = MdMemoBridge.getConfig(); c.voice = c.voice || {}; c.voice.silence_timeout_sec = 120;
+      var c = SykiBridge.getConfig(); c.voice = c.voice || {}; c.voice.silence_timeout_sec = 120;
       var ac = new (window.AudioContext || window.webkitAudioContext)();
       var dest = ac.createMediaStreamDestination();
       navigator.mediaDevices.getUserMedia = function () { try { ac.resume(); } catch (e) { /* stays silent */ } return Promise.resolve(dest.stream); };

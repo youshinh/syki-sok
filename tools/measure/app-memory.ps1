@@ -1,8 +1,8 @@
 # Memory (MB) of one running app and of every process below it (its WebView2 browser, renderer, GPU and utility processes).
 # Read-only: it only reads the process list. Use it to put a number on "how much more does this feature cost while it is open":
-#   powershell -NoProfile -File tools/measure/app-memory.ps1 -Name md-memo-e2e*      (the isolated test build)
+#   powershell -NoProfile -File tools/measure/app-memory.ps1 -Name syki-e2e*      (the isolated test build)
 # Never kill msedgewebview2.exe by name to "clean up": other apps use WebView2 too; look at the tree of YOUR app instead.
-param([string]$Name = 'md-memo*')
+param([string]$Name = 'syki*')
 $app = Get-Process $Name -ErrorAction SilentlyContinue | Select-Object -First 1
 if (-not $app) { "no app named $Name"; return }
 $all = Get-CimInstance Win32_Process | Select-Object ProcessId, ParentProcessId, Name

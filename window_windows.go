@@ -199,7 +199,7 @@ var (
 
 func getShowExistingMsg() uint32 {
 	if wmShowExistingMsg == 0 {
-		msgName, _ := windows.UTF16PtrFromString("MDMemo_Activate_Window_Msg_v1")
+		msgName, _ := windows.UTF16PtrFromString("Syki_Activate_Window_Msg_v1")
 		ret, _, _ := procRegisterWindowMessageW.Call(uintptr(unsafe.Pointer(msgName)))
 		wmShowExistingMsg = uint32(ret)
 	}
@@ -896,29 +896,29 @@ func runPlatformWindow(app *App, serverURL string) {
 		// frontend-facing API identical: window.backend.<fn>(args) still returns a Promise
 		// that resolves to the same shape and rejects on error. Pending entries are always
 		// removed on resolve, reject, or the safety timeout, so the map cannot leak.
-		window.__mdmemoPending = window.__mdmemoPending || {};
-		window.__mdmemoSeq = 0;
-		window.__mdmemoSettle = function (reqID, result, errMsg) {
-			var p = window.__mdmemoPending[reqID];
+		window.__sykiPending = window.__sykiPending || {};
+		window.__sykiSeq = 0;
+		window.__sykiSettle = function (reqID, result, errMsg) {
+			var p = window.__sykiPending[reqID];
 			if (!p) { return; }
-			delete window.__mdmemoPending[reqID];
+			delete window.__sykiPending[reqID];
 			if (p.timer) { clearTimeout(p.timer); }
 			if (errMsg) { p.reject(new Error(errMsg)); } else { p.resolve(result); }
 		};
-		window.__mdmemoAsync = function (prefix, timeoutMs, invoke) {
-			var reqID = prefix + (++window.__mdmemoSeq) + '_' + Date.now();
+		window.__sykiAsync = function (prefix, timeoutMs, invoke) {
+			var reqID = prefix + (++window.__sykiSeq) + '_' + Date.now();
 			return new Promise(function (resolve, reject) {
 				var entry = { resolve: resolve, reject: reject, timer: null };
 				var fail = function (e) {
-					if (!window.__mdmemoPending[reqID]) { return; }
-					delete window.__mdmemoPending[reqID];
+					if (!window.__sykiPending[reqID]) { return; }
+					delete window.__sykiPending[reqID];
 					if (entry.timer) { clearTimeout(entry.timer); }
 					reject(e);
 				};
 				entry.timer = setTimeout(function () {
 					fail(new Error(prefix + 'request timed out'));
 				}, timeoutMs);
-				window.__mdmemoPending[reqID] = entry;
+				window.__sykiPending[reqID] = entry;
 				var r;
 				try {
 					r = invoke(reqID);
@@ -930,18 +930,18 @@ func runPlatformWindow(app *App, serverURL string) {
 			});
 		};
 		window.__onJevPredictResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		window.__onSearchScrapsResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		// the semantic search panel, the deep search plan and its run all answer here
 		window.__onDeepSearchResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 		// the print panel: the preview PDF and the saved PDF answer here
 		window.__onPrintPdfResult = function (reqID, result, errMsg) {
-			window.__mdmemoSettle(reqID, result, errMsg);
+			window.__sykiSettle(reqID, result, errMsg);
 		};
 
 		// Tell Go the document is loaded. A cold boot with piped stdin waits for this
@@ -1012,24 +1012,24 @@ func runPlatformWindow(app *App, serverURL string) {
 			isSendToShortcutInstalled: () => window.backend_isSendToShortcutInstalled(),
 			generateCliCommandAsync: (reqID, prompt, configJson, contextJson) => window.backend_generateCliCommandAsync(reqID, prompt, configJson, contextJson || ""),
 			validateCliCommand: (cmdStr) => window.backend_validateCliCommand(cmdStr),
-			searchScraps: (query, maxResults, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('searchScraps_', 30000, (reqID) => window.backend_searchScrapsAsync(reqID, query, maxResults || 100, f)); },
-			searchScrapsSemantic: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('searchScrapsSemantic_', 30000, (reqID) => window.backend_searchScrapsSemanticAsync(reqID, query, limit || 10, f)); },
-			deepSearchPlan: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__mdmemoAsync('deepSearchPlan_', 30000, (reqID) => window.backend_deepSearchPlanAsync(reqID, query, limit || 10, f)); },
-			scrapFilterOptions: () => window.__mdmemoAsync('scrapFilterOptions_', 30000, (reqID) => window.backend_scrapFilterOptionsAsync(reqID)),
-			tagEdit: (request) => window.__mdmemoAsync('tagEdit_', 30000, (reqID) => window.backend_tagEditAsync(reqID, JSON.stringify(request || {}))),
-			deepSearchRun: (planId, lang) => window.__mdmemoAsync('deepSearchRun_', 600000, (reqID) => window.backend_deepSearchRunAsync(reqID, planId, lang || '')),
+			searchScraps: (query, maxResults, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('searchScraps_', 30000, (reqID) => window.backend_searchScrapsAsync(reqID, query, maxResults || 100, f)); },
+			searchScrapsSemantic: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('searchScrapsSemantic_', 30000, (reqID) => window.backend_searchScrapsSemanticAsync(reqID, query, limit || 10, f)); },
+			deepSearchPlan: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('deepSearchPlan_', 30000, (reqID) => window.backend_deepSearchPlanAsync(reqID, query, limit || 10, f)); },
+			scrapFilterOptions: () => window.__sykiAsync('scrapFilterOptions_', 30000, (reqID) => window.backend_scrapFilterOptionsAsync(reqID)),
+			tagEdit: (request) => window.__sykiAsync('tagEdit_', 30000, (reqID) => window.backend_tagEditAsync(reqID, JSON.stringify(request || {}))),
+			deepSearchRun: (planId, lang) => window.__sykiAsync('deepSearchRun_', 600000, (reqID) => window.backend_deepSearchRunAsync(reqID, planId, lang || '')),
 			cancelDeepSearch: (planId) => window.backend_cancelDeepSearch(planId),
-			lessonPlan: (request) => window.__mdmemoAsync('lessonPlan_', 30000, (reqID) => window.backend_lessonPlanAsync(reqID, JSON.stringify(request || {}))),
-			lessonRun: (planId) => window.__mdmemoAsync('lessonRun_', 120000, (reqID) => window.backend_lessonRunAsync(reqID, planId || '')),
+			lessonPlan: (request) => window.__sykiAsync('lessonPlan_', 30000, (reqID) => window.backend_lessonPlanAsync(reqID, JSON.stringify(request || {}))),
+			lessonRun: (planId) => window.__sykiAsync('lessonRun_', 120000, (reqID) => window.backend_lessonRunAsync(reqID, planId || '')),
 			cancelLesson: (planId) => window.backend_cancelLesson(planId || ''),
-			lessonSave: (request) => window.__mdmemoAsync('lessonSave_', 30000, (reqID) => window.backend_lessonSaveAsync(reqID, JSON.stringify(request || {}))),
-			lessonsInfo: (agent) => window.__mdmemoAsync('lessonsInfo_', 30000, (reqID) => window.backend_lessonsInfoAsync(reqID, agent || '')),
-			semanticStatus: (section) => window.__mdmemoAsync('semanticStatus_', 60000, (reqID) => window.backend_semanticStatusAsync(reqID, section ? JSON.stringify(section) : '')),
-			semanticUpdate: (section, rebuild, yes) => window.__mdmemoAsync('semanticUpdate_', 3600000, (reqID) => window.backend_semanticUpdateAsync(reqID, section ? JSON.stringify(section) : '', !!rebuild, !!yes)),
+			lessonSave: (request) => window.__sykiAsync('lessonSave_', 30000, (reqID) => window.backend_lessonSaveAsync(reqID, JSON.stringify(request || {}))),
+			lessonsInfo: (agent) => window.__sykiAsync('lessonsInfo_', 30000, (reqID) => window.backend_lessonsInfoAsync(reqID, agent || '')),
+			semanticStatus: (section) => window.__sykiAsync('semanticStatus_', 60000, (reqID) => window.backend_semanticStatusAsync(reqID, section ? JSON.stringify(section) : '')),
+			semanticUpdate: (section, rebuild, yes) => window.__sykiAsync('semanticUpdate_', 3600000, (reqID) => window.backend_semanticUpdateAsync(reqID, section ? JSON.stringify(section) : '', !!rebuild, !!yes)),
 			cancelSemanticUpdate: () => window.backend_cancelSemanticUpdate(),
-			printPreview: (opts) => window.__mdmemoAsync('printPreview_', 120000, (reqID) => window.backend_printPreviewAsync(reqID, JSON.stringify(opts || {}))),
+			printPreview: (opts) => window.__sykiAsync('printPreview_', 120000, (reqID) => window.backend_printPreviewAsync(reqID, JSON.stringify(opts || {}))),
 			printPickPdfPath: (name) => window.backend_printPickPdfPath(name || ''),
-			printSavePdf: (opts, path) => window.__mdmemoAsync('printSavePdf_', 120000, (reqID) => window.backend_printSavePdfAsync(reqID, JSON.stringify(opts || {}), path || '')),
+			printSavePdf: (opts, path) => window.__sykiAsync('printSavePdf_', 120000, (reqID) => window.backend_printSavePdfAsync(reqID, JSON.stringify(opts || {}), path || '')),
 			printPreviewClose: () => window.backend_printPreviewClose(),
 			triggerGitSync: () => window.backend_triggerGitSync(),
 			getGitRepoStatus: (dir) => window.backend_getGitRepoStatus(dir || ""),
@@ -1053,7 +1053,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			exportAgentsConfigFile: (format) => window.backend_exportAgentsConfigFile(format || "yaml"),
 			importAgentsConfigFile: () => window.backend_importAgentsConfigFile(),
 			openAgentsConfigFile: (scrapDir) => window.backend_openAgentsConfigFile(scrapDir || ""),
-			jevPredict: (contextText, cursorOffset) => window.__mdmemoAsync('jevPredict_', 15000, (reqID) => window.backend_jevPredictAsync(reqID, contextText, cursorOffset || 0)),
+			jevPredict: (contextText, cursorOffset) => window.__sykiAsync('jevPredict_', 15000, (reqID) => window.backend_jevPredictAsync(reqID, contextText, cursorOffset || 0)),
 			jevExecute: (candidateJson, contextText) => window.backend_jevExecute(candidateJson, contextText || ""),
 			jevExecuteAsync: (reqID, candidateJson, contextText) => window.backend_jevExecuteAsync(reqID, candidateJson, contextText || ""),
 			jevVerify: (cmdStr) => window.backend_jevVerify(cmdStr),

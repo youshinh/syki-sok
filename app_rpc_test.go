@@ -64,7 +64,7 @@ func TestApp_ReportRPCResult_DuplicateDoesNotBlock(t *testing.T) {
 
 // selectionMockWebView is a minimal fake of the webview used by App.CallJSWithResponse, tailored
 // to the getSelection/replaceSelection JS contract that buffer.get_selection and
-// buffer.replace_selection rely on (see window.__mdMemoRPC in frontend/js/app.js).
+// buffer.replace_selection rely on (see window.__sykiRPC in frontend/js/app.js).
 type selectionMockWebView struct {
 	app *App
 

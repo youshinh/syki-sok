@@ -18,7 +18,7 @@ import (
 	"syki-sok/pkg/appdir"
 )
 
-// DefaultPort is the fallback TCP port for md-memo local IPC.
+// DefaultPort is the fallback TCP port for syki local IPC.
 const DefaultPort = 49152
 
 // Action values carried by Message.
@@ -28,7 +28,7 @@ const (
 	// ActionActivate just fronts the window of the running instance.
 	ActionActivate = "activate"
 	// ActionOpen asks the running instance to open Message.Path in a new tab and front the
-	// window. It is what `md-memo notes.md` sends when an instance is already running, so a
+	// window. It is what `syki notes.md` sends when an instance is already running, so a
 	// second process is never started (and, on Windows, so the file is no longer silently
 	// dropped by the single-instance mutex).
 	ActionOpen = "open"
@@ -47,7 +47,7 @@ type Message struct {
 // RPCHandler is a function that processes an incoming RPCRequest and produces an RPCResponse.
 type RPCHandler func(req *RPCRequest) *RPCResponse
 
-// Server wraps the network listener and session management for md-memo IPC.
+// Server wraps the network listener and session management for syki IPC.
 type Server struct {
 	listener      net.Listener
 	port          int
@@ -276,7 +276,7 @@ func (s *Server) handleConnection(conn net.Conn) {
 				return
 			}
 			// Acknowledge *before* running the handler. The ack exists so the CLI can tell
-			// "md-memo received this" from "something accepted a TCP connection on that
+			// "syki received this" from "something accepted a TCP connection on that
 			// port"; the handler itself (appending a scrap, activating the window) can
 			// easily outlive the client's short timeout, and making the client wait for it
 			// would turn a slow append into a spurious cold start.
@@ -368,7 +368,7 @@ func writeResponse(w io.Writer, resp *RPCResponse) {
 	_, _ = w.Write(data)
 }
 
-// CallRPC invokes a remote procedure on the running md-memo instance using session info.
+// CallRPC invokes a remote procedure on the running syki instance using session info.
 func CallRPC(session *SessionInfo, method string, params interface{}, result interface{}, timeout time.Duration) error {
 	if session == nil {
 		return errors.New("no active session provided")
@@ -444,7 +444,7 @@ func CallRPC(session *SessionInfo, method string, params interface{}, result int
 	return nil
 }
 
-// Send attempts to connect to a running md-memo instance and send a legacy message, and
+// Send attempts to connect to a running syki instance and send a legacy message, and
 // waits (within timeout) for that instance's acknowledgement.
 //
 // The ack matters because the caller treats success as "the running instance has it, this

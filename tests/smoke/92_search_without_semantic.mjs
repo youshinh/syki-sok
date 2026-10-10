@@ -52,7 +52,7 @@ export default {
     assert.deepEqual(await asked(s, 'deepSearchPlan'), [], 'no Deep search plan was asked');
 
     t.step('the setting turned on: the switch is there the next time the panel opens, in Exact, with the usual placeholder');
-    await s.ev("MdMemoBridge.getConfig().semantic = { enabled: true }; 1");
+    await s.ev("SykiBridge.getConfig().semantic = { enabled: true }; 1");
     await openSearch(s);
     assert.equal(await visible(s, 'scraps-search-mode'), true, 'the switch is shown');
     assert.equal(await s.ev("document.getElementById('scraps-mode-exact').getAttribute('aria-pressed')"), 'true');
@@ -65,7 +65,7 @@ export default {
     assert.equal(await s.ev("document.getElementById('scraps-mode-meaning').getAttribute('aria-pressed')"), 'true');
     await s.key('Escape');
     await waitHidden(s, 'scraps-search-modal');
-    await s.ev("MdMemoBridge.getConfig().semantic = { enabled: false }; 1");
+    await s.ev("SykiBridge.getConfig().semantic = { enabled: false }; 1");
     await openSearch(s);
     await plain('semantic switched off');
     const before = (await asked(s, 'searchScrapsSemantic')).length;

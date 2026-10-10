@@ -1,5 +1,5 @@
 // RPC writes to any tab, tab.new / tab.close, buffer.save (the page's half of it).
-//   window.__mdMemoRPC of the real app.js runs in a vm context against a hand-made DOM (textareas with a working undo stack
+//   window.__sykiRPC of the real app.js runs in a vm context against a hand-made DOM (textareas with a working undo stack
 //   and native input events, held timers) and a mocked backend. Covered:
 //     - resolveTab: no id = the active tab, an unknown id is a not_found error (getBuffer, switchTab, writeText, ...)
 //     - writeText / writeTabText on the tab in the primary pane, in the split editor and on a background tab: text, dirty
@@ -239,7 +239,7 @@ async function createEnv(opts = {}) {
   }
 
   const el = (id) => documentMock.getElementById(id);
-  const rpc = windowMock.__mdMemoRPC;
+  const rpc = windowMock.__sykiRPC;
   const env = {
     window: windowMock, rpc, backend, backendCalls, undoStack, execCalls, el, documentMock, files, flush,
     editor: el('editor'),
@@ -978,7 +978,7 @@ check('wiring: index.html loads note_hash.js before app.js; toggling autosave of
   const closeTabSrc = SRC.app.match(/async function closeTab\(tabId, e\) \{[\s\S]*?\n  \}/)[0];
   assert.ok(/removeTab\(tabId\);\n  \}$/.test(closeTabSrc), 'closeTab prompts, then removes');
   assert.ok(!/tabs\.splice/.test(closeTabSrc), 'closeTab no longer keeps an index across the prompt');
-  const rpcBlock = SRC.app.slice(SRC.app.indexOf('window.__mdMemoRPC = {'));
+  const rpcBlock = SRC.app.slice(SRC.app.indexOf('window.__sykiRPC = {'));
   assert.ok(/writeText: function \(req\)/.test(rpcBlock) && !/writeText: async/.test(rpcBlock), 'writeText is synchronous');
 });
 

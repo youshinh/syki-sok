@@ -194,16 +194,16 @@ class FakeStorage {
 
 (function testSaveLocalCopy() {
   const old = JSON.stringify(settings()); // what an older build stored: the whole thing, keys included
-  const s = new FakeStorage({ md_notepad_config_v3: old, md_memo_config_v1: old, other: 'kept' });
+  const s = new FakeStorage({ md_notepad_config_v3: old, syki_config_v1: old, other: 'kept' });
   SS.saveLocalCopy(s, settings());
 
   const stored = s.getItem('md_notepad_config_v3');
   assert.ok(stored && !/sk-|MTIz|GITPASS|ARR-/.test(stored), 'the old copy with keys is overwritten by a clean one');
   assert.deepStrictEqual(JSON.parse(stored), SS.stripSecrets(settings()));
-  assert.strictEqual(s.getItem('md_memo_config_v1'), null, 'the legacy copy, which the loader prefers, is removed');
+  assert.strictEqual(s.getItem('syki_config_v1'), null, 'the legacy copy, which the loader prefers, is removed');
   assert.strictEqual(s.getItem('other'), 'kept', 'nothing else is touched');
   assert.strictEqual(SS.LOCAL_KEY, 'md_notepad_config_v3');
-  assert.strictEqual(SS.LEGACY_KEY, 'md_memo_config_v1');
+  assert.strictEqual(SS.LEGACY_KEY, 'syki_config_v1');
 
   // Saving again is the same (idempotent), and a config without secrets round-trips unchanged.
   SS.saveLocalCopy(s, settings());

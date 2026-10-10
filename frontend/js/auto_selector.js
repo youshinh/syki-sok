@@ -358,23 +358,23 @@
   }
 
   function makeRunMarker(id, attrs) {
-    return '<!-- md-memo:run ' + cleanId(id) + cleanAttrs(attrs) + ' -->';
+    return '<!-- syki:run ' + cleanId(id) + cleanAttrs(attrs) + ' -->';
   }
 
   // The result is trimmed and no blank line is added inside. A marker-like comment inside the result
-  // ("<!-- md-memo:res") is escaped so it can never end the block early.
+  // ("<!-- syki:res") is escaped so it can never end the block early.
   function makeResultBlock(id, text, attrs) {
-    const body = trimAll(str(text).replace(/\r\n?/g, '\n')).replace(rx('markerLike', () => /<!--(\s*\/?md-memo:)/g), '&lt;!--$1');
-    const open = '<!-- md-memo:res ' + cleanId(id) + cleanAttrs(attrs) + ' -->';
-    return body ? open + '\n' + body + '\n<!-- /md-memo:res -->' : open + '\n<!-- /md-memo:res -->';
+    const body = trimAll(str(text).replace(/\r\n?/g, '\n')).replace(rx('markerLike', () => /<!--(\s*\/?syki:)/g), '&lt;!--$1');
+    const open = '<!-- syki:res ' + cleanId(id) + cleanAttrs(attrs) + ' -->';
+    return body ? open + '\n' + body + '\n<!-- /syki:res -->' : open + '\n<!-- /syki:res -->';
   }
 
   // Looks at the line directly below the task (taskEnd is any index inside the task's line, e.g. the
   // task's `end`). Returns null, or { kind, marker, id, start, end, text, attrs? } where [start, end) is
   // exactly the marker text without the surrounding line breaks, so replacing that span in place is enough:
-  //   kind 'block'   a complete "md-memo:res" block (marker 'res')
-  //   kind 'marker'  a single marker line: a "md-memo:run" marker (marker 'run', still running or left
-  //                  by a crash) or an "md-memo:res" opener that never closed (marker 'res')
+  //   kind 'block'   a complete "syki:res" block (marker 'res')
+  //   kind 'marker'  a single marker line: a "syki:run" marker (marker 'run', still running or left
+  //                  by a crash) or an "syki:res" opener that never closed (marker 'res')
   // attrs ("ctx=above") is only present when the marker carries some.
   function findResultAfter(text, taskEnd) {
     const t = str(text);
@@ -384,15 +384,15 @@
     const ls = nl + 1;
     const le = lineEndOf(t, ls);
     const line = t.slice(ls, le);
-    const m = rx('markerLine', () => /^[ \t　]*<!--\s*md-memo:(run|res)\s+([a-z0-9]+)((?:\s+[a-z0-9_]+=[a-z0-9_]+)*)\s*-->[ \t　]*$/).exec(line);
+    const m = rx('markerLine', () => /^[ \t　]*<!--\s*syki:(run|res)\s+([a-z0-9]+)((?:\s+[a-z0-9_]+=[a-z0-9_]+)*)\s*-->[ \t　]*$/).exec(line);
     if (!m) return null;
     const start = ls + line.indexOf('<!--');
     const openEnd = ls + line.replace(/[ \t　]+$/, '').length;
     const withAttrs = (r) => (m[3].trim() ? Object.assign(r, { attrs: m[3].trim() }) : r);
     if (m[1] === 'run') return withAttrs({ kind: 'marker', marker: 'run', id: m[2], start, end: openEnd, text: t.slice(start, openEnd) });
 
-    const closeRe = rx('closeLine', () => /^[ \t　]*<!--\s*\/md-memo:res\s*-->[ \t　]*$/);
-    const openRe = rx('anyMarkerLine', () => /^[ \t　]*<!--\s*md-memo:(?:run|res)\s/);
+    const closeRe = rx('closeLine', () => /^[ \t　]*<!--\s*\/syki:res\s*-->[ \t　]*$/);
+    const openRe = rx('anyMarkerLine', () => /^[ \t　]*<!--\s*syki:(?:run|res)\s/);
     let p = le + 1;
     while (p <= n) {
       const e = lineEndOf(t, p);
@@ -421,9 +421,9 @@
     const wanted = opts && Number.isFinite(opts.maxLines) ? Math.floor(opts.maxLines) : 80;
     const maxLines = Math.max(1, Math.min(80, wanted));
     const maxChars = 8000;
-    const closeRe = rx('closeLine', () => /^[ \t　]*<!--\s*\/md-memo:res\s*-->[ \t　]*$/);
-    const resOpenRe = rx('resOpenLine', () => /^[ \t　]*<!--\s*md-memo:res[\s>]/);
-    const runRe = rx('runLine', () => /^[ \t　]*<!--\s*md-memo:run[\s>]/);
+    const closeRe = rx('closeLine', () => /^[ \t　]*<!--\s*\/syki:res\s*-->[ \t　]*$/);
+    const resOpenRe = rx('resOpenLine', () => /^[ \t　]*<!--\s*syki:res[\s>]/);
+    const runRe = rx('runLine', () => /^[ \t　]*<!--\s*syki:run[\s>]/);
     let ls = lineStartOf(t, clampIdx(taskStart, t.length));
     let first = -1;
     let last = -1;
@@ -480,8 +480,8 @@
   // preview shows the answer, not the bookkeeping. Call it after fenced code has been set aside.
   function stripMarkers(text) {
     const s = str(text);
-    if (s.indexOf('md-memo:') === -1) return s;
-    return s.replace(/^[ \t]*<!-- \/?md-memo:(?:run|res)\b[^\n]*?-->[ \t]*\r?\n?/gm, '');
+    if (s.indexOf('syki:') === -1) return s;
+    return s.replace(/^[ \t]*<!-- \/?syki:(?:run|res)\b[^\n]*?-->[ \t]*\r?\n?/gm, '');
   }
 
   // 4 lowercase alphanumerics that no marker in the text uses yet (rand: optional () => [0,1) for tests).
@@ -494,7 +494,7 @@
       for (let attempt = 0; attempt < 40; attempt++) {
         id = '';
         for (let k = 0; k < len; k++) id += chars[Math.floor(r() * 36) % 36];
-        if (s.indexOf('md-memo:run ' + id) < 0 && s.indexOf('md-memo:res ' + id) < 0) return id;
+        if (s.indexOf('syki:run ' + id) < 0 && s.indexOf('syki:res ' + id) < 0) return id;
       }
     }
     return id;

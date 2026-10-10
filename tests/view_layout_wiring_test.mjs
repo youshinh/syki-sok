@@ -131,7 +131,7 @@ async function problemsOf(source) {
   // the display follows the state, whichever function changed it
   await guard('the four displays', async () => {
     const env = run(source);
-    const rpc = env.window.__mdMemoRPC;
+    const rpc = env.window.__sykiRPC;
     note(!!rpc && !!env.helper, 'the page exposes its test helper and its RPC');
     await env.helper.openSplitEditor(); await tick();
     note(view(env) === 'pair', 'openSplitEditor: two editors are "pair" (got ' + view(env) + ')');
@@ -157,7 +157,7 @@ async function problemsOf(source) {
   // a restored session shows the display it was closed in
   await guard('restoring a session', async () => {
     const tabs = [{ id: 'tab_1', title: 'Doc 1.md', content: '# Doc 1', path: '', isDirty: false }, { id: 'tab_2', title: 'Doc 2.md', content: '# Doc 2', path: '', isDirty: false }];
-    const session = (extra) => ({ md_memo_session_v1: JSON.stringify({ activeTabId: 'tab_1', tabs, ...extra }) });
+    const session = (extra) => ({ syki_session_v1: JSON.stringify({ activeTabId: 'tab_1', tabs, ...extra }) });
     let env = run(source, { storage: session({ isSplitMode: true, secondaryTabId: 'tab_2', secondaryViewMode: 'editor' }) }); await tick(); await tick();
     note(view(env) === 'pair', 'a session closed with two editors comes back as "pair" (got ' + view(env) + ')');
     env = run(source, { storage: session({ isSplitMode: true, secondaryTabId: 'tab_1', secondaryViewMode: 'preview' }) }); await tick(); await tick();
@@ -173,7 +173,7 @@ async function problemsOf(source) {
     const env = run(source, { noDataset: true });
     await env.helper.openSplitEditor(); await tick();
     env.helper.closeSecondaryPane(); await tick();
-    await env.window.__mdMemoRPC.setUiState({ preview: 'full' }); await tick();
+    await env.window.__sykiRPC.setUiState({ preview: 'full' }); await tick();
   });
   await guard('no view_layout.js loaded', async () => {
     const env = run(source, { viewLayout: false });
@@ -196,7 +196,7 @@ async function problemsOf(source) {
     const fire = (target, extra) => ws.trigger('wheel', { target, deltaY: 120, deltaMode: 0, ctrlKey: false, defaultPrevented: false, ...extra });
     const over = (target) => ws.trigger('pointerover', { target });
     note(wheels() === 0 && watchers() === 0 && ws.listenerCount('pointerleave') === 0, 'on one page nothing listens: not to the wheel, not to the pointer');
-    await env.window.__mdMemoRPC.setUiState({ preview: 'full' }); await tick();
+    await env.window.__sykiRPC.setUiState({ preview: 'full' }); await tick();
     note(watchers() === 1 && ws.listenerCount('pointerleave') === 1, 'the preview alone watches where the pointer is (got ' + watchers() + ')');
     note(wheels() === 0, 'but has no wheel listener while the pointer is not over the desk (got ' + wheels() + ')');
     over(previewPane);
@@ -238,9 +238,9 @@ async function problemsOf(source) {
     over(sec);
     await env.helper.openSplitEditor(); await tick();
     note(watchers() === 0 && wheels() === 0 && ws.listenerCount('pointerleave') === 0, 'two editors have no sheet: nothing listens, and the wheel listener that was on is off (got ' + watchers() + ', ' + wheels() + ')');
-    await env.window.__mdMemoRPC.setUiState({ preview: 'full' }); await tick();
+    await env.window.__sykiRPC.setUiState({ preview: 'full' }); await tick();
     over(ws);
-    env.window.__mdMemoRPC.setUiState({ preview: 'off' }); await tick(); await tick();
+    env.window.__sykiRPC.setUiState({ preview: 'off' }); await tick(); await tick();
     note(watchers() === 0 && wheels() === 0, 'leaving the preview takes both away (got ' + watchers() + ', ' + wheels() + ')');
   });
 

@@ -69,8 +69,8 @@ function loadModule(ctx) {
   return ctx.window.ResultBlocks;
 }
 
-const OPEN = (id) => `<!-- md-memo:res ${id} -->`;
-const CLOSE = '<!-- /md-memo:res -->';
+const OPEN = (id) => `<!-- syki:res ${id} -->`;
+const CLOSE = '<!-- /syki:res -->';
 
 // ---------------------------------------------------------------------------------------------------------
 // A fake gutter: just enough DOM for updateResultAccent, with a log of every write.
@@ -151,7 +151,7 @@ check('a note with no result block costs nothing: no element is created, nothing
   let measured = 0;
   ctx.getComputedStyle = () => { measured++; return {}; };
   const gutter = dom.node('div');
-  const editor = { value: 'plain note\nwith a [[ @llm task ]]\n<!-- md-memo:run a1 -->\nand no block' };
+  const editor = { value: 'plain note\nwith a [[ @llm task ]]\n<!-- syki:run a1 -->\nand no block' };
   update(gutter, editor, null);
   assert.equal(dom.createdCount(), 0);
   assert.equal(gutter.children.length, 0);

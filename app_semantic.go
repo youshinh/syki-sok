@@ -21,9 +21,9 @@ import (
 //	SemanticStatusAsync    the index and the model: cli.SemanticIndexStatus (no model is called, nothing is sent)
 //	SemanticUpdateAsync    update or rebuild the index: cli.SemanticIndexRun; progress goes to window.__semanticProgress(files, filesTotal,
 //	                       texts, textsTotal), at most four times a second
-//	CancelSemanticUpdate   stop the run in progress (what was done is kept, as with Ctrl+C in `md-memo scrap index`)
+//	CancelSemanticUpdate   stop the run in progress (what was done is kept, as with Ctrl+C in `syki scrap index`)
 //
-// The three answer through window.__onDeepSearchResult(reqID, result, errMsg) (the shims' __mdmemoSettle). An error is a sentence, except
+// The three answer through window.__onDeepSearchResult(reqID, result, errMsg) (the shims' __sykiSettle). An error is a sentence, except
 // for the codes the screen acts on, each at the start of the message: "cancelled", "not_enabled", "consent_required: <host>",
 // "confirm_required: <n> chunk texts to <host>" (a large run to a host that is not this machine: ask, then call again with yes),
 // "rebuild_needed", "locked" (another run, here or by the command line, is going).

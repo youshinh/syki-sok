@@ -10,7 +10,7 @@ import (
 )
 
 // withTempHome points the per-user folders at fresh temp folders for one test and returns the home
-// folder (where the default scrap folder ~/Documents/md-memo/scraps would be). The md-memo settings
+// folder (where the default scrap folder ~/Documents/syki-sok/scraps would be). The syki settings
 // folder is appdir.AppConfigDir(); it is NOT created, so a test can check that a command leaves the
 // disk alone. TestMain's shared temp folder is restored afterwards.
 func withTempHome(t *testing.T) (home string) {

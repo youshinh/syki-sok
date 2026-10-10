@@ -15,7 +15,7 @@ import (
 // later is protected until someone deliberately puts it here.
 //
 // The legacy one-line messages ({"action":"pipe|open|activate"}, sent by `cmd | syki` and
-// `md-memo <file>`) are a separate channel: they carry no token and are not affected.
+// `syki <file>`) are a separate channel: they carry no token and are not affected.
 var readOnlyMethods = map[string]bool{
 	"buffer.get":           true,
 	"buffer.get_selection": true,
@@ -44,7 +44,7 @@ func authorize(method, supplied, expected string) *RPCError {
 		return &RPCError{
 			Code: ErrCodeUnauthorized,
 			Message: fmt.Sprintf("Unauthorized: auth token required for %s: send it as \"auth\" in the request "+
-				"(the \"token\" field of ipc-session.json in the md-memo settings folder)", quoteMethod(method)),
+				"(the \"token\" field of ipc-session.json in the syki settings folder)", quoteMethod(method)),
 		}
 	}
 	// An empty expected token can never be matched: nothing is accepted then, not even an empty guess.

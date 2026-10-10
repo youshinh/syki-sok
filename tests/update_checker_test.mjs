@@ -26,6 +26,6 @@ console.log('PASS: isNewerVersion unit tests passed.');
 // 2. Verify checkForAppUpdates uses dynamic version and fallback
 assert.ok(appJs.includes("currentVersion = '2.0.14'"), 'Default fallback version must be 2.0.14');
 assert.ok(appJs.includes('window.backend.getAppVersion'), 'Must check window.backend.getAppVersion');
-assert.ok(appJs.includes('mdmemo_dismissed_update_version'), 'Must support dismissed version state');
+assert.ok(appJs.includes('syki_dismissed_update_version'), 'Must support dismissed version state');
 
 console.log('PASS: app.js contains dynamic backend version check and dismissal logic.');

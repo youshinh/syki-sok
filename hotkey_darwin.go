@@ -21,40 +21,40 @@ package main
 
 // Defined with external linkage in window_darwin.go's preamble, which is a separate cgo
 // translation unit. It fronts the app and its window on the main queue.
-void mdmemoActivateWindow(void);
+void sykiActivateWindow(void);
 
 static EventHandlerRef gHotKeyHandler = NULL;
 static EventHotKeyRef  gHotKeyRef = NULL;
 
 // 'MDMO' as a plain integer: a four-character literal would only draw a -Wmultichar warning.
-static const OSType kMDMemoHotKeySignature = 0x4D444D4F;
+static const OSType kSykiHotKeySignature = 0x4D444D4F;
 
-static OSStatus mdmemoHotKeyCallback(EventHandlerCallRef inCaller, EventRef inEvent, void *inUserData) {
+static OSStatus sykiHotKeyCallback(EventHandlerCallRef inCaller, EventRef inEvent, void *inUserData) {
     // Mirrors the Windows WM_HOTKEY handler, which calls showAndRestoreWindow: the summon
     // hotkey only ever brings syki::sok to the front, it never hides it again.
-    mdmemoActivateWindow();
+    sykiActivateWindow();
     return noErr;
 }
 
-// mdmemoUnregisterHotKeyOnMain must only be called on the main thread.
-static void mdmemoUnregisterHotKeyOnMain(void) {
+// sykiUnregisterHotKeyOnMain must only be called on the main thread.
+static void sykiUnregisterHotKeyOnMain(void) {
     if (gHotKeyRef != NULL) {
         UnregisterEventHotKey(gHotKeyRef);
         gHotKeyRef = NULL;
     }
 }
 
-// mdmemoRegisterHotKeyOnMain replaces any existing registration with keyCode+modifiers.
+// sykiRegisterHotKeyOnMain replaces any existing registration with keyCode+modifiers.
 // Returns 1 on success and 0 on failure. Must only be called on the main thread.
-static int mdmemoRegisterHotKeyOnMain(unsigned int keyCode, unsigned int modifiers) {
-    mdmemoUnregisterHotKeyOnMain();
+static int sykiRegisterHotKeyOnMain(unsigned int keyCode, unsigned int modifiers) {
+    sykiUnregisterHotKeyOnMain();
 
     if (gHotKeyHandler == NULL) {
         EventTypeSpec eventType;
         eventType.eventClass = kEventClassKeyboard;
         eventType.eventKind = kEventHotKeyPressed;
 
-        OSStatus handlerStatus = InstallApplicationEventHandler(&mdmemoHotKeyCallback, 1,
+        OSStatus handlerStatus = InstallApplicationEventHandler(&sykiHotKeyCallback, 1,
                                                                 &eventType, NULL,
                                                                 &gHotKeyHandler);
         if (handlerStatus != noErr) {
@@ -64,7 +64,7 @@ static int mdmemoRegisterHotKeyOnMain(unsigned int keyCode, unsigned int modifie
     }
 
     EventHotKeyID hotKeyID;
-    hotKeyID.signature = kMDMemoHotKeySignature;
+    hotKeyID.signature = kSykiHotKeySignature;
     hotKeyID.id = 1;
 
     EventHotKeyRef ref = NULL;
@@ -78,28 +78,28 @@ static int mdmemoRegisterHotKeyOnMain(unsigned int keyCode, unsigned int modifie
     return 1;
 }
 
-// mdmemoRegisterHotKey is the thread-safe entry point. Carbon hot-key registration has to
+// sykiRegisterHotKey is the thread-safe entry point. Carbon hot-key registration has to
 // happen on the main thread; the bound function that reaches here already runs on it, so the
 // dispatch_sync branch is only a safety net (and never a deadlock, because it is skipped when
 // we are already on the main thread).
-static int mdmemoRegisterHotKey(unsigned int keyCode, unsigned int modifiers) {
+static int sykiRegisterHotKey(unsigned int keyCode, unsigned int modifiers) {
     __block int result = 0;
     if (pthread_main_np() != 0) {
-        result = mdmemoRegisterHotKeyOnMain(keyCode, modifiers);
+        result = sykiRegisterHotKeyOnMain(keyCode, modifiers);
     } else {
         dispatch_sync(dispatch_get_main_queue(), ^{
-            result = mdmemoRegisterHotKeyOnMain(keyCode, modifiers);
+            result = sykiRegisterHotKeyOnMain(keyCode, modifiers);
         });
     }
     return result;
 }
 
-static void mdmemoUnregisterHotKey(void) {
+static void sykiUnregisterHotKey(void) {
     if (pthread_main_np() != 0) {
-        mdmemoUnregisterHotKeyOnMain();
+        sykiUnregisterHotKeyOnMain();
     } else {
         dispatch_sync(dispatch_get_main_queue(), ^{
-            mdmemoUnregisterHotKeyOnMain();
+            sykiUnregisterHotKeyOnMain();
         });
     }
 }
@@ -122,7 +122,7 @@ import (
 // another application now reports false.
 func updateGlobalHotKeyNative(shortcutStr string) bool {
 	if strings.TrimSpace(shortcutStr) == "" {
-		C.mdmemoUnregisterHotKey()
+		C.sykiUnregisterHotKey()
 		return true // Unregistered successfully
 	}
 
@@ -131,5 +131,5 @@ func updateGlobalHotKeyNative(shortcutStr string) bool {
 		return false
 	}
 
-	return C.mdmemoRegisterHotKey(C.uint(keyCode), C.uint(modifiers)) != 0
+	return C.sykiRegisterHotKey(C.uint(keyCode), C.uint(modifiers)) != 0
 }

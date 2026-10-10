@@ -73,7 +73,7 @@ function parseSlots(text, cfg) {
     return null;
   };
   const excluded = [];
-  for (const m of text.matchAll(/<!-- md-memo:res [\s\S]*?<!-- \/md-memo:res -->/g)) excluded.push([m.index, m.index + m[0].length]);
+  for (const m of text.matchAll(/<!-- syki:res [\s\S]*?<!-- \/syki:res -->/g)) excluded.push([m.index, m.index + m[0].length]);
   const slots = [];
   const kinds = [{ open: '[>>', close: ']', type: 'recipe' }, { open: '{{', close: '}}', type: 'slot' }];
   let idx = 0;
@@ -410,7 +410,7 @@ check('Run: the run starts and is remembered for this agent and exact command li
   env.run();
   await env.flush();
   assert.equal(env.calls.runAgent.length, 1, 'the run starts');
-  assert.ok(/md-memo:run/.test(env.editor.value), 'with its marker under the task');
+  assert.ok(/syki:run/.test(env.editor.value), 'with its marker under the task');
   const sig = env.AR.signature(RISKY_AGY);
   assert.deepEqual(plain(env.config.agentAck), { agy: sig });
   assert.deepEqual(env.saved[env.saved.length - 1].agentAck, { agy: sig }, 'kept in config.json');
@@ -497,7 +497,7 @@ check('the auto selector with its confirmation off: asked before the line is rew
   await env.flush();
   assert.equal(env.dialogOpen(), false, 'the run\'s own check does not ask twice');
   assert.equal(env.calls.runAgent.length, 1);
-  assert.ok(env.editor.value.startsWith('メモ\n{{ @claude-code テストを実行して }}\n<!-- md-memo:run '), env.editor.value);
+  assert.ok(env.editor.value.startsWith('メモ\n{{ @claude-code テストを実行して }}\n<!-- syki:run '), env.editor.value);
 });
 
 check('the backend resolves another (risky) definition than the loaded config: declining at the run puts the rewritten line back', async () => {

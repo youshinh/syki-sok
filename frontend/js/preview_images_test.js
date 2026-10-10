@@ -32,13 +32,13 @@ function srcsOf(md, text) {
 
 (function testSpaceInTargetIsAnImage() {
   const md = newMd();
-  const { html, imgs } = srcsOf(md, '![Generated Diagram](/Users/you/Library/Application Support/md-memo/assets/diagram_1.jpg)');
+  const { html, imgs } = srcsOf(md, '![Generated Diagram](/Users/you/Library/Application Support/syki-sok/assets/diagram_1.jpg)');
   assert.strictEqual(imgs.length, 1, 'a target with a space must render as an image, got: ' + html);
   assert.strictEqual(imgs[0].alt, 'Generated Diagram');
-  assert.strictEqual(imgs[0].src, '/Users/you/Library/Application%20Support/md-memo/assets/diagram_1.jpg');
+  assert.strictEqual(imgs[0].src, '/Users/you/Library/Application%20Support/syki-sok/assets/diagram_1.jpg');
   assert.strictEqual(
     PI.resolveLocalImagePath(imgs[0].src, ''),
-    '/Users/you/Library/Application Support/md-memo/assets/diagram_1.jpg',
+    '/Users/you/Library/Application Support/syki-sok/assets/diagram_1.jpg',
     'the preview must ask for the real path, not the percent-encoded text');
 })();
 
@@ -51,18 +51,18 @@ function srcsOf(md, text) {
 (function testEncodedTargetsFromTheApp() {
   const md = newMd();
   // What the app now writes (Go markdownTarget): spaces and parentheses escaped.
-  const { imgs } = srcsOf(md, '![Generated Diagram](/Users/you/Library/Application%20Support/md-memo/assets/d.jpg)');
+  const { imgs } = srcsOf(md, '![Generated Diagram](/Users/you/Library/Application%20Support/syki-sok/assets/d.jpg)');
   assert.strictEqual(imgs.length, 1);
-  assert.strictEqual(PI.resolveLocalImagePath(imgs[0].src, ''), '/Users/you/Library/Application Support/md-memo/assets/d.jpg');
+  assert.strictEqual(PI.resolveLocalImagePath(imgs[0].src, ''), '/Users/you/Library/Application Support/syki-sok/assets/d.jpg');
   const paren = srcsOf(md, '![x](assets/my%20photo%20%281%29.png)').imgs[0];
   assert.strictEqual(PI.resolveLocalImagePath(paren.src, '/notes'), '/notes/assets/my photo (1).png');
 })();
 
 (function testWindowsPathWithASpace() {
   const md = newMd();
-  const { imgs } = srcsOf(md, '![x](C:/Users/a b/AppData/Roaming/md-memo/assets/d.png)');
+  const { imgs } = srcsOf(md, '![x](C:/Users/a b/AppData/Roaming/syki-sok/assets/d.png)');
   assert.strictEqual(imgs.length, 1);
-  assert.strictEqual(PI.resolveLocalImagePath(imgs[0].src, ''), 'C:/Users/a b/AppData/Roaming/md-memo/assets/d.png');
+  assert.strictEqual(PI.resolveLocalImagePath(imgs[0].src, ''), 'C:/Users/a b/AppData/Roaming/syki-sok/assets/d.png');
 })();
 
 (function testNonAsciiAndPercentInNames() {

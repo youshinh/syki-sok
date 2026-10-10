@@ -10,7 +10,7 @@ import (
 	"syki-sok/pkg/slotagent"
 )
 
-// `md-memo lessons list [--agent <key>]` (docs/design/lessons-2026-10.md section 6): which agents have a lessons file, how many rules each
+// `syki lessons list [--agent <key>]` (docs/design/lessons-2026-10.md section 6): which agents have a lessons file, how many rules each
 // holds and how many a run would be given. It is read-only, and so is the JSON-RPC method lessons.list that answers the same: there is no
 // command or method that writes a rule, because an agent could then change its own future instructions without a person approving it.
 // Rules are saved from the window, after a person has read what a model proposed, or by editing the file.

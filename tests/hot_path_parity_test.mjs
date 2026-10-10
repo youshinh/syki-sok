@@ -108,7 +108,7 @@ check('T2 deriveTitleFromContent is a thin call into NoteTitle and follows the n
   // what used to come out wrong
   assert.equal(derive('| a | b |\n|---|---|\nplain'), 'plain', 'table rows are skipped');
   assert.equal(derive('---'), '', 'a rule is not a title');
-  assert.equal(derive('<!-- md-memo:res ab12 -->\ntext'), 'text', 'markers are skipped');
+  assert.equal(derive('<!-- syki:res ab12 -->\ntext'), 'text', 'markers are skipped');
   assert.equal(derive('```js\nx\n```\ntext'), 'text', 'fenced code is skipped');
   assert.equal(derive('---\ntitle: x\n---\nbody'), 'body', 'front matter is skipped');
   assert.equal(derive('[foo](http://x.y/z)'), 'foo', 'links keep their text');

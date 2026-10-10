@@ -84,7 +84,7 @@ page.ws.addEventListener('message', (m) => { const d = JSON.parse(m.data); if (d
 const setCss = (css) => page.ev(`(function () { var s = document.getElementById('ab-style'); if (!s) { s = document.createElement('style'); s.id = 'ab-style'; document.head.appendChild(s); } s.textContent = ${JSON.stringify(css)}; var e = document.getElementById('editor'); if (document.activeElement !== e) e.focus(); return 1; })()`);
 try {
   await page.send('Emulation.setEmulatedMedia', { features: [{ name: 'prefers-reduced-motion', value: 'no-preference' }] });
-  console.error('tabs on the strip:', await page.ev(`(async function () { var have = function () { return document.querySelectorAll('#tabs-list > *').length; }; for (var i = have(); i < ${TABS}; i++) window.__mdMemoRPC.openTab({ title: 'Note ' + (i + 1), content: 'Note ' + (i + 1) + '\\n\\nsome text', background: true }); await new Promise(function (r) { setTimeout(r, 800); }); return have(); })()`));
+  console.error('tabs on the strip:', await page.ev(`(async function () { var have = function () { return document.querySelectorAll('#tabs-list > *').length; }; for (var i = have(); i < ${TABS}; i++) window.__sykiRPC.openTab({ title: 'Note ' + (i + 1), content: 'Note ' + (i + 1) + '\\n\\nsome text', background: true }); await new Promise(function (r) { setTimeout(r, 800); }); return have(); })()`));
   const results = new Map(variants.map((v) => [v.name, []]));
   for (let round = 0; round < ROUNDS; round++) {
     for (const v of (round % 2 ? variants.slice().reverse() : variants)) {

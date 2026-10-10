@@ -12,7 +12,7 @@
 (function (global) {
   'use strict';
 
-  const STORE_KEY = 'md_memo_settings_show_advanced';
+  const STORE_KEY = 'syki_settings_show_advanced';
 
   // ---- pure helpers (exported for Node tests) -----------------------------------------------
 

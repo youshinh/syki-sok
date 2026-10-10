@@ -43,7 +43,7 @@ func (f *fakeDiscord) server() *httptest.Server {
 			w.WriteHeader(http.StatusUnauthorized)
 			return
 		}
-		_ = json.NewEncoder(w).Encode(Self{ID: "bot-1", Username: "md-memo-bot"})
+		_ = json.NewEncoder(w).Encode(Self{ID: "bot-1", Username: "syki-bot"})
 	})
 	mux.HandleFunc("/users/@me/channels", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"id": "chan-1"})

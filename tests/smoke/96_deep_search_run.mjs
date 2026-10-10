@@ -43,7 +43,7 @@ export default {
     assert.equal((await tabs()).length, 2, 'exactly one tab was added');
     assert.equal(created.path, '', 'it is not a file');
     assert.equal(created.dirty, true, 'it is unsaved, so closing it asks first');
-    assert.ok(created.content.startsWith('<!-- md-memo:deepsearch -->\n# '), created.content);
+    assert.ok(created.content.startsWith('<!-- syki:deepsearch -->\n# '), created.content);
     assert.equal((await s.state()).activeTabId, created.id, 'it is the selected tab');
     assert.deepEqual(await s.ev("({ id: document.activeElement.id, start: document.getElementById('editor').selectionStart, same: document.getElementById('editor').value === window.__explore.state().tabs.filter(function (x) { return x.title === " + JSON.stringify(TITLE) + "; })[0].content })"),
       { id: 'editor', start: 0, same: true }, 'the editor has the focus, with the caret at the top of the answer');
@@ -151,7 +151,7 @@ export default {
     await waitHidden(s, 'deep-search-modal');
     await waitRuns(7);
     await s.waitFor('window.__explore.state().tabs.length === 3');
-    assert.match((await s.ev("MdMemoBridge.getConfig().general.cloudConsent['api.example.com']")), /^\d{4}-\d\d-\d\d$/);
+    assert.match((await s.ev("SykiBridge.getConfig().general.cloudConsent['api.example.com']")), /^\d{4}-\d\d-\d\d$/);
 
     t.step('plan_expired from the run: the plan is made again from the same text and the dialog asks again');
     await deepKnobs(s, { local: true, consentGiven: false, runReject: 'plan_expired' });

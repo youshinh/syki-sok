@@ -1922,7 +1922,7 @@
         <figure class="fig"><div class="fig-frame"><img src="./img/manual/en/auto-sel-result.png" alt="A note after Ctrl+Enter on a request line: the line now reads [[ @llm Translate the checklist above into Japanese ]], and the translated checklist sits below it between two HTML comment lines" loading="lazy" width="1120" height="720"></div><figcaption>Ctrl + Enter on a request line: it became <code>[[ @llm ... ]]</code> and the answer arrived below it</figcaption>
           <ol class="fig-legend">
             <li><strong>Your instruction</strong> The line was rewritten as <code>[[ @llm ... ]]</code> and stays in the note</li>
-            <li><strong>Opening comment line</strong> Marks where the result starts (<code>md-memo:res</code> and a short id)</li>
+            <li><strong>Opening comment line</strong> Marks where the result starts (<code>syki:res</code> and a short id)</li>
             <li><strong>The answer</strong> It sits between the two comment lines</li>
             <li><strong>Closing comment line</strong> Marks where the result ends</li>
           </ol></figure>
@@ -1990,17 +1990,17 @@
           </ul>
           <p><strong>What the result looks like</strong></p>
           <pre class="code-block"><code>[[ @llm Translate this into English ]]
-&lt;!-- md-memo:res a1b2 --&gt;
+&lt;!-- syki:res a1b2 --&gt;
 The translated text
-&lt;!-- /md-memo:res --&gt;</code></pre>
+&lt;!-- /syki:res --&gt;</code></pre>
           <ul>
             <li><strong>Result block:</strong> Two HTML comment lines with the answer between them. The short id (<code>a1b2</code>, usually 4 characters) is unique in the note. A run never changes your instruction line. The answer is trimmed, and no blank line is added inside. Nothing inside a result block is ever run, even if the answer contains a <code>{{ }}</code>.</li>
-            <li><strong>While it runs:</strong> A one-line marker, <code>&lt;!-- md-memo:run a1b2 --&gt;</code>, sits under the line, and the status bar shows the running-task badge.</li>
+            <li><strong>While it runs:</strong> A one-line marker, <code>&lt;!-- syki:run a1b2 --&gt;</code>, sits under the line, and the status bar shows the running-task badge.</li>
             <li><strong>Where you see the comment lines:</strong> The editor shows them, and syki::sok's own preview hides them (a viewer that passes HTML through does not display them either). You may delete them by hand. If you delete the marker while a task runs, the answer is added at the end of the note.</li>
             <li><strong>Run again:</strong> Press <span class="kbd">Ctrl + Enter</span> on the instruction line. The old result block (or a marker left behind by a crash) is replaced, so results do not pile up. While a task is running you get "This slot is already running."</li>
             <li><strong>Cancel:</strong> Press Cancel on the task in the task panel (<span class="kbd">Alt + T</span>), which also lists AI and command tasks. The marker disappears and the note is as it was. An AI request cannot be stopped at the provider, so syki::sok forgets it and drops a late answer. A command or an agent is stopped. If you cancel a re-run, the old result does not come back.</li>
             <li><strong>If it fails:</strong> The block holds one line, <code>[LLM error: ...]</code> or <code>[agent name error: ...]</code>. For an AI request that line says in plain words, in the language of the app, what went wrong (for example that the service cannot be reached); it never contains your API key. A command's block holds its output, its error output and an <code>exit code N</code> line.</li>
-            <li><strong>What the AI receives:</strong> Only your instruction. A task recorded through the ask bar sends the instruction and the text it was about. Its opening comment then reads <code>ctx=above n=1</code> (n is the number of lines of that text), for example <code>&lt;!-- md-memo:res a1b2 ctx=above n=1 --&gt;</code>. On a re-run the same text is sent again: up to n non-blank lines directly above the instruction (looking past other task lines and result blocks; at most 80 lines or 8000 characters). A task you wrote by hand, made from a snippet or made by rewriting a line carries no such mark, so only what is inside its brackets is sent.</li>
+            <li><strong>What the AI receives:</strong> Only your instruction. A task recorded through the ask bar sends the instruction and the text it was about. Its opening comment then reads <code>ctx=above n=1</code> (n is the number of lines of that text), for example <code>&lt;!-- syki:res a1b2 ctx=above n=1 --&gt;</code>. On a re-run the same text is sent again: up to n non-blank lines directly above the instruction (looking past other task lines and result blocks; at most 80 lines or 8000 characters). A task you wrote by hand, made from a snippet or made by rewriting a line carries no such mark, so only what is inside its brackets is sent.</li>
           </ul>
           <p><strong>Finding and handling results</strong></p>
           <ul>
@@ -2394,7 +2394,7 @@ snippets:
           </p>
           <pre class="code-block"><code>{{ ⚠ エラー: エージェント起動失敗: ... (再試行: Ctrl+Enter) }}</code></pre>
           <ul>
-            <li><strong>Working directory:</strong> The <strong>project root</strong>, found by walking up from the note until a folder that contains <code>.syki/</code>, <code>.md-memo/</code>, <code>agents.yaml</code> (or <code>agents.yml</code> / <code>agents.json</code>), <code>AGENTS.md</code>, <code>skills/</code> or <code>.git/</code>. If none is found, it is the note's own folder.</li>
+            <li><strong>Working directory:</strong> The <strong>project root</strong>, found by walking up from the note until a folder that contains <code>.syki/</code>, <code>.syki/</code>, <code>agents.yaml</code> (or <code>agents.yml</code> / <code>agents.json</code>), <code>AGENTS.md</code>, <code>skills/</code> or <code>.git/</code>. If none is found, it is the note's own folder.</li>
             <li><strong>.env:</strong> If the project root has a <code>.env</code> file, its variables are passed to the agent as environment variables (only that file is read).</li>
             <li><strong>Tasks with a result below:</strong> The error is one line inside the result block, such as <code>[claude-code error: ...]</code>. Fix the cause and press <span class="kbd">Ctrl + Enter</span> on the task line to run it again.</li>
           </ul>
@@ -2632,7 +2632,7 @@ recipes:
         </ol>
         <ul>
           <li><strong>One comment around the lines:</strong> Settings → General → "Toggle comment writes" → "One comment around the lines" puts <code>&lt;!-- </code> before the first line and <code> --&gt;</code> after the last. The same key takes that comment off again.</li>
-          <li><strong>Lines left as they are:</strong> empty lines, the result markers of a run (<code>&lt;!-- md-memo:... --&gt;</code>), tag lines (<code>&lt;!-- tags: ... --&gt;</code>, see <a href="#tag-commands" style="color: var(--accent);">Add and Remove Tags</a>; they are not listed, and a selection of tag lines only says so), a line that already contains <code>--&gt;</code> (the comment would end there) and a line that is part of a longer comment. The status bar names those lines. Nothing changes, with a message, when an unclosed <code>&lt;!--</code> comes earlier in the note (the new <code>--&gt;</code> would close it and hide everything in between), or when the lines are inside a code block (there <code>&lt;!--</code> is plain text).</li>
+          <li><strong>Lines left as they are:</strong> empty lines, the result markers of a run (<code>&lt;!-- syki:... --&gt;</code>), tag lines (<code>&lt;!-- tags: ... --&gt;</code>, see <a href="#tag-commands" style="color: var(--accent);">Add and Remove Tags</a>; they are not listed, and a selection of tag lines only says so), a line that already contains <code>--&gt;</code> (the comment would end there) and a line that is part of a longer comment. The status bar names those lines. Nothing changes, with a message, when an unclosed <code>&lt;!--</code> comes earlier in the note (the new <code>--&gt;</code> would close it and hide everything in between), or when the lines are inside a code block (there <code>&lt;!--</code> is plain text).</li>
           <li><strong>Commented-out tasks do not run:</strong> <code>[[ @llm ]]</code>, <code>[[ $ ]]</code>, <code>{{ @agent }}</code>, the <code>{{ }}</code>-style slots and the approval gates of recipes are ignored inside a comment by <span class="kbd">Ctrl + Enter</span>, the run button and the slot parser. With the caret inside a comment, <span class="kbd">Ctrl + Enter</span> does nothing (it never runs another slot instead) and says so in the status bar.</li>
           <li><strong>The preview hides comments:</strong> a line that holds only a comment disappears without splitting the paragraph around it. <code>&lt;!--</code> inside a code block or inline code is code, and stays visible.</li>
         </ul>
@@ -3320,7 +3320,7 @@ Clipped from a web page.
           <ul>
             <li><strong>No excerpt is sent before Run.</strong> The dialog only shows what would go, and Cancel sends nothing. Enter in the first moments after the dialog opens is ignored, because it is the key that opened it. Prepared excerpts expire after 15 minutes; syki::sok then prepares them again.</li>
             <li><strong>Secrets are blanked out:</strong> a key, token or password found in an excerpt is blanked out before sending, and the dialog counts them.</li>
-            <li><strong>What is never sent:</strong> notes excluded by <code>.syki-ignore</code>, <code>.md-memo-ignore</code> or the folder rules, hidden folders, AI result blocks, earlier Deep search notes, files that cannot be read and what is over the size limit. The dialog lists what was left out.</li>
+            <li><strong>What is never sent:</strong> notes excluded by <code>.syki-ignore</code>, <code>.syki-ignore</code> or the folder rules, hidden folders, AI result blocks, earlier Deep search notes, files that cannot be read and what is over the size limit. The dialog lists what was left out.</li>
             <li><strong>With a filter on:</strong> when a period or tags are chosen in the <a href="#search-filter" style="color: var(--accent);">Filter</a>, Deep search gathers its excerpts under the same filter, and the neighbouring entries it adds to a short excerpt must pass it too. Nothing outside the filter is planned for sending.</li>
             <li><strong>This PC or another host:</strong> only a model on this PC itself (<code>localhost</code>, <code>127.0.0.1</code>) counts as local. A model anywhere else, a machine on your local network included, asks for your consent once per host: <strong>Allow and run</strong> remembers it in the same allowed-hosts list as the Ask bar. syki::sok checks that saved consent again when it runs.</li>
             <li><strong>Which model:</strong> the Text LLM of Settings → AI Models, the one the Ask AI bar uses. Both its address and its model name must be set; otherwise the dialog says "No AI model is set up yet." with a <strong>Set up</strong> button. If Meaning search is not available, the notes are picked by their words and the dialog says so.</li>
@@ -3886,7 +3886,7 @@ Clipped from a web page.
         </ul>
 
         <p>
-          The <strong>Export...</strong> and <strong>Import...</strong> buttons at the bottom of the Settings dialog carry your settings, agent definitions and skills to another PC in one package (<code>.mdmemopack</code>). Details: <a href="#cfg-pack" style="color: var(--accent);">6. Export and Import Settings (Packages)</a>.
+          The <strong>Export...</strong> and <strong>Import...</strong> buttons at the bottom of the Settings dialog carry your settings, agent definitions and skills to another PC in one package (<code>.sykipack</code>). Details: <a href="#cfg-pack" style="color: var(--accent);">6. Export and Import Settings (Packages)</a>.
         </p>
       </section>
 
@@ -4342,12 +4342,12 @@ Clipped from a web page.
       <!-- 6. Export and Import Settings (Packages) -->
       <section class="doc-section" id="cfg-pack">
         <h3>6. Export and Import Settings (Packages)</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> Put your settings, agent definitions and skills into one <code>.mdmemopack</code> file and carry it to another PC. Use <strong>Export...</strong> and <strong>Import...</strong> at the bottom of the Settings dialog. <span class="pill ok">API keys are left out at first</span></div></div>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> Put your settings, agent definitions and skills into one <code>.sykipack</code> file and carry it to another PC. Use <strong>Export...</strong> and <strong>Import...</strong> at the bottom of the Settings dialog. <span class="pill ok">API keys are left out at first</span></div></div>
 
         <p><strong>Export</strong> (Settings → Export...)</p>
         <figure class="fig"><div class="fig-frame"><img src="./img/manual/en/pack-export.png" alt="The top of the Export package dialog: a format list and one checkbox per settings section, with Sync marked this PC only" loading="lazy" width="1120" height="720"></div><figcaption>The top of "Export package": choose the format and the settings sections</figcaption>
           <ol class="fig-legend">
-            <li><strong>Format</strong> A package (.mdmemopack), or a plain JSON file with the settings only</li>
+            <li><strong>Format</strong> A package (.sykipack), or a plain JSON file with the settings only</li>
             <li><strong>Settings</strong> Tick one box per section; All and None (top right) switch them all at once</li>
             <li><strong>Sync</strong> Marked "this PC only" and unticked at first, because the scrap folder path and similar values differ from PC to PC</li>
           </ol></figure>
@@ -4362,7 +4362,7 @@ Clipped from a web page.
           <li><strong>Click "Export..."</strong><span>At the bottom left of the Settings dialog; "Export package" opens</span></li>
           <li><strong>Choose what goes in</strong><span>Tick settings sections, agent definitions and skills; Sync and the skills start unticked</span></li>
           <li><strong>Leave "Include API keys" off</strong><span>So the file you hand over carries no keys; turn it on only to move to your own other PC</span></li>
-          <li><strong>Click "Export"</strong><span>Pick where to save; <code>syki-sok-YYYYMMDD.mdmemopack</code> is written and a summary is shown</span></li>
+          <li><strong>Click "Export"</strong><span>Pick where to save; <code>syki-sok-YYYYMMDD.sykipack</code> is written and a summary is shown</span></li>
         </ol>
 
         <p><strong>Import</strong> (Settings → Import...)</p>
@@ -4387,7 +4387,7 @@ Clipped from a web page.
             <li><strong>Apply ticked / Keep mine</strong> Apply ticked applies only the ticked settings. Keep mine (also Esc) applies none of them; the rest of the package is applied either way</li>
           </ol></figure>
         <ol class="steps">
-          <li><strong>Click "Import..." and pick the file</strong><span>A <code>.mdmemopack</code>; an older settings JSON file works too</span></li>
+          <li><strong>Click "Import..." and pick the file</strong><span>A <code>.sykipack</code>; an older settings JSON file works too</span></li>
           <li><strong>Check the contents</strong><span>Items marked "will overwrite" replace what you have; if the package's API key fields are empty, your current keys are kept</span></li>
           <li><strong>Tick what to import</strong><span>Untick agent definitions and skills from anyone you do not trust</span></li>
           <li><strong>Click "Import"</strong><span>Settings apply at once (some need a restart); agent definitions and skills are used from the next agent run</span></li>
@@ -4433,7 +4433,7 @@ Clipped from a web page.
             <li>Some settings take effect after you restart syki::sok; the result screen says so.</li>
           </ul>
           <p><strong>What "project" means</strong></p>
-          <p>Starting from the folder of the open note (for an unsaved note: the opened folder, else the scraps folder), syki::sok walks up to the first folder that contains <code>.syki</code>, <code>.md-memo</code>, <code>agents.yaml</code>, <code>AGENTS.md</code>, <code>skills</code> or <code>.git</code>. The home folder is never treated as a project (so global skills are never carried away). If no project is found, project items show "needs a project" and cannot be ticked.</p>
+          <p>Starting from the folder of the open note (for an unsaved note: the opened folder, else the scraps folder), syki::sok walks up to the first folder that contains <code>.syki</code>, <code>.syki</code>, <code>agents.yaml</code>, <code>AGENTS.md</code>, <code>skills</code> or <code>.git</code>. The home folder is never treated as a project (so global skills are never carried away). If no project is found, project items show "needs a project" and cannot be ticked.</p>
           <p><strong>Limits and safety</strong></p>
           <ul>
             <li>A package can be up to 50 MB and 3000 files; one file up to 10 MB, 100 MB in total after unpacking. Settings are limited to 2 MB and one agents file to 1 MB. A skill over the limits is left out of the export with a notice.</li>
@@ -5248,7 +5248,7 @@ command! SykiSend :w !syki</code></pre>
               <tr>
                 <td><strong>Result block</strong></td>
                 <td>Auto selector</td>
-                <td>The answer written below a task line, between two HTML comment lines (<code>&lt;!-- md-memo:res id --&gt;</code> and <code>&lt;!-- /md-memo:res --&gt;</code>). While the task runs, a one-line <code>md-memo:run</code> marker stands in for it.</td>
+                <td>The answer written below a task line, between two HTML comment lines (<code>&lt;!-- syki:res id --&gt;</code> and <code>&lt;!-- /syki:res --&gt;</code>). While the task runs, a one-line <code>syki:run</code> marker stands in for it.</td>
               </tr>
               <tr>
                 <td><strong>Snippet</strong></td>
@@ -5308,7 +5308,7 @@ command! SykiSend :w !syki</code></pre>
               <tr>
                 <td><strong>Deep search</strong></td>
                 <td><a href="#deep-search" style="color: var(--accent);">Parallel Scrap Search</a></td>
-                <td>The button of Meaning mode that sends excerpts of the notes it found to the Text LLM and writes an answer with numbered, linked sources into a new unsaved note. It always asks first. The answer note starts with the comment <code>&lt;!-- md-memo:deepsearch --&gt;</code>, which keeps such notes out of the index. <code>deepsearch.plan</code> is its dry run in JSON-RPC.</td>
+                <td>The button of Meaning mode that sends excerpts of the notes it found to the Text LLM and writes an answer with numbered, linked sources into a new unsaved note. It always asks first. The answer note starts with the comment <code>&lt;!-- syki:deepsearch --&gt;</code>, which keeps such notes out of the index. <code>deepsearch.plan</code> is its dry run in JSON-RPC.</td>
               </tr>
               <tr>
                 <td><strong>Tag</strong></td>

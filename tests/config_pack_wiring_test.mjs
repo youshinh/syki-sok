@@ -90,7 +90,7 @@ check('app.js: Export / Import open the dialog and nothing else touches ConfigPa
 
 check('app.js: the old single-file bindings are no longer called by the buttons', () => {
   assert.doesNotMatch(appJs, /backend\.exportConfig|backend\.importConfig/);
-  assert.doesNotMatch(appJs, /md-memo-config\.json/, 'the browser blob-download fallback went with them');
+  assert.doesNotMatch(appJs, /syki-config\.json/, 'the browser blob-download fallback went with them');
 });
 
 check('config_pack.js: nothing is created at load, everything is behind the dialog', () => {

@@ -11,8 +11,8 @@ import (
 	"syki-sok/pkg/atomicfile"
 )
 
-// `md-memo buffer get --out <file>` writes the note to a file from THIS process instead of printing
-// it. Why: text that travels through a shell pipe (`md-memo buffer get | Set-Content x.md`,
+// `syki buffer get --out <file>` writes the note to a file from THIS process instead of printing
+// it. Why: text that travels through a shell pipe (`syki buffer get | Set-Content x.md`,
 // `> x.md`, a Python subprocess) is decoded and re-encoded with the console's code page on the way
 // (Windows PowerShell 5.1 writes UTF-16 or the ANSI page), which garbles Japanese and other
 // non-ASCII text. A file written here is UTF-8 exactly as the app sent it. No new RPC is involved:
@@ -63,7 +63,7 @@ func resolveOutPath(out string) (string, error) {
 // reader (or a crash) sees either the old file or the whole new one, never half of it. An existing
 // file keeps its permission bits; a new one gets 0644 (the temp file itself is created 0600).
 func writeFileAtomic(path string, data []byte) error {
-	return atomicfile.Write(path, data, ".md-memo-out-*.tmp")
+	return atomicfile.Write(path, data, ".syki-out-*.tmp")
 }
 
 // writeBufferOut is the second half of `buffer get --out`: content has been fetched from the app,

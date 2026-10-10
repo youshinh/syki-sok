@@ -17,10 +17,10 @@ import (
 )
 
 // ErrEmpty means there is nothing in the index to search.
-var ErrEmpty = errors.New("the semantic index is empty; build it first (md-memo scrap index)")
+var ErrEmpty = errors.New("the semantic index is empty; build it first (syki scrap index)")
 
 // ErrModelMismatch means the index was made with another model than the one configured now (the vectors would not be comparable).
-var ErrModelMismatch = errors.New("the semantic index was made with another model; rebuild it (md-memo scrap index --rebuild)")
+var ErrModelMismatch = errors.New("the semantic index was made with another model; rebuild it (syki scrap index --rebuild)")
 
 // SearchOptions of Search.
 type SearchOptions struct {

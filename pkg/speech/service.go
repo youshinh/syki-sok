@@ -134,7 +134,7 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 		in.b64 = ""
 	}
 
-	dir, err := os.MkdirTemp(s.tempRoot, "md-memo-speech-")
+	dir, err := os.MkdirTemp(s.tempRoot, "syki-speech-")
 	if err != nil {
 		return "", fmt.Errorf("作業用フォルダを作れません: %w", err)
 	}

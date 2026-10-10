@@ -36,7 +36,7 @@ func LoadConfig() *Config {
 	c.Path = appdir.ConfigFilePath()
 	if _, err := appdir.ConfigDir(); err != nil {
 		// No per-user settings folder on this system: there is nothing to read (the defaults apply),
-		// and a relative "./md-memo" must not be mistaken for one.
+		// and a relative "./syki-sok" must not be mistaken for one.
 		return c
 	}
 	data, err := os.ReadFile(c.Path)
@@ -136,5 +136,5 @@ func (c *Config) AutoSave() bool {
 	return true
 }
 
-// Dir is the md-memo settings folder (the parent of config.json).
+// Dir is the syki settings folder (the parent of config.json).
 func (c *Config) Dir() string { return appdir.AppConfigDir() }

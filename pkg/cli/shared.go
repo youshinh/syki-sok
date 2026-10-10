@@ -13,7 +13,7 @@ import (
 	"syki-sok/pkg/semindex"
 )
 
-// The entry points that both the command line (md-memo info / config get / scrap ...) and the JSON-RPC methods of the running app
+// The entry points that both the command line (syki info / config get / scrap ...) and the JSON-RPC methods of the running app
 // (app.info, config.get, scrap.path, scrap.list, scrap.search) are built on, so the two always answer the same. They read config.json
 // from the per-user settings folder like the commands do, print nothing and write nothing.
 
@@ -33,7 +33,7 @@ func IsParamError(err error) bool {
 
 // ---- info ------------------------------------------------------------------------------------------------------------------------
 
-// InfoResult is the JSON of `md-memo info` and of the app.info method.
+// InfoResult is the JSON of `syki info` and of the app.info method.
 type InfoResult = infoResult
 
 // Info is where things are: the version, the settings and scrap folders, today's scrap file, the hot folder, autosave. guiRunning is
@@ -117,7 +117,7 @@ func ScrapList(from, to string, withLines bool) ([]ScrapFileInfo, error) {
 
 // ---- scrap search ----------------------------------------------------------------------------------------------------------------
 
-// ScrapSearchParams are the arguments of `md-memo scrap search` (and of scrap.search), named like its flags.
+// ScrapSearchParams are the arguments of `syki scrap search` (and of scrap.search), named like its flags.
 type ScrapSearchParams struct {
 	Text     string   `json:"text"`
 	From     string   `json:"from"`
@@ -166,7 +166,7 @@ func scrapSearch(ctx context.Context, p ScrapSearchParams) (ScrapSearchResult, e
 	var zero ScrapSearchResult
 	query := strings.TrimSpace(p.Text)
 	if query == "" {
-		return zero, paramErr("search text required: md-memo scrap search <text>")
+		return zero, paramErr("search text required: syki scrap search <text>")
 	}
 	limit := p.Limit
 	if limit == 0 {

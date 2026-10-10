@@ -49,7 +49,7 @@ const HC = require('./html_comments.js');
   // code and markers are not comments
   assert.strictEqual(HC.isInsideComment('`<!-- x -->`', 5), false);
   assert.strictEqual(HC.isInsideComment('```\n<!-- x -->\n```', 8), false);
-  assert.strictEqual(HC.isInsideComment('<!-- md-memo:run ab -->', 5), false);
+  assert.strictEqual(HC.isInsideComment('<!-- syki:run ab -->', 5), false);
   // the second of two comments; a caret between them
   const two = '<!-- a --> mid <!-- b -->';
   assert.strictEqual(HC.isInsideComment(two, two.indexOf('mid')), false);
@@ -86,10 +86,10 @@ const HC = require('./html_comments.js');
 // ---- maskComments / unclosedCommentAt -------------------------------------------------------------
 
 (function testMaskComments() {
-  const t = 'a <!-- x\r\ny --> b `<!-- code -->` <!-- md-memo:run ab -->';
+  const t = 'a <!-- x\r\ny --> b `<!-- code -->` <!-- syki:run ab -->';
   const m = HC.maskComments(t);
   assert.strictEqual(m.length, t.length, 'same length');
-  assert.strictEqual(m, 'a       \r\n      b `<!-- code -->` <!-- md-memo:run ab -->', 'line breaks kept, code and markers untouched');
+  assert.strictEqual(m, 'a       \r\n      b `<!-- code -->` <!-- syki:run ab -->', 'line breaks kept, code and markers untouched');
   assert.strictEqual(HC.maskComments('no comment'), 'no comment');
   assert.strictEqual(HC.maskComments(''), '');
   assert.strictEqual(HC.maskComments(null), '');
@@ -125,7 +125,7 @@ const HC = require('./html_comments.js');
   assert.strictEqual(r('```\n<!-- code -->\n```'), '```\n<!-- code -->\n```', 'code is untouched');
   assert.strictEqual(r('`<!-- code -->`'), '`<!-- code -->`');
   assert.strictEqual(r('a <!-- open'), 'a <!-- open', 'an unclosed <!-- stays');
-  const block = '[[ @llm x ]]\n<!-- md-memo:res ab12 -->\nanswer\n<!-- /md-memo:res -->';
+  const block = '[[ @llm x ]]\n<!-- syki:res ab12 -->\nanswer\n<!-- /syki:res -->';
   assert.strictEqual(r(block), block, 'markers are left for stripMarkers');
   assert.strictEqual(r('<!-- ``` -->\ntext\n```\ncode\n```'), 'text\n```\ncode\n```', 'a fence inside a comment cannot pair with a real one');
 })();

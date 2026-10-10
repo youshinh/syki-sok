@@ -77,7 +77,7 @@ export default {
     assert.deepEqual(all[5].pages, '1-2');
     assert.deepEqual(all[6], { paper: 'a3', landscape: true, margin: 'narrow', scale: 125, pages: '1-2', headerFooter: true, title: 'print.md', location: 'C:\\Users\\demo\\Documents\\notes' }, 'on: the file name for the top, its folder for the bottom');
     assert.equal(await s.ev("document.getElementById('print-summary').textContent"), `A3 · ${await phrase(s, 'printLandscape')} · ${await phrase(s, 'printPageCount', { n: 4 })}`);
-    const stored = JSON.parse(await s.ev("localStorage.getItem('md_memo_print_settings')"));
+    const stored = JSON.parse(await s.ev("localStorage.getItem('syki_print_settings')"));
     assert.deepEqual(stored, { paper: 'a3', landscape: true, margin: 'narrow', scale: 125, pages: '1-2', headerFooter: true }, 'the choices are kept');
 
     t.step('closed and opened again: the choices are back (not the range), and one change is one request (no handler is stacked)');
@@ -157,7 +157,7 @@ export default {
     const draft = (await s.state()).tabs.find((tab) => tab.title.indexOf('draft') >= 0);
     // (the preview alone has no strip of tabs, v2: the note is chosen the way a script or the palette would)
     assert.equal(await s.ev("getComputedStyle(document.getElementById('tab-index-left')).visibility"), 'hidden', 'the preview alone shows no strip');
-    await s.ev(`window.__mdMemoRPC.switchTab(${JSON.stringify(draft.id)})`);
+    await s.ev(`window.__sykiRPC.switchTab(${JSON.stringify(draft.id)})`);
     await s.waitFor(`window.__explore.state().activeTabId === ${JSON.stringify(draft.id)}`);
     await openPanel();
     all = await asks();

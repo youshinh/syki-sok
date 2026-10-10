@@ -258,7 +258,7 @@
   1. config.json に `theme: solarized`、`image.aspectRatio: 21:9`、`autocomplete.delayMs: 100`、`timeout_seconds: 900`、`scraps` なしで最上位にだけある `scrap_dir: D:\scraps` と `git_sync_enabled: false` を入れる
   2. 設定を開き、何も変えずに Save
 - 期待（オラクル）: 触っていない設定は変わらない
-- 実際: `theme→olive`、`aspectRatio→16:9`、`delayMs→200`、`maxTokens 300→100`、`timeout_seconds→600`、`ghost_diff_duration_ms 20000→10000`、`scrap_dir→~/Documents/md-memo/scraps`、`git_sync_enabled→true`
+- 実際: `theme→olive`、`aspectRatio→16:9`、`delayMs→200`、`maxTokens 300→100`、`timeout_seconds→600`、`ghost_diff_duration_ms 20000→10000`、`scrap_dir→~/Documents/syki-sok/scraps`、`git_sync_enabled→true`
 - 環境: 版 1.10.5 · Windows · 探索キット · 英語 UI
 - 再現性: 毎回（2 回中 2 回）
 - 証拠: `EV/s2-diff.json`、`EV/s3-options.json`

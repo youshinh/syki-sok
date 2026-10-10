@@ -138,8 +138,8 @@ const AD = require('./about_dialog.js');
 
 const INFO = {
   version: '1.10.5', commit: 'a8bfea5', builtAt: '2026-09-30T05:12:34Z', os: 'windows', arch: 'amd64',
-  executable: 'C:\\Program Files\\syki::sok\\syki.exe', configDir: 'C:\\Users\\me\\AppData\\Roaming\\md-memo',
-  configFile: 'C:\\Users\\me\\AppData\\Roaming\\md-memo\\config.json', scrapDir: 'C:\\Users\\me\\Documents\\md-memo\\scraps', signing: 'unsigned'
+  executable: 'C:\\Program Files\\syki::sok\\syki.exe', configDir: 'C:\\Users\\me\\AppData\\Roaming\\syki-sok',
+  configFile: 'C:\\Users\\me\\AppData\\Roaming\\syki-sok\\config.json', scrapDir: 'C:\\Users\\me\\Documents\\syki-sok\\scraps', signing: 'unsigned'
 };
 
 function makeHost(over) {
@@ -209,9 +209,9 @@ test('buildDetailsText: version, OS, WebView, signing, settings and folders, in 
     'UI language: ja',
     'Update check at start-up: off',
     'Program: C:\\Program Files\\syki::sok\\syki.exe',
-    'Settings folder: C:\\Users\\me\\AppData\\Roaming\\md-memo',
-    'Settings file: C:\\Users\\me\\AppData\\Roaming\\md-memo\\config.json',
-    'Daily notes folder: C:\\Users\\me\\Documents\\md-memo\\scraps'
+    'Settings folder: C:\\Users\\me\\AppData\\Roaming\\syki-sok',
+    'Settings file: C:\\Users\\me\\AppData\\Roaming\\syki-sok\\config.json',
+    'Daily notes folder: C:\\Users\\me\\Documents\\syki-sok\\scraps'
   ]);
   assert.ok(s.endsWith('\n'));
   assert.ok(!/[\u3040-\u30ff\u4e00-\u9fff]/.test(s), 'always English');

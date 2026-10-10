@@ -292,7 +292,7 @@ check('state(): tabs with their live text, panels, status text, last 20 toasts, 
     'confirm-modal': el({ classList: cls(true) })
   };
   const h = loadHooks({}, { elements });
-  h.win.__mdMemoRPC = {
+  h.win.__sykiRPC = {
     getTabs: () => [{ id: 't1', title: 'a.md', path: 'C:\\a.md', isActive: false, isModified: true }, { id: 't2', title: 'b.md', path: '', isActive: true, isModified: false }],
     getBuffer: (id) => { if (id === 't2') throw new Error('gone'); return { content: 'text of ' + id }; }
   };

@@ -19,7 +19,7 @@ import (
 
 // ---- a fake of the page -------------------------------------------------------------------------
 //
-// The RPC methods talk to window.__mdMemoRPC in the WebView. fakePage answers those calls from a
+// The RPC methods talk to window.__sykiRPC in the WebView. fakePage answers those calls from a
 // small in-memory list of tabs that follows the same contract as frontend/js/app.js (which
 // tests/rpc_write_tabs_test.mjs runs for real), so the Go side is tested for what it sends, how it
 // maps the page's answers and errors, and everything it does itself (files, encodings, paths).
@@ -42,7 +42,7 @@ type fakePage struct {
 
 	disk         map[string]string // what the page's file reader returns, for tab.close if_saved
 	beforeCommit func(p *fakePage) // runs inside commitSave before the hash check (a user edit in between)
-	notReady     bool              // window.__mdMemoRPC does not exist yet: every call answers null
+	notReady     bool              // window.__sykiRPC does not exist yet: every call answers null
 	closePrompts int
 }
 
@@ -84,7 +84,7 @@ func (p *fakePage) Dispatch(f func()) { go f() }
 
 var (
 	evalCodeRE = regexp.MustCompile(`(?s)const code = (".*?");\n`)
-	rpcCallRE  = regexp.MustCompile(`(?s)^\(async \(\) => window\.__mdMemoRPC && window\.__mdMemoRPC\.(\w+)\((.*)\)\)\(\)$`)
+	rpcCallRE  = regexp.MustCompile(`(?s)^\(async \(\) => window\.__sykiRPC && window\.__sykiRPC\.(\w+)\((.*)\)\)\(\)$`)
 )
 
 // codeOfEval is the JS expression CallJSWithResponse wrapped into the script it evaluates.
@@ -100,8 +100,8 @@ func codeOfEval(js string) string {
 	return code
 }
 
-// parseRPCCall splits the expression rpcCallExpr builds, "(async () => window.__mdMemoRPC &&
-// window.__mdMemoRPC.fn(a, b))()", into fn and its JSON arguments.
+// parseRPCCall splits the expression rpcCallExpr builds, "(async () => window.__sykiRPC &&
+// window.__sykiRPC.fn(a, b))()", into fn and its JSON arguments.
 func parseRPCCall(code string) (string, []json.RawMessage, error) {
 	m := rpcCallRE.FindStringSubmatch(code)
 	if m == nil {

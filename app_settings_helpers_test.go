@@ -18,7 +18,7 @@ func TestCheckAgentAvailability(t *testing.T) {
 	}
 
 	scrapDir := filepath.Join(home, "availability-scraps")
-	agentsDir := filepath.Join(scrapDir, ".md-memo")
+	agentsDir := filepath.Join(scrapDir, ".syki")
 	if err := os.MkdirAll(agentsDir, 0755); err != nil {
 		t.Fatalf("mkdir: %v", err)
 	}
@@ -27,7 +27,7 @@ func TestCheckAgentAvailability(t *testing.T) {
 	// "go" is guaranteed present: the test suite is being run by it.
 	agentsYAML := "version: 2\ndefault_agent: present\nagents:\n" +
 		"  present:\n    command: \"go\"\n    args: [\"version\"]\n" +
-		"  missing:\n    command: \"md-memo-definitely-not-installed-xyzzy\"\n    args: []\n" +
+		"  missing:\n    command: \"syki-definitely-not-installed-xyzzy\"\n    args: []\n" +
 		"  blank:\n    command: \"\"\n    args: []\n"
 	if err := os.WriteFile(filepath.Join(agentsDir, "agents.yaml"), []byte(agentsYAML), 0644); err != nil {
 		t.Fatalf("write agents.yaml: %v", err)
@@ -46,7 +46,7 @@ func TestCheckAgentAvailability(t *testing.T) {
 	}
 	if got := app.CheckAgentAvailability("missing"); got.Available {
 		t.Errorf("missing agent: got %+v, want Available=false", got)
-	} else if got.Command != "md-memo-definitely-not-installed-xyzzy" {
+	} else if got.Command != "syki-definitely-not-installed-xyzzy" {
 		t.Errorf("missing agent: command = %q, want the configured command echoed back", got.Command)
 	}
 	if got := app.CheckAgentAvailability("blank"); got.Available || got.Command != "" {
@@ -61,7 +61,7 @@ func TestCheckAgentAvailability(t *testing.T) {
 }
 
 func TestLookPathCached_UsesCache(t *testing.T) {
-	const cmd = "md-memo-lookpath-cache-probe"
+	const cmd = "syki-lookpath-cache-probe"
 
 	lookPathCacheMu.Lock()
 	delete(lookPathCache, cmd)

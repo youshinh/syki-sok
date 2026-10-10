@@ -431,7 +431,7 @@ func TestFindSourceFindsTheSkillAboveAStartFolder(t *testing.T) {
 	}
 	if got := FindSource(t.TempDir()); got != "" {
 		// A temp folder with no skills below it (an ancestor of the temp folder could hold one only
-		// if the machine had a skills/md-memo there; be tolerant of that, but not of a wrong answer).
+		// if the machine had a skills/syki there; be tolerant of that, but not of a wrong answer).
 		if !looksLikeSkill(got) {
 			t.Errorf("FindSource found %q, which is not the skill", got)
 		}

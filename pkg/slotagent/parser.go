@@ -95,7 +95,7 @@ func FindExcludedRanges(content string) []ExcludedRange {
 	// 5. Result blocks a BELOW-mode run left in the note: output text, never instructions.
 	ranges = append(ranges, findResultBlocks(content)...)
 
-	// 6. HTML comments (<!-- ... -->, not md-memo markers): a commented-out slot never runs. Same rules as the
+	// 6. HTML comments (<!-- ... -->, not syki markers): a commented-out slot never runs. Same rules as the
 	// frontend's html_comments.js (see comments.go).
 	ranges = append(ranges, findHTMLComments(content)...)
 
@@ -103,11 +103,11 @@ func FindExcludedRanges(content string) []ExcludedRange {
 }
 
 const (
-	resultBlockOpen  = "<!-- md-memo:res "
-	resultBlockClose = "<!-- /md-memo:res -->"
+	resultBlockOpen  = "<!-- syki:res "
+	resultBlockClose = "<!-- /syki:res -->"
 )
 
-// findResultBlocks returns the byte ranges of complete <!-- md-memo:res id --> ... <!-- /md-memo:res -->
+// findResultBlocks returns the byte ranges of complete <!-- syki:res id --> ... <!-- /syki:res -->
 // blocks. An unterminated block is not a block, so a stray opener never hides the rest of a note.
 func findResultBlocks(content string) []ExcludedRange {
 	var ranges []ExcludedRange

@@ -54,7 +54,7 @@ func Save(req Request) (*Result, error) {
 	if err != nil {
 		return nil, err
 	}
-	if err := atomicfile.Write(target.Real, data, ".md-memo-save-*.tmp"); err != nil {
+	if err := atomicfile.Write(target.Real, data, ".syki-save-*.tmp"); err != nil {
 		return nil, fmt.Errorf("cannot write %s: %w", quote(clean), err)
 	}
 	return &Result{Path: clean, Bytes: len(data), Encoding: name, Created: !target.Exists}, nil

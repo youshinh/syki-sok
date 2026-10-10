@@ -36,9 +36,9 @@ func TestResolveActiveSlotConfig_CachesAgentsFileAndPicksUpChanges(t *testing.T)
 		t.Fatalf("failed to write test config.json: %v", err)
 	}
 
-	agentsDir := filepath.Join(scrapDir, ".md-memo")
+	agentsDir := filepath.Join(scrapDir, ".syki")
 	if err := os.MkdirAll(agentsDir, 0755); err != nil {
-		t.Fatalf("failed to create .md-memo dir: %v", err)
+		t.Fatalf("failed to create .syki dir: %v", err)
 	}
 	agentsPath := filepath.Join(agentsDir, "agents.yaml")
 	yaml1 := "version: 2\ndefault_agent: alpha\nagents:\n  alpha:\n    command: \"echo\"\n    args: [\"hi\"]\n"

@@ -18,8 +18,8 @@
 </head>
 <body class="dark-theme theme-olive" data-bars="light" data-view="page">
   <!-- The look a profile chose is on the page before the first paint: this runs before anything below is painted, the scripts at the end of the page after it.
-       md_memo_look ("paper|blue", "ink|forest", ...) is written by app.js (applyTheme) only when the look is not the default (ink, Dark Olive); without it this does nothing. -->
-  <script>(function(){try{var m=localStorage.getItem('md_memo_look');if(!m)return;var p=m.split('|'),b=document.body;if(p[0]==='paper'){b.classList.add('look-paper');document.documentElement.classList.add('look-paper');}if(/^(blue|forest|charcoal|vermilion)$/.test(p[1])){b.classList.remove('theme-olive');b.classList.add('theme-'+p[1]);}}catch(e){}})();</script>
+       syki_look ("paper|blue", "ink|forest", ...) is written by app.js (applyTheme) only when the look is not the default (ink, Dark Olive); without it this does nothing. -->
+  <script>(function(){try{var m=localStorage.getItem('syki_look');if(!m)return;var p=m.split('|'),b=document.body;if(p[0]==='paper'){b.classList.add('look-paper');document.documentElement.classList.add('look-paper');}if(/^(blue|forest|charcoal|vermilion)$/.test(p[1])){b.classList.remove('theme-olive');b.classList.add('theme-'+p[1]);}}catch(e){}})();</script>
   <div id="app">
     <!-- Header: Tabs and Minimal Actions -->
     <header id="header">
@@ -1369,7 +1369,7 @@
                 <button type="button" id="btn-semantic-go" class="btn-secondary hidden" data-i18n="semanticGoAhead">Go ahead</button>
                 <button type="button" id="btn-semantic-cancel" class="btn-secondary hidden" data-i18n="semanticCancel">Stop</button>
               </div>
-              <small data-i18n="semanticIndexHint">The index is kept outside your notes folder and can be deleted at any time. The same index is made by the command md-memo scrap index. Deep search also needs the text model (Text LLM above).</small>
+              <small data-i18n="semanticIndexHint">The index is kept outside your notes folder and can be deleted at any time. The same index is made by the command syki scrap index. Deep search also needs the text model (Text LLM above).</small>
             </div>
           </div>
 
@@ -1585,7 +1585,7 @@
               <label>
                 <input type="checkbox" id="cfg-discord-enabled"> <span data-i18n="discordBridgeEnabledLabel">Append DMs sent to a Discord bot into today's scrap</span>
               </label>
-              <small data-i18n="discordBridgeEnabledHint">Works even while md-memo is closed: messages sent in the meantime are picked up the next time the app runs. No account or server of your own is needed beyond the free Discord bot you create.</small>
+              <small data-i18n="discordBridgeEnabledHint">Works even while syki is closed: messages sent in the meantime are picked up the next time the app runs. No account or server of your own is needed beyond the free Discord bot you create.</small>
             </div>
             <div class="form-group">
               <label for="cfg-discord-bot-token" data-i18n="discordBridgeBotTokenLabel">Bot Token:</label>
@@ -1619,7 +1619,7 @@
             <div class="form-group">
               <label for="cfg-inbox-dir" data-i18n="inboxDirLabel">Watched Folder Path:</label>
               <div style="display: flex; gap: 8px;">
-                <input type="text" id="cfg-inbox-dir" placeholder="~/Documents/md-memo/inbox" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+                <input type="text" id="cfg-inbox-dir" placeholder="~/Documents/syki-sok/inbox" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
                 <button id="btn-browse-inbox-dir" type="button" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
               </div>
             </div>

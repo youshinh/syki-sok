@@ -10,7 +10,7 @@ import (
 	"syki-sok/pkg/ipc"
 )
 
-// `md-memo tab pdf`: the flags become the print.pdf parameters; a file is opened in a background tab for the print and closed again (unless it
+// `syki tab pdf`: the flags become the print.pdf parameters; a file is opened in a background tab for the print and closed again (unless it
 // was open already); the PDF goes next to the file when --out is not given; nothing is sent on a mistake.
 
 func pdfHandler(opened ipc.TabNewResult) func(string, json.RawMessage) (interface{}, *ipc.RPCError) {

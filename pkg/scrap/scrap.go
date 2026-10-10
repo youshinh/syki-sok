@@ -16,7 +16,7 @@ var scrapMu sync.Mutex
 // DeepSearchMarker is the first line of a note that a deep search wrote (the answer of a model, with links to the notes it used). Such
 // a note is not text of the person's own: the semantic index leaves it out, so that the next search does not find a summary of the
 // notes instead of the notes, and a deep search does not use one as a source.
-const DeepSearchMarker = "<!-- md-memo:deepsearch -->"
+const DeepSearchMarker = "<!-- syki:deepsearch -->"
 
 // IsDeepSearchNote reports whether data is a note a deep search wrote: its first line that is not empty is the DeepSearchMarker.
 func IsDeepSearchNote(data []byte) bool {

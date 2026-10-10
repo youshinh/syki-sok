@@ -55,10 +55,10 @@
     return !!el && el.tagName === 'TEXTAREA' && (el.id === 'editor' || el.id === 'editor-secondary');
   }
 
-  // Which note this editor shows right now (app.js: MdMemoBridge.getTabIdForEditor), or null where there is no app (the
+  // Which note this editor shows right now (app.js: SykiBridge.getTabIdForEditor), or null where there is no app (the
   // standalone tests): then nothing can tell two moments apart and the answer is always for the same note.
   function noteIdOf(ed) {
-    const bridge = global.MdMemoBridge;
+    const bridge = global.SykiBridge;
     return bridge && typeof bridge.getTabIdForEditor === 'function' ? bridge.getTabIdForEditor(ed) : null;
   }
 
@@ -74,8 +74,8 @@
   // and falling back to `.key` when `.code` isn't available (older engines,
   // or the synthetic events used by jev_action_test.js).
   function getPhysicalDigit(e) {
-    if (global.MDMemoPlatform && typeof global.MDMemoPlatform.codeDigit === 'function') {
-      const fromCode = global.MDMemoPlatform.codeDigit(e);
+    if (global.SykiPlatform && typeof global.SykiPlatform.codeDigit === 'function') {
+      const fromCode = global.SykiPlatform.codeDigit(e);
       if (fromCode) return fromCode;
     } else {
       const code = e && e.code;
@@ -143,7 +143,7 @@
 
   // 'Cmd' on macOS, 'Ctrl' elsewhere (Ctrl when platform.js hasn't loaded, e.g. under Node).
   function getModLabel() {
-    return (global.MDMemoPlatform && global.MDMemoPlatform.modLabel) || 'Ctrl';
+    return (global.SykiPlatform && global.SykiPlatform.modLabel) || 'Ctrl';
   }
 
   const HINT_FALLBACK = {

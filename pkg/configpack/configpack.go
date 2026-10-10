@@ -1,4 +1,4 @@
-// Package configpack reads and writes .mdmemopack settings packages: a zip of a manifest, an
+// Package configpack reads and writes .sykipack settings packages: a zip of a manifest, an
 // optional config.json, agents files and project skills. Every pack is hostile input; see Open.
 package configpack
 
@@ -9,7 +9,7 @@ import (
 )
 
 const (
-	Format  = "md-memo-pack"
+	Format  = "syki-pack"
 	Version = 1
 
 	ManifestName = "manifest.json"

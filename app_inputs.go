@@ -58,7 +58,7 @@ type AssetResult struct {
 	FileURL string `json:"fileUrl"`
 }
 
-// inputsAppDir is <appdir>/, the same md-memo config folder GenerateImageAsync and
+// inputsAppDir is <appdir>/, the same syki config folder GenerateImageAsync and
 // getSessionFilePath already fall back to.
 func inputsAppDir() (string, error) {
 	configDir, err := appdir.ConfigDir()

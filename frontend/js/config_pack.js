@@ -1,5 +1,5 @@
 // syki::sok settings package (export / import): which settings, agent definitions and project skills go
-// into one .mdmemopack file, and how an imported package is merged back into the live config.
+// into one .sykipack file, and how an imported package is merged back into the live config.
 // The zip itself is written and read by the Go side (window.backend.packListExportable / packExport /
 // packInspect / packImport); this file owns the choices and the merge.
 //

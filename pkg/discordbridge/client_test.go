@@ -17,7 +17,7 @@ func TestVerifyToken_OK(t *testing.T) {
 		if r.URL.Path != "/users/@me" {
 			t.Errorf("unexpected path: %s", r.URL.Path)
 		}
-		_ = json.NewEncoder(w).Encode(Self{ID: "42", Username: "md-memo-bot"})
+		_ = json.NewEncoder(w).Encode(Self{ID: "42", Username: "syki-bot"})
 	}))
 	defer srv.Close()
 
@@ -26,7 +26,7 @@ func TestVerifyToken_OK(t *testing.T) {
 	if err != nil {
 		t.Fatalf("VerifyToken: %v", err)
 	}
-	if self.ID != "42" || self.Username != "md-memo-bot" {
+	if self.ID != "42" || self.Username != "syki-bot" {
 		t.Errorf("unexpected self: %+v", self)
 	}
 }

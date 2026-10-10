@@ -15,12 +15,12 @@ import (
 	"syki-sok/skills"
 )
 
-// `md-memo agent install-skill` puts the agent skill that is built into this program into an agent's
+// `syki agent install-skill` puts the agent skill that is built into this program into an agent's
 // skills folder, so a Homebrew install (which has neither the repository nor the release zip) can
 // have it too. The copying, the version marker and the refusal to overwrite somebody's edits are in
 // pkg/skillinstall; this file decides where, and prints what happened.
 
-// skillSource is the skill folder to install, and skillFinder looks for a skills/md-memo folder on
+// skillSource is the skill folder to install, and skillFinder looks for a skills/syki folder on
 // disk for --link. Variables so that a test can hand in its own.
 var (
 	skillSource = func() fs.FS { return skills.Skill() }

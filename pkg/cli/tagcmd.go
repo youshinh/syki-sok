@@ -16,7 +16,7 @@ import (
 	"syki-sok/pkg/search"
 )
 
-// `md-memo scrap tag add|remove|show`: put a tag into a note, take one out, or list the tags a note has (docs/design/tag-filter-2026-10.md
+// `syki scrap tag add|remove|show`: put a tag into a note, take one out, or list the tags a note has (docs/design/tag-filter-2026-10.md
 // section 10). It works on text: a file, or standard input, and it answers with the new text on standard output, the way sed does. A
 // file is written only with --write, which is the one thing in `scrap` that writes a note; the rule for where a tag goes is
 // search.EditTags, the same one the window and the JSON-RPC method scrap.tag_edit use (tagedit.go).
@@ -60,7 +60,7 @@ func (r *HeadlessRunner) runScrapTag(args []string) (int, error) {
 		}
 	} else {
 		if len(words) == 0 {
-			return 1, fmt.Errorf("tags required: md-memo scrap tag %s <tags> [<file>]", op)
+			return 1, fmt.Errorf("tags required: syki scrap tag %s <tags> [<file>]", op)
 		}
 		if len(words) > 2 {
 			return 1, fmt.Errorf("scrap tag %s takes the tags as one argument (\"a, b\") and a file, got %q as well", op, words[2])
@@ -135,7 +135,7 @@ func (r *HeadlessRunner) runScrapTag(args []string) (int, error) {
 func (r *HeadlessRunner) readTagInput(file string, write bool) (text []byte, path string, mode os.FileMode, err error) {
 	if file == "" {
 		if r.stdin == nil && IsTerminal(os.Stdin) {
-			return nil, "", 0, errors.New("give a <file>, or pipe the text in: md-memo scrap tag ... < note.md")
+			return nil, "", 0, errors.New("give a <file>, or pipe the text in: syki scrap tag ... < note.md")
 		}
 		data, err := io.ReadAll(io.LimitReader(r.input(), search.MaxTagEditBytes+1))
 		if err != nil {
@@ -185,7 +185,7 @@ func fsReason(err error) error {
 // permission bits); then the old one is read again, and if it is not what was read at the start, or is gone, nothing is replaced: the
 // person (or the app) saved a note while this ran, and their text must not be overwritten. A file is never created.
 func writeTagged(path string, old, data []byte, mode os.FileMode) error {
-	tmp, err := os.CreateTemp(filepath.Dir(path), ".md-memo-tag-*.tmp")
+	tmp, err := os.CreateTemp(filepath.Dir(path), ".syki-tag-*.tmp")
 	if err != nil {
 		return fmt.Errorf("cannot write beside %s: %w", path, err)
 	}

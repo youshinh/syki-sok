@@ -745,9 +745,9 @@ async function runTests() {
 
   // 21. A result belongs to the note it was asked from (B11 of the UX review). The primary pane's textarea shows every note
   // in turn, so when the answer arrives after another note was brought into it, inserting would splice the text into THAT
-  // note at the old note's caret. app.js tells which note an editor shows now (MdMemoBridge.getTabIdForEditor).
+  // note at the old note's caret. app.js tells which note an editor shows now (SykiBridge.getTabIdForEditor).
   let shownNote = 'note-A';
-  global.window.MdMemoBridge = { getTabIdForEditor: () => shownNote };
+  global.window.SykiBridge = { getTabIdForEditor: () => shownNote };
   let pendingReq = null;
   global.window.backend.jevExecuteAsync = (reqId) => { pendingReq = reqId; };
   global.window.backend.jevPredict = async () => ({
@@ -788,7 +788,7 @@ async function runTests() {
   global.window.__onJevResult(pendingReq, { success: true, markdown: '## BACK' });
   await new Promise(r => setTimeout(r, 30));
   assert(editorEl.value.includes('## BACK'), 'back in the same note before the answer: inserted');
-  delete global.window.MdMemoBridge;
+  delete global.window.SykiBridge;
   delete global.window.backend.jevExecuteAsync;
   console.log('✔ A Quick Actions result for a note that is no longer in the pane is not inserted into the note shown now');
 

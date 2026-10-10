@@ -540,7 +540,7 @@ async function createEnv(opts = {}) {
   const el = (id) => documentMock.getElementById(id);
   const env = {
     window: windowMock, elements, messages, llmCalls, saved, tasks, store, el,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     editor: el('editor'),
     fire(id, evt, init) {
@@ -816,7 +816,7 @@ async function twoWaitingAsks() {
   assert.equal(env.llmCalls.length, 2);
   return { env, anchorA, anchorB };
 }
-const savedNote = (env) => { env.window.__testHelper.createTab(); return JSON.parse(env.store.get('md_memo_session_v1')).tabs[0].content; };
+const savedNote = (env) => { env.window.__testHelper.createTab(); return JSON.parse(env.store.get('syki_session_v1')).tabs[0].content; };
 
 check('two waiting asks: the first failing keeps the second on a line of its own, and its answer does not land on the user\'s line', async () => {
   const { env, anchorB } = await twoWaitingAsks();
@@ -901,7 +901,7 @@ check('an Enter that confirms an IME conversion does not submit (Safari reports 
   assert.equal(env.llmCalls.length, 1);
 });
 
-check('MdMemoBridge.openAskBar with onSubmit only collects the instruction: no request, the note is untouched', async () => {
+check('SykiBridge.openAskBar with onSubmit only collects the instruction: no request, the note is untouched', async () => {
   const env = await createEnv();
   env.setNote('# Title\nplain paragraph text', 0, 0);
   const calls = [];
@@ -1125,7 +1125,7 @@ check('a note closed while its request runs: the answer is dropped and the task 
   env.setNote('b\n<!-- run 12 -->', 0, 0);
   const finished = [];
   const reqId = env.bridge.startLlmTask({ tabId: tabB, prompt: 'p', anchorText: '<!-- run 12 -->', onFinish: (s) => finished.push(s) });
-  env.window.__mdMemoRPC.closeTab(tabB);
+  env.window.__sykiRPC.closeTab(tabB);
   env.window.__onLLMResult(reqId, 'answer', '');
   assert.deepEqual(finished, ['canceled']);
   assert.equal(env.tasks.updated[env.tasks.updated.length - 1].status, 'canceled');
@@ -1133,7 +1133,7 @@ check('a note closed while its request runs: the answer is dropped and the task 
 
 // ---- command bar -----------------------------------------------------------------------------------
 const badge = (env) => env.el('cli-filter-badge').textContent;
-const MODE_KEY = 'md_memo_cmdbar_mode';
+const MODE_KEY = 'syki_cmdbar_mode';
 
 check('command bar: opens in the last used mode, Tab and the badge switch and remember it', async () => {
   const env = await createEnv();
@@ -1451,7 +1451,7 @@ check('the placement is a setting: default below, the select is in Settings and 
 });
 
 check('command history entries are labelled in the UI language (the label used to be Japanese in every language)', async () => {
-  const store = () => ({ md_memo_cli_history: JSON.stringify(['ls -la']) });
+  const store = () => ({ syki_cli_history: JSON.stringify(['ls -la']) });
   const en = await createEnv({ localStorage: store() });
   en.setNote('x', 0, 0);
   en.ctrl('e');

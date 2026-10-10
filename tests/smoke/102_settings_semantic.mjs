@@ -19,7 +19,7 @@ export default {
     const shownBtn = (id) => s.ev(`!document.getElementById(${JSON.stringify(id)}).classList.contains('hidden')`);
     const calls = (fn) => s.ev(`window.__docshot.calls.filter(function (c) { return c.fn === ${JSON.stringify(fn)}; }).map(function (c) { return c.args; })`);
     const knob = (code) => s.ev(`(function () { var k = window.__docshot.semanticIndex; ${code}; return 1; })()`);
-    const configSemantic = () => s.ev('JSON.stringify(MdMemoBridge.getConfig().semantic === undefined ? null : MdMemoBridge.getConfig().semantic)');
+    const configSemantic = () => s.ev('JSON.stringify(SykiBridge.getConfig().semantic === undefined ? null : SykiBridge.getConfig().semantic)');
     const setValue = (id, v) => s.ev(`(function () { var e = document.getElementById(${JSON.stringify(id)}); e.value = ${JSON.stringify(v)}; e.dispatchEvent(new Event('input', { bubbles: true })); return 1; })()`);
     const toggle = (id, on) => s.ev(`(function () { var e = document.getElementById(${JSON.stringify(id)}); e.checked = ${on ? 'true' : 'false'}; e.dispatchEvent(new Event('change', { bubbles: true })); return 1; })()`);
     const settle = (cond) => s.waitFor(cond, { timeout: 8000 });

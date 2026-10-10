@@ -10,7 +10,7 @@ import (
 
 // TestMain makes the package's tests hermetic. The commands under test read config.json, the IPC
 // session file and the scraps folder from the per-user directories, which are the developer's real
-// %AppData%\md-memo and ~/Documents/md-memo unless redirected: without this, `md-memo info` ran
+// %AppData%\syki-sok and ~/Documents/syki-sok unless redirected: without this, `syki info` ran
 // against the machine's own settings, and the ocr tests read the real config.json. Both roots go
 // into one temp folder for the whole run; a test that needs its own layout redirects them again
 // (see withTempHome in scrapcmd_test.go).

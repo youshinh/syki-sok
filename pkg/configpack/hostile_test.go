@@ -90,7 +90,7 @@ func TestOpen_ManifestCannotPointOutsideItsRoots(t *testing.T) {
 }
 
 func TestOpen_ManifestValidation(t *testing.T) {
-	bigPad := append([]byte(`{"format":"md-memo-pack","version":1,"items":[]}`), bytes.Repeat([]byte(" "), MaxManifestBytes)...)
+	bigPad := append([]byte(`{"format":"syki-pack","version":1,"items":[]}`), bytes.Repeat([]byte(" "), MaxManifestBytes)...)
 	many := make([]string, maxSections+1)
 	for i := range many {
 		many[i] = fmt.Sprint("s", i)
@@ -103,8 +103,8 @@ func TestOpen_ManifestValidation(t *testing.T) {
 		{"no manifest", []zent{{name: "config/config.json", data: []byte("{}")}}, ErrBadManifest},
 		{"not json", []zent{{name: ManifestName, data: []byte("PK not json")}}, ErrBadManifest},
 		{"wrong format", []zent{{name: ManifestName, data: []byte(`{"format":"zip","version":1}`)}}, ErrBadManifest},
-		{"version 0", []zent{{name: ManifestName, data: []byte(`{"format":"md-memo-pack","version":0}`)}}, ErrBadManifest},
-		{"newer version", []zent{{name: ManifestName, data: []byte(`{"format":"md-memo-pack","version":2}`)}}, ErrNewerVersion},
+		{"version 0", []zent{{name: ManifestName, data: []byte(`{"format":"syki-pack","version":0}`)}}, ErrBadManifest},
+		{"newer version", []zent{{name: ManifestName, data: []byte(`{"format":"syki-pack","version":2}`)}}, ErrNewerVersion},
 		{"manifest too big", []zent{{name: ManifestName, data: bigPad}}, ErrTooLarge},
 		{"too many sections", []zent{{name: ManifestName, data: mustJSON(t, Manifest{Format: Format, Version: 1, ConfigSections: many})}}, ErrBadManifest},
 		{"duplicate item ids", []zent{{name: ManifestName, data: mustJSON(t, testManifest(
@@ -366,7 +366,7 @@ func TestOpen_RejectsDuplicateNames(t *testing.T) {
 		"same name twice":        {{name: ManifestName, data: m}, {name: "a/b", data: []byte("1")}, {name: "a/b", data: []byte("2")}},
 		"differs by case":        {{name: ManifestName, data: m}, {name: "config/config.json", data: []byte("1")}, {name: "Config/Config.json", data: []byte("2")}},
 		"file and folder":        {{name: ManifestName, data: m}, {name: "a", data: []byte("1")}, {name: "a/", data: nil}},
-		"second manifest":        {{name: ManifestName, data: m}, {name: ManifestName, data: []byte(`{"format":"md-memo-pack","version":1,"items":[]}`)}},
+		"second manifest":        {{name: ManifestName, data: m}, {name: ManifestName, data: []byte(`{"format":"syki-pack","version":1,"items":[]}`)}},
 		"manifest in wrong case": {{name: ManifestName, data: m}, {name: "MANIFEST.json", data: m}},
 	} {
 		if _, err := Open(writeZipFile(t, ents)); !errors.Is(err, ErrDuplicate) {

@@ -377,7 +377,7 @@ function rescueAnchor(id) {
       replaceAnchor: (tabId, from, to) => { log.replaced.push([tabId, from, to]); return true; },
       getConfig: () => ({})
     }, overrides);
-    global.MdMemoBridge = bridge;
+    global.SykiBridge = bridge;
     return { bridge, log };
   }
 

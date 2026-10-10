@@ -350,7 +350,7 @@
 | `frontend/vendor/katex.min.css` | 第三者の CSS | 色の直書きなし（文字色を継承する）。触らない。 |
 | Go 側: `quickcapture_windows.go`（ポップアップの COLORREF）、`quickcapture.go`（アクセント）、`window_windows.go` / `window_darwin.go`（描画前のウィンドウの下地 `#1e1e1e`） | ネイティブの色 | CSS ではない。P1b で紙の見た目を入れるとき、ネイティブのポップアップと WebView の下地が見た目に従うかを決める必要がある。**P1b では変えていない**（§6.7）。 |
 | `pkg/dropzone` のスマホ用ページ、docshots 用のページ、ルートの `index.html` / `manual.html`（サイト） | 別の CSS | アプリの画面ではないので触っていない。 |
-| `skills/md-memo/references/interfaces.md` の「`--result-open` ... は `style.css` にある」 | 説明文 | 定義は `tokens.css` に移った。文章はまだ古い（P1a の担当外）。 |
+| `skills/syki/references/interfaces.md` の「`--result-open` ... は `style.css` にある」 | 説明文 | 定義は `tokens.css` に移った。文章はまだ古い（P1a の担当外）。 |
 | `transparent`（64 行）、`currentColor`（既存 4 か所 + マスク用に新規 8 か所）、システム色のキーワード | 色の直書きではない | 契約どおり対象外。タブのフェードのマスク（`mask-image`）の `#000` は `currentColor` に直した（マスクはアルファしか見ない。画素一致で確認）。 |
 
 ## 4. 統合の提案（見た目を変えないため、P1a では統合していない）
@@ -475,7 +475,7 @@ P1b で紙の値を決めるときに、先に束ねると台帳が小さくな�
 ### 6.7 未対応と引き継ぎ
 
 - **Go のネイティブの色**は変えていない（担当外）: `window_windows.go`（クラスのブラシ・WebView2 の下地・環境変数）と `window_darwin.go` の `#1e1e1e`。墨の新しい面は `#0e0f17` なので、起動の最初の 1 フレームだけ少し明るい灰色が見える。紙を選んだ人は、WebView が描くまで暗い窓が見える。直すなら、Go の下地を `#0e0f17` にし、紙のときは設定を先に読む（P6）。ポップアップ（Quick Capture）の色も同じ。
-- **起動の最初の描画の前に見た目を当てる**: `index.html` の `<body>` の最初に、ごく小さな（400 文字ほど、ES5）インラインのスクリプトを置いた。`md_memo_look`（`paper|blue` のような小さな印）を読んで、`look-paper` と組み込みのアクセントのクラスを `<body>` と `<html>` に付ける。印は `app.js` の `applyTheme()` → `rememberLook()` が、見た目が既定（墨・Dark Olive）でないときだけ書く（既定のプロファイルは何も書かず、スクリプトは何もしない）。置かないと、`app.js`（ページの終わり）が走る前に最初の描画があり（実測: 最初の描画は 112〜128 ms、ページの解析の終わりは 150 ms 前後）、紙を選んだ人は毎回、墨の画面が一瞬見える。実機で、再読み込みの最初の描画の前にクラスが付いていることを 4/4 で確かめた。自分で選ぶ色は印に入れない（計算は `app.js` が走ってから。数十 ms は Dark Olive）。
+- **起動の最初の描画の前に見た目を当てる**: `index.html` の `<body>` の最初に、ごく小さな（400 文字ほど、ES5）インラインのスクリプトを置いた。`syki_look`（`paper|blue` のような小さな印）を読んで、`look-paper` と組み込みのアクセントのクラスを `<body>` と `<html>` に付ける。印は `app.js` の `applyTheme()` → `rememberLook()` が、見た目が既定（墨・Dark Olive）でないときだけ書く（既定のプロファイルは何も書かず、スクリプトは何もしない）。置かないと、`app.js`（ページの終わり）が走る前に最初の描画があり（実測: 最初の描画は 112〜128 ms、ページの解析の終わりは 150 ms 前後）、紙を選んだ人は毎回、墨の画面が一瞬見える。実機で、再読み込みの最初の描画の前にクラスが付いていることを 4/4 で確かめた。自分で選ぶ色は印に入れない（計算は `app.js` が走ってから。数十 ms は Dark Olive）。
 - P2〜P5 のトークン（`--tab-*`、`--gutter-*`、`--note-*`、`--wall` ほか）は **値だけ**用意した。`--bar-*-rgb` と `--text-muted-rgb` は P2b で `chrome.css` が使い始めた（下の 6.8）。P2 の `--bar-a` は `tokens.css` のトークンではなく、`chrome.css` が二つのバーに置く層の変数（`<body data-bars>` で値が決まる。`<body>` に置くとページ全体の再計算になるため、バー自身に置く）。
 - スマホ用ページ（`pkg/dropzone`）は別の CSS で、見た目の設定に従わない。
 - `forced-colors`（強制色）は P6。紙の枠は `--border-color` の薄い罫線のまま。

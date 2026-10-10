@@ -11,12 +11,12 @@
 
 ## 2. 規則のファイル
 
-- 場所: `<設定フォルダ>/lessons/<エージェント>.md`（設定フォルダは `pkg/appdir.ConfigDir()`、`md-memo info` の `config_dir`）。`<エージェント>` は `agents.yaml` の **キー**（別名は `slotagent.ResolveAgentName` で本名にする。`@cc` も `claude` のファイル）。ファイル名は `[A-Za-z0-9._-]` 以外を `_` にする。
+- 場所: `<設定フォルダ>/lessons/<エージェント>.md`（設定フォルダは `pkg/appdir.ConfigDir()`、`syki info` の `config_dir`）。`<エージェント>` は `agents.yaml` の **キー**（別名は `slotagent.ResolveAgentName` で本名にする。`@cc` も `claude` のファイル）。ファイル名は `[A-Za-z0-9._-]` 以外を `_` にする。
 - 形（普通の Markdown。人が自由に直せる）:
 
 ```
 # Lessons for claude
-<!-- md-memo lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->
+<!-- syki lessons: one rule per "- " line. Edit or delete freely; other lines are ignored. -->
 - Do not include ADF.h: the build fails on this machine. <!-- 2026-10-03 -->
 ```
 
@@ -95,7 +95,7 @@ Lessons from earlier runs on this machine (written or approved by the user; foll
 ## 6. 参照（読み取りだけ）
 
 - `LessonsInfoAsync(reqID, agent)`: `agent` ありなら `{"agent","path","exists","count","applied","skipped","disabled"}`（`applied` / `skipped` は §2 の上限で数える。`disabled` は `lessons: false`）、`agent` が空なら、`lessons/` にあるすべてのファイルの一覧（同じ形）。
-- CLI: `md-memo lessons list [--agent <key>] [--json|--text]`。JSON-RPC: `lessons.list`（トークン必須、`params: {agent?}`、結果は上と同じ）。**書き込みは両方に作らない**。`help.go`、skills、一貫性テストに載せる。
+- CLI: `syki lessons list [--agent <key>] [--json|--text]`。JSON-RPC: `lessons.list`（トークン必須、`params: {agent?}`、結果は上と同じ）。**書き込みは両方に作らない**。`help.go`、skills、一貫性テストに載せる。
 
 ## 7. 画面
 
@@ -129,7 +129,7 @@ Lessons from earlier runs on this machine (written or approved by the user; foll
 
 - Go: `go vet ./pkg/... .`（既存の注意のみ）、`go test ./pkg/... .` 全 35 パッケージ。規則のファイル（上限、行の検査、新しいほうから 30 件 / 4000 文字、`lessons: false`）、指示への注入（`sysInstruction` の先頭、プロファイルやスキルとの併用、`Task:` の前、レシピに入らない）、提案（ループバックの偽のモデル: JSON・フェンス付き・空・長すぎ・重複・コメント注入・命令を書き換える語・モデル未設定・クラウドで未同意を Go が拒む・取り消し・期限切れ）、保存（再検査、重複、200 件、並行した保存）、`lessons list`（CLI と RPC のトークン）。秘密が偽のモデルに届かないこと（鍵の形のダミーはテストのソースに書かず、分けて作る）。
 - ページ: JS 115 ファイル、スモーク 47 件（英語・日本語。新しい流れは `105_lessons`）。わざと壊す 2 通り（編集した規則を送らない、同意のチェックを無視する）で、スモークと単体試験の両方が落ちる。
-- **実アプリ（隔離した実 WebView2 + 本物の Ollama `gemma4:e2b` + 失敗するダミーのエージェント）**: `{{ @fake ... }}` を `Ctrl+Enter` で走らせると失敗し、タスクパネルの履歴カードに「教訓」ボタンが出る → ダイアログに「指示 27 文字、エージェントの出力 0 文字、エラー 209 文字」「送り先: この PC の gemma4:e2b。外へは出ません」→ 「提案を作る」で本物のモデルが提案（初回はモデルの読み込みで 53.7 秒、2 回目以降は 5.6 秒）→ 保存（`lessons/fake.md` に規則と日付、ステータスに「教訓を保存しました: fake（N 件）」）→ **同じタスクをもう一度走らせると、エージェントが受け取った指示の先頭に `Lessons from earlier runs on this machine (...)` と規則が付き**（ダミーのエージェントが記録した引数で確認）、カードに「教訓 N 件を適用」。コマンドパレットの「教訓のファイルを開く」でファイルが通常のタブで開く。`md-memo lessons list --json` も隔離した設定フォルダで確認。
+- **実アプリ（隔離した実 WebView2 + 本物の Ollama `gemma4:e2b` + 失敗するダミーのエージェント）**: `{{ @fake ... }}` を `Ctrl+Enter` で走らせると失敗し、タスクパネルの履歴カードに「教訓」ボタンが出る → ダイアログに「指示 27 文字、エージェントの出力 0 文字、エラー 209 文字」「送り先: この PC の gemma4:e2b。外へは出ません」→ 「提案を作る」で本物のモデルが提案（初回はモデルの読み込みで 53.7 秒、2 回目以降は 5.6 秒）→ 保存（`lessons/fake.md` に規則と日付、ステータスに「教訓を保存しました: fake（N 件）」）→ **同じタスクをもう一度走らせると、エージェントが受け取った指示の先頭に `Lessons from earlier runs on this machine (...)` と規則が付き**（ダミーのエージェントが記録した引数で確認）、カードに「教訓 N 件を適用」。コマンドパレットの「教訓のファイルを開く」でファイルが通常のタブで開く。`syki lessons list --json` も隔離した設定フォルダで確認。
 
 ### 10.2 提案の質（本物の小さなモデルで見て直したこと）
 

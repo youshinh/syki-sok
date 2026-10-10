@@ -10,10 +10,10 @@ import (
 )
 
 // The window's tag commands (docs/design/tag-filter-2026-10.md section 10.6) ask Go how the tags of the open tab's text change; the
-// rule for where a tag goes is search.EditTags, the same one `md-memo scrap tag` and the JSON-RPC method scrap.tag_edit use. This
+// rule for where a tag goes is search.EditTags, the same one `syki scrap tag` and the JSON-RPC method scrap.tag_edit use. This
 // computes only: it reads no file, touches no tab, and runs nothing until the page asks.
 
-// TagEditAsync answers cli.ScrapTagEdit through window.__onDeepSearchResult(reqID, result, errMsg) (the shim's __mdmemoSettle, as
+// TagEditAsync answers cli.ScrapTagEdit through window.__onDeepSearchResult(reqID, result, errMsg) (the shim's __sykiSettle, as
 // ScrapFilterOptionsAsync does). reqJSON is the params of scrap.tag_edit: {"text", "op": "add"|"remove"|"show", "scope": "note"|"entry",
 // "line", "tags": ["a"] or "a, b", "return_text"}. The result is the edit: {"changed", "scope", "start_line", "end_line", "new_lines",
 // "eol", "line", "added", "removed", "unchanged", "note_tags", "entry_tags", "message_code"} (and "text" with return_text); the lists are

@@ -40,7 +40,7 @@ async function createEnv(opts = {}) {
   const listeners = { keydown: [] };
   const messages = [];
   const store = new Map();
-  if (opts.localConfig) store.set('md_memo_config_v1', JSON.stringify(opts.localConfig)); // the page's own copy of config.json
+  if (opts.localConfig) store.set('syki_config_v1', JSON.stringify(opts.localConfig)); // the page's own copy of config.json
   let documentMock = null;
 
   function mockElement(id, tagName = 'div') {
@@ -358,10 +358,10 @@ check('B25: a rejection with no message still gives a readable failure, and a lo
 
   // Go words its error in Japanese; the English toast keeps only what the system said
   const goError = await createEnv({ backendConfig: { text: { baseUrl: 'http://localhost:11434', model: 'm', apiKey: 'k' } } });
-  goError.window.backend.saveConfig = async () => { throw new Error('設定ファイルの書き込みに失敗しました: open C:\\Users\\me\\AppData\\Roaming\\md-memo\\config.json: Access is denied.'); };
+  goError.window.backend.saveConfig = async () => { throw new Error('設定ファイルの書き込みに失敗しました: open C:\\Users\\me\\AppData\\Roaming\\syki-sok\\config.json: Access is denied.'); };
   await openSettingsAndSave(goError);
   const goToast = goError.messages[goError.messages.length - 1];
-  assert.equal(goToast, I18N.en.configSaveFailed.replace('{err}', 'open C:\\Users\\me\\AppData\\Roaming\\md-memo\\config.json: Access is denied.'));
+  assert.equal(goToast, I18N.en.configSaveFailed.replace('{err}', 'open C:\\Users\\me\\AppData\\Roaming\\syki-sok\\config.json: Access is denied.'));
   assert.ok(!/[぀-ヿ一-鿿]/.test(goToast), 'no Japanese in the English toast');
 
   const long = await createEnv({ backendConfig: { text: { baseUrl: 'http://localhost:11434', model: 'm', apiKey: 'k' } } });

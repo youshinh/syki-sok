@@ -405,14 +405,14 @@ export default {
     const opened = (await tabs()).find((x) => x.title === 'claude-code.md');
     assert.equal((await tabs()).length, before + 1);
     assert.ok(opened.content.includes('# Lessons for claude-code'), 'the file\'s text: ' + opened.content.slice(0, 80));
-    assert.equal(opened.path, 'C:\\Users\\demo\\AppData\\Roaming\\md-memo\\lessons\\claude-code.md');
+    assert.equal(opened.path, 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok\\lessons\\claude-code.md');
     assert.equal((await s.state()).activeTabId, opened.id, 'and it is the tab in front');
     assert.equal(await visible(s, 'lesson-modal'), false, 'no picker for one file');
 
     t.step('several agents: a small picker, by name, with the count; the arrow keys and Enter open the file; Esc opens nothing');
     await knobs({ files: [
-      { agent: 'hermes', path: 'C:\\Users\\demo\\AppData\\Roaming\\md-memo\\lessons\\hermes.md', exists: true, count: 1, applied: 1, skipped: 0, disabled: true },
-      { agent: 'claude-code', path: 'C:\\Users\\demo\\AppData\\Roaming\\md-memo\\lessons\\claude-code.md', exists: true, count: 4, applied: 4, skipped: 0, disabled: false }
+      { agent: 'hermes', path: 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok\\lessons\\hermes.md', exists: true, count: 1, applied: 1, skipped: 0, disabled: true },
+      { agent: 'claude-code', path: 'C:\\Users\\demo\\AppData\\Roaming\\syki-sok\\lessons\\claude-code.md', exists: true, count: 4, applied: 4, skipped: 0, disabled: false }
     ] });
     await runEntry();
     await waitShown(s, 'lesson-modal');

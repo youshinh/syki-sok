@@ -16,7 +16,7 @@ const inBox = (list, scroll) => `(function () {
 })()`;
 const scrolls = (scroll) => `(function () { var e = document.getElementById('${scroll}'); return e.scrollHeight > e.clientHeight; })()`;
 const onScreen = (id) => `(function () { var r = document.getElementById('${id}').getBoundingClientRect(); return r.height > 0 && r.top >= 0 && r.bottom <= window.innerHeight; })()`;
-const ui = (s) => s.ev('window.__mdMemoRPC.getUiState()');
+const ui = (s) => s.ev('window.__sykiRPC.getUiState()');
 const selected = (list) => `(function () { var a = document.querySelector('${list} .tab-item.active'); return a ? a.dataset.tabId : null; })()`;
 const stripWidth = "Math.round(document.getElementById('tab-index-left').getBoundingClientRect().width)";
 
@@ -71,7 +71,7 @@ export default {
     await waitHidden(s, 'tab-list-panel');
     const state = await s.state();
     const last = state.tabs[COUNT - 1].id;
-    await s.waitFor(`window.__mdMemoRPC.getUiState().secondaryTabId === ${JSON.stringify(last)}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().secondaryTabId === ${JSON.stringify(last)}`);
     assert.equal((await ui(s)).activeTabId, before.activeTabId, 'the left page did not change');
     await s.waitFor(inBox('#tabs-list-right', 'tabs-scroll-right'));
     assert.equal(await s.ev(selected('#tabs-list-right')), last, 'the right strip marks it and has it in view');
@@ -84,7 +84,7 @@ export default {
     await s.key('Enter');
     await waitHidden(s, 'tab-list-panel');
     const first = state.tabs[0].id;
-    await s.waitFor(`window.__mdMemoRPC.getUiState().activeTabId === ${JSON.stringify(first)}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().activeTabId === ${JSON.stringify(first)}`);
     assert.equal((await ui(s)).secondaryTabId, last, 'the right page did not change');
     await s.waitFor(inBox('#tabs-list', 'tabs-scroll'));
 

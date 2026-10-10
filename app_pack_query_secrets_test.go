@@ -8,7 +8,7 @@ import (
 )
 
 // B24: "Include API keys" off must also remove a key that sits in the QUERY of an address (https://host/v1?key=...), in both
-// formats, exactly as `md-memo config get` hides it. With "Include API keys" on, the file is written as it is.
+// formats, exactly as `syki config get` hides it. With "Include API keys" on, the file is written as it is.
 const queryKeyConfig = `{"text":{"apiKey":"sk-secret","baseUrl":"https://h.example/v1?key=K2&alt=json","model":"m"},"scraps":{"gitRemoteUrl":"https://github.com/a/b.git?token=Q1"}}`
 
 func exportedConfig(t *testing.T, e *packEnv, format string, includeSecrets bool) (string, map[string]any) {

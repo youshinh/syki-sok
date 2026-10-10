@@ -135,7 +135,7 @@ func TestParseSlots_LegacyFormsStayReplaceMode(t *testing.T) {
 
 func TestParseSlots_RunMarkerLineBelowTaskIsHarmless(t *testing.T) {
 	cfg := DefaultSlotConfig()
-	doc := "- {{ @claude 調べて }}\n<!-- md-memo:run ab12 -->\n次の行\n"
+	doc := "- {{ @claude 調べて }}\n<!-- syki:run ab12 -->\n次の行\n"
 	slots := ParseSlots(doc, cfg)
 	if len(slots) != 1 {
 		t.Fatalf("expected 1 slot, got %d", len(slots))
@@ -152,9 +152,9 @@ func TestParseSlots_RunMarkerLineBelowTaskIsHarmless(t *testing.T) {
 func TestParseSlots_IgnoresSlotsInsideResultBlocks(t *testing.T) {
 	cfg := DefaultSlotConfig()
 	doc := "{{ @claude 調べて }}\n" +
-		"<!-- md-memo:res ab12 -->\n" +
+		"<!-- syki:res ab12 -->\n" +
 		"出力例: {{ この中は無視 }} と [? これも ]\n" +
-		"<!-- /md-memo:res -->\n" +
+		"<!-- /syki:res -->\n" +
 		"{{ 本物 }}\n"
 	slots := ParseSlots(doc, cfg)
 	if len(slots) != 2 {
@@ -167,7 +167,7 @@ func TestParseSlots_IgnoresSlotsInsideResultBlocks(t *testing.T) {
 
 func TestParseSlots_UnterminatedResultBlockDoesNotHideSlots(t *testing.T) {
 	cfg := DefaultSlotConfig()
-	doc := "<!-- md-memo:res ab12 -->\n結果\n{{ まだ有効 }}\n"
+	doc := "<!-- syki:res ab12 -->\n結果\n{{ まだ有効 }}\n"
 	slots := ParseSlots(doc, cfg)
 	if len(slots) != 1 || slots[0].Instruction != "まだ有効" {
 		t.Fatalf("an unterminated result block must not swallow the rest of the note, got %+v", slots)

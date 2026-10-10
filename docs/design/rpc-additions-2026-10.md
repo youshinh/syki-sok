@@ -1,6 +1,6 @@
 # JSON-RPC の拡張（2026-10-02）
 
-状態: Go 側（19 メソッド）とページ側（`window.__mdMemoRPC` の 7 関数）を実装し、Go のテストとヘッドレスの実ブラウザ（スモーク）で確認済み。実アプリ（本物の WebView2、macOS）での確認は未。コミットは未。
+状態: Go 側（19 メソッド）とページ側（`window.__sykiRPC` の 7 関数）を実装し、Go のテストとヘッドレスの実ブラウザ（スモーク）で確認済み。実アプリ（本物の WebView2、macOS）での確認は未。コミットは未。
 
 ## 1. 目的と方針
 
@@ -15,7 +15,7 @@
 
 | 区分 | メソッド | 内容 |
 |---|---|---|
-| 情報 | `app.info`、`config.get` | `md-memo info`、`config get` と同じ答え。鍵は伏せる。 |
+| 情報 | `app.info`、`config.get` | `syki info`、`config get` と同じ答え。鍵は伏せる。 |
 | スクラップ | `scrap.path`、`scrap.list`、`scrap.search`、`scrap.open` | `scrap.search` は、完全一致、`ranked`、実験的な `semantic` まで、CLI と同じ引数。各ヒットに、リンクとして引用する材料（`rel`、`url`、`label`、`link`）がある。 |
 | パイプ | `scrap.append` | `cmd \| syki [タイトル語]` と同じ追記（§3）。`format: "markdown"` は、囲みなしで書く（リンクが生きる。検索結果の要約を書く用途、`search-summary-prep-2026-10.md`）。 |
 | コマンド | `filter.validate`、`filter.run` | コマンドバーが選択範囲にかける処理。ガードを通す（§3 の末尾）。 |
@@ -28,7 +28,7 @@
 
 ## 3. パイプ（`cmd | syki`）との対応
 
-コマンドラインからパイプで `md-memo` に送るときの機能を、1 つずつ RPC に置いた。
+コマンドラインからパイプで `syki` に送るときの機能を、1 つずつ RPC に置いた。
 
 | パイプの機能 | RPC |
 |---|---|
@@ -40,7 +40,7 @@
 | Git 同期の起動、ページへの通知 | 同じ |
 | ウィンドウを前面に出す | `activate: true`（既定は false。入力中の人から注意を奪わないため） |
 | 空のパイプは何もしない | 空の内容は -32602 `nothing to append` |
-| `md-memo <file.md>`（ファイルを開く）、引数なし（前面へ） | 既存の `tab.new {path}`、`ui.activate` |
+| `syki <file.md>`（ファイルを開く）、引数なし（前面へ） | 既存の `tab.new {path}`、`ui.activate` |
 | アプリが閉じていれば起動する | **しない**（RPC は起動中のアプリへ。閉じていれば接続できない） |
 | 認証なし（旧形式の 1 行メッセージ） | **トークン必須**（旧形式は、そのまま残る） |
 
@@ -67,8 +67,8 @@
 | `pkg/scrap` | `AppendScrapAt`（追記したエントリの開始行を返す）。パイプの経路は、ファイルを読まない従来の `AppendScrap` のまま。 |
 | `pkg/gitsync` | `Engine.Enabled()`。 |
 | `app_rpc_extra_test.go` | 偽のページ（WebView のモック）で、全メソッドを確かめる。UTF-16 の位置、競合（人が読み書きの間に入力）、ガード、認証情報の除去、Shift_JIS の復号。 |
-| `frontend/js/app.js`（`window.__mdMemoRPC`） | `getCursor`、`setCursor`、`getUiState`、`setUiState`、`openPanel`、`getTabs`（項目の追加）、`getTasks`、`cancelTask`。実ページでの確認は、`tests/smoke/89_*`。 |
-| `skills/md-memo/references/interfaces.md`、`SKILL.md`、`pkg/cli/help.go` | 文書。 |
+| `frontend/js/app.js`（`window.__sykiRPC`） | `getCursor`、`setCursor`、`getUiState`、`setUiState`、`openPanel`、`getTabs`（項目の追加）、`getTasks`、`cancelTask`。実ページでの確認は、`tests/smoke/89_*`。 |
+| `skills/syki/references/interfaces.md`、`SKILL.md`、`pkg/cli/help.go` | 文書。 |
 
 ## 6. 残り
 
@@ -78,20 +78,20 @@
 
 ## 7. 印刷・PDF と深掘り検索のために足したもの（2026-10-03）
 
-状態: Go（`app_rpc_features.go`）、ページ側（`window.__mdMemoRPC.printPdf`、`openPanel` の `query`/`mode`）、CLI（`md-memo tab pdf`）を実装し、Go のテスト、スモーク 100、実アプリ（隔離した実 WebView2）で確認済み。コミットは未。
+状態: Go（`app_rpc_features.go`）、ページ側（`window.__sykiRPC.printPdf`、`openPanel` の `query`/`mode`）、CLI（`syki tab pdf`）を実装し、Go のテスト、スモーク 100、実アプリ（隔離した実 WebView2）で確認済み。コミットは未。
 
 | 追加 | 内容 |
 |---|---|
 | `print.pdf`（Windows） | ノートのプレビューを PDF ファイルに書く。ページがそのタブのプレビューを出し（元のタブとプレビューの状態は終わりに戻す）、印刷用の準備（画像の読み込み、図を明るい配色で描き直す）をして、印刷パネルの「PDF に保存」と同じ経路（`backend.printSavePdf`）で書く。`out` は絶対パスで `.pdf`、フォルダは存在すること、既存ファイルは `overwrite:true` なしでは -32001。8 秒以内に答える（接続の期限が 10 秒）。Mac は -32603（印刷ボタンが標準の印刷画面を開く）。 |
 | `deepsearch.plan` | 深掘りの下見。検索して抜粋を切り出し（鍵は伏せ字）、どのノートを何文字、送り先（このPCか、ホストと許可済みか）を答える。モデルへは送らず、プランも保存しない（`plan_id` は常に空。人の確認待ちのプランを押し出さないため）。 |
 | `ui.open_panel` の `query`/`mode` | `scraps_search` だけ。意味/完全一致の切り替えと検索文を入れて検索まで走らせる。意味は設定で意味検索がオンのときだけ（-32602）。**深掘りボタンは人が押す**（確認の画面が送り先を言う）。 |
-| `md-memo tab pdf` | `print.pdf` の CLI。ファイルを渡すと裏のタブで開いて印刷し、開いたタブは `tab close --if-saved` で閉じる（元から開いていたタブは閉じない）。`-o` 省略時はノートの隣に `<名前>.pdf`。 |
+| `syki tab pdf` | `print.pdf` の CLI。ファイルを渡すと裏のタブで開いて印刷し、開いたタブは `tab close --if-saved` で閉じる（元から開いていたタブは閉じない）。`-o` 省略時はノートの隣に `<名前>.pdf`。 |
 
 パイプ（`cmd | syki`）との関係: 深掘りの答えや検索のまとめをノートに残すには、既存の `scrap.append`（`format: "markdown"`）がそのまま使える。PDF にパイプで流し込む形（標準入力の Markdown → PDF）は足していない（プレビューは開いているタブの描画で、標準入力を描くには一時タブが要り、未保存タブを閉じる確認が出るため）。
 
 **あえて足さなかったもの**:
 - **深掘りの実行**（`deepsearch.run`）: ノートの抜粋をモデルへ送る（費用と、PC の外への送信）。§4 と同じ理由で呼ぶ側に任せない。ローカルのモデルだけに限る案もあるが、答えが 5〜540 秒かかり、RPC の 10 秒の接続期限に収まらない（非同期のジョブ番号が要る）。人が確認する画面を RPC から開くところまで（`ui.open_panel`）にした。
-- **CLI の `md-memo deep "質問"`（標準出力に答え、パイプで `md-memo "題"` へ）**: 実装は `package main` の `App` に結び付いていて、pkg への切り出しが要る。クラウド宛ての同意（`--yes` のような明示）も決める必要がある。要望があれば、`pkg/deepsearch` に実行部を移してから。
+- **CLI の `syki deep "質問"`（標準出力に答え、パイプで `syki "題"` へ）**: 実装は `package main` の `App` に結び付いていて、pkg への切り出しが要る。クラウド宛ての同意（`--yes` のような明示）も決める必要がある。要望があれば、`pkg/deepsearch` に実行部を移してから。
 - **PDF の標準入力・メモリ上のテキストからの書き出し**: 上記のとおり。ファイル（`tab pdf <file>`）か開いているタブから。
 
 **制約**: `print.pdf` は印刷のあいだ画面を一瞬ちらつかせる（プレビューを出して戻す）。ウィンドウが最小化されていても動くことを実アプリで確認した（0.7 秒）。巨大なノートは 8 秒に収まらず、エラーになる（ファイルは後から出ることがある）。

@@ -141,7 +141,7 @@ export default {
     await waitShown(s, 'context-menu');
     await click(s, 'ctx-open-to-side');
     await waitHidden(s, 'context-menu');
-    await s.waitFor(`window.__mdMemoRPC.getUiState().secondaryTabId === ${JSON.stringify(ids[0])}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().secondaryTabId === ${JSON.stringify(ids[0])}`);
     // a tab is named by a right-click and the menu is dismissed without using it; the right-click on the text after that is about the open note
     const named = await s.ev(rowBox(2));
     await move(600, 400);
@@ -158,7 +158,7 @@ export default {
     await click(s, 'ctx-open-to-side');
     await waitHidden(s, 'context-menu');
     const openNote = (await s.state()).activeTabId;
-    await s.waitFor(`window.__mdMemoRPC.getUiState().secondaryTabId === ${JSON.stringify(openNote)}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().secondaryTabId === ${JSON.stringify(openNote)}`);
 
     t.step('a file dropped on the strip opens as a new note');
     const count = (await order(s)).length;

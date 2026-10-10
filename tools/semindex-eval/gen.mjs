@@ -57,7 +57,7 @@ function pingLog(host, ts, lang) {
 }
 function buildLog(ts) {
   const n = 5 + Math.floor(R() * 25);
-  const lines = ['> go build ./...', ...Array.from({ length: n }, (_, i) => `ok  \tmd-memo/pkg/mod${i % 9}\t${(R() * 2).toFixed(3)}s`), 'PASS'];
+  const lines = ['> go build ./...', ...Array.from({ length: n }, (_, i) => `ok  \tsyki-sok/pkg/mod${i % 9}\t${(R() * 2).toFixed(3)}s`), 'PASS'];
   return lines.join('\n');
 }
 
@@ -104,7 +104,7 @@ for (let d = 0; d < DAYS; d++) {
     } else {
       const r = R();
       if (r < 0.2) { text = `---\n## [${hms}] CLI Pipe\n\`\`\`text\n${buildLog(hms)}\n\`\`\``; kind = 'log'; }
-      else if (r < 0.3) { text = `# ${ds} ${pad(hh)}:${pad(mm)}\n\n[[ @llm ${pickF()} ]]\n<!-- md-memo:res ${e} -->\n${pickF()}${JOIN}${pickD()}\n<!-- /md-memo:res -->`; kind = 'ai'; }
+      else if (r < 0.3) { text = `# ${ds} ${pad(hh)}:${pad(mm)}\n\n[[ @llm ${pickF()} ]]\n<!-- syki:res ${e} -->\n${pickF()}${JOIN}${pickD()}\n<!-- /syki:res -->`; kind = 'ai'; }
       else if (r < 0.55) { text = `# ${ds} ${pad(hh)}:${pad(mm)}\n\n${pickD()}${JOIN}${pickF()}`; }
       else if (r < 0.75) {
         const paras = Array.from({ length: 3 + Math.floor(R() * 3) }, () => pickF() + JOIN + (R() < 0.5 ? pickD() : pickF()));

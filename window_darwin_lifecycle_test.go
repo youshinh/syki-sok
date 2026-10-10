@@ -17,27 +17,27 @@ import (
 func TestAppDelegateInstalledBeforeWebviewNew(t *testing.T) {
 	src := readSourceFile(t, "window_darwin.go")
 
-	install := strings.Index(src, "C.mdmemoInstallAppDelegate()")
+	install := strings.Index(src, "C.sykiInstallAppDelegate()")
 	create := strings.Index(src, "webview.New(")
 	if install < 0 || create < 0 {
-		t.Fatalf("could not find C.mdmemoInstallAppDelegate() (%d) or webview.New( (%d) in window_darwin.go", install, create)
+		t.Fatalf("could not find C.sykiInstallAppDelegate() (%d) or webview.New( (%d) in window_darwin.go", install, create)
 	}
 	if install > create {
-		t.Errorf("C.mdmemoInstallAppDelegate() is called after webview.New; a file that launches the app would reach webview's delegate instead of ours")
+		t.Errorf("C.sykiInstallAppDelegate() is called after webview.New; a file that launches the app would reach webview's delegate instead of ours")
 	}
 
-	// The delegate must be set exactly once, in mdmemoInstallAppDelegate: a second setDelegate:
+	// The delegate must be set exactly once, in sykiInstallAppDelegate: a second setDelegate:
 	// from a dispatch_async block is the pattern that lost the launch file.
 	if n := strings.Count(src, "setDelegate:gAppDelegate]"); n != 2 {
-		// One for NSApp (mdmemoInstallAppDelegate), one for the window (setupMacWindowDelegate).
+		// One for NSApp (sykiInstallAppDelegate), one for the window (setupMacWindowDelegate).
 		t.Errorf("found %d setDelegate:gAppDelegate calls, want 2 (NSApp once, the window once)", n)
 	}
-	fn := objcFunctionBody(t, src, "static void mdmemoInstallAppDelegate(void)")
+	fn := objcFunctionBody(t, src, "static void sykiInstallAppDelegate(void)")
 	if strings.Contains(fn, "dispatch_async") {
-		t.Errorf("mdmemoInstallAppDelegate must set the delegate synchronously, not from dispatch_async")
+		t.Errorf("sykiInstallAppDelegate must set the delegate synchronously, not from dispatch_async")
 	}
 	if !strings.Contains(fn, "[app setDelegate:gAppDelegate]") {
-		t.Errorf("mdmemoInstallAppDelegate no longer sets NSApp's delegate")
+		t.Errorf("sykiInstallAppDelegate no longer sets NSApp's delegate")
 	}
 }
 
@@ -48,7 +48,7 @@ func TestQuitGoesThroughGracefulPath(t *testing.T) {
 	src := readSourceFile(t, "window_darwin.go")
 
 	if !strings.Contains(src, "- (NSApplicationTerminateReply)applicationShouldTerminate:(NSApplication *)sender") {
-		t.Fatalf("MDMemoAppDelegate no longer implements applicationShouldTerminate:; Cmd+Q would exit() without saving or cleaning up")
+		t.Fatalf("SykiAppDelegate no longer implements applicationShouldTerminate:; Cmd+Q would exit() without saving or cleaning up")
 	}
 
 	assign := strings.Index(src, "app.w = w")

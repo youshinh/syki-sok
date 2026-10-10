@@ -227,7 +227,7 @@ async function createEnv(opts = {}) {
   const el = (id) => documentMock.getElementById(id);
   const env = {
     window: windowMock, elements, messages, llmCalls, saved, store, el, fetches, external, opened, aboutOpens, docListeners,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     helper: windowMock.__testHelper,
     editor: el('editor'),
@@ -333,7 +333,7 @@ check('I2: a newer release shows the dot with the version in its tooltip; the He
   assert.equal(env.hidden('help-menu-update'), false, 'with the update notice on top');
   assert.equal(env.el('help-menu-update-text').textContent, 'syki::sok v9.9.9 is available. You have v1.10.5.');
   assert.equal(env.hidden('help-update-badge'), true, 'having seen it, the dot goes');
-  assert.equal(env.store.get('mdmemo_dismissed_update_version'), '9.9.9', 'and stays gone for this version');
+  assert.equal(env.store.get('syki_dismissed_update_version'), '9.9.9', 'and stays gone for this version');
   assert.equal(env.window.document.activeElement, env.el('help-menu-notes'), 'the notes button has the focus');
 
   env.el('help-menu-notes').onclick();
@@ -347,7 +347,7 @@ check('I2: a newer release shows the dot with the version in its tooltip; the He
 });
 
 check('I2: a version the person already dismissed does not bring the dot back; the same or an older release shows nothing', async () => {
-  const dismissed = await createEnv({ latest: 'v9.9.9', localStorage: { mdmemo_dismissed_update_version: '9.9.9' } });
+  const dismissed = await createEnv({ latest: 'v9.9.9', localStorage: { syki_dismissed_update_version: '9.9.9' } });
   assert.equal(dismissed.hidden('help-update-badge'), true);
   const same = await createEnv({ latest: 'v1.10.5' });
   assert.equal(same.hidden('help-update-badge'), true);
@@ -362,11 +362,11 @@ check('I2: with the Help button hidden (a fresh installation) the dot has nowher
   assert.equal(env.hidden('help-update-badge'), true, 'no dot on a hidden button');
   const said = env.messages.filter((m) => /9\.9\.9/.test(m));
   assert.deepEqual(said, ['syki::sok v9.9.9 is available. See About syki::sok in the command palette.']);
-  assert.equal(env.store.get('mdmemo_dismissed_update_version'), '9.9.9', 'once per version');
+  assert.equal(env.store.get('syki_dismissed_update_version'), '9.9.9', 'once per version');
   // the next start, same version: quiet. A still newer one is announced again.
-  const again = await createEnv({ latest: 'v9.9.9', helpHidden: true, localStorage: { mdmemo_dismissed_update_version: '9.9.9' } });
+  const again = await createEnv({ latest: 'v9.9.9', helpHidden: true, localStorage: { syki_dismissed_update_version: '9.9.9' } });
   assert.deepEqual(again.messages.filter((m) => /9\.9\.9/.test(m)), []);
-  const newer = await createEnv({ latest: 'v9.9.10', helpHidden: true, localStorage: { mdmemo_dismissed_update_version: '9.9.9' } });
+  const newer = await createEnv({ latest: 'v9.9.10', helpHidden: true, localStorage: { syki_dismissed_update_version: '9.9.9' } });
   assert.equal(newer.messages.filter((m) => /9\.9\.10/.test(m)).length, 1);
   // a visible button gets the dot and no message; nothing is said when there is nothing newer
   const visible = await createEnv({ latest: 'v9.9.9' });

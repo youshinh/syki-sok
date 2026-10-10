@@ -21,7 +21,7 @@
 | 項目 | 判定 | 根拠（要点） |
 |---|---|---|
 | 1 buffer save | 未実装（要望どおり） | Ctrl+S は `saveTab`（app.js）。RPC / CLI には保存がない |
-| 2 tab new / close | 未実装 | `__mdMemoRPC.newTab` は id を返さず、`closeTab` は待たない |
+| 2 tab new / close | 未実装 | `__sykiRPC.newTab` は id を返さず、`closeTab` は待たない |
 | 3 書き込みの `--tab` | TRUE（無視される） | `app_rpc.go` が id を JS へ渡さない。JS 側の `selectTab` は表示を切り替えてしまう |
 | 4 info / 設定の参照 | 未実装 | `ocr` と同じ方式で単体実行できる |
 | 5 scrap list / search | 未実装 | `pkg/search` は標準ライブラリだけなので CLI から呼べる |
@@ -59,7 +59,7 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 - ガターは 1000 行ずつのブロックで、行ごとの要素がない。ブロックの上に、絶対配置のバーを置く小さな層を足す。
 - バーの位置は、行番号 × 行の高さ。折り返しがあるときは、既存の `rows`（`LineGutter.rowsFor`）の累積を使う。ガターはエディタと一緒にスクロールする。
 - 色は、開始行が明るい緑、本文が薄い緑、終了行が濃い緑（4 つのテーマごとに CSS 変数）。
-- 再計算は、`<!-- md-memo:res` が本文にあるときだけ。なければ即 return し、層も作らない（軽さの原則）。
+- 再計算は、`<!-- syki:res` が本文にあるときだけ。なければ即 return し、層も作らない（軽さの原則）。
 - 本文側の層と違い、揃え方のずれ・入力への遅れ・100k 文字の上限・ゴーストの重なりを気にしなくてよい。
 
 **可視化 2: 本文の薄い背景（任意。設定 `general.resultBlockTint`: off / subtle）**
@@ -82,7 +82,7 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 
 ### 2.2 Ctrl+/（Cmd+/）でコメントの切替（要望 18）
 
-**動き**: 行ごとに `<!-- 行 -->` で包む・外す（VS Code の Markdown と同じ）。選択がなければ現在行。全行がコメント済みなら外し、そうでなければ全部包む。空行は飛ばす。字下げは保つ。`<!-- md-memo:` で始まるマーカー行は触らない。行に `-->` が含まれるときは、その行を対象外にしてメッセージを出す。設定 `general.commentStyle`: `line`（既定）/ `block`（選択全体を 1 組で包む）。Undo は 1 回。
+**動き**: 行ごとに `<!-- 行 -->` で包む・外す（VS Code の Markdown と同じ）。選択がなければ現在行。全行がコメント済みなら外し、そうでなければ全部包む。空行は飛ばす。字下げは保つ。`<!-- syki:` で始まるマーカー行は触らない。行に `-->` が含まれるときは、その行を対象外にしてメッセージを出す。設定 `general.commentStyle`: `line`（既定）/ `block`（選択全体を 1 組で包む）。Undo は 1 回。
 
 **プレビューで隠す**: `renderMarkdownContentTo` の `stripMarkers` の直後（app.js:2317 付近）に、`<!--[\s\S]*?-->` の除去を足す。行全体のコメントは改行も消し、段落が割れないようにする。閉じていないコメントは表示したまま。コード（フェンス・インラインコード）は既存のプレースホルダ方式で保護済みの位置なので、その後に処理する。実測した現状: 単独行・行内・複数行のコメントは、すべて `&lt;!-- … --&gt;` の文字として出る。
 
@@ -98,7 +98,7 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 ### 2.3 自動タイトルの改善（要望 9 / B6）
 
 新しいモジュール `frontend/js/note_title.js`（+ `_test.js`）に移す。`app.js` の `deriveTitleFromContent` は、1 関数だけ抽出して試す既存のテスト（`tests/hot_path_parity_test.mjs` の T2。旧実装と完全一致を固定している）を、ルールの確認テストに書き換える。
-1. 空行、front matter、フェンスコード、`<!-- -->`（`md-memo:` のマーカーも）、表の行と区切り、水平線、`[[ ]]` / `{{ }}` の行を飛ばす。
+1. 空行、front matter、フェンスコード、`<!-- -->`（`syki:` のマーカーも）、表の行と区切り、水平線、`[[ ]]` / `{{ }}` の行を飛ばす。
 2. 日付だけの見出し（自動で入る `# 2026-09-25 07:51`）は、ほかに何もないときだけ使う。
 3. 最初の日付でない ATX 見出し。なければ最初の意味のある行。走査は 200 行まで。
 4. Markdown の記号を外す（引用、リスト、タスク、強調、バッククォート、リンク → 表示文字、画像 → alt、HTML タグ、末尾の `#`）。空白をまとめる。
@@ -119,8 +119,8 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 - 7 `buffer get --out <file>`（0.4 日）: CLI 自身がファイルを書く。UTF-8・BOM なし（`--bom` は任意）、原子的に書く。標準出力にはメタデータ（パス・バイト数・hash）だけ。
 - 4 `info --json`（0.5〜1 日）: scrap フォルダ、今日の scrap のパス、inbox、設定フォルダ、autosave、バージョン。API キー・トークン・`gitRemoteUrl`（認証情報を含みうる）は出さない。
 - 5 `scrap list | search | path`（1.5 日）: `SearchMatch` に `Heading` と `HeadingLine` を足す（直前の ATX 見出し。フェンス内は飛ばす）。`list` は `^\d{4}-\d{2}-\d{2}\.md$` に絞る。`path` は書き込まずに返す。JSON のキー表記は、既存の検索（camelCase）と RPC（snake_case）で割れているので、CLI は snake_case に統一して明記する。
-- 8 `agent install-skill`（1.25 日）: **`go:embed` を使う**（`skills/embed.go`、約 278 KB。exe が約 16 MB なので増加は 2% 弱）。Homebrew では `skills/` が届かないため、実行ファイルからの相対探索は主にしない。既定は「コピー」（原子的に書き、版のマーカーを付け、編集済みなら `--force` なしでは上書きしない）。`--link` はディスク上の実体があり Unix のときだけ。Windows のシンボリックリンクは、開発者モードか管理者が要る。配置先は Claude Code が `~/.claude/skills/md-memo`（`CLAUDE_CONFIG_DIR` を尊重）、Codex は `$CODEX_HOME/skills`（未確認）。
-- 6 Windows のコンソール用 exe（1.25 日）: **`cmd/syki-cli`**（`pkg/cli` と `pkg/ipc` だけを import するコンソールサブシステム）を zip に同梱する。`release.yml`、`ci.yml`、ドキュメント、スキルを直す。winget は新しいマニフェストの版が要る（PR #438694 はまだ 1.6.0 のまま）。名前の入れ替え（コンソール版を `syki.exe`）は、「送る」・ショートカット・関連付けが壊れるので**やらない**。`md-memo.com` や PATH への登録は、winget のエイリアスと相性が悪く、壊れやすいので採らない。
+- 8 `agent install-skill`（1.25 日）: **`go:embed` を使う**（`skills/embed.go`、約 278 KB。exe が約 16 MB なので増加は 2% 弱）。Homebrew では `skills/` が届かないため、実行ファイルからの相対探索は主にしない。既定は「コピー」（原子的に書き、版のマーカーを付け、編集済みなら `--force` なしでは上書きしない）。`--link` はディスク上の実体があり Unix のときだけ。Windows のシンボリックリンクは、開発者モードか管理者が要る。配置先は Claude Code が `~/.claude/skills/syki`（`CLAUDE_CONFIG_DIR` を尊重）、Codex は `$CODEX_HOME/skills`（未確認）。
+- 6 Windows のコンソール用 exe（1.25 日）: **`cmd/syki-cli`**（`pkg/cli` と `pkg/ipc` だけを import するコンソールサブシステム）を zip に同梱する。`release.yml`、`ci.yml`、ドキュメント、スキルを直す。winget は新しいマニフェストの版が要る（PR #438694 はまだ 1.6.0 のまま）。名前の入れ替え（コンソール版を `syki.exe`）は、「送る」・ショートカット・関連付けが壊れるので**やらない**。`syki.com` や PATH への登録は、winget のエイリアスと相性が悪く、壊れやすいので採らない。
 
 **RPC の書き込み（GUI が要る。まとめて 1 つの塊）**
 - 認証の強化（0.5 日）: 現在は「トークンを付けて間違えたときだけ拒否」で、付けなければ通る。`save` と `close` を足す前に、書き込み系のメソッドではトークンを必須にする。**トークンなしで書いているクライアント（エディタのプラグインなど）が壊れる非互換**なので、§6 で決めてもらう。
@@ -130,7 +130,7 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 - ※ `ui.eval` はすでに任意のパスを書けるので、新しい種類の能力は増えない。それでもトークン必須にする。
 
 **API キー（4 の後半）**
-- 案 (a) `md-memo config get [path] --json`（キーは `set (…末尾4桁)` と表示。既存の `IsSecretKey` を使う）と、`localStorage` への書き込みからキーを除く 0.5 日の修正。**これを先にやる**。`config.json` を直接読ませない規則（SKILL.md）は残す。
+- 案 (a) `syki config get [path] --json`（キーは `set (…末尾4桁)` と表示。既存の `IsSecretKey` を使う）と、`localStorage` への書き込みからキーを除く 0.5 日の修正。**これを先にやる**。`config.json` を直接読ませない規則（SKILL.md）は残す。
 - 案 (b) `secrets.json` に分ける（3〜5 日）。すべての Go の読み手と `pkg/cli/ocr.go` を、統合する読み込みに通す必要がある。旧版が空のキーで `SaveConfig` を書くと、平文が戻る移行リスクがある。Windows の 0600 はほぼ効かない。
 - 案 (c) OS の資格情報ストア（6〜9 日）は、Mac の署名（アドホック）で更新のたびに確認が出うるので**勧めない**。
 - 現在は、全設定が `localStorage['md_notepad_config_v3']` に平文で複製されている（app.js:10513）。これは (a) と同時に直す。
@@ -158,7 +158,7 @@ B1〜B4 は、メモを書いたときに読んでいた README が古かった�
 - B5: `manual.html:3928-3935`、`manual_ja.html:4056-4063` に `"subject": "rm",` と `"level": "block"` を足す。README の 1 行例（`README.md:217-218`、`README_JA.md:216-217`）も同様。
 - `pkg/llm/llm.go:37` のコメント「OpenAI/Gemini/Claude」を直す（Claude のネイティブ対応はない）。
 - 「macOS と Linux の sh」（`manual.html:1944`、`manual_ja.html:1958`）の表現を、「macOS の sh」に近い表現へ。
-- 各フェーズで、マニュアル（英日）、README（英日）、`skills/md-memo`、`help.go` を同時に更新する（`main_help_test.go` が RPC メソッドの漏れを検出する）。
+- 各フェーズで、マニュアル（英日）、README（英日）、`skills/syki`、`help.go` を同時に更新する（`main_help_test.go` が RPC メソッドの漏れを検出する）。
 
 ## 3. 実装計画
 

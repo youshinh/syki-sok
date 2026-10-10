@@ -2,7 +2,7 @@
 # their command line, never by name alone: other apps run WebView2 too). Read-only. Used by v2_perf.mjs; prints one JSON object on stdout.
 #   powershell -NoProfile -File proc_mem.ps1 -AppPid <pid> -Profile <the folder of the app's WebView2 data> [-WithCmd]
 # Role: app | browser | renderer | gpu | utility-network | utility-storage | utility | crashpad | other.
-# type = the Chromium process type taken from the command line's --type= : app (the md-memo exe itself) | browser (no --type=) | gpu-process |
+# type = the Chromium process type taken from the command line's --type= : app (the syki exe itself) | browser (no --type=) | gpu-process |
 #   renderer | utility | crashpad-handler | other types as they come. subtype = the --utility-sub-type= of a utility process (null otherwise).
 # ws = working set (includes pages shared with other processes), pws = private working set (pages only this process holds),
 # privateBytes = committed private memory, cpuMs = CPU time (user + kernel) the process has used since it started.

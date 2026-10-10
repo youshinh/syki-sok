@@ -287,15 +287,15 @@ keydownHandler({ key: '†', code: 'KeyT', altKey: true, preventDefault() { prev
 assert(preventedMac, 'macOS Option+T (composed key "†", code KeyT) must also toggle the panel');
 console.log("PASS: Test 4");
 
-// Test 5: taskRunningTooltip substitutes {alt} using MDMemoPlatform.altLabel when
+// Test 5: taskRunningTooltip substitutes {alt} using SykiPlatform.altLabel when
 // present, and degrades gracefully (falls back to 'Alt') when it is not — the
-// module must not throw either way (this Node harness never sets window.MDMemoPlatform).
-console.log("Test 5: taskRunningTooltip substitutes {alt} and degrades gracefully without MDMemoPlatform");
-assert(global.window.MDMemoPlatform === undefined, 'this harness intentionally does not define window.MDMemoPlatform');
+// module must not throw either way (this Node harness never sets window.SykiPlatform).
+console.log("Test 5: taskRunningTooltip substitutes {alt} and degrades gracefully without SykiPlatform");
+assert(global.window.SykiPlatform === undefined, 'this harness intentionally does not define window.SykiPlatform');
 const t4 = TaskManager.addTask({ id: 'task-alt-label', agent: 'claude-code', instruction: 'check alt label' });
 assert(t4 !== null, 'task for alt-label check should be created');
 const statTasksElAfter = documentMock.getElementById('stat-tasks');
-assert(statTasksElAfter.title.includes('Alt+T') || statTasksElAfter.title.includes('Alt') , `tooltip should fall back to 'Alt' without MDMemoPlatform, got: ${statTasksElAfter.title}`);
+assert(statTasksElAfter.title.includes('Alt+T') || statTasksElAfter.title.includes('Alt') , `tooltip should fall back to 'Alt' without SykiPlatform, got: ${statTasksElAfter.title}`);
 TaskManager.cancelTask('task-alt-label');
 console.log("PASS: Test 5");
 

@@ -14,7 +14,7 @@ const mode = "document.getElementById('workspace').getAttribute('data-tabs')";
 const ids = (list) => `Array.from(document.querySelectorAll('${list} .tab-item')).map(function (e) { return e.dataset.tabId; })`;
 const selected = (list) => `(function () { var a = document.querySelector('${list} .tab-item.active'); return a ? a.dataset.tabId : null; })()`;
 const rowBox = (list, i) => `(function () { var r = document.querySelectorAll('${list} .tab-item')[${i}].getBoundingClientRect(); return { x: r.left, y: r.top + r.height / 2, w: r.width }; })()`;
-const ui = (s) => s.ev('window.__mdMemoRPC.getUiState()');
+const ui = (s) => s.ev('window.__sykiRPC.getUiState()');
 
 export default {
   title: 'index tabs in the four views: one page, two pages (a strip each, a click changes its own page), preview beside the note (left only, follows), preview alone (none), F6 round the strips',
@@ -77,7 +77,7 @@ export default {
     await s.waitFor(`${width('right')} === 200`);
     await s.waitFor("getComputedStyle(document.querySelector('#tabs-list-right .tab-title')).opacity === '1'");
     await s.page.click(geo.right - 60, r0.y);
-    await s.waitFor(`window.__mdMemoRPC.getUiState().secondaryTabId === ${JSON.stringify(all[3])}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().secondaryTabId === ${JSON.stringify(all[3])}`);
     assert.equal(await s.ev(selected('#tabs-list-right')), all[3]);
     assert.equal(await s.ev(selected('#tabs-list')), leftBefore, 'the left page did not change');
     assert.equal(await s.ev('document.activeElement.id'), 'editor-secondary', 'and the right page has the keyboard');
@@ -87,7 +87,7 @@ export default {
     await move(3, l0.y);
     await s.waitFor(`${width('left')} === 200`);
     await s.page.click(60, l0.y);
-    await s.waitFor(`window.__mdMemoRPC.getUiState().activeTabId === ${JSON.stringify(all[0])}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().activeTabId === ${JSON.stringify(all[0])}`);
     assert.equal((await ui(s)).secondaryTabId, all[3], 'the right page did not change');
     assert.equal(await s.ev('document.activeElement.id'), 'editor');
     await move(600, 400);
@@ -138,7 +138,7 @@ export default {
     await move(3, l1.y);
     await s.waitFor(`${width('left')} === 200`);
     await s.page.click(60, l1.y);
-    await s.waitFor(`window.__mdMemoRPC.getUiState().activeTabId === ${JSON.stringify(all[2])}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().activeTabId === ${JSON.stringify(all[2])}`);
     assert.equal((await ui(s)).secondaryTabId, all[2], 'the preview follows the left page');
     assert.equal(await s.ev("document.getElementById('secondary-pane-title').textContent"), 'view-note-3.md');
     await move(600, 400);
@@ -154,12 +154,12 @@ export default {
     assert.equal(afterTab.secondaryTabId, afterTab.activeTabId, 'and the preview came with it');
     await s.page.click(Math.round(W * 0.75), 300);
     await click(s, 'btn-new-tab'); // (Ctrl+N would do the same; a headless browser keeps that key for itself)
-    await s.waitFor(`window.__mdMemoRPC.getUiState().activeTabId !== ${JSON.stringify(afterTab.activeTabId)}`);
+    await s.waitFor(`window.__sykiRPC.getUiState().activeTabId !== ${JSON.stringify(afterTab.activeTabId)}`);
     const afterNew = (await ui(s));
     assert.equal(afterNew.secondaryTabId, afterNew.activeTabId, 'a new note is in the left page and the preview shows it');
     assert.equal(await s.ev(selected('#tabs-list')), afterNew.activeTabId);
-    await s.ev("window.__mdMemoRPC.switchTab(" + JSON.stringify(all[2]) + ")");
-    await s.waitFor(`window.__mdMemoRPC.getUiState().activeTabId === ${JSON.stringify(all[2])}`);
+    await s.ev("window.__sykiRPC.switchTab(" + JSON.stringify(all[2]) + ")");
+    await s.waitFor(`window.__sykiRPC.getUiState().activeTabId === ${JSON.stringify(all[2])}`);
 
     t.step('the preview alone: no strip, nothing to aim at on the edge, and the strips come back with the page');
     await s.key('p', { ctrl: true });

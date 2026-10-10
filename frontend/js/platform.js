@@ -5,12 +5,12 @@
 // previously had no reliable way to branch on platform and ended up hardcoding
 // Windows-flavored hints (e.g. "Alt+1..3", "Alt+T"). This file is loaded FIRST
 // in index.html and exposes a small, read-only platform surface on
-// `window.MDMemoPlatform` that every other frontend file can consult.
+// `window.SykiPlatform` that every other frontend file can consult.
 //
-// Every consumer must degrade gracefully when `window.MDMemoPlatform` is
+// Every consumer must degrade gracefully when `window.SykiPlatform` is
 // undefined: the Node unit tests for jev_action.js / slot_agent.js /
 // task_manager.js load those files standalone (no index.html, no script load
-// order), so `window.MDMemoPlatform` simply won't exist there.
+// order), so `window.SykiPlatform` simply won't exist there.
 (function (global) {
   'use strict';
 
@@ -52,7 +52,7 @@
     return '';
   }
 
-  global.MDMemoPlatform = {
+  global.SykiPlatform = {
     isMac: isMac,
     modLabel: isMac ? 'Cmd' : 'Ctrl',
     altLabel: isMac ? 'Option' : 'Alt',

@@ -110,7 +110,7 @@ func (r *HeadlessRunner) runScrapPath(args []string) (int, error) {
 	day, _ := time.Parse(scrap.DateLayout, pr.Date)
 	path := pr.Path
 
-	// The bare path even when piped: the point of this command is $(md-memo scrap path).
+	// The bare path even when piped: the point of this command is $(syki scrap path).
 	if *forceJSON {
 		PrintFormatted(r.stdout, FormatJSON, "", map[string]interface{}{
 			"date":   day.Format(scrap.DateLayout),
@@ -310,7 +310,7 @@ func (r *HeadlessRunner) runScrapSearch(args []string) (int, error) {
 	limit := fs.Int("limit", 0, "Stop after this many matches (default 100; 10 with --semantic)")
 	cutoff := fs.Float64("cutoff", defaultSemanticCutoff, "With --semantic: leave out notes that score below this share of the best one (0 = leave none out)")
 	ranked := fs.Bool("ranked", false, "Find notes that hold the words of the text (on any lines), best first, instead of one line that holds all of it")
-	semantic := fs.Bool("semantic", false, "Find notes close in meaning to the text (needs the semantic index: md-memo scrap index)")
+	semantic := fs.Bool("semantic", false, "Find notes close in meaning to the text (needs the semantic index: syki scrap index)")
 	kind := fs.String("kind", "", "With --semantic: only these kinds of notes: note, log (comma separated)")
 	pathGlob := fs.String("path", "", "With --semantic: only files whose path (inside the scrap folder) or name matches this pattern")
 	update := fs.Bool("update", false, "With --semantic: bring the index up to date first (at most a few seconds)")

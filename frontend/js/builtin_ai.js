@@ -1,6 +1,6 @@
 // Thin feature-detection shim for Chromium's experimental built-in AI surfaces:
 // the Prompt API (window.LanguageModel) and WebMCP (document.modelContext).
-// Neither ships in md-memo's actual runtimes today -- WebView2 stable on
+// Neither ships in syki's actual runtimes today -- WebView2 stable on
 // Windows and WKWebView on macOS -- so every function here returns/no-ops
 // immediately when the global is absent. This exists purely so the app picks
 // these up automatically if a runtime ever adds support, without another
@@ -56,7 +56,7 @@
     if (backend && typeof backend.searchScraps === 'function') {
       Promise.resolve(document.modelContext.registerTool({
         name: 'searchNotes',
-        description: "Search the user's local md-memo notes (daily scraps) for a keyword or phrase.",
+        description: "Search the user's local syki notes (daily scraps) for a keyword or phrase.",
         inputSchema: {
           type: 'object',
           properties: {

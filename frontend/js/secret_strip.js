@@ -27,7 +27,7 @@
   // The key the settings copy is stored under (keep in step with loadLocalConfigSync in app.js), and
   // the one an even older build wrote and the loader still prefers when it exists.
   const LOCAL_KEY = 'md_notepad_config_v3';
-  const LEGACY_KEY = 'md_memo_config_v1';
+  const LEGACY_KEY = 'syki_config_v1';
 
   function isSecretKey(name) {
     const s = String(name === null || name === undefined ? '' : name).toLowerCase();

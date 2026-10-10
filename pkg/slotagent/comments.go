@@ -23,7 +23,7 @@ import (
 //     one line: a run of n backticks opens a code span when a later run of exactly n backticks on the same line
 //     closes it, otherwise it is plain text. The runs are read from the line start, or from the end of the last
 //     comment on that line (backticks inside a comment are not code).
-//   - md-memo's own markers ("<!-- md-memo:run id -->", "<!-- md-memo:res id -->", "<!-- /md-memo:res -->") are
+//   - syki's own markers ("<!-- syki:run id -->", "<!-- syki:res id -->", "<!-- /syki:res -->") are
 //     the note's structure (result blocks), not hidden text: they are not reported.
 // Whitespace means what JavaScript's \s means, so both sides read the same characters as blank.
 
@@ -221,7 +221,7 @@ func codeSpanEnd(s string, from, p, le int) (int, int) {
 	return -1, i
 }
 
-// isMarkerComment: the comment at p is an md-memo marker (the JS pattern /<!--\s*\/?md-memo:/).
+// isMarkerComment: the comment at p is an syki marker (the JS pattern /<!--\s*\/?syki:/).
 func isMarkerComment(s string, p int) bool {
 	i := p + 4
 	for i < len(s) {
@@ -234,7 +234,7 @@ func isMarkerComment(s string, p int) bool {
 	if i < len(s) && s[i] == '/' {
 		i++
 	}
-	return strings.HasPrefix(s[i:], "md-memo:")
+	return strings.HasPrefix(s[i:], "syki:")
 }
 
 // isJSSpace is JavaScript's \s: the characters a JS regular expression counts as whitespace.

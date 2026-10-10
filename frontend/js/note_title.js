@@ -4,7 +4,7 @@
 //  1. the first ATX heading ("# ...") that is not just a date;
 //  2. otherwise the first line that says something;
 //  3. otherwise the date heading the app inserts into a new note ("# 2026-09-25 07:51"), as "2026-09-25 07-51".
-// Left out on the way: blank lines, front matter, fenced code, HTML comments (the md-memo markers too), table rows,
+// Left out on the way: blank lines, front matter, fenced code, HTML comments (the syki markers too), table rows,
 // horizontal rules, and lines that are only slot / task notation ({{ }}, [[ ]], [? ], [! !], [>> ], 【? 】).
 // The text is cleaned of Markdown (quotes, bullets, task boxes, emphasis, code ticks, links, images, HTML tags), made safe as a
 // file name (illegal characters become spaces, Windows reserved names get a "_" in front) and cut to about 40 code points:

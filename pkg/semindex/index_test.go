@@ -559,7 +559,7 @@ func TestListFilesRules(t *testing.T) {
 	} {
 		writeFile(t, scrap, rel, "# 2026-01-01 00:00\n\n本文\n")
 	}
-	writeFile(t, scrap, ".md-memo-ignore", "# comment\n\nprivate/\ndrafts\n*.tmp\ntmp-*.md\nexact/one.md\r\n")
+	writeFile(t, scrap, ".syki-ignore", "# comment\n\nprivate/\ndrafts\n*.tmp\ntmp-*.md\nexact/one.md\r\n")
 	files, err := listFiles(scrap)
 	if err != nil {
 		t.Fatal(err)
@@ -658,7 +658,7 @@ func age(t *testing.T, path string, by time.Duration) {
 
 func TestExcludedIsWhatTheIndexLeavesOut(t *testing.T) {
 	scrap, _ := dirs(t)
-	writeFile(t, scrap, ".md-memo-ignore", "# private\nprivate/\ndrafts\n*.tmp\nexact/one.md\n")
+	writeFile(t, scrap, ".syki-ignore", "# private\nprivate/\ndrafts\n*.tmp\nexact/one.md\n")
 	ex := Excluded(scrap)
 	for rel, want := range map[string]bool{
 		"2026-09-01.md": false, "keep/a.md": false, "UPPER.MD": false, "exact/two.md": false,

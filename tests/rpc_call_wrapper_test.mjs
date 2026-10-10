@@ -1,4 +1,4 @@
-// How the Go side calls window.__mdMemoRPC (app_rpc.go CallJSWithResponse, app_rpc_write.go rpcCallExpr):
+// How the Go side calls window.__sykiRPC (app_rpc.go CallJSWithResponse, app_rpc_write.go rpcCallExpr):
 // the page-side wrapper evaluates an expression with eval and, if that THROWS, runs the same code again as a
 // function body. A write that threw half way would be applied twice (a second append), so every RPC call goes
 // through an async arrow function, which hands a rejected promise back instead of throwing. This test runs the
@@ -25,7 +25,7 @@ const SUFFIX = JSON.parse('"' + suffix[1] + '"');
 async function callPage(expr, rpcObject) {
   const reports = [];
   const window = {
-    __mdMemoRPC: rpcObject,
+    __sykiRPC: rpcObject,
     backend_reportRPCResult: (reqId, data, err) => reports.push({ reqId, data, err })
   };
   // a plain context: it has its own eval, Function, Promise and JSON, like the page
@@ -60,7 +60,7 @@ const check = (name, fn) => checks.push({ name, fn });
 
 check('the wrapper template still retries a THROWING expression as a function body (the hazard the call prefix avoids)', async () => {
   const counter = { applied: 0, text: '', reads: 0, slow: 0 };
-  const raw = 'window.__mdMemoRPC && window.__mdMemoRPC.append("x")';
+  const raw = 'window.__sykiRPC && window.__sykiRPC.append("x")';
   const report = await callPage(raw, makeRpc(counter));
   assert.equal(counter.applied, 2, 'a bare call that throws after its edit runs twice: the note would get the text twice');
   assert.match(report.err, /refresh failed/);
@@ -76,7 +76,7 @@ check('an RPC call built with the real prefix / suffix runs once even when it th
   assert.equal(report.data, '');
 });
 
-check('a call that returns a value reports its JSON; an async function is awaited; a missing __mdMemoRPC reports null', async () => {
+check('a call that returns a value reports its JSON; an async function is awaited; a missing __sykiRPC reports null', async () => {
   const counter = { applied: 0, text: '', reads: 0, slow: 0 };
   const ok = await callPage(PREFIX + 'get("tab_1")' + SUFFIX, makeRpc(counter));
   assert.equal(ok.err, '');
@@ -88,7 +88,7 @@ check('a call that returns a value reports its JSON; an async function is awaite
 
   const missing = await callPage(PREFIX + 'get("x")' + SUFFIX, undefined);
   assert.equal(missing.err, '');
-  assert.equal(missing.data, 'null', 'no window.__mdMemoRPC yet: the Go side reads null as "the page is not ready"');
+  assert.equal(missing.data, 'null', 'no window.__sykiRPC yet: the Go side reads null as "the page is not ready"');
 });
 
 let failures = 0;

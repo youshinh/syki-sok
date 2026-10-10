@@ -229,7 +229,7 @@ func discordFakeServer(t *testing.T) *httptest.Server {
 	t.Helper()
 	mux := http.NewServeMux()
 	mux.HandleFunc("/users/@me", func(w http.ResponseWriter, r *http.Request) {
-		_ = json.NewEncoder(w).Encode(discordbridge.Self{ID: "bot-1", Username: "md-memo-bot"})
+		_ = json.NewEncoder(w).Encode(discordbridge.Self{ID: "bot-1", Username: "syki-bot"})
 	})
 	mux.HandleFunc("/users/@me/channels", func(w http.ResponseWriter, r *http.Request) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"id": "chan-1"})
@@ -327,7 +327,7 @@ func TestTestDiscordBridgeConnection(t *testing.T) {
 		if err != nil {
 			t.Fatalf("unexpected error: %v", err)
 		}
-		if got["botUsername"] != "md-memo-bot" {
+		if got["botUsername"] != "syki-bot" {
 			t.Errorf("unexpected result: %+v", got)
 		}
 	})

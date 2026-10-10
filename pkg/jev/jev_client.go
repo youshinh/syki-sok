@@ -35,7 +35,7 @@ type ClientConfig struct {
 	// JEV_API_URL / JEV_API_KEY / TYPESAFE_API_KEY. This is what keeps Quick Actions -
 	// which auto-fires a few seconds after typing stops and ships a ~2000 character
 	// excerpt of the user's note as context - strictly local-first unless the user asked
-	// for a remote engine. The headless CLI (`md-memo jev ...`) sets it true to preserve
+	// for a remote engine. The headless CLI (`syki jev ...`) sets it true to preserve
 	// its documented behaviour for scripts and E2E harnesses.
 	AllowGenericEnvKeys bool `json:"allow_generic_env_keys"`
 }
@@ -192,7 +192,7 @@ func (c *Client) predictOpenRouter(ctx context.Context, apiKey string, req JevPr
 		model = "jev-latest"
 	}
 
-	sysPrompt := fmt.Sprintf("You are the Jev probabilistic prediction engine for md-memo. Based on the user's buffer context, predict the next 3 orthogonal actions strictly following the EBNF grammar:\n%s\nDo not include any conversational filler, markdown formatting blocks, or explanations. Only output task items.", req.GrammarSchema)
+	sysPrompt := fmt.Sprintf("You are the Jev probabilistic prediction engine for syki. Based on the user's buffer context, predict the next 3 orthogonal actions strictly following the EBNF grammar:\n%s\nDo not include any conversational filler, markdown formatting blocks, or explanations. Only output task items.", req.GrammarSchema)
 
 	payload := openRouterRequest{
 		Model: model,
@@ -389,7 +389,7 @@ func (c *Client) callTypeSafeAPI(ctx context.Context, endpoint, apiKey string, r
 	}
 	httpReq.Header.Set("Authorization", "Bearer "+apiKey)
 	httpReq.Header.Set("Content-Type", "application/json")
-	httpReq.Header.Set("User-Agent", "md-memo-jev/1.0")
+	httpReq.Header.Set("User-Agent", "syki-jev/1.0")
 
 	resp, err := c.httpClient.Do(httpReq)
 	if err != nil {

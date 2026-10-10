@@ -17,7 +17,7 @@ import (
 	"syki-sok/pkg/semindex"
 )
 
-// `md-memo scrap index` and `scrap search --semantic`: the semantic index of the scrap folder (docs/design/semantic-search-2026-10.md).
+// `syki scrap index` and `scrap search --semantic`: the semantic index of the scrap folder (docs/design/semantic-search-2026-10.md).
 // Off unless config.json says semantic.enabled. The index is kept outside the scrap folder (semindex.IndexDir); these commands never
 // write inside it. Nothing is sent to a host that is not this machine unless semantic.privacy.cloudConsent names the host.
 
@@ -178,10 +178,10 @@ func (e *CloudConfirmError) Error() string {
 	return fmt.Sprintf("this would send %d chunk texts of your notes to %s; run it again with --yes to go ahead (--dry-run shows the numbers)", e.Texts, e.Dest)
 }
 
-// IndexResult is the answer of an index run (the JSON of `md-memo scrap index`).
+// IndexResult is the answer of an index run (the JSON of `syki scrap index`).
 type IndexResult = scrapIndexResult
 
-// IndexStatus is the answer of `md-memo scrap index --status`.
+// IndexStatus is the answer of `syki scrap index --status`.
 type IndexStatus = scrapIndexStatus
 
 // runIndex updates (or rebuilds, or only counts) the index of scrapDir with the model of sc. A host that is not this machine and has not
@@ -297,14 +297,14 @@ func (r *HeadlessRunner) printIndexStatus(sc semindex.Config, scrapDir, idxDir s
 	}
 	switch {
 	case out.Corrupt:
-		fmt.Fprintf(r.stdout, "index:           %s is damaged; run: md-memo scrap index --rebuild\n", out.IndexDir)
+		fmt.Fprintf(r.stdout, "index:           %s is damaged; run: syki scrap index --rebuild\n", out.IndexDir)
 	case !out.Exists:
-		fmt.Fprintf(r.stdout, "index:           not built yet (%s); run: md-memo scrap index\n", out.IndexDir)
+		fmt.Fprintf(r.stdout, "index:           not built yet (%s); run: syki scrap index\n", out.IndexDir)
 	default:
 		fmt.Fprintf(r.stdout, "index:           %s\n", out.IndexDir)
 		fmt.Fprintf(r.stdout, "                 %d chunks from %d files, %.1f MB, made with %s, updated %s\n", out.Chunks, out.Files, float64(out.SizeBytes)/1e6, out.IndexModel, out.Updated)
 		if out.RebuildNeeded {
-			fmt.Fprintln(r.stdout, "                 made with another model or chunking than the settings name; run: md-memo scrap index --rebuild")
+			fmt.Fprintln(r.stdout, "                 made with another model or chunking than the settings name; run: syki scrap index --rebuild")
 		}
 	}
 	if p := out.NewFiles + out.ChangedFiles + out.RemovedFiles; p > 0 {
@@ -465,7 +465,7 @@ func scrapSearchSemantic(ctx context.Context, q semanticQuery) (scrapSearchResul
 		if pend, perr := semindex.PendingFiles(scrapDir, idxDir); perr == nil && len(pend) > 0 {
 			res.Pending = len(pend)
 			if len(q.kinds) > 0 {
-				res.Notes = append(res.Notes, fmt.Sprintf("%d files are not indexed yet (md-memo scrap index) and were not searched, because --kind needs the index", len(pend)))
+				res.Notes = append(res.Notes, fmt.Sprintf("%d files are not indexed yet (syki scrap index) and were not searched, because --kind needs the index", len(pend)))
 			} else if found, ferr := search.SearchScrapsRanked(ctx, scrapDir, q.query, q.limit+1, search.Options{Headings: true, Less: scrapFileOrder, Keep: keepWords(scrapDir, q, pend), Tags: q.tags}); ferr == nil {
 				words, _ := hitsFromResults(found, q.limit+1)
 				for _, w := range words {
@@ -476,7 +476,7 @@ func scrapSearchSemantic(ctx context.Context, q semanticQuery) (scrapSearchResul
 						full = append(full, w)
 					}
 				}
-				res.Notes = append(res.Notes, fmt.Sprintf("%d files are not indexed yet (md-memo scrap index, or --update); they were searched by words, and the notes that hold every word come first", len(pend)))
+				res.Notes = append(res.Notes, fmt.Sprintf("%d files are not indexed yet (syki scrap index, or --update); they were searched by words, and the notes that hold every word come first", len(pend)))
 			}
 		}
 		res.Matches, res.Truncated = firstOf(q.limit, full, sem, partial)
@@ -532,11 +532,11 @@ func firstOf(limit int, lists ...[]scrapHit) (out []scrapHit, truncated bool) {
 func semanticFailure(err error) string {
 	switch {
 	case errors.Is(err, semindex.ErrEmpty):
-		return "the semantic index is empty (build it with: md-memo scrap index)"
+		return "the semantic index is empty (build it with: syki scrap index)"
 	case errors.Is(err, semindex.ErrModelMismatch):
-		return "the semantic index was made with another model (rebuild it with: md-memo scrap index --rebuild)"
+		return "the semantic index was made with another model (rebuild it with: syki scrap index --rebuild)"
 	case errors.Is(err, semindex.ErrCorrupt):
-		return "the semantic index is damaged (rebuild it with: md-memo scrap index --rebuild)"
+		return "the semantic index is damaged (rebuild it with: syki scrap index --rebuild)"
 	}
 	return "the embedding model could not be used (" + oneLine(err) + ")"
 }

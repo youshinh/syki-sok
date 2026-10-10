@@ -24,7 +24,7 @@ func TestLockFilePathHonoursConfigDirOverride(t *testing.T) {
 }
 
 func TestLockFilePathIsInsideAppDirectory(t *testing.T) {
-	// Without an override the path must still land under <config>/md-memo and never in the
+	// Without an override the path must still land under <config>/syki-sok and never in the
 	// config root itself, which is shared with every other application on the machine.
 	got, err := LockFilePath()
 	if err != nil {
@@ -34,7 +34,7 @@ func TestLockFilePathIsInsideAppDirectory(t *testing.T) {
 		t.Errorf("LockFilePath() base = %q, want %q", filepath.Base(got), LockFileName)
 	}
 	if filepath.Base(filepath.Dir(got)) != "syki-sok" {
-		t.Errorf("LockFilePath() parent = %q, want \"md-memo\"", filepath.Base(filepath.Dir(got)))
+		t.Errorf("LockFilePath() parent = %q, want \"syki\"", filepath.Base(filepath.Dir(got)))
 	}
 	if !filepath.IsAbs(got) {
 		t.Errorf("LockFilePath() = %q, want an absolute path", got)

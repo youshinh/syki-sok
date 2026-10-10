@@ -16,7 +16,7 @@ import (
 	"syki-sok/pkg/appdir"
 )
 
-// LockFileName is the name of the lock file inside the md-memo config directory.
+// LockFileName is the name of the lock file inside the syki config directory.
 const LockFileName = "instance.lock"
 
 // LockFilePath reports the absolute path of the single-instance lock file. It goes through

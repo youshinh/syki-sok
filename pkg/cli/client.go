@@ -15,7 +15,7 @@ import (
 	"syki-sok/pkg/ipc"
 )
 
-// ClientRunner handles CLI subcommands sent to a running md-memo instance via JSON-RPC.
+// ClientRunner handles CLI subcommands sent to a running syki instance via JSON-RPC.
 type ClientRunner struct {
 	session *ipc.SessionInfo
 	stdout  io.Writer

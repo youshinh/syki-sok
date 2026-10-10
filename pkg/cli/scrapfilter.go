@@ -10,9 +10,9 @@ import (
 	"syki-sok/pkg/search"
 )
 
-// What narrows a search besides its text: tags and days (docs/design/tag-filter-2026-10.md). `md-memo scrap search --tag/--from/--to`
+// What narrows a search besides its text: tags and days (docs/design/tag-filter-2026-10.md). `syki scrap search --tag/--from/--to`
 // and the JSON-RPC method scrap.search take them as parameters; the window's search panel sends them as one JSON object. Here are the
-// object the window sends, the list of tags with their counts that the panel offers (`md-memo scrap tags`, scrap.tags), and the
+// object the window sends, the list of tags with their counts that the panel offers (`syki scrap tags`, scrap.tags), and the
 // semantic search's tag test.
 
 // ScrapFilter is the filter the window's search panel sends: the tags an entry must all have (a note's tag comments, see
@@ -68,7 +68,7 @@ func (d dayRange) keepFile(path string) bool {
 
 // ---- scrap tags --------------------------------------------------------------------------------
 
-// ScrapTagsResult is the answer of `md-memo scrap tags` and of scrap.tags: the tags in use, most files first, how many .md files
+// ScrapTagsResult is the answer of `syki scrap tags` and of scrap.tags: the tags in use, most files first, how many .md files
 // were looked at, and how many of those have no day in their name (a date range never takes them in).
 type ScrapTagsResult struct {
 	Tags    []search.TagCount `json:"tags"`

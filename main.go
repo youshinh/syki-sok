@@ -112,7 +112,7 @@ func main() {
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
 	} else if !isPipe {
-		// `md-memo notes.md` while an instance is already running. Until now no IPC message
+		// `syki notes.md` while an instance is already running. Until now no IPC message
 		// was built for this case at all, so on Windows the single-instance mutex stopped the
 		// second process and the file was silently dropped, and on macOS (no single-instance
 		// check at that point) a whole second instance started and took over the session file.

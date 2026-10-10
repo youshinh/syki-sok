@@ -56,15 +56,15 @@ check('the two pure modules cost nothing at load and one global each (their own 
   assert.match(snippetsJs, /global\.SlotSnippets = api;/);
   assert.match(slotJs, /global\.AutoSelector/, 'read through the window, at use time');
   assert.match(slotJs, /global\.SlotSnippets/);
-  assert.match(slotJs, /global\.MdMemoBridge/);
+  assert.match(slotJs, /global\.SykiBridge/);
   const top = slotJs.slice(0, slotJs.indexOf('function genReqId'));
   assert.ok(!/AutoSelector\.|SlotSnippets\./.test(top), 'nothing calls the modules while slot_agent.js loads');
 });
 
 check('app.js: the bridge offers confirmCommand, runCommandTask, cancelCommandTask and getTabText next to the existing ones', () => {
-  const bridge = appJs.slice(appJs.indexOf('window.MdMemoBridge = {'), appJs.indexOf('// Expose test and screenshot automation helpers'));
+  const bridge = appJs.slice(appJs.indexOf('window.SykiBridge = {'), appJs.indexOf('// Expose test and screenshot automation helpers'));
   for (const name of ['confirmCommand', 'runCommandTask', 'cancelCommandTask', 'getTabText', 'startLlmTask', 'cancelLlmTask', 'openAskBar', 'isLlmConfigured', 'getAutoSelectorConfig', 'replaceAnchor']) {
-    assert.match(bridge, new RegExp(`\\b${name}:`), `MdMemoBridge.${name}`);
+    assert.match(bridge, new RegExp(`\\b${name}:`), `SykiBridge.${name}`);
   }
 });
 

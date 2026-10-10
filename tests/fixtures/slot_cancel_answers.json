@@ -11,7 +11,7 @@
     "answer": {"reqId":"REQ","type":"slot","role":"code","instruction":"x","startOffset":6,"endOffset":19,"oldContent":"{{ code: x }}","newContent":"{{ code: x }}","output":"","outputMode":"replace","isInline":false,"errorMsg":"⚠ キャンセルされました","exitCode":130,"status":"canceled"}
   },
   "agentTask": {
-    "note": "日本語😀\n{{ @tree x }}\n<!-- md-memo:run ab12 -->\n末尾",
+    "note": "日本語😀\n{{ @tree x }}\n<!-- syki:run ab12 -->\n末尾",
     "cursorMarker": "@tree",
     "answer": {"reqId":"REQ","type":"slot","role":"@tree","instruction":"x","startOffset":6,"endOffset":19,"oldContent":"{{ @tree x }}","newContent":"{{ @tree x }}","output":"","outputMode":"below","isInline":false,"errorMsg":"⚠ キャンセルされました","exitCode":130,"status":"canceled"}
   }

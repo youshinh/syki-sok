@@ -12,7 +12,7 @@ func TestFileURLIsWrittenLikeTheEditorWritesOne(t *testing.T) {
 		{`C:\Users\yoush\my scraps\2026-09-01.md`, "file:///C:/Users/yoush/my%20scraps/2026-09-01.md"},
 		{`C:\Users\yoush\メモ\日本語 (1) [a]#b%c.md`, "file:///C:/Users/yoush/%E3%83%A1%E3%83%A2/%E6%97%A5%E6%9C%AC%E8%AA%9E%20%281%29%20%5Ba%5D%23b%25c.md"},
 		{`C:/already/forward.md`, "file:///C:/already/forward.md"},
-		{`/Users/me/Documents/md-memo/scraps/2026-09-01.md`, "file:///Users/me/Documents/md-memo/scraps/2026-09-01.md"},
+		{`/Users/me/Documents/syki-sok/scraps/2026-09-01.md`, "file:///Users/me/Documents/syki-sok/scraps/2026-09-01.md"},
 		{`/home/me/my notes/x.md`, "file:///home/me/my%20notes/x.md"},
 		{`\\nas\share\scraps\a b.md`, "file://nas/share/scraps/a%20b.md"},
 		{``, ""},

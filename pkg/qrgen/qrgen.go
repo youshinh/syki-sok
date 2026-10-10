@@ -3,7 +3,7 @@
 // NOTE (build): this file requires github.com/skip2/go-qrcode, which is not
 // yet a dependency of this module. It could not be added or compiled in the
 // sandbox this change was authored in (no network access to the Go module
-// proxy). Before building md-memo after pulling this change, run once,
+// proxy). Before building syki after pulling this change, run once,
 // from the module root:
 //
 //	go get github.com/skip2/go-qrcode@latest

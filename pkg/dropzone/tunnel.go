@@ -55,7 +55,7 @@ var (
 
 // findCloudflared locates the cloudflared executable: on PATH first, then in
 // the places its installers put it. A running app keeps the PATH it was
-// started with, so a cloudflared installed while md-memo is open would
+// started with, so a cloudflared installed while syki is open would
 // otherwise stay invisible until the next launch.
 func findCloudflared() (string, error) {
 	if path, err := exec.LookPath("cloudflared"); err == nil {

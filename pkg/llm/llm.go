@@ -59,7 +59,7 @@ type VisionConfig struct {
 	Prompt       string `json:"prompt"`       // Custom prompt for image OCR/markdown conversion
 	SystemPrompt string `json:"systemPrompt"` // Optional system prompt
 	// OCRMode picks how image text is extracted by the OCR paths that can use either engine (the
-	// hot folder, `md-memo ocr`, the Send To shortcut). "" or "auto": the cloud vision model
+	// hot folder, `syki ocr`, the Send To shortcut). "" or "auto": the cloud vision model
 	// first, the on-device engine as the fallback; "on-device": never send the image anywhere.
 	OCRMode string `json:"ocrMode"`
 }

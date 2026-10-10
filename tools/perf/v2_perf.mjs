@@ -325,13 +325,13 @@ const READY_EXPR = `(function () {
 const openTabsExpr = (n) => `(async function () {
   var raf = function () { return new Promise(function (r) { requestAnimationFrame(r); }); };
   var have = function () { return document.querySelectorAll('#tabs-list > *').length; };
-  for (var i = have(); i < ${n}; i++) window.__mdMemoRPC.openTab({ title: 'Note ' + (i + 1), content: 'Note ' + (i + 1) + '\\n\\nsome text', background: true });
+  for (var i = have(); i < ${n}; i++) window.__sykiRPC.openTab({ title: 'Note ' + (i + 1), content: 'Note ' + (i + 1) + '\\n\\nsome text', background: true });
   for (var k = 0; k < 40 && have() < ${n}; k++) await raf();
   await raf(); await raf();
   return have();
 })()`;
 
-const APP_READY_EXPR = `!!(window.__mdMemoRPC && document.getElementById('editor') && document.querySelectorAll('#tabs-list > *').length > 0)`;
+const APP_READY_EXPR = `!!(window.__sykiRPC && document.getElementById('editor') && document.querySelectorAll('#tabs-list > *').length > 0)`;
 
 // Frame cadence of an idle page: the display's refresh rate (and proof that frames are produced at all: a hidden window gets none).
 const IDLE_FRAMES_EXPR = `new Promise(function (res) { var ts = []; function f(t) { ts.push(t); if (ts.length < 40) requestAnimationFrame(f); else res(ts); } requestAnimationFrame(f); })`;
@@ -342,7 +342,7 @@ const openExpr = (file, title) => `(async function () {
   var t0 = performance.now();
   var res = await window.backend.readFileByPath(${JSON.stringify(file)});
   var t1 = performance.now();
-  var info = window.__mdMemoRPC.openTab({ title: res.title || ${JSON.stringify(title)}, path: res.path || ${JSON.stringify(file)}, content: res.content, encoding: res.encoding });
+  var info = window.__sykiRPC.openTab({ title: res.title || ${JSON.stringify(title)}, path: res.path || ${JSON.stringify(file)}, content: res.content, encoding: res.encoding });
   var t2 = performance.now();
   await raf(); await raf();
   var t3 = performance.now();
@@ -581,10 +581,10 @@ class Harness {
     await this.rmRetry(path.join(this.root, 'appdata'));
     await this.rmRetry(path.join(this.root, 'wv'));
     await this.rmRetry(path.join(this.root, 'run'));
-    fs.mkdirSync(path.join(this.root, 'appdata', 'md-memo'), { recursive: true });
+    fs.mkdirSync(path.join(this.root, 'appdata', 'syki'), { recursive: true });
     fs.mkdirSync(path.join(this.root, 'notes'), { recursive: true });
     fs.mkdirSync(path.join(this.root, 'run'), { recursive: true });
-    fs.writeFileSync(path.join(this.root, 'appdata', 'md-memo', 'config.json'), JSON.stringify(this.configJson(), null, 2));
+    fs.writeFileSync(path.join(this.root, 'appdata', 'syki', 'config.json'), JSON.stringify(this.configJson(), null, 2));
     if (useSeed) fs.cpSync(path.join(this.root, 'wv-seed'), path.join(this.root, 'wv'), { recursive: true });
     this.applyProfilePrefs();
     this.runNote = path.join(this.root, 'run', 'perf-80k.md'); // a copy per run: auto save may write to it while typing
@@ -758,7 +758,7 @@ class Harness {
     const views = run.views = { scenes: [] };
     const setView = async (spec, label) => {
       const t0 = performance.now();
-      const st = await cdp.ev(`window.__mdMemoRPC.setUiState(${JSON.stringify(spec)}).then(function (s) { return new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(function () { r(s); }); }); }); })`, 180000);
+      const st = await cdp.ev(`window.__sykiRPC.setUiState(${JSON.stringify(spec)}).then(function (s) { return new Promise(function (r) { requestAnimationFrame(function () { requestAnimationFrame(function () { r(s); }); }); }); })`, 180000);
       const ms = performance.now() - t0;
       await sleep(o.settleSec * 1000);
       const dom = await cdp.ev(viewStateExpr, 10000);

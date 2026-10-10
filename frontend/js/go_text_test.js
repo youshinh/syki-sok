@@ -36,9 +36,9 @@ check('pickLang: "日本語 (English)" (the command guard) keeps the half of the
 });
 
 check('pickLang: "日本語 / English: detail" (settings packages) keeps the half of the UI language and the detail', () => {
-  const s = 'ファイルを開けません / cannot open the file: open C:\\x\\a.mdmemopack: The system cannot find the file specified.';
-  assert.strictEqual(GoText.pickLang(s, 'en'), 'cannot open the file: open C:\\x\\a.mdmemopack: The system cannot find the file specified.');
-  assert.strictEqual(GoText.pickLang(s, 'ja'), 'ファイルを開けません: open C:\\x\\a.mdmemopack: The system cannot find the file specified.');
+  const s = 'ファイルを開けません / cannot open the file: open C:\\x\\a.sykipack: The system cannot find the file specified.';
+  assert.strictEqual(GoText.pickLang(s, 'en'), 'cannot open the file: open C:\\x\\a.sykipack: The system cannot find the file specified.');
+  assert.strictEqual(GoText.pickLang(s, 'ja'), 'ファイルを開けません: open C:\\x\\a.sykipack: The system cannot find the file specified.');
   assert.strictEqual(GoText.pickLang('ファイルが大きすぎます / file is too large', 'en'), 'file is too large');
   assert.strictEqual(GoText.pickLang('ファイルが大きすぎます / file is too large', 'ja'), 'ファイルが大きすぎます');
 });

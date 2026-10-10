@@ -143,7 +143,7 @@ const pageSource = `<!DOCTYPE html>
 <script>
 (function () {
   "use strict";
-  var TOKEN = __MD_MEMO_TOKEN__;
+  var TOKEN = __SYKI_TOKEN__;
   var statusEl = document.getElementById('status');
   var spinnerEl = document.getElementById('spinner');
   var done = false;
@@ -571,7 +571,7 @@ const pageSource = `<!DOCTYPE html>
 // dynamic value, so a plain substitution does the job; html/template (which this package used
 // before) would have added itself, text/template and their start-up work to every launch of the
 // app for that single substitution.
-const tokenPlaceholder = "__MD_MEMO_TOKEN__"
+const tokenPlaceholder = "__SYKI_TOKEN__"
 
 // jsStringLiteral encodes s as a valid, self-contained JavaScript string
 // literal (double-quoted JSON), additionally escaping "</" so the token can

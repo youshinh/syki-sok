@@ -42,8 +42,8 @@ async function pages(n = 3) {
   left.children.forEach((row) => { row.style = { props: {}, setProperty(k, v) { this.props[k] = v; } }; });
   if (left.children.length > 1) { // the first row's distance was written to its old style: move the selection away and back so the recorder has it
     const order = left.children.map((r) => r.dataset.tabId);
-    await env.window.__mdMemoRPC.switchTab(order[0]);
-    await env.window.__mdMemoRPC.switchTab(order[order.length - 1]);
+    await env.window.__sykiRPC.switchTab(order[0]);
+    await env.window.__sykiRPC.switchTab(order[order.length - 1]);
   }
   const rowsOf = (list) => list.children.slice();
   const ids = (list) => rowsOf(list).map((r) => r.dataset.tabId);
@@ -133,7 +133,7 @@ check('a click on a strip changes that strip\'s page and only that page, whichev
   s.click(s.rowsOf(s.left)[1]);
   assert.equal(s.doc.activeElement, s.env.editor);
   assert.equal(leftNote(), ids[1]);
-  const tabs = Array.from(await s.win.__mdMemoRPC.getTabs(), (t) => [t.id, t.pane]);
+  const tabs = Array.from(await s.win.__sykiRPC.getTabs(), (t) => [t.id, t.pane]);
   assert.deepEqual(tabs.filter((t) => t[1]), [[ids[1], 'primary'], [ids[2], 'secondary']], 'tab.list says which note is in which page, as it always did');
 });
 
@@ -203,7 +203,7 @@ check('closing the note of the right page leaves the right page the first note, 
   const s = await pages(3);
   const ids = s.ids(s.left);
   await s.open(ids[2]);
-  assert.equal(await s.win.__mdMemoRPC.closeTab(ids[2]), true);
+  assert.equal(await s.win.__sykiRPC.closeTab(ids[2]), true);
   await s.env.flush();
   assert.deepEqual(s.ids(s.right), s.ids(s.left));
   assert.equal(s.ids(s.right).length, 3);
@@ -231,7 +231,7 @@ check('dragging in the right strip moves the note in both strips; the right stri
   const want = [ids[1], ids[2], ids[3], ids[0]];
   assert.deepEqual(s.ids(s.right), want, 'the right strip has the new order');
   assert.deepEqual(s.ids(s.left), want, 'and so has the left strip: the order is the notes\'');
-  assert.deepEqual(Array.from(await s.win.__mdMemoRPC.getTabs(), (t) => t.id), want, 'and tab.list');
+  assert.deepEqual(Array.from(await s.win.__sykiRPC.getTabs(), (t) => t.id), want, 'and tab.list');
   assert.equal(s.selectedOf(s.right)[0].dataset.tabId, ids[1], 'each strip still marks its own page\'s note');
   assert.equal(s.selectedOf(s.left)[0].dataset.tabId, ids[3]);
 });
@@ -343,7 +343,7 @@ check('a file dropped on a strip opens as a new note (text only), and a drop on 
 check('a saved session with two note pages comes back with both strips', async () => {
   const note = (id, title) => ({ id, title, path: '', content: 'body ' + id, isDirty: false, encoding: 'UTF-8', cursorPos: 0 });
   const session = { tabs: [note('a', 'a.md'), note('b', 'b.md'), note('c', 'c.md')], activeTabId: 'a', tabCounter: 4, isSplitMode: true, secondaryTabId: 'c', secondaryViewMode: 'editor', activePane: 'secondary', isPreviewMode: false };
-  const env = await createEnv({ localStorage: { md_memo_session_v1: JSON.stringify(session) } });
+  const env = await createEnv({ localStorage: { syki_session_v1: JSON.stringify(session) } });
   await env.flush();
   const left = env.el('tabs-list').children;
   const right = env.el('tabs-list-right').children;
@@ -354,7 +354,7 @@ check('a saved session with two note pages comes back with both strips', async (
   assert.equal(left.filter((r) => r.classList.contains('active'))[0].dataset.tabId, 'a');
   assert.equal(right.filter((r) => r.classList.contains('active'))[0].dataset.tabId, 'c');
   // and a session of one page does not
-  const one = await createEnv({ localStorage: { md_memo_session_v1: JSON.stringify({ ...session, isSplitMode: false }) } });
+  const one = await createEnv({ localStorage: { syki_session_v1: JSON.stringify({ ...session, isSplitMode: false }) } });
   await one.flush();
   assert.equal(one.el('workspace').getAttribute('data-tabs'), 'left');
   assert.equal(one.el('tab-index-right').hidden, true);

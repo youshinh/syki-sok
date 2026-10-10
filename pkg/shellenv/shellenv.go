@@ -40,8 +40,8 @@ const (
 	// markerBegin / markerEnd fence the value inside the probe's stdout. An interactive login
 	// shell runs the user's rc files, which routinely print banners, version notices, direnv
 	// chatter or fortune output, so the raw stdout cannot be trusted to be just the PATH.
-	markerBegin = "__MDMEMO_PATH__"
-	markerEnd   = "__MDMEMO_END__"
+	markerBegin = "__SYKI_PATH__"
+	markerEnd   = "__SYKI_END__"
 
 	// probeTimeout bounds one shell invocation. An interactive shell that hangs waiting on
 	// something must never delay syki::sok, which is why Apply also runs off the startup path.

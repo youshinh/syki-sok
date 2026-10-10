@@ -8,7 +8,7 @@ import (
 )
 
 // The tag editor's entry point (docs/design/tag-filter-2026-10.md section 10). The rules for where a tag goes are search.EditTags; this
-// is what `md-memo scrap tag`, the JSON-RPC method scrap.tag_edit and the window's TagEditAsync bind share: the request in the form all
+// is what `syki scrap tag`, the JSON-RPC method scrap.tag_edit and the window's TagEditAsync bind share: the request in the form all
 // three take it, the checks of its arguments, and the answer. It works on the text it is given and touches no file and no window.
 
 // TagList is a list of tags that a request may write as one string ("仕事, 急ぎ") or as a list of strings (["仕事", "急ぎ"]).

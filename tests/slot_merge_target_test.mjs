@@ -145,7 +145,7 @@ check('B04: the person switches to another note while the run goes - the answer 
   assert.equal(env.slotAgent._runningTaskCount(), 0);
   assert.deepEqual(typedInto, [], 'nothing was typed into an editor');
   // coming back: the note shows the answer
-  env.window.__mdMemoRPC.switchTab(env.tabA.id);
+  env.window.__sykiRPC.switchTab(env.tabA.id);
   await env.flush();
   assert.equal(env.editor.value, 'Intro\n\nANSWER-HAIKU-TEXT-HERE\n\nend of a\n');
 });
@@ -157,7 +157,7 @@ check('B04: the same, when the result arrives after the person is back in the fi
   const run = await startRun(env, '{{ write a haiku }}');
   const tabB = env.window.__testHelper.createTab('b.md', NOTE_B);
   await env.flush();
-  env.window.__mdMemoRPC.switchTab(env.tabA.id);
+  env.window.__sykiRPC.switchTab(env.tabA.id);
   await env.flush();
   assert.ok(env.editor.value.includes(MARK), 'the running mark is on screen again');
   finish(env, run, 'ANSWER-HAIKU-TEXT-HERE');
@@ -173,7 +173,7 @@ check('B04: the note was closed while its run went - the answer is dropped and n
   const run = await startRun(env, '{{ write a haiku }}');
   const tabB = env.window.__testHelper.createTab('b.md', NOTE_B);
   await env.flush();
-  env.window.__mdMemoRPC.closeTab(env.tabA.id);
+  env.window.__sykiRPC.closeTab(env.tabA.id);
   await env.flush();
   if (!env.hidden('confirm-modal')) { env.el('confirm-modal-dontsave').onclick(); await env.flush(); }
   finish(env, run, 'ANSWER-HAIKU-TEXT-HERE');
@@ -187,11 +187,11 @@ check('B04: a run started in the second pane, the pane closed - the answer is no
   const env = await setup();
   const tabB = env.window.__testHelper.createTab('b.md', NOTE_B);
   await env.flush();
-  env.window.__mdMemoRPC.switchTab(env.tabA.id);
+  env.window.__sykiRPC.switchTab(env.tabA.id);
   await env.flush();
   env.setNote(NOTE_A, 0);
   env.tabA.content = NOTE_A;
-  env.window.__mdMemoRPC.switchTab(tabB.id); // b.md is the note in the main pane
+  env.window.__sykiRPC.switchTab(tabB.id); // b.md is the note in the main pane
   await env.flush();
   env.window.__testHelper.openSplitEditor(env.tabA.id); // a.md on the right
   await env.flush();
@@ -218,11 +218,11 @@ check('B04: the split pane stays open - the answer goes into the pane that shows
   const env = await setup();
   const tabB = env.window.__testHelper.createTab('b.md', NOTE_B);
   await env.flush();
-  env.window.__mdMemoRPC.switchTab(env.tabA.id);
+  env.window.__sykiRPC.switchTab(env.tabA.id);
   await env.flush();
   env.setNote(NOTE_A, 0);
   env.tabA.content = NOTE_A;
-  env.window.__mdMemoRPC.switchTab(tabB.id);
+  env.window.__sykiRPC.switchTab(tabB.id);
   await env.flush();
   env.window.__testHelper.openSplitEditor(env.tabA.id);
   await env.flush();

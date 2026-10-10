@@ -3,7 +3,7 @@
 //
 // Every one of those used to call os.UserConfigDir / os.UserHomeDir directly, which made it
 // impossible to run the test suite without reading and writing the developer's real
-// %AppData%\md-memo and ~/Documents/md-memo. The overrides below exist purely so a TestMain
+// %AppData%\syki-sok and ~/Documents/syki. The overrides below exist purely so a TestMain
 // can redirect all of that into a temp directory. When no override is set (the only case in
 // production) these are exact pass-throughs to the os package.
 package appdir
@@ -48,7 +48,7 @@ func ConfigDir() (string, error) {
 	return os.UserConfigDir()
 }
 
-// AppConfigDir is the md-memo folder inside ConfigDir: where config.json and the IPC session
+// AppConfigDir is the syki folder inside ConfigDir: where config.json and the IPC session
 // file live. It only computes the path; it creates nothing (the GUI creates the folder when it
 // saves, a read-only CLI command must not).
 func AppConfigDir() string {

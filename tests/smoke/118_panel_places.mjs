@@ -106,7 +106,7 @@ export default {
     await waitHidden(s, 'jev-action-panel');
 
     t.step('with two pages open the panel is still centred on the WINDOW, whichever page has the keyboard, and does not move into a page\'s box');
-    await s.ev("window.__mdMemoRPC.setUiState({ split: true })");
+    await s.ev("window.__sykiRPC.setUiState({ split: true })");
     await s.waitFor("document.body.dataset.view === 'pair'");
     for (const id of ['editor-secondary', 'editor']) {
       await s.ev(`(function () { var e = document.getElementById(${q(id)}); e.focus(); e.setSelectionRange(8, 8); })()`);
@@ -118,7 +118,7 @@ export default {
       await s.key('Escape');
       await waitHidden(s, 'jev-action-panel');
     }
-    await s.ev("window.__mdMemoRPC.setUiState({ split: false })");
+    await s.ev("window.__sykiRPC.setUiState({ split: false })");
     await s.waitFor("document.body.dataset.view === 'page'");
 
     t.step('the AI popover opens upwards from its item, just above the status bar');

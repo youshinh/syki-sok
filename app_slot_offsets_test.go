@@ -350,7 +350,7 @@ func TestRunSlotAgentAsync_CursorIsUTF16(t *testing.T) {
 
 func TestRunSlotAgentAsync_AgentMention_BelowMode(t *testing.T) {
 	calls := stubSlotExecute(t, &slotagent.AgentExecutionResult{Output: "結果", RawOutput: "  結果\n\n"})
-	doc := "日本語😀\r\n{{ @cc 調べて }}\r\n<!-- md-memo:run ab12 -->\r\n続き"
+	doc := "日本語😀\r\n{{ @cc 調べて }}\r\n<!-- syki:run ab12 -->\r\n続き"
 	cursor := utf16IndexOf(doc, "@cc") + 1
 
 	got, notePath := runSlot(t, doc, cursor, "")
@@ -386,7 +386,7 @@ func TestRunSlotAgentAsync_AgentMention_BelowMode(t *testing.T) {
 
 func TestRunSlotAgentAsync_AgentMention_FailureKeepsTaskLine(t *testing.T) {
 	stubSlotExecute(t, &slotagent.AgentExecutionResult{Output: "part", RawOutput: "part\n", ExitCode: 3, ErrorMsg: "boom"})
-	doc := "{{ @claude 失敗する }}\n<!-- md-memo:run ab12 -->\n"
+	doc := "{{ @claude 失敗する }}\n<!-- syki:run ab12 -->\n"
 
 	got, _ := runSlot(t, doc, 4, "")
 	r := got.res

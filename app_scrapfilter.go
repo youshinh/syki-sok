@@ -16,7 +16,7 @@ import (
 const scrapFilterTimeout = 25 * time.Second
 
 // ScrapFilterOptionsAsync answers cli.ScrapTags on a goroutine through window.__onDeepSearchResult(reqID, result, errMsg) (the
-// shim's __mdmemoSettle, as SearchScrapsSemanticAsync does). The result is {"tags": [{"tag", "files", "entries"}], "files": n,
+// shim's __sykiSettle, as SearchScrapsSemanticAsync does). The result is {"tags": [{"tag", "files", "entries"}], "files": n,
 // "undated": n}; the tags are never null.
 func (a *App) ScrapFilterOptionsAsync(reqID string) {
 	go func() {

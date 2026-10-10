@@ -1,4 +1,4 @@
-// Tests for frontend/js/platform.js (window.MDMemoPlatform), loaded in isolation
+// Tests for frontend/js/platform.js (window.SykiPlatform), loaded in isolation
 // (the way jev_action.js / slot_agent.js / task_manager.js load it) with fake
 // `navigator` variants, so the Mac-only branches get real coverage instead of
 // only ever running on a Windows CI/dev box.
@@ -21,12 +21,12 @@ function check(name, fn) {
 }
 
 // Loads platform.js fresh into its own VM context with the given `navigator`,
-// and returns the window.MDMemoPlatform object it produces.
+// and returns the window.SykiPlatform object it produces.
 function loadPlatform(navigatorMock) {
   const windowObj = {};
   const context = vm.createContext({ window: windowObj, navigator: navigatorMock, console });
   vm.runInContext(platformCode, context);
-  return context.window.MDMemoPlatform;
+  return context.window.SykiPlatform;
 }
 
 // ---------------------------------------------------------------------------
@@ -59,7 +59,7 @@ check('an iPad (MacIntel-spoofed or iPadOS userAgent) counts as Mac-family', () 
 check('no navigator at all (undefined) does not throw and defaults to non-Mac', () => {
   const context = vm.createContext({ window: {}, console });
   vm.runInContext(platformCode, context);
-  assert.equal(context.window.MDMemoPlatform.isMac, false);
+  assert.equal(context.window.SykiPlatform.isMac, false);
 });
 
 // ---------------------------------------------------------------------------

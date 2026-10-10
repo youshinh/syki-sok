@@ -15,7 +15,7 @@ import (
 // nowFunc is time.Now behind a variable so tests can pin "today".
 var nowFunc = time.Now
 
-// infoResult is the JSON of `md-memo info`. Every key is snake_case and none of them can carry a
+// infoResult is the JSON of `syki info`. Every key is snake_case and none of them can carry a
 // secret: paths, booleans and the version, nothing read from the api-key or token fields of
 // config.json and nothing from the IPC session file except whether a live app is behind it.
 type infoResult struct {

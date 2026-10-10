@@ -113,7 +113,7 @@
 
   function detectOS() {
     try {
-      if (global.MDMemoPlatform && global.MDMemoPlatform.isMac) return 'unix';
+      if (global.SykiPlatform && global.SykiPlatform.isMac) return 'unix';
       const nav = global.navigator;
       const s = nav ? str(nav.platform || nav.userAgent) : '';
       if (/Win/i.test(s)) return 'win';

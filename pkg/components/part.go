@@ -1,5 +1,5 @@
 // Package components downloads, verifies and tracks optional local parts (a runtime binary, a
-// model file) that md-memo does not ship: nothing is fetched until the user asks, and nothing
+// model file) that syki does not ship: nothing is fetched until the user asks, and nothing
 // costs anything while unused. A Part describes one downloadable thing; Manager (manager.go)
 // installs and removes Parts under a root directory.
 package components

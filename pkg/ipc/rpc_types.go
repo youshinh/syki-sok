@@ -48,7 +48,7 @@ func (e *RPCError) Error() string {
 	return e.Message
 }
 
-// SessionInfo contains connection metadata written by the running md-memo instance.
+// SessionInfo contains connection metadata written by the running syki instance.
 type SessionInfo struct {
 	PID       int       `json:"pid"`
 	Port      int       `json:"port"`

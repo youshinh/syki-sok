@@ -9,7 +9,7 @@
 (function (global) {
   'use strict';
 
-  const STORE_KEY = 'md_memo_print_settings';
+  const STORE_KEY = 'syki_print_settings';
   const DEBOUNCE_MS = 300;
   const DEFAULTS = Object.freeze({ paper: 'a4', landscape: false, margin: 'normal', scale: 100, pages: '', headerFooter: false });
   const PAPERS = ['a4', 'a3', 'b5', 'letter'];

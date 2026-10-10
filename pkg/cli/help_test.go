@@ -239,7 +239,7 @@ func TestHeadlessHelpListsEveryHeadlessCommand(t *testing.T) {
 }
 
 // The two surfaces that are not commands (a pipe and the JSON-RPC port) have their own help
-// topics, and an agent that guesses `md-memo rpc --help` or any other word must get usage
+// topics, and an agent that guesses `syki rpc --help` or any other word must get usage
 // text rather than a GUI start.
 func TestHelpRequestTopicsAndGuessedWords(t *testing.T) {
 	cases := []struct {

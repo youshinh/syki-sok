@@ -56,7 +56,7 @@ function parseSlots(text, cfg) {
     return null;
   };
   const excluded = [];
-  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- md-memo:res [\s\S]*?<!-- \/md-memo:res -->/g]) {
+  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- syki:res [\s\S]*?<!-- \/syki:res -->/g]) {
     for (const m of text.matchAll(re)) excluded.push([m.index, m.index + m[0].length]);
   }
   excluded.push(...HC.htmlCommentRanges(text));
@@ -333,7 +333,7 @@ async function createEnv(opts = {}) {
       (windowListeners[type] || []).slice().forEach((l) => l.fn(e));
       return e;
     },
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     slotAgent: windowMock.SlotAgent,
     taskManager: windowMock.TaskManager,

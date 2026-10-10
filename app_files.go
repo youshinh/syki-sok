@@ -255,13 +255,13 @@ func buildOpenInNewTabJS(title, content, path string) string {
 	titleJSON, _ := json.Marshal(title)
 	contentJSON, _ := json.Marshal(content)
 	pathJSON, _ := json.Marshal(path)
-	return fmt.Sprintf("window.__mdMemoRPC && window.__mdMemoRPC.newTab(%s, %s, %s);",
+	return fmt.Sprintf("window.__sykiRPC && window.__sykiRPC.newTab(%s, %s, %s);",
 		string(titleJSON), string(contentJSON), string(pathJSON))
 }
 
 // OpenPathInNewTab reads path and asks the running UI to display it in a new tab.
 //
-// It is the already-running counterpart of GetStartupFile: `md-memo notes.md` launched while
+// It is the already-running counterpart of GetStartupFile: `syki notes.md` launched while
 // an instance exists hands the absolute path over via the "open" IPC action instead of
 // starting a second process (which on macOS really did start a second process, and on
 // Windows was blocked by the single-instance mutex with the file silently dropped).

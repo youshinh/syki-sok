@@ -67,7 +67,7 @@ func TestInboxVisionVoiceConfigs_VoiceFallsBackToVisionCredentials(t *testing.T)
 }
 
 func TestResolveInboxDir(t *testing.T) {
-	t.Run("empty dir defaults under Documents/md-memo", func(t *testing.T) {
+	t.Run("empty dir defaults under Documents/syki-sok", func(t *testing.T) {
 		got := resolveInboxDir("")
 		if filepath.Base(got) != "inbox" {
 			t.Errorf("expected default dir to end in 'inbox', got %q", got)

@@ -68,8 +68,8 @@ check('a draw that changes nothing writes nothing: the same elements, nothing ap
   const s = await strip(3);
   const before = s.rows();
   const appended = s.log.appended;
-  for (const id of s.ids()) await s.env.window.__mdMemoRPC.switchTab(id); // each switch draws the tabs
-  await s.env.window.__mdMemoRPC.switchTab(s.ids()[3]);
+  for (const id of s.ids()) await s.env.window.__sykiRPC.switchTab(id); // each switch draws the tabs
+  await s.env.window.__sykiRPC.switchTab(s.ids()[3]);
   assert.equal(s.log.appended, appended, 'no element was appended by a switch');
   assert.deepEqual(s.rows(), before, 'the same elements in the same order');
   s.rows().forEach((r) => assert.ok(r.style.props['--d'] !== undefined));
@@ -86,7 +86,7 @@ check('a note opened later is appended; a note closed in the middle takes only i
   assert.equal(s.log.appended, appended + 1, 'one element for the new note');
   assert.equal(s.rows().length, 5);
   const closing = s.ids()[2];
-  assert.equal(await s.env.window.__mdMemoRPC.closeTab(closing), true);
+  assert.equal(await s.env.window.__sykiRPC.closeTab(closing), true);
   assert.equal(s.rows().length, 4);
   assert.ok(!s.ids().includes(closing));
   for (const r of s.rows()) if (before[r.dataset.tabId]) assert.equal(r, before[r.dataset.tabId], 'the elements of the other notes are the ones they were');
@@ -200,7 +200,7 @@ check('keys: the focus stays on a tab when the list changes shape under it (a ke
   const innerHTML = Object.getOwnPropertyDescriptor(s.list, 'innerHTML');
   Object.defineProperty(s.list, 'innerHTML', { configurable: true, get: innerHTML.get, set(v) { innerHTML.set.call(s.list, v); if (v === '') s.doc.activeElement = s.doc.body; } });
   s.doc.activeElement = rows[3];
-  await s.env.window.__mdMemoRPC.closeTab(rows[1].dataset.tabId);
+  await s.env.window.__sykiRPC.closeTab(rows[1].dataset.tabId);
   await s.env.flush();
   assert.equal(s.doc.activeElement, rows[3], 'the tab that had the focus still has it');
   assert.equal(s.rows().length, 3, 'and the list did change shape');
@@ -226,7 +226,7 @@ check('dragging: a press that moves 4px picks the place by the height of the poi
   handlers.pointerup({});
   assert.ok(!first.classList.contains('dragging') && !rows[3].classList.contains('drag-over-bottom'), 'the marks are gone');
   assert.deepEqual(s.ids(), [rows[1], rows[2], rows[3], rows[0]].map((r) => r.dataset.tabId), 'the dragged note went to the end');
-  const order = Array.from(await win.__mdMemoRPC.getTabs(), (t) => t.id); // (an array of the page's realm: copied before it is compared)
+  const order = Array.from(await win.__sykiRPC.getTabs(), (t) => t.id); // (an array of the page's realm: copied before it is compared)
   assert.deepEqual(order, s.ids(), 'and tab.list says the same');
 });
 
@@ -298,12 +298,12 @@ check('btn-pin-tabs toggles pinned sidebar state, aria-pressed, and persists in 
   assert.equal(s.doc.body.classList.contains('tabs-pinned'), true);
   assert.equal(btnPin.getAttribute('aria-pressed'), 'true');
   assert.equal(btnPin.classList.contains('active'), true);
-  assert.equal(s.env.window.localStorage.getItem('md-memo-tabs-pinned'), '1');
+  assert.equal(s.env.window.localStorage.getItem('syki-tabs-pinned'), '1');
   btnPin.onclick();
   assert.equal(s.doc.body.classList.contains('tabs-pinned'), false);
   assert.equal(btnPin.getAttribute('aria-pressed'), 'false');
   assert.equal(btnPin.classList.contains('active'), false);
-  assert.equal(s.env.window.localStorage.getItem('md-memo-tabs-pinned'), '0');
+  assert.equal(s.env.window.localStorage.getItem('syki-tabs-pinned'), '0');
 });
 
 (async () => {

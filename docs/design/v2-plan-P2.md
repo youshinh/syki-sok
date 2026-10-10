@@ -139,7 +139,7 @@ P5 の「S1: 位置の定数をオーバーレイ対応に」（`--panel-top`、
 ### 2.5 Go・設定
 
 - `SaveConfig(configJSON)` は JSON をそのままファイルへ書く（`os.WriteFile`）。キーの検証・既知キーの絞り込みは**無い**。`GetConfig` はファイルの中身をそのまま返す。差分で再初期化するのは `scraps` / `action`（Jev）/ `discordBridge` / `inbox` だけ。
-- `config.get`（RPC・CLI、`cli.ConfigGet`）は `RedactConfig(cfg.Values)` で秘密だけ隠して**任意のキー**を返す（`md-memo config get appearance` が自動で動く）。
+- `config.get`（RPC・CLI、`cli.ConfigGet`）は `RedactConfig(cfg.Values)` で秘密だけ隠して**任意のキー**を返す（`syki config get appearance` が自動で動く）。
 - `pkg/configpack` は設定をそのまま通し、セクション名だけを検証する。`appearance` は秘密を持たない。
 - **Go の変更は要らない**。ただし `main.go` の `//go:embed frontend/*` は `css/` と `js/` を再帰で含むので、新しいファイルは自動で入る（`*_test.js` も入っている、今と同じ）。
 
@@ -326,12 +326,12 @@ P5 の「S1: 位置の定数をオーバーレイ対応に」（`--panel-top`、
 
 ### 4.8 `config` の読み書き（調べた結果）
 
-- 読み込みは**許可リスト式**: `loadLocalConfigSync`（localStorage の `md_memo_config_v1`）と `syncBackendConfig`（`config.json`）が、`text`・`autocomplete`・`vision`・`voice`・`cli`・`image`・`scraps`・`discordBridge`・`inbox`・`action`・`autoSelector`・`general`・`shortcuts` などを**1 つずつ** `Object.assign` する。`semantic` は前例（「このページは全体を書き戻すので、読まないグループは次の保存で消える」）。→ **`appearance` を両方に足す**（足さないと保存で消える）。
+- 読み込みは**許可リスト式**: `loadLocalConfigSync`（localStorage の `syki_config_v1`）と `syncBackendConfig`（`config.json`）が、`text`・`autocomplete`・`vision`・`voice`・`cli`・`image`・`scraps`・`discordBridge`・`inbox`・`action`・`autoSelector`・`general`・`shortcuts` などを**1 つずつ** `Object.assign` する。`semantic` は前例（「このページは全体を書き戻すので、読まないグループは次の保存で消える」）。→ **`appearance` を両方に足す**（足さないと保存で消える）。
 - 保存は `JSON.stringify(config)` の全体（`savePersistentConfig`）。ローカルのコピーは `SecretStrip.saveLocalCopy`（秘密だけ空にして全体を書く）。→ `appearance` は自動で入る。
 - 読み込み順: `loadLocalConfigSync` は**最初の描画の前**に同期で走る（`applyTheme()` の隣）。`applyAppearance()` もここで呼ぶ（バーの透過・自動非表示のちらつきを避ける）。`syncBackendConfig` の後で値が変わったときだけ再適用する（`applyTheme` と同じ「前の値と比べる」）。
 - 設定画面: 開いたときのスナップショット（`openedConfigSnapshot`）と保存ハンドラ（`cfg-theme` の隣）に足す。取り消しで元に戻す。
 - 設定パッケージ（`config_pack.js`）: 知らないトップレベルのキーは `other`（`keys: null`）に入る。**`general` の `keys` に `appearance` を足す**のを推奨（好みの設定なので「一般」と一緒に出し入れする）。`applyImportedConfig` はトップレベルのキーをそのまま `config` に入れるので、取り込んだ値は `appearance.js` の正規化を通す。
-- Go: 検証なし・素通し（§2.5）。`md-memo config get appearance`・RPC `config.get` で見える。
+- Go: 検証なし・素通し（§2.5）。`syki config get appearance`・RPC `config.get` で見える。
 
 ### 4.9 互換性（macOS 10.15 = Safari 15.6 まで。契約 §1.5）
 
@@ -472,7 +472,7 @@ Mac（WKWebView）で確かめる項目は `tools/MACOS_CHECKLIST_JA.md` の §8
 - **行番号の濃さは固定の 0.55 ではなくトークン `--linenum-a`（墨 0.68、紙 0.74）。** 0.55 ではページに対して 3:1 に届かない（`look_contrast_test` が縛る）。背景と `border-right` は無し。`opacity` は使わない。
 - **`#header-title`**: 作って内容を更新するところまで（`display: none` のまま。P3 が表示する）。左端は `--linenum-w`（ガターの幅。5 桁以上は `--linenum-digits` から式で出す）+ 本文の左余白。式は近似で、5 桁のとき実測 53px に対し式が 55px（2px 差）。P3 で表示するときは、実測の幅を `renderLineGutter` から流す形に直すとよい。
 - **`will-change` は付けない**（5.6）。
-- **既知の限界**: (1) HTML のプレビュー（iframe）が窓いっぱいに出ている Zen では、窓の端のポインタは iframe の中に入って親ページに届かず、ホットゾーンが働かない。F6 / Tab で出す。(2) `light` の透け方は、バーのアイコンの裏に本文の文字がうっすら見える（0.86）。気になる人は `solid`。(3) 起動の最初の 1 フレームは、保存した `bars` が既定と違っても既定（`light`）で描かれる（`md_memo_look` のような先読みの印は足していない。見た目の差が小さいため）。
+- **既知の限界**: (1) HTML のプレビュー（iframe）が窓いっぱいに出ている Zen では、窓の端のポインタは iframe の中に入って親ページに届かず、ホットゾーンが働かない。F6 / Tab で出す。(2) `light` の透け方は、バーのアイコンの裏に本文の文字がうっすら見える（0.86）。気になる人は `solid`。(3) 起動の最初の 1 フレームは、保存した `bars` が既定と違っても既定（`light`）で描かれる（`syki_look` のような先読みの印は足していない。見た目の差が小さいため）。
 
 ### 6.1 リスク（大きい順）
 

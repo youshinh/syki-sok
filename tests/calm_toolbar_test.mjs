@@ -135,13 +135,13 @@ check('app.js: the default stays "show everything"; the calm layout is applied o
   assert.ok(sync.indexOf('hasSavedConfig = true') > 0 && sync.indexOf('hasSavedConfig = true') < sync.indexOf('applyChromeLayout()'), 'config.json marks it too');
   const start = app.indexOf('function applyCalmToolbarForNewProfile() {');
   const fn = app.slice(start, app.indexOf('\n  }\n', start));
-  assert.ok(/md_memo_session_v1[\s\S]*md_notepad_session_v1[\s\S]*md_memo_workspace_folder/.test(fn), 'a session or a workspace folder in this WebView means it was used before');
+  assert.ok(/syki_session_v1[\s\S]*md_notepad_session_v1[\s\S]*syki_workspace_folder/.test(fn), 'a session or a workspace folder in this WebView means it was used before');
   assert.ok(/catch \(e\) \{\s*return;/.test(fn), 'and with no storage to tell, nothing changes');
 });
 
 // ---- behaviour, with the real app.js on a hand-made DOM --------------------------------------------------
 const layoutOf = (env) => JSON.parse(JSON.stringify(env.config.general.toolbarLayout));
-const MARK = 'md_memo_calm_toolbar_v1';
+const MARK = 'syki_calm_toolbar_v1';
 const SESSION = JSON.stringify({ tabs: [] });
 
 check('a new profile (nothing in storage, no config.json) gets the calm layout, and it survives the backend load', async () => {
@@ -149,11 +149,11 @@ check('a new profile (nothing in storage, no config.json) gets the calm layout, 
   assert.deepEqual(layoutOf(env), { order: [], hidden: CL.CALM_TOOLBAR_HIDDEN });
   assert.deepEqual(layoutOf(await createEnv({ backendConfig: null })), { order: [], hidden: CL.CALM_TOOLBAR_HIDDEN });
   assert.equal(env.store.get(MARK), '1', 'it leaves its own mark, and nothing that reads as a saved config');
-  assert.ok(!env.store.has('md_notepad_config_v3') && !env.store.has('md_memo_config_v1'));
+  assert.ok(!env.store.has('md_notepad_config_v3') && !env.store.has('syki_config_v1'));
 });
 
 check('someone who never saved a setting but has used this WebView (a session, or a workspace folder) keeps every icon', async () => {
-  for (const [key, value] of [['md_memo_session_v1', SESSION], ['md_notepad_session_v1', SESSION], ['md_memo_workspace_folder', 'C:\\notes']]) {
+  for (const [key, value] of [['syki_session_v1', SESSION], ['md_notepad_session_v1', SESSION], ['syki_workspace_folder', 'C:\\notes']]) {
     const env = await createEnv({ localStorage: { [key]: value } });
     assert.deepEqual(layoutOf(env), { order: [], hidden: [] }, key);
     assert.ok(!env.store.has(MARK), key + ': no mark is made for a profile that is not new');
@@ -161,18 +161,18 @@ check('someone who never saved a setting but has used this WebView (a session, o
 });
 
 check('the second start of a new profile (a session now, the mark, still no saved config) is calm at the first paint', async () => {
-  const second = await createEnv({ localStorage: { [MARK]: '1', md_memo_session_v1: SESSION, md_memo_workspace_folder: 'C:\\notes' } });
+  const second = await createEnv({ localStorage: { [MARK]: '1', syki_session_v1: SESSION, syki_workspace_folder: 'C:\\notes' } });
   assert.deepEqual(layoutOf(second), { order: [], hidden: CL.CALM_TOOLBAR_HIDDEN });
   // the same with what the first run itself left behind
   const first = await createEnv();
-  const back = await createEnv({ localStorage: Object.fromEntries([...first.store, ['md_memo_session_v1', SESSION]]) });
+  const back = await createEnv({ localStorage: Object.fromEntries([...first.store, ['syki_session_v1', SESSION]]) });
   assert.deepEqual(layoutOf(back), { order: [], hidden: CL.CALM_TOOLBAR_HIDDEN });
 });
 
 check('a stored config without a layout (from before layouts existed) keeps every icon', async () => {
   const env = await createEnv({ localStorage: { md_notepad_config_v3: JSON.stringify({ general: { language: 'en' } }) } });
   assert.deepEqual(layoutOf(env), { order: [], hidden: [] });
-  const named = await createEnv({ localStorage: { md_memo_config_v1: JSON.stringify({ shortcuts: {} }) } });
+  const named = await createEnv({ localStorage: { syki_config_v1: JSON.stringify({ shortcuts: {} }) } });
   assert.deepEqual(layoutOf(named), { order: [], hidden: [] }, 'the newer storage key counts too');
 });
 
@@ -214,7 +214,7 @@ check('with no usable storage the toolbar stays as it always was', () => {
   const run = (localStorage) => {
     const context = vm.createContext({ window: { ChromeLayout: CL }, localStorage, config: { general: { toolbarLayout: { order: [], hidden: [] } } } });
     vm.runInContext(
-      `const CALM_TOOLBAR_MARK = 'md_memo_calm_toolbar_v1'; let hasSavedConfig = false; let calmToolbarApplied = false;\n${source}\n` +
+      `const CALM_TOOLBAR_MARK = 'syki_calm_toolbar_v1'; let hasSavedConfig = false; let calmToolbarApplied = false;\n${source}\n` +
       'applyCalmToolbarForNewProfile(); globalThis.out = { hidden: config.general.toolbarLayout.hidden.length, applied: calmToolbarApplied };',
       context
     );

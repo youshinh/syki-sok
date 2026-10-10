@@ -156,7 +156,7 @@
       enabled: false,
       dir: ''
     },
-    // Ctrl+Enter's "do what I mean" dispatch (read by slot_agent.js through MdMemoBridge.getAutoSelectorConfig).
+    // Ctrl+Enter's "do what I mean" dispatch (read by slot_agent.js through SykiBridge.getAutoSelectorConfig).
     autoSelector: {
       enabled: true,
       agentConfirm: true
@@ -168,8 +168,8 @@
   // frontend file agrees on the current platform; fall back to the same raw
   // expression when platform.js hasn't run (e.g. a test harness that extracts
   // and evaluates app.js source in isolation without loading index.html).
-  const isMac = (typeof window !== 'undefined' && window.MDMemoPlatform)
-    ? window.MDMemoPlatform.isMac
+  const isMac = (typeof window !== 'undefined' && window.SykiPlatform)
+    ? window.SykiPlatform.isMac
     : (typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent));
 
   // Runtime OS capabilities, fetched (once, best-effort) from the Go backend via
@@ -189,7 +189,7 @@
   // a session or a workspace folder here, so nobody's toolbar changes on an upgrade. A new profile leaves one mark of its own
   // (CALM_TOOLBAR_MARK), so its second start, before it has saved anything, is calm too without waiting for config.json.
   // hasSavedConfig is set once localStorage or config.json is found.
-  const CALM_TOOLBAR_MARK = 'md_memo_calm_toolbar_v1';
+  const CALM_TOOLBAR_MARK = 'syki_calm_toolbar_v1';
   let hasSavedConfig = false;
   let calmToolbarApplied = false;
   let tabOverflow; // undefined until getTabOverflow() first builds it
@@ -209,7 +209,7 @@
     if (hasSavedConfig || !window.ChromeLayout || !window.ChromeLayout.calmToolbarLayout) return;
     try {
       const marked = !!localStorage.getItem(CALM_TOOLBAR_MARK);
-      const used = !!(localStorage.getItem('md_memo_session_v1') || localStorage.getItem('md_notepad_session_v1') || localStorage.getItem('md_memo_workspace_folder'));
+      const used = !!(localStorage.getItem('syki_session_v1') || localStorage.getItem('md_notepad_session_v1') || localStorage.getItem('syki_workspace_folder'));
       if (used && !marked) return;
       if (!marked) localStorage.setItem(CALM_TOOLBAR_MARK, '1');
     } catch (e) {
@@ -539,15 +539,15 @@
     } else if (typeof invalidateCharPixelMirrors === 'function') invalidateCharPixelMirrors();
   }
 
-  // The saved look is kept under a small key of its own (md_memo_look) so that the first script of index.html can put it on the page before
+  // The saved look is kept under a small key of its own (syki_look) so that the first script of index.html can put it on the page before
   // the first paint (the scripts at the end of the page run after it, and a paper profile would show the ink look for a moment). Written only
   // when it differs from what is there, and removed for the default look: an ordinary profile has no such key and writes nothing.
   function rememberLook(ap) {
     try {
       const want = window.Appearance.markerFor(ap);
-      const have = localStorage.getItem('md_memo_look') || '';
+      const have = localStorage.getItem('syki_look') || '';
       if (want === have) return;
-      if (want) localStorage.setItem('md_memo_look', want); else localStorage.removeItem('md_memo_look');
+      if (want) localStorage.setItem('syki_look', want); else localStorage.removeItem('syki_look');
     } catch (e) { /* storage unavailable: the look is applied a moment later, as before */ }
   }
 
@@ -1606,7 +1606,7 @@
   // appends replacement if the anchor is no longer there), wherever that tab currently lives:
   // the active pane, the secondary pane, or neither (a background tab, edited as a plain
   // string). This is __onLLMResult's own three-branch dispatch, pulled out so
-  // MdMemoBridge.replaceAnchor (used by voice_input.js / file_anchor.js) shares the exact
+  // SykiBridge.replaceAnchor (used by voice_input.js / file_anchor.js) shares the exact
   // same behavior instead of re-implementing it. Returns false only when tabId names a tab
   // that no longer exists.
   // baseline ({ content, dirty }, optional): the note as it was before the request put its waiting text in, and whether it was
@@ -2060,7 +2060,7 @@
       return;
     }
     if (rows.length === 0) {
-      showMessage(t('lessonsNoneYet', { alt: (window.MDMemoPlatform && window.MDMemoPlatform.altLabel) || 'Alt' }), 6000);
+      showMessage(t('lessonsNoneYet', { alt: (window.SykiPlatform && window.SykiPlatform.altLabel) || 'Alt' }), 6000);
       return;
     }
     if (rows.length === 1) {
@@ -2142,7 +2142,7 @@
 
   // Tab Operations
   // background (RPC tab.new --background): the tab is added to the bar and nothing else moves (no selection, no focus).
-  // A file that is already open is not opened twice (Ctrl+O, the palette, a drop, the file given at start-up, `md-memo file.md` on a
+  // A file that is already open is not opened twice (Ctrl+O, the palette, a drop, the file given at start-up, `syki file.md` on a
   // running instance): its tab is brought forward and comes back instead. A second copy would keep its own text and later save
   // it over the first copy's edits. The text the caller has just read from the file goes into that tab when the tab holds no unsaved
   // text (the file may have changed on disk since the tab was filled: a Git pull, another editor, a session restored after a change,
@@ -3719,7 +3719,7 @@
 
     let rawText = text;
 
-    // 0. HTML comments are not shown (html_comments.js: outside code, md-memo markers left for stripMarkers). Taken out
+    // 0. HTML comments are not shown (html_comments.js: outside code, syki markers left for stripMarkers). Taken out
     //    before the code is set aside, so a fence inside a comment can never pair with a real one.
     if (window.HtmlComments && rawText.indexOf('<!--') !== -1) {
       rawText = window.HtmlComments.removeComments(rawText);
@@ -5621,7 +5621,7 @@
     if (!folderPath) return;
     workspaceRootPath = folderPath;
     try {
-      localStorage.setItem('md_memo_workspace_folder', folderPath);
+      localStorage.setItem('syki_workspace_folder', folderPath);
     } catch (e) {}
 
     if (window.backend && window.backend.scanFolderFiles) {
@@ -6461,7 +6461,7 @@
   // --- Editor Zoom (Font Size) ---
   let currentFontSize = 14;
   try {
-    const savedSize = localStorage.getItem('md_memo_font_size');
+    const savedSize = localStorage.getItem('syki_font_size');
     if (savedSize) currentFontSize = parseInt(savedSize, 10) || 14;
   } catch (e) {}
 
@@ -6475,7 +6475,7 @@
     if (editorSecondary) editorSecondary.style.fontSize = `${currentFontSize}px`;
     if (secondaryLineNumbers) secondaryLineNumbers.style.fontSize = `${currentFontSize}px`;
     try {
-      localStorage.setItem('md_memo_font_size', currentFontSize.toString());
+      localStorage.setItem('syki_font_size', currentFontSize.toString());
     } catch (e) {}
     invalidateCharPixelMirrors();
     hideCursorAura(true);
@@ -6585,7 +6585,7 @@
       btnPinTabs.title = t(isTabsPinned ? 'unpinTabsTitle' : 'pinTabsTitle');
     }
     try {
-      localStorage.setItem('md-memo-tabs-pinned', isTabsPinned ? '1' : '0');
+      localStorage.setItem('syki-tabs-pinned', isTabsPinned ? '1' : '0');
     } catch (_) {}
   }
   function togglePinTabs() {
@@ -6623,7 +6623,7 @@
 
   // The width of the pinned strip, dragged at its edge: --tab-pinned-w on the page (css/style.css), kept in the browser's storage as a
   // per-person convenience. The least width and the "let go" point are TabStrip's (pinnedWidth).
-  const TAB_WIDTH_KEY = 'md-memo-tabs-pinned-w';
+  const TAB_WIDTH_KEY = 'syki-tabs-pinned-w';
   function setPinnedWidth(px) {
     const root = document.documentElement;
     if (root && root.style && typeof root.style.setProperty === 'function') root.style.setProperty('--tab-pinned-w', px + 'px');
@@ -7852,7 +7852,7 @@
 
     let history = [];
     try {
-      const saved = localStorage.getItem('md_memo_cli_history');
+      const saved = localStorage.getItem('syki_cli_history');
       if (saved) history = JSON.parse(saved);
     } catch (e) {}
 
@@ -7948,7 +7948,7 @@
 
   // The mode the bar opens in is the one the user last picked (badge click, Tab, or opening a mode explicitly);
   // the switch back to manual after an AI command was generated is automatic and is not remembered.
-  const COMMAND_BAR_MODE_KEY = 'md_memo_cmdbar_mode';
+  const COMMAND_BAR_MODE_KEY = 'syki_cmdbar_mode';
 
   function readCommandBarMode() {
     try {
@@ -8480,11 +8480,11 @@ ${tipText}
       // Save command to history
       try {
         let history = [];
-        const saved = localStorage.getItem('md_memo_cli_history');
+        const saved = localStorage.getItem('syki_cli_history');
         if (saved) history = JSON.parse(saved);
         if (!Array.isArray(history)) history = [];
         history = [cmdStr, ...history.filter(c => c !== cmdStr)].slice(0, 15);
-        localStorage.setItem('md_memo_cli_history', JSON.stringify(history));
+        localStorage.setItem('syki_cli_history', JSON.stringify(history));
       } catch (e) {}
 
       // The command may have run for a while. If another note was brought into that pane meanwhile, `editor` and the offsets read
@@ -10809,7 +10809,7 @@ STRICT SYNTAX SAFETY RULES:
   let scrapsSearchStale = false;
   // Meaning search and Deep search (docs/design/deep-search-2026-10.md): all inert until Settings > Semantic search is on. The markup
   // stays hidden and nothing is wired until the panel first opens with it on (wireScrapsSemanticUi).
-  const SCRAPS_MODE_KEY = 'md_memo_scraps_search_mode'; // sessionStorage: the choice lasts for this session only
+  const SCRAPS_MODE_KEY = 'syki_scraps_search_mode'; // sessionStorage: the choice lasts for this session only
   const SCRAPS_MORE_LIMIT = 30;       // "Show more" asks for this many notes (the first ask is 10)
   const DEEP_CONFIRM_GUARD_MS = 350;  // an Enter this soon after the dialog appeared is the key that raised it, not an answer
   let scrapsSemanticWired = false;
@@ -15892,7 +15892,7 @@ STRICT SYNTAX SAFETY RULES:
   // Load Saved Config from local storage & backend RPC
   function loadLocalConfigSync() {
     try {
-      const saved = localStorage.getItem('md_memo_config_v1') || localStorage.getItem('md_notepad_config_v3');
+      const saved = localStorage.getItem('syki_config_v1') || localStorage.getItem('md_notepad_config_v3');
       if (saved) {
         hasSavedConfig = true;
         const parsed = JSON.parse(saved);
@@ -16278,7 +16278,7 @@ STRICT SYNTAX SAFETY RULES:
     const jsonStr = getSessionDataJson();
 
     try {
-      localStorage.setItem('md_memo_session_v1', jsonStr);
+      localStorage.setItem('syki_session_v1', jsonStr);
     } catch (e) {}
 
     if (window.backend && window.backend.saveSession) {
@@ -16365,7 +16365,7 @@ STRICT SYNTAX SAFETY RULES:
 
   function loadLocalSessionSync() {
     try {
-      const str = localStorage.getItem('md_memo_session_v1') || localStorage.getItem('md_notepad_session_v1');
+      const str = localStorage.getItem('syki_session_v1') || localStorage.getItem('md_notepad_session_v1');
       if (str) {
         return restoreSessionFromData(JSON.parse(str));
       }
@@ -16378,7 +16378,7 @@ STRICT SYNTAX SAFETY RULES:
     if (config.general.restoreSession !== false) {
       const jsonStr = getSessionDataJson();
       try {
-        localStorage.setItem('md_memo_session_v1', jsonStr);
+        localStorage.setItem('syki_session_v1', jsonStr);
       } catch (e) {}
       if (window.backend && window.backend.saveSession) {
         window.backend.saveSession(jsonStr);
@@ -16475,7 +16475,7 @@ STRICT SYNTAX SAFETY RULES:
     const welcomeShown = !!(config.general && config.general.welcomeShown);
     let localConfigFound = false;
     try {
-      localConfigFound = !!(localStorage.getItem('md_memo_config_v1') || localStorage.getItem('md_notepad_config_v3'));
+      localConfigFound = !!(localStorage.getItem('syki_config_v1') || localStorage.getItem('md_notepad_config_v3'));
     } catch (e) { /* storage unavailable: the backend's answer decides */ }
     if (!FR.isFirstRun(Object.assign({ welcomeShown: welcomeShown, localConfigFound: localConfigFound }, signals))) return false;
     if (tabs.length !== 1 || !FR.isUntouchedNewTab(tabs[0], editorEl.value)) return false;
@@ -16639,7 +16639,7 @@ STRICT SYNTAX SAFETY RULES:
     initTabResizer();
     initTabDock();
     try {
-      if (localStorage.getItem('md-memo-tabs-pinned') === '1') {
+      if (localStorage.getItem('syki-tabs-pinned') === '1') {
         setPinTabs(true);
       }
     } catch (_) {}
@@ -16668,7 +16668,7 @@ STRICT SYNTAX SAFETY RULES:
         }
       }
 
-      // Sync session from backend file (AppData/md-memo/session.json)
+      // Sync session from backend file (AppData/syki-sok/session.json)
       let backendSessionFound = false;
       let sessionUnreadable = false;
       if (config.general.restoreSession !== false && window.backend && window.backend.getSession) {
@@ -16714,7 +16714,7 @@ STRICT SYNTAX SAFETY RULES:
       setTimeout(verifyRestoredTabsAgainstDisk, 1700);
 
       // Restore saved workspace folder if any (defer non-critical scan slightly to guarantee instantaneous first paint)
-      const savedFolder = localStorage.getItem('md_memo_workspace_folder');
+      const savedFolder = localStorage.getItem('syki_workspace_folder');
       if (savedFolder) {
         setTimeout(() => {
           loadWorkspaceFolder(savedFolder, true);
@@ -16797,7 +16797,7 @@ STRICT SYNTAX SAFETY RULES:
     if (updateState.status === 'checking' || updateState.status === 'error') return; // keep what is shown until an answer comes
     let dismissedVersion = '';
     try {
-      dismissedVersion = localStorage.getItem('mdmemo_dismissed_update_version') || '';
+      dismissedVersion = localStorage.getItem('syki_dismissed_update_version') || '';
     } catch (_) {}
     if (updateState.status === 'newer' && dismissedVersion !== updateState.latest) {
       if (helpButtonVisible()) {
@@ -16813,7 +16813,7 @@ STRICT SYNTAX SAFETY RULES:
           updateNoticeQueuedFor = latest; // a second check while it waits must not queue it twice
           showStartupNotice(t('updateFoundHidden', { latest: 'v' + latest }), 9000, () => {
             try {
-              localStorage.setItem('mdmemo_dismissed_update_version', latest);
+              localStorage.setItem('syki_dismissed_update_version', latest);
             } catch (_) {}
           });
         }
@@ -16962,7 +16962,7 @@ STRICT SYNTAX SAFETY RULES:
       if (helpMenuUpdateText) helpMenuUpdateText.textContent = t('helpMenuUpdateText', { latest: 'v' + updateState.latest, current: 'v' + updateState.current });
       // Having seen the notice is what dismisses the dot (a click on the button used to do it).
       try {
-        localStorage.setItem('mdmemo_dismissed_update_version', updateState.latest);
+        localStorage.setItem('syki_dismissed_update_version', updateState.latest);
       } catch (_) {}
       applyUpdateBadge();
     }
@@ -17010,7 +17010,7 @@ STRICT SYNTAX SAFETY RULES:
     };
   }
 
-  // ---- Support for the JSON-RPC writes (window.__mdMemoRPC below; the Go side is app_rpc.go and app_rpc_write.go) ----
+  // ---- Support for the JSON-RPC writes (window.__sykiRPC below; the Go side is app_rpc.go and app_rpc_write.go) ----
   // Nothing here runs until an RPC call arrives.
 
   // An error the caller must see as a JSON-RPC error of its own carries its kind as a "[kind] " prefix; the Go side
@@ -17349,7 +17349,7 @@ STRICT SYNTAX SAFETY RULES:
   }
 
   // ---- Support for the JSON-RPC reads and controls of the editor's own state: cursor, UI layout, panels, tasks ----
-  // (window.__mdMemoRPC.getCursor / setCursor / getUiState / setUiState / openPanel / getTasks / cancelTask below).
+  // (window.__sykiRPC.getCursor / setCursor / getUiState / setUiState / openPanel / getTasks / cancelTask below).
   // Nothing here runs until an RPC call arrives.
 
   // 1-based line and column of an offset into `text` (a column counts UTF-16 units, lines split on \n): what the status bar shows.
@@ -17567,7 +17567,7 @@ STRICT SYNTAX SAFETY RULES:
   }
 
   // Expose programmatic RPC interface for CLI, Unix pipe, and Agent operations
-  window.__mdMemoRPC = {
+  window.__sykiRPC = {
     getBuffer: function (tabId) {
       const targetTab = resolveTab(tabId);
       const content = getTabText(targetTab.id) || '';
@@ -17744,7 +17744,7 @@ STRICT SYNTAX SAFETY RULES:
       return false;
     },
 
-    // Selection CLI interface (机能 2): `md-memo buffer get --selection` / `replace-selection`.
+    // Selection CLI interface (机能 2): `syki buffer get --selection` / `replace-selection`.
     getSelection: function (tabId) {
       let editor = getActiveEditor();
       let resolvedTabId = getTabIdForEditor(editor);
@@ -17966,7 +17966,7 @@ STRICT SYNTAX SAFETY RULES:
 
   // Bridge new frontend modules (voice_input.js, file_anchor.js) use instead of reaching into
   // app.js internals directly. See rev3_contract.md for the exact shape.
-  window.MdMemoBridge = {
+  window.SykiBridge = {
     getActiveEditor: getActiveEditor,
     getActiveTab: getActiveTab,
     getTabIdForEditor: getTabIdForEditor,

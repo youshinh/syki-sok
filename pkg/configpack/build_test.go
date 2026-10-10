@@ -388,7 +388,7 @@ func TestOpen_RejectsNonRegularPaths(t *testing.T) {
 	if _, err := Open(t.TempDir()); err == nil {
 		t.Error("Open accepted a directory")
 	}
-	if _, err := Open(filepath.Join(t.TempDir(), "missing.mdmemopack")); !errors.Is(err, fs.ErrNotExist) {
+	if _, err := Open(filepath.Join(t.TempDir(), "missing.sykipack")); !errors.Is(err, fs.ErrNotExist) {
 		t.Errorf("missing file: %v", err)
 	}
 }

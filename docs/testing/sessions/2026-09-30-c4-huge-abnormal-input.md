@@ -6,7 +6,7 @@
 - 環境: 版 1.10.5（コミット a8bfea5、作業ツリーは他の担当が編集中）/ Windows 11 / 道具 = 探索キット（`tools/explore/kit.mjs`、隔離した headless Edge + モックのバックエンド）。実アプリ・実 config・実クリップボードには触れていない
 - 環境上の注意: 同じ機械で他の憲章のセッションが headless Edge を 3〜6 個同時に動かしていた。**絶対値のミリ秒は 1.3〜2 倍ほど大きく出ている可能性がある**。ここで挙げる根拠は、比（分割ありなし、コントロールとの差）と増え方（2 乗など）に置いた
 - 範囲外（やらないこと）: 実 WebView2 の窓、OS のクリップボードでの貼り付け、Go 側（バインドの往復）、macOS。ソースとテストは変更していない
-- 道具の使い方の記録: `tools/explore/README.md` の通りに `startExplore` を使い、大きなノートは `__mdMemoRPC.newTab(title, text)` で入れた（`setBuffer` は 2 乗で遅いので使えなかった、C4-01）。**`s.state()` は全タブの全文を返すので、4.8 MB のノートで返らなくなった**（未再現の欄）。以降は自作の軽い `probe()` で数字だけを取った。スクリプトと画像は `C:/Users/yoush/AppData/Local/Temp/claude/C--Users-yoush-Documents-md-memo/c56620cc-7e7e-498b-a7c7-c4a14c374db1/scratchpad/explore/C4/`（以下「証拠置き場」）
+- 道具の使い方の記録: `tools/explore/README.md` の通りに `startExplore` を使い、大きなノートは `__sykiRPC.newTab(title, text)` で入れた（`setBuffer` は 2 乗で遅いので使えなかった、C4-01）。**`s.state()` は全タブの全文を返すので、4.8 MB のノートで返らなくなった**（未再現の欄）。以降は自作の軽い `probe()` で数字だけを取った。スクリプトと画像は `C:/Users/yoush/AppData/Local/Temp/claude/C--Users-yoush-Documents-md-memo/c56620cc-7e7e-498b-a7c7-c4a14c374db1/scratchpad/explore/C4/`（以下「証拠置き場」）
 
 ## ログ（時系列）
 

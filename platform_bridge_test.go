@@ -114,13 +114,13 @@ func TestBuildOpenInNewTabJSEscapesEverything(t *testing.T) {
 
 	js := buildOpenInNewTabJS(title, content, path)
 
-	if !strings.HasPrefix(js, "window.__mdMemoRPC && window.__mdMemoRPC.newTab(") {
+	if !strings.HasPrefix(js, "window.__sykiRPC && window.__sykiRPC.newTab(") {
 		t.Fatalf("unexpected call shape: %q", js)
 	}
 
 	// A raw newline or an unescaped quote in the argument list would be a syntax error in the
 	// evaluated expression, so assert the payload really was JSON-encoded.
-	args := strings.TrimSuffix(strings.TrimPrefix(js, "window.__mdMemoRPC && window.__mdMemoRPC.newTab("), ");")
+	args := strings.TrimSuffix(strings.TrimPrefix(js, "window.__sykiRPC && window.__sykiRPC.newTab("), ");")
 	var decoded []interface{}
 	if err := json.Unmarshal([]byte("["+args+"]"), &decoded); err != nil {
 		t.Fatalf("arguments are not valid JSON (%v): %s", err, args)
@@ -186,7 +186,7 @@ func TestOpenPathInNewTab(t *testing.T) {
 		if len(calls) != 1 {
 			t.Fatalf("got %d Eval calls, want 1", len(calls))
 		}
-		if !strings.Contains(calls[0], "__mdMemoRPC.newTab(") {
+		if !strings.Contains(calls[0], "__sykiRPC.newTab(") {
 			t.Fatalf("Eval did not call newTab: %q", calls[0])
 		}
 		wantTitle, _ := json.Marshal(filepath.Base(file))
@@ -273,7 +273,7 @@ func TestGetPlatformCapabilities(t *testing.T) {
 }
 
 func TestInvalidateLookPathCache(t *testing.T) {
-	const probe = "md-memo-nonexistent-binary-for-tests"
+	const probe = "syki-nonexistent-binary-for-tests"
 
 	// Prime the cache with a stale negative answer, as a PATH lookup performed before
 	// shellenv.Apply() finished would.

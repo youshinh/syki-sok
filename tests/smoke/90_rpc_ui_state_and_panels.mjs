@@ -1,4 +1,4 @@
-// The JSON-RPC UI calls of the page (window.__mdMemoRPC.getUiState / setUiState / openPanel, behind `ui.get` / `ui.set` /
+// The JSON-RPC UI calls of the page (window.__sykiRPC.getUiState / setUiState / openPanel, behind `ui.get` / `ui.set` /
 // `ui.open_panel`): what the window shows (preview, split, zen), changing it through the same functions the shortcuts and the
 // palette call, and opening the panels the palette opens. A key that already holds is left alone; a bad value, an impossible pair
 // of keys or an unknown panel is an invalid_params error that changes nothing.

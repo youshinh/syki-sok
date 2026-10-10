@@ -236,7 +236,7 @@ func TestPrintSavePdfAsyncWritesTheFileWhereTheyChose(t *testing.T) {
 	if !strings.Contains(e, `"bytes":`) || !strings.Contains(e, `"pages":3`) || !strings.Contains(e, `note.pdf`) {
 		t.Errorf("answer: %s", e)
 	}
-	if left, _ := filepath.Glob(filepath.Join(dir, ".md-memo-pdf-*")); len(left) != 0 {
+	if left, _ := filepath.Glob(filepath.Join(dir, ".syki-pdf-*")); len(left) != 0 {
 		t.Errorf("no temporary file is left: %v", left)
 	}
 	// .PDF stays as it is; no path, a missing folder and bad settings write nothing

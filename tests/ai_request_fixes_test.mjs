@@ -279,12 +279,12 @@ check('B06: closing the note while its request waits leaves the original sentenc
   const original = 'Keep this sentence.\n';
   const env = await setup({ note: original, path: 'C:\\demo\\keep.md' });
   const other = env.window.__testHelper.createTab('other.md', 'other\n');
-  env.window.__mdMemoRPC.switchTab(env.tab.id);
+  env.window.__sykiRPC.switchTab(env.tab.id);
   await env.flush();
   select(env, 'Keep this sentence.');
   const call = await send(env, 'rewrite', 'shorter');
   await savedNow(env); // the autosave of the note with the waiting text in it
-  env.window.__mdMemoRPC.closeTab(env.tab.id);
+  env.window.__sykiRPC.closeTab(env.tab.id);
   await env.flush();
   if (!env.hidden('confirm-modal')) { env.el('confirm-modal-dontsave').onclick(); await env.flush(); }
   await answer(env, call, 'LATE ANSWER');
@@ -994,11 +994,11 @@ check('C1-08 / C3-13: a bar left open when another note comes into the pane foll
   rw.window.__testHelper.createTab('b.md', 'beta line\nsecond\n');
   const bId = rw.bridge.getActiveTab().id;
   rw.editor.setSelectionRange(4, 4); // the caret rests in the first line of b
-  rw.window.__mdMemoRPC.switchTab(rw.tab.id);
+  rw.window.__sykiRPC.switchTab(rw.tab.id);
   select(rw, 'alpha line');
   openBar(rw, 'rewrite');
   rw.el('inline-prompt-input').value = 'shout';
-  rw.window.__mdMemoRPC.switchTab(bId);
+  rw.window.__sykiRPC.switchTab(bId);
   assert.ok(!rw.hidden('inline-prompt-bar'), 'the rewrite bar follows to a note with a line at the caret');
   await pressEnterInBar(rw);
   assert.ok(rw.calls.llm.length === 1 && rw.calls.llm[0].prompt.includes('beta line'), 'the rewrite is about the line of the note on screen');
@@ -1056,7 +1056,7 @@ check('C1-11: closing a note settles its waiting requests: no task card stays Ru
   assert.ok(cmdId, 'a command task is under way too');
   assert.ok(!env.hidden('stat-llm-indicator'), 'the status bar counts the waiting requests');
   assert.ok(env.activeTasks().length >= 2, 'and the task list shows running cards');
-  env.window.__mdMemoRPC.closeTab(tabB);
+  env.window.__sykiRPC.closeTab(tabB);
   await env.flush();
   if (!env.hidden('confirm-modal')) { // unsaved changes: Don't save
     env.el('confirm-modal-dontsave').onclick();
@@ -1110,7 +1110,7 @@ check('C5-06: the answer\'s highlight is drawn in the pane the person works in (
   const flashedLeft = [];
   left.window.GhostDiff = { flash: (editor) => { flashedLeft.push(editor); }, clear() {} };
   await left.window.__testHelper.openSplitEditor(left.tab.id);
-  left.window.__mdMemoRPC.switchTab(left.tab.id); // focus back to the left pane
+  left.window.__sykiRPC.switchTab(left.tab.id); // focus back to the left pane
   select(left, 'shared line one');
   const call = await send(left, 'ask', 'translate');
   flashedLeft.length = 0;
@@ -1191,8 +1191,8 @@ check('C7-12: a result whose waiting text is gone lands on lines of its own, wit
 
   // what a task writes (a result block that opens with a line break) and plain text, with the waiting text missing
   const block = await setup({ note: 'End.' });
-  block.bridge.replaceAnchor(block.tab.id, '[[GONE]]', '\n<!-- md-memo:res -->\nbody\n<!-- /md-memo:res -->');
-  assert.equal(noteText(block), 'End.\n\n<!-- md-memo:res -->\nbody\n<!-- /md-memo:res -->\n');
+  block.bridge.replaceAnchor(block.tab.id, '[[GONE]]', '\n<!-- syki:res -->\nbody\n<!-- /syki:res -->');
+  assert.equal(noteText(block), 'End.\n\n<!-- syki:res -->\nbody\n<!-- /syki:res -->\n');
   const plainText = await setup({ note: 'End.' });
   plainText.bridge.replaceAnchor(plainText.tab.id, '[[GONE]]', 'X');
   assert.equal(noteText(plainText), 'End.\n\nX\n', 'a result with no line breaks of its own gets them as before');

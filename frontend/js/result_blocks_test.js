@@ -5,8 +5,8 @@ const assert = require('assert');
 global.window = global;
 const RB = require('./result_blocks.js');
 
-const OPEN = (id, attrs) => '<!-- md-memo:res ' + id + (attrs ? ' ' + attrs : '') + ' -->';
-const CLOSE = '<!-- /md-memo:res -->';
+const OPEN = (id, attrs) => '<!-- syki:res ' + id + (attrs ? ' ' + attrs : '') + ' -->';
+const CLOSE = '<!-- /syki:res -->';
 
 function apply(text, edit) {
   return text.slice(0, edit.start) + (edit.replacement || '') + text.slice(edit.end);
@@ -25,7 +25,7 @@ function at(text, needle, from) {
   assert.deepStrictEqual(RB.findResultBlocks(null), [], 'not a string');
   assert.deepStrictEqual(RB.findResultBlocks(undefined), []);
   // a run marker alone is not a result block
-  assert.deepStrictEqual(RB.findResultBlocks('task\n<!-- md-memo:run a1b2 -->\n'), []);
+  assert.deepStrictEqual(RB.findResultBlocks('task\n<!-- syki:run a1b2 -->\n'), []);
   // a closer alone is not one either
   assert.deepStrictEqual(RB.findResultBlocks('x\n' + CLOSE + '\ny'), []);
   assert.deepStrictEqual(RB.blockAt('plain', 2), null);
@@ -43,7 +43,7 @@ function at(text, needle, from) {
   assert.strictEqual(b.closed, true);
   assert.strictEqual(b.openLine, 1);
   assert.strictEqual(b.closeLine, 3);
-  assert.strictEqual(b.openStart, at(text, '<!-- md-memo:res'));
+  assert.strictEqual(b.openStart, at(text, '<!-- syki:res'));
   assert.strictEqual(b.openEnd, b.openStart + OPEN('a1b2').length, 'the opener line without its line break');
   assert.strictEqual(text.slice(b.openStart, b.openEnd), OPEN('a1b2'));
   assert.strictEqual(text.slice(b.bodyStart, b.bodyEnd), 'result', 'the body without the breaks next to the markers');
@@ -112,7 +112,7 @@ function at(text, needle, from) {
 (function testAttributesAndIds() {
   const text = [
     OPEN('a1b2', 'ctx=above n=1'), 'x', CLOSE,
-    '<!--   md-memo:res   zz9    -->', 'y', '<!--/md-memo:res-->',
+    '<!--   syki:res   zz9    -->', 'y', '<!--/syki:res-->',
     '  ' + OPEN('c3'), 'z', '  ' + CLOSE + '  '
   ].join('\n');
   const blocks = RB.findResultBlocks(text);
@@ -128,7 +128,7 @@ function at(text, needle, from) {
   assert.strictEqual(RB.findResultBlocks(ja).length, 1);
 
   // an opener without an id is still an opener
-  const noId = ['<!-- md-memo:res -->', 'x', CLOSE].join('\n');
+  const noId = ['<!-- syki:res -->', 'x', CLOSE].join('\n');
   const nb = RB.findResultBlocks(noId);
   assert.strictEqual(nb.length, 1);
   assert.strictEqual(nb[0].id, '');
@@ -136,21 +136,21 @@ function at(text, needle, from) {
 
 (function testLinesThatAreNotMarkers() {
   const notMarkers = [
-    'text <!-- md-memo:res a1b2 --> in a line',
-    '<!-- md-memo:result a1b2 -->',
-    '<!-- md-memo:res a1b2',
-    'md-memo:res a1b2',
-    '<!-- md-memo:res a1b2 --> trailing',
-    '&lt;!-- md-memo:res a1b2 --&gt;',
-    '> <!-- md-memo:res a1b2 -->',
-    '<!-- md-memo:ress a1b2 -->'
+    'text <!-- syki:res a1b2 --> in a line',
+    '<!-- syki:result a1b2 -->',
+    '<!-- syki:res a1b2',
+    'syki:res a1b2',
+    '<!-- syki:res a1b2 --> trailing',
+    '&lt;!-- syki:res a1b2 --&gt;',
+    '> <!-- syki:res a1b2 -->',
+    '<!-- syki:ress a1b2 -->'
   ];
   for (const line of notMarkers) {
     const text = [line, 'body', CLOSE].join('\n');
     assert.deepStrictEqual(RB.findResultBlocks(text), [], 'not an opener: ' + line);
   }
   // an opener whose closer has trailing text is unclosed
-  const text = [OPEN('a1'), 'body', '<!-- /md-memo:res --> more'].join('\n');
+  const text = [OPEN('a1'), 'body', '<!-- /syki:res --> more'].join('\n');
   const b = RB.findResultBlocks(text);
   assert.strictEqual(b.length, 1);
   assert.strictEqual(b[0].closed, false);
@@ -226,7 +226,7 @@ function at(text, needle, from) {
   assert.strictEqual(blocks[1].openLine, 2);
 
   // a run marker (a second run started below a crashed one) also ends it
-  const withRun = [OPEN('u1'), 'partial', '<!-- md-memo:run r1 -->', 'more text', CLOSE].join('\n');
+  const withRun = [OPEN('u1'), 'partial', '<!-- syki:run r1 -->', 'more text', CLOSE].join('\n');
   const wr = RB.findResultBlocks(withRun);
   assert.strictEqual(wr.length, 1);
   assert.strictEqual(wr[0].closed, false, 'a lone closer after a run marker closes nothing');

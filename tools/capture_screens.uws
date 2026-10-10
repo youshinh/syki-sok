@@ -1,15 +1,15 @@
 // tools/capture_screens.uws
 // Perfectly Normalized & Sequence-Guaranteed Screenshot Automation
 print "========================================================="
-print "  MD-Memo Precise Resolution Screenshot Generation      "
+print "  syki Precise Resolution Screenshot Generation      "
 print "========================================================="
 
-exe_path = "c:\Users\yoush\Documents\md-memo-v2\md-memo.exe"
-img_dir = "c:\Users\yoush\Documents\md-memo-v2\img\"
-ps_helper = "c:\Users\yoush\Documents\md-memo-v2\tools\capture_window.ps1"
+exe_path = "c:\Users\yoush\Documents\syki-v2\syki.exe"
+img_dir = "c:\Users\yoush\Documents\syki-v2\img\"
+ps_helper = "c:\Users\yoush\Documents\syki-v2\tools\capture_window.ps1"
 
 function eval_js(expr)
-    cmd = "c:\Users\yoush\Documents\md-memo-v2\md-memo.exe ui eval " + chr(34) + expr + chr(34)
+    cmd = "c:\Users\yoush\Documents\syki-v2\syki.exe ui eval " + chr(34) + expr + chr(34)
     res = doscmd(cmd)
     res = trim(res)
     result = res
@@ -20,23 +20,23 @@ function capture_win(file_name, win_id, img_base, helper_path)
     sleep(0.4)
     target_path = img_base + file_name
     print "  Capturing: " + file_name + " (Normalized 1120x720)..."
-    cmd = "powershell.exe -ExecutionPolicy Bypass -File " + chr(34) + helper_path + chr(34) + " -WindowTitle " + chr(34) + "MD-Memo" + chr(34) + " -OutputFile " + chr(34) + target_path + chr(34) + " -TargetWidth 1120 -TargetHeight 720"
+    cmd = "powershell.exe -ExecutionPolicy Bypass -File " + chr(34) + helper_path + chr(34) + " -WindowTitle " + chr(34) + "syki" + chr(34) + " -OutputFile " + chr(34) + target_path + chr(34) + " -TargetWidth 1120 -TargetHeight 720"
     res = doscmd(cmd)
     print "  " + trim(res)
     sleep(0.5)
 fend
 
 // 1. Terminate any previous instance & clean boot
-doscmd("powershell.exe -Command Stop-Process -Name md-memo -Force -ErrorAction SilentlyContinue")
+doscmd("powershell.exe -Command Stop-Process -Name syki -Force -ErrorAction SilentlyContinue")
 sleep(1.0)
 
-print "[Step 1] Launching clean md-memo instance..."
+print "[Step 1] Launching clean syki instance..."
 pid = exec(exe_path)
 sleep(3.5)
 
-id = getid("MD-Memo", EMPTY, 5)
+id = getid("syki", EMPTY, 5)
 if id < 0 then
-    print "FAILED: Could not find MD-Memo window"
+    print "FAILED: Could not find syki window"
     exitexit 1
 endif
 
@@ -49,9 +49,9 @@ sleep(0.5)
 acw(id, 60, 40, 1120, 720)
 sleep(0.6)
 
-// 2. Inject rich demo Markdown directly via md-memo buffer set CLI with tools\demo.md
+// 2. Inject rich demo Markdown directly via syki buffer set CLI with tools\demo.md
 print "[Step 2] Injecting rich Markdown with Mermaid diagram via tools\demo.md..."
-doscmd("cmd.exe /c type c:\Users\yoush\Documents\md-memo-v2\tools\demo.md | c:\Users\yoush\Documents\md-memo-v2\md-memo.exe buffer set")
+doscmd("cmd.exe /c type c:\Users\yoush\Documents\syki-v2\tools\demo.md | c:\Users\yoush\Documents\syki-v2\syki.exe buffer set")
 sleep(1.0)
 
 // Open Preview to the Side
@@ -164,7 +164,7 @@ sleep(0.5)
 
 // Clean close
 print ""
-print "Closing MD-Memo..."
+print "Closing syki..."
 ctrlwin(id, CLOSE)
 sleep(1.0)
 

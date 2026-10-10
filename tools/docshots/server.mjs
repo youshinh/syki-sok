@@ -55,7 +55,7 @@ export function renderPhonePage(fakeToken) {
   if (end < 0) throw new Error('unterminated pageSource in pkg/dropzone/html.go');
   const page = src.slice(from, end).replace(/\r\n/g, '\n');
   const literal = JSON.stringify(fakeToken).replace(/<\//g, '<\\/');
-  return page.replace('__MD_MEMO_TOKEN__', literal);
+  return page.replace('__SYKI_TOKEN__', literal);
 }
 
 let phoneLang = 'en';

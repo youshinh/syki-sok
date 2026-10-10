@@ -29,9 +29,9 @@ const DATE = '# 2026-09-25 07:51\n\n'; // what a new note starts with
   assert.strictEqual(title('---\n'), '');
   assert.strictEqual(title(DATE + '---'), '2026-09-25 07-51');
 
-  // "<!-- md-memo:res ab12 -->" -> "!-- md-memores ab12 --"
-  assert.strictEqual(title('<!-- md-memo:res ab12 -->'), '');
-  assert.strictEqual(title('<!-- md-memo:run ab12 -->\n<!-- md-memo:res ab12 -->\nresult text\n<!-- /md-memo:res -->'), 'result text', 'the markers are skipped, what is between them is content');
+  // "<!-- syki:res ab12 -->" -> "!-- sykires ab12 --"
+  assert.strictEqual(title('<!-- syki:res ab12 -->'), '');
+  assert.strictEqual(title('<!-- syki:run ab12 -->\n<!-- syki:res ab12 -->\nresult text\n<!-- /syki:res -->'), 'result text', 'the markers are skipped, what is between them is content');
 
   // a fenced code line -> "```js"
   assert.strictEqual(title('```js'), '');

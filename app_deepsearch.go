@@ -27,7 +27,7 @@ import (
 //	DeepSearchRunAsync         send the planned excerpts to the text model and lay the answer out as a note
 //	CancelDeepSearch           drop the answer of a run in progress
 //
-// The three async calls answer through window.__onDeepSearchResult(reqID, result, errMsg) (one callback; the shim's __mdmemoSettle).
+// The three async calls answer through window.__onDeepSearchResult(reqID, result, errMsg) (one callback; the shim's __sykiSettle).
 // An error is a sentence, except for the codes the window acts on: "cancelled", "superseded" (a newer search replaced this one),
 // "consent_required", "model_not_configured" and "plan_expired". A plan that found no note has no plan_id and no sources.
 
@@ -552,7 +552,7 @@ func (a *App) SearchScrapsSemanticAsync(reqID, query string, limit int, filterJS
 	}()
 }
 
-// dispatchDeepSearchResult settles the window's promise of reqID (the shim's __mdmemoSettle).
+// dispatchDeepSearchResult settles the window's promise of reqID (the shim's __sykiSettle).
 func (a *App) dispatchDeepSearchResult(reqID string, result interface{}, err error) {
 	if atomic.LoadInt32(&a.isDestroyed) != 0 || a.w == nil {
 		return

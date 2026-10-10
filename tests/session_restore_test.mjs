@@ -321,7 +321,7 @@ async function main() {
       ]
     };
     const { elements } = runEnvironment({
-      md_memo_session_v1: JSON.stringify(sessionData)
+      syki_session_v1: JSON.stringify(sessionData)
     });
     const secondaryPane = elements.get('secondary-pane');
     const isSplitHidden = secondaryPane.classList.contains('hidden');
@@ -345,7 +345,7 @@ async function main() {
       ]
     };
     const { elements } = runEnvironment({
-      md_memo_session_v1: JSON.stringify(sessionData)
+      syki_session_v1: JSON.stringify(sessionData)
     });
     const secondaryPane = elements.get('secondary-pane');
     const isSplitHidden = secondaryPane.classList.contains('hidden');
@@ -370,7 +370,7 @@ async function main() {
       ]
     };
     const { elements } = runEnvironment({
-      md_memo_session_v1: JSON.stringify(sessionData)
+      syki_session_v1: JSON.stringify(sessionData)
     });
     const secondaryPane = elements.get('secondary-pane');
     assert.equal(secondaryPane.classList.contains('hidden'), false, 'Secondary pane should be open for side preview');
@@ -391,7 +391,7 @@ async function main() {
     
     // Trigger beforeunload to force synchronous session save
     window.trigger('beforeunload');
-    const savedStr = window.localStorage.getItem('md_memo_session_v1');
+    const savedStr = window.localStorage.getItem('syki_session_v1');
     assert.ok(savedStr, 'Session must be saved in localStorage');
     const parsed = JSON.parse(savedStr);
     assert.equal(parsed.isSplitMode, true, 'Session must capture isSplitMode: true');
@@ -400,7 +400,7 @@ async function main() {
     // Now close secondary pane
     testHelper.closeSecondaryPane();
     window.trigger('beforeunload');
-    const savedStrAfterClose = window.localStorage.getItem('md_memo_session_v1');
+    const savedStrAfterClose = window.localStorage.getItem('syki_session_v1');
     const parsedAfterClose = JSON.parse(savedStrAfterClose);
     assert.equal(parsedAfterClose.isSplitMode, false, 'Session must capture isSplitMode: false after closing split');
 
@@ -420,7 +420,7 @@ async function main() {
       ]
     };
     const { elements } = runEnvironment({
-      md_memo_session_v1: JSON.stringify(sessionData)
+      syki_session_v1: JSON.stringify(sessionData)
     });
     // Let async background sync run
     await new Promise(r => process.nextTick(r));

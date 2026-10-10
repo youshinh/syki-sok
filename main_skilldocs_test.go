@@ -10,8 +10,8 @@ import (
 	"syki-sok/pkg/cli"
 )
 
-// The agent skill (skills/md-memo) is what an AI agent reads to drive this CLI. It has to name every
-// command and every flag `md-memo --help` prints, or the agent works from a stale picture. main_help_test.go
+// The agent skill (skills/syki) is what an AI agent reads to drive this CLI. It has to name every
+// command and every flag `syki --help` prints, or the agent works from a stale picture. main_help_test.go
 // does the same for the RPC methods.
 func TestSkillDocumentsEveryCommandAndFlag(t *testing.T) {
 	read := func(p string) string {
@@ -54,7 +54,7 @@ func TestSkillDocumentsEveryCommandAndFlag(t *testing.T) {
 		}
 		sort.Strings(missing)
 		if len(missing) > 0 {
-			t.Errorf("`md-memo help %s` prints flags that references/interfaces.md never mentions: %s", name, strings.Join(missing, " "))
+			t.Errorf("`syki help %s` prints flags that references/interfaces.md never mentions: %s", name, strings.Join(missing, " "))
 		}
 	}
 }

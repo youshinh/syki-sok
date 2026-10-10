@@ -17,7 +17,7 @@ import (
 )
 
 // DiscordBridgeSettings models config.json's "discordBridge" section: an opt-in bridge that lets
-// the one paired Discord account append to today's scrap file from anywhere, even while md-memo
+// the one paired Discord account append to today's scrap file from anywhere, even while syki
 // was closed, by polling the bot's own DM channel over plain HTTPS. There is no inbound port, no
 // relay server, and no hosted infrastructure - the only account involved is the free Discord bot
 // the user creates for themselves in the Discord Developer Portal.

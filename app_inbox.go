@@ -45,7 +45,7 @@ func inboxVisionVoiceConfigs(configJSON string) (llm.VisionConfig, llm.VoiceConf
 	return raw.Vision, llm.ResolveVoiceConfig(raw.Voice, raw.Vision)
 }
 
-// resolveInboxDir is inbox.ResolveDir (shared with the command line's `md-memo info`).
+// resolveInboxDir is inbox.ResolveDir (shared with the command line's `syki info`).
 func resolveInboxDir(dir string) string {
 	return inbox.ResolveDir(dir)
 }

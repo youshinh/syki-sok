@@ -10,11 +10,11 @@ import (
 	"testing"
 )
 
-// `md-memo scrap tag` (docs/design/tag-filter-2026-10.md section 10.4). The rules for where a tag goes are tested in pkg/search
+// `syki scrap tag` (docs/design/tag-filter-2026-10.md section 10.4). The rules for where a tag goes are tested in pkg/search
 // (tagedit_test.go); here are the command's own: where the text comes from, what is printed, the exit codes and the safe write.
 // Nothing here reads the settings or the real scrap folder: the text is standard input or a file in a temp folder.
 
-// runTag runs `md-memo scrap tag <args>` with the given standard input.
+// runTag runs `syki scrap tag <args>` with the given standard input.
 func runTag(t *testing.T, stdin string, args ...string) (stdout, stderr string, code int, err error) {
 	t.Helper()
 	var out, errOut bytes.Buffer

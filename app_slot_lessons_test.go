@@ -112,7 +112,7 @@ func TestSingleSlotRunWithoutLessonsIsWhatItWas(t *testing.T) {
 	}
 
 	// an empty file, and one with only the header
-	for i, text := range []string{"", "# Lessons for claude-code\n<!-- md-memo lessons: one rule per \"- \" line. -->\n", "notes only\n* not a rule\n"} {
+	for i, text := range []string{"", "# Lessons for claude-code\n<!-- syki lessons: one rule per \"- \" line. -->\n", "notes only\n* not a rule\n"} {
 		if err := os.MkdirAll(slotagent.LessonsDir(), 0o755); err != nil {
 			t.Fatal(err)
 		}
@@ -182,7 +182,7 @@ func TestSingleSlotRunUsesTheDefaultAgentsLessonsAndCountsWhatWasLeftOut(t *test
 
 // The agent process of this test binary: a recipe's step is run for real (a recipe is not stubbed) and records the instruction it gets.
 func TestLessonsHelperProcess(t *testing.T) {
-	out := os.Getenv("MDMEMO_LESSONS_HELPER_OUT")
+	out := os.Getenv("SYKI_LESSONS_HELPER_OUT")
 	if out == "" {
 		return
 	}
@@ -195,7 +195,7 @@ func TestRecipesAreNotGivenLessons(t *testing.T) {
 	lessonSettings(t)
 	keepLesson(t, "mock", "A lesson that recipes must not see")
 	out := filepath.Join(t.TempDir(), "args.txt")
-	t.Setenv("MDMEMO_LESSONS_HELPER_OUT", out)
+	t.Setenv("SYKI_LESSONS_HELPER_OUT", out)
 	cfg, _ := json.Marshal(map[string]interface{}{
 		"version": 2, "default_agent": "mock", "timeout_seconds": 60,
 		"agents": map[string]interface{}{"mock": map[string]interface{}{

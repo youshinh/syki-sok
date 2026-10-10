@@ -356,8 +356,8 @@ func TestNativeColoursAreNotHardCoded(t *testing.T) {
 	}
 	for _, need := range []string{
 		"static void setupMacWindowDelegate(void *nsWindow, double r, double g, double b)",
-		"static void mdmemoSetBackdrop(double r, double g, double b)",
-		"static void mdmemoApplyBackdrop(NSWindow *win, double r, double g, double b)",
+		"static void sykiSetBackdrop(double r, double g, double b)",
+		"static void sykiApplyBackdrop(NSWindow *win, double r, double g, double b)",
 		"[NSColor colorWithSRGBRed:r green:g blue:b alpha:1.0]",
 		"C.setupMacWindowDelegate(w.Window(), bgR, bgG, bgB)",
 		"app.setNativeLookApplier(setNativeLook)",
@@ -368,8 +368,8 @@ func TestNativeColoursAreNotHardCoded(t *testing.T) {
 			t.Errorf("window_darwin.go no longer has %s", need)
 		}
 	}
-	if n := strings.Count(mac, "mdmemoApplyBackdrop(win, r, g, b)") + strings.Count(mac, "mdmemoApplyBackdrop(gWindow, r, g, b)"); n != 2 {
-		t.Errorf("mdmemoApplyBackdrop is called %d times, want 2 (at start and when the look changes)", n)
+	if n := strings.Count(mac, "sykiApplyBackdrop(win, r, g, b)") + strings.Count(mac, "sykiApplyBackdrop(gWindow, r, g, b)"); n != 2 {
+		t.Errorf("sykiApplyBackdrop is called %d times, want 2 (at start and when the look changes)", n)
 	}
 
 	// The cgo-less build type-checks the package on any machine; it needs the same function.
@@ -382,7 +382,7 @@ func TestNativeColoursAreNotHardCoded(t *testing.T) {
 // BenchmarkParseAppearanceLook: the start-up cost. "ink" is the case every ordinary profile takes (no word to find), "paper" parses.
 func BenchmarkParseAppearanceLook(b *testing.B) {
 	small := `{"general":{"language":"ja","theme":"olive","autoSave":true,"restoreSession":true},"appearance":{"look":"%s","accent":"olive","bars":"light","autoHide":true},` +
-		`"scraps":{"scrapDir":"C:/Users/someone/Documents/md-memo/scraps","gitSyncEnabled":false},"shortcuts":{"globalSummon":"Ctrl+Alt+M"},"text":{"model":"gemini-3-flash","apiKey":""}%s}`
+		`"scraps":{"scrapDir":"C:/Users/someone/Documents/syki-sok/scraps","gitSyncEnabled":false},"shortcuts":{"globalSummon":"Ctrl+Alt+M"},"text":{"model":"gemini-3-flash","apiKey":""}%s}`
 	pad := func(n int) string {
 		var sb strings.Builder
 		sb.WriteString(`,"snippets":{"first":"x"`)

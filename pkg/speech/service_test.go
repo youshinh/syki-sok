@@ -236,8 +236,8 @@ func TestLocalTranscribeOptions(t *testing.T) {
 		if a := run(t, e, llm.WhisperSettings{Threads: 4, Prompt: "   "}); strings.Contains(strings.Join(a, " "), "--prompt") {
 			t.Errorf("a blank prompt was passed: %q", a)
 		}
-		a := run(t, e, llm.WhisperSettings{Threads: 4, Prompt: " md-memo、Gemini "})
-		if n := len(a); n < 2 || a[n-2] != "--prompt" || a[n-1] != "md-memo、Gemini" {
+		a := run(t, e, llm.WhisperSettings{Threads: 4, Prompt: " syki、Gemini "})
+		if n := len(a); n < 2 || a[n-2] != "--prompt" || a[n-1] != "syki、Gemini" {
 			t.Errorf("prompt args: %q", a)
 		}
 	})

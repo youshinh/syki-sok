@@ -160,7 +160,7 @@ func (a *App) GenerateImageAsync(reqID, prompt, configJSON, notePath string) {
 
 // markdownLinkTarget makes a file path safe as the target of a Markdown image or link. A raw
 // space or parenthesis ends the target early, and the preview then shows the Markdown source
-// instead of the picture: on macOS the default folder is ~/Library/Application Support/md-memo.
+// instead of the picture: on macOS the default folder is ~/Library/Application Support/syki.
 // "%" is escaped too, so the preview's percent-decoding gives back exactly this path. It is the
 // same set the editor's paste/drop code escapes (file_anchor.js encodeLinkTarget).
 func markdownLinkTarget(p string) string {

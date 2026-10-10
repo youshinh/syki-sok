@@ -26,7 +26,7 @@ const (
 type packEnv struct {
 	t        *testing.T
 	app      *App
-	appDir   string // <config>/md-memo
+	appDir   string // <config>/syki-sok
 	home     string
 	proj     string
 	out      string
@@ -63,7 +63,7 @@ func newPackEnv(t *testing.T) *packEnv {
 		appdir.SetHomeDirOverride(prevHome)
 		packSaveDialog, packOpenDialog, packNow = prevSave, prevOpen, prevNow
 	})
-	if err := os.MkdirAll(filepath.Join(e.proj, ".md-memo"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(e.proj, ".syki"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	return e
@@ -89,7 +89,7 @@ func (e *packEnv) fill() {
 		"skills/alpha/ref/n.txt":        "notes",
 		"skills/beta.md":                "beta",
 		".claude/skills/gamma/SKILL.md": "gamma",
-		".md-memo/agents.yaml":          packTestProjAgents,
+		".syki/agents.yaml":          packTestProjAgents,
 	})
 	packWrite(e.t, e.appDir, map[string]string{"agents.yaml": packTestAppAgents})
 }
@@ -185,7 +185,7 @@ func TestPackList_ProjectAgentsAndSkills(t *testing.T) {
 	if app["id"] != "agents:app" || app["scope"] != "app" || app["path"] != filepath.Join(e.appDir, "agents.yaml") || app["bytes"] != float64(len(packTestAppAgents)) {
 		t.Errorf("app agents = %v", app)
 	}
-	if proj["id"] != "agents:project" || proj["scope"] != "project" || proj["path"] != filepath.Join(e.proj, ".md-memo", "agents.yaml") {
+	if proj["id"] != "agents:project" || proj["scope"] != "project" || proj["path"] != filepath.Join(e.proj, ".syki", "agents.yaml") {
 		t.Errorf("project agents = %v", proj)
 	}
 	if len(app) != 4 {
@@ -236,7 +236,7 @@ func TestPackList_FallsBackToTheScrapsFolder(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			e := newPackEnv(t)
 			scraps := filepath.Join(e.home, "my-scraps")
-			packWrite(t, scraps, map[string]string{"skills/note-skill/SKILL.md": "s", ".md-memo/agents.yaml": packTestAppAgents})
+			packWrite(t, scraps, map[string]string{"skills/note-skill/SKILL.md": "s", ".syki/agents.yaml": packTestAppAgents})
 			packWrite(t, e.appDir, map[string]string{"config.json": cfg})
 
 			res := decodeMap(t, mustString(e.app.PackListExportable("")))
@@ -302,11 +302,11 @@ func TestPackExport_WritesAPackWithoutSecrets(t *testing.T) {
 	e.fill()
 	res := e.export(nil)
 
-	if res["ok"] != true || e.saveName != "md-memo-20260921.mdmemopack" {
+	if res["ok"] != true || e.saveName != "syki-20260921.sykipack" {
 		t.Fatalf("result = %v, default name %q", res, e.saveName)
 	}
 	path := res["path"].(string)
-	if path != filepath.Join(e.out, "md-memo-20260921.mdmemopack") {
+	if path != filepath.Join(e.out, "syki-20260921.sykipack") {
 		t.Errorf("path = %s", path)
 	}
 	fi, err := os.Stat(path)
@@ -359,7 +359,7 @@ func TestPackExport_WritesAPackWithoutSecrets(t *testing.T) {
 		t.Errorf("a clean agents file must be stored unchanged, got %q", app)
 	}
 	// the source files on disk are never touched
-	if !strings.Contains(readFile(t, filepath.Join(e.proj, ".md-memo", "agents.yaml")), "sk-proj-secret") {
+	if !strings.Contains(readFile(t, filepath.Join(e.proj, ".syki", "agents.yaml")), "sk-proj-secret") {
 		t.Error("export modified the source agents file")
 	}
 	if leftovers, _ := filepath.Glob(filepath.Join(e.out, "*.tmp")); len(leftovers) != 0 {
@@ -412,7 +412,7 @@ func TestPackExport_JSONFormatIsSettingsOnly(t *testing.T) {
 	e := newPackEnv(t)
 	e.fill()
 	res := e.export(map[string]any{"format": "json"})
-	if e.saveName != "md-memo-config.json" || res["ok"] != true {
+	if e.saveName != "syki-config.json" || res["ok"] != true {
 		t.Fatalf("name %q result %v", e.saveName, res)
 	}
 	got := readFile(t, res["path"].(string))
@@ -510,7 +510,7 @@ func TestPackExport_UnreliableAgentsSecretsAreFlagged(t *testing.T) {
 func TestPackExport_ReplacesAnExistingFileAtomically(t *testing.T) {
 	e := newPackEnv(t)
 	e.fill()
-	target := filepath.Join(e.out, "chosen.mdmemopack")
+	target := filepath.Join(e.out, "chosen.sykipack")
 	if err := os.WriteFile(target, []byte("old contents"), 0o600); err != nil {
 		t.Fatal(err)
 	}
@@ -561,7 +561,7 @@ func TestPackInspect_ListsItemsAndWhatWouldBeOverwritten(t *testing.T) {
 	pack := src.exportedPack()
 
 	dst := newPackEnv(t)
-	packWrite(t, dst.proj, map[string]string{"skills/alpha/SKILL.md": "already here", ".md-memo/agents.yaml": "version: 2\n"})
+	packWrite(t, dst.proj, map[string]string{"skills/alpha/SKILL.md": "already here", ".syki/agents.yaml": "version: 2\n"})
 	dst.openPath = pack
 	out, err := dst.app.PackInspect(dst.hint())
 	if err != nil {
@@ -572,7 +572,7 @@ func TestPackInspect_ListsItemsAndWhatWouldBeOverwritten(t *testing.T) {
 		t.Errorf("header = %v", res)
 	}
 	man := res["manifest"].(map[string]any)
-	if man["format"] != "md-memo-pack" || man["version"] != float64(1) || man["appVersion"] != AppVersion {
+	if man["format"] != "syki-pack" || man["version"] != float64(1) || man["appVersion"] != AppVersion {
 		t.Errorf("manifest = %v", man)
 	}
 	items := map[string]map[string]any{}
@@ -709,7 +709,7 @@ func TestPackInspect_RejectsWhatIsNeitherAPackNorSettings(t *testing.T) {
 			t.Errorf("%s: %q, %v", name, out, err)
 		}
 	}
-	e.openPath = filepath.Join(dir, "missing.mdmemopack")
+	e.openPath = filepath.Join(dir, "missing.sykipack")
 	if _, err := e.app.PackInspect(""); err == nil {
 		t.Error("missing file accepted")
 	}
@@ -727,7 +727,7 @@ func TestPackInspect_HostilePackIsRefused(t *testing.T) {
 	e := newPackEnv(t)
 	// a pack whose manifest points a skill at ../..
 	dir := t.TempDir()
-	evil := filepath.Join(dir, "evil.mdmemopack")
+	evil := filepath.Join(dir, "evil.sykipack")
 	writeEvilPack(t, evil, "../../evil")
 	e.openPath = evil
 	if _, err := e.app.PackInspect(""); err == nil || !strings.Contains(err.Error(), " / ") {
@@ -775,13 +775,13 @@ func TestPackImport_RoundTripIntoAFreshMachine(t *testing.T) {
 	if len(ag) != 2 {
 		t.Fatalf("applied agents = %v", ag)
 	}
-	if ag[0].(map[string]any)["path"] != filepath.Join(dst.appDir, "agents.yaml") || ag[1].(map[string]any)["path"] != filepath.Join(dst.proj, ".md-memo", "agents.yaml") {
+	if ag[0].(map[string]any)["path"] != filepath.Join(dst.appDir, "agents.yaml") || ag[1].(map[string]any)["path"] != filepath.Join(dst.proj, ".syki", "agents.yaml") {
 		t.Errorf("agents paths = %v", ag)
 	}
 	if got := readFile(t, filepath.Join(dst.appDir, "agents.yaml")); got != packTestAppAgents {
 		t.Errorf("app agents = %q", got)
 	}
-	if got := readFile(t, filepath.Join(dst.proj, ".md-memo", "agents.yaml")); !strings.Contains(got, "proj-agent") || strings.Contains(got, "sk-proj-secret") {
+	if got := readFile(t, filepath.Join(dst.proj, ".syki", "agents.yaml")); !strings.Contains(got, "proj-agent") || strings.Contains(got, "sk-proj-secret") {
 		t.Errorf("project agents = %q", got)
 	}
 	if dst.app.slotCfgCache != nil {
@@ -814,7 +814,7 @@ func TestPackImport_RoundTripIntoAFreshMachine(t *testing.T) {
 	for _, root := range []string{"skills", ".claude/skills"} {
 		entries, _ := os.ReadDir(filepath.Join(dst.proj, filepath.FromSlash(root)))
 		for _, en := range entries {
-			if strings.HasPrefix(en.Name(), ".mdmemo-import-") {
+			if strings.HasPrefix(en.Name(), ".syki-import-") {
 				t.Errorf("working folder left behind in %s: %s", root, en.Name())
 			}
 		}
@@ -846,7 +846,7 @@ func TestPackImport_OverwritingKeepsABackup(t *testing.T) {
 		"skills/alpha/SKILL.md":    "OLD alpha",
 		"skills/alpha/old-only.md": "only in the old skill",
 		"skills/beta.md":           "OLD beta",
-		".md-memo/agents.yaml":     "version: 2\ndefault_agent: old-proj\n",
+		".syki/agents.yaml":     "version: 2\ndefault_agent: old-proj\n",
 	})
 	packWrite(t, dst.appDir, map[string]string{"agents.yaml": "version: 2\ndefault_agent: old-app\n"})
 
@@ -862,7 +862,7 @@ func TestPackImport_OverwritingKeepsABackup(t *testing.T) {
 		"project/skills/alpha/SKILL.md":    "OLD alpha",
 		"project/skills/alpha/old-only.md": "only in the old skill",
 		"project/skills/beta.md":           "OLD beta",
-		"project/.md-memo/agents.yaml":     "version: 2\ndefault_agent: old-proj\n",
+		"project/.syki/agents.yaml":     "version: 2\ndefault_agent: old-proj\n",
 		"app/agents.yaml":                  "version: 2\ndefault_agent: old-app\n",
 	} {
 		if got := readFile(t, filepath.Join(bk, filepath.FromSlash(rel))); got != want {
@@ -1009,13 +1009,13 @@ func TestPackImport_RefusesToWriteThroughLinks(t *testing.T) {
 		t.Errorf("a linked skill was replaced: %v", res["skipped"])
 	}
 
-	// .md-memo as a link
+	// .syki as a link
 	dst3 := newPackEnv(t)
 	elsewhere := t.TempDir()
-	if err := os.Remove(filepath.Join(dst3.proj, ".md-memo")); err != nil {
+	if err := os.Remove(filepath.Join(dst3.proj, ".syki")); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.Symlink(elsewhere, filepath.Join(dst3.proj, ".md-memo")); err != nil {
+	if err := os.Symlink(elsewhere, filepath.Join(dst3.proj, ".syki")); err != nil {
 		t.Skip(err)
 	}
 	packWrite(t, dst3.proj, map[string]string{"skills/x/SKILL.md": "x"})
@@ -1024,7 +1024,7 @@ func TestPackImport_RefusesToWriteThroughLinks(t *testing.T) {
 		t.Errorf("skipped = %v", res["skipped"])
 	}
 	if entries, _ := os.ReadDir(elsewhere); len(entries) != 0 {
-		t.Errorf("wrote through .md-memo: %v", entries)
+		t.Errorf("wrote through .syki: %v", entries)
 	}
 }
 
@@ -1060,7 +1060,7 @@ func TestPackImport_RequestValidation(t *testing.T) {
 	for name, args := range map[string][3]string{
 		"selection not json": {"x", `nope`, ""},
 		"empty path":         {"  ", `{}`, ""},
-		"missing file":       {filepath.Join(t.TempDir(), "none.mdmemopack"), `{}`, ""},
+		"missing file":       {filepath.Join(t.TempDir(), "none.sykipack"), `{}`, ""},
 		"a folder":           {t.TempDir(), `{}`, ""},
 	} {
 		if out, err := e.app.PackImport(args[0], args[1], args[2]); err == nil {

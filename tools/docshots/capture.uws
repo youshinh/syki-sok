@@ -16,7 +16,7 @@ if length(PARAM_STR) > 3 then
     endif
 endif
 
-if title == "" or pos("MD-Memo", title) > 0 then
+if title == "" or pos("syki", title) > 0 then
     print "error=refusing this title token"
     exitexit 4
 endif
@@ -36,8 +36,8 @@ print "path=" + win_path
 print "pid=" + win_pid
 print "client=" + st[ST_CLWIDTH] + "x" + st[ST_CLHEIGHT]
 
-if pos("MD-Memo", win_title) > 0 then
-    print "error=matched a window titled MD-Memo, aborting"
+if pos("syki", win_title) > 0 then
+    print "error=matched a window titled syki, aborting"
     exitexit 4
 endif
 if pos(title, win_title) < 1 then

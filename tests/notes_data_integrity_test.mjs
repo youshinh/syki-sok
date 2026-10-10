@@ -242,7 +242,7 @@ async function createEnv(opts = {}) {
   }
 
   const el = (id) => documentMock.getElementById(id);
-  const rpc = windowMock.__mdMemoRPC;
+  const rpc = windowMock.__sykiRPC;
   const env = {
     window: windowMock, rpc, backend, backendCalls, el, documentMock, files, flush, store, messages,
     editor: el('editor'),
@@ -728,11 +728,11 @@ check('B08: opening a file that is already open in a clean tab loads the newer t
   assert.equal(env.active().id, other);
   const before = env.tabs().length;
 
-  // the file changed on disk (a Git pull, another editor): the running instance is asked to open it (md-memo a.md, a drop, Ctrl+O)
+  // the file changed on disk (a Git pull, another editor): the running instance is asked to open it (syki a.md, a drop, Ctrl+O)
   env.rpc.newTab('a.md', 'A changed on disk\n', P);
   assert.equal(env.tabs().length, before, 'no second tab');
   assert.equal(env.active().id, a, 'the tab is shown');
-  assert.equal(env.window.__mdMemoRPC.getBuffer(a).content, 'A changed on disk\n', 'with the text that is on disk now');
+  assert.equal(env.window.__sykiRPC.getBuffer(a).content, 'A changed on disk\n', 'with the text that is on disk now');
   assert.equal(env.editor.value, 'A changed on disk\n', 'in the editor too');
   assert.equal(env.tab(a).isModified, false, 'it is still a clean tab');
   assert.equal(env.lastMessage(), tr('en', 'tabAlreadyOpenReloaded', { title: 'a.md' }));
@@ -750,7 +750,7 @@ check('B08: opening a file that is already open in a clean tab loads the newer t
   const res = plain(env.rpc.openTab({ path: P, content: 'A changed again\n', background: true }));
   assert.equal(res.existing, true);
   assert.equal(env.active().id, other, 'a background open does not take the screen');
-  assert.equal(env.window.__mdMemoRPC.getBuffer(a).content, 'A changed again\n', 'a tab that is not on screen is refreshed');
+  assert.equal(env.window.__sykiRPC.getBuffer(a).content, 'A changed again\n', 'a tab that is not on screen is refreshed');
 });
 
 check('B08: opening a file that is already open in a tab with unsaved text keeps that text and says so', async () => {
@@ -765,7 +765,7 @@ check('B08: opening a file that is already open in a tab with unsaved text keeps
 
   env.rpc.newTab('a.md', 'A changed on disk\n', P);
   assert.equal(env.active().id, a);
-  assert.equal(env.window.__mdMemoRPC.getBuffer(a).content, 'A\nMY UNSAVED EDIT', 'what was typed is not replaced');
+  assert.equal(env.window.__sykiRPC.getBuffer(a).content, 'A\nMY UNSAVED EDIT', 'what was typed is not replaced');
   assert.equal(env.tab(a).isModified, true);
   assert.equal(env.lastMessage(), tr('en', 'tabAlreadyOpenUnsaved', { title: 'a.md' }));
 
@@ -805,7 +805,7 @@ check('B08: Save As onto a file another tab has open: a tab without unsaved text
   assert.ok(kept, 'the dirty twin is still there');
   assert.equal(kept.path, '', 'but it no longer owns the file');
   assert.equal(kept.isModified, true);
-  assert.equal(env.window.__mdMemoRPC.getBuffer(twin2).content, 'old\nMY UNSAVED EDIT', 'with its text');
+  assert.equal(env.window.__sykiRPC.getBuffer(twin2).content, 'old\nMY UNSAVED EDIT', 'with its text');
   assert.equal(env.tabs().filter((t) => t.path === P).length, 1);
   assert.equal(env.lastMessage(), tr('en', 'saveAsOtherTabKept', { title: 'shared.md' }));
 });
@@ -825,7 +825,7 @@ check('B08: buffer.save (commitSave) onto a file another tab has open releases t
 // ---------------------------------------------------------------------------------------------------
 // B02: scrap-appended notifications
 // ---------------------------------------------------------------------------------------------------
-const SCRAP = 'C:/Users/demo/Documents/md-memo/scraps/2026-09-30.md';
+const SCRAP = 'C:/Users/demo/Documents/syki-sok/scraps/2026-09-30.md';
 
 check('B02: a scrap tab with unsaved typing is not overwritten by an append notification (CLI pipe / Quick Capture / hot folder)', async () => {
   const env = await createEnv({ files: { [SCRAP]: '# scrap\n\nline A\n' } });
@@ -837,7 +837,7 @@ check('B02: a scrap tab with unsaved typing is not overwritten by an append noti
 
   await env.window.onScrapAppended({ filePath: SCRAP, fileName: '2026-09-30.md', command: 'pipe' });
   await env.flush();
-  assert.equal(env.window.__mdMemoRPC.getBuffer(id).content, '# scrap\n\nline A\ntyped by user', 'the typed text is still the tab text');
+  assert.equal(env.window.__sykiRPC.getBuffer(id).content, '# scrap\n\nline A\ntyped by user', 'the typed text is still the tab text');
   assert.equal(env.editor.value, '# scrap\n\nline A\ntyped by user');
   assert.equal(env.tab(id).isModified, true, 'and it is still unsaved (it was not "saved" by a refresh)');
   assert.equal(env.lastMessage(), tr('en', 'scrapKeptUnsavedEdits'));
@@ -851,7 +851,7 @@ check('B02: a clean scrap tab is refreshed from the file', async () => {
   await env.flush();
   assert.equal(env.active().id, id, 'the scrap tab is shown');
   assert.equal(env.editor.value, '# scrap\n\nline A\nappended by CLI pipe\n');
-  assert.equal(env.window.__mdMemoRPC.getBuffer(id).content, '# scrap\n\nline A\nappended by CLI pipe\n');
+  assert.equal(env.window.__sykiRPC.getBuffer(id).content, '# scrap\n\nline A\nappended by CLI pipe\n');
   assert.equal(env.tab(id).isModified, false);
 });
 
@@ -890,7 +890,7 @@ check('B02: a note with the same NAME in another folder is another note (append 
   env.type('project notes\nmy edit');
   await env.window.onScrapAppended({ filePath: SCRAP, fileName: '2026-09-30.md', command: 'pipe' });
   await env.flush();
-  assert.equal(env.window.__mdMemoRPC.getBuffer(id).content, 'project notes\nmy edit', 'the project note is untouched');
+  assert.equal(env.window.__sykiRPC.getBuffer(id).content, 'project notes\nmy edit', 'the project note is untouched');
   assert.equal(env.tab(id).isModified, true);
   const scrapTab = env.tabs().find((t) => t.path === SCRAP);
   assert.ok(scrapTab, 'the scrap opened as its own tab');
@@ -917,8 +917,8 @@ check('B02: the Discord bridge notification follows the same rules (path only; u
   // clean scrap tab: refreshed in the background, the active tab does not change
   await env.window.onDiscordBridgeMessage({ filePath: SCRAP, fileName: '2026-09-30.md' });
   await env.flush();
-  assert.equal(env.window.__mdMemoRPC.getBuffer(scrapTab).content, 'disk after Discord\n');
-  assert.equal(env.window.__mdMemoRPC.getBuffer(otherTab).content, 'project\n', 'the same-named note in another folder is not touched');
+  assert.equal(env.window.__sykiRPC.getBuffer(scrapTab).content, 'disk after Discord\n');
+  assert.equal(env.window.__sykiRPC.getBuffer(otherTab).content, 'project\n', 'the same-named note in another folder is not touched');
   assert.equal(env.active().id, otherTab, 'no focus stealing');
   assert.equal(env.lastMessage(), tr('en', 'discordBridgeMessageToast'));
 
@@ -967,14 +967,14 @@ check('B27: a start-up file opens as one more tab; the backend session, the work
     { id: 'tab_s2', title: 'huge.md', content: 'Line 1\nLine 2\n' }
   ]);
   const withFile = await createEnv({
-    localStorage: { md_memo_workspace_folder: 'C:\\Users\\demo\\notes' },
+    localStorage: { syki_workspace_folder: 'C:\\Users\\demo\\notes' },
     backend: {
       getStartupFile: async () => OPENED,
       getSession: async () => session
     }
   });
   const without = await createEnv({
-    localStorage: { md_memo_workspace_folder: 'C:\\Users\\demo\\notes' },
+    localStorage: { syki_workspace_folder: 'C:\\Users\\demo\\notes' },
     backend: { getSession: async () => session }
   });
 
@@ -1003,7 +1003,7 @@ check('B27: a restored untitled note that starts with "# " is not treated as an 
   const session = SESSION([{ id: 'tab_m1', title: 'Meeting.md', content: '# Meeting notes\nthings I wrote\n', isAutoTitle: true }]);
   const env = await createEnv({ backend: { getStartupFile: async () => OPENED, getSession: async () => session } });
   assert.deepEqual(env.tabs().map((t) => t.title), ['Meeting.md', 'opened.md']);
-  assert.equal(env.window.__mdMemoRPC.getBuffer('tab_m1').content, '# Meeting notes\nthings I wrote\n');
+  assert.equal(env.window.__sykiRPC.getBuffer('tab_m1').content, '# Meeting notes\nthings I wrote\n');
 });
 
 check('B27: the empty first note gives way to the start-up file, and the file text is what the editor holds (no content loss)', async () => {
@@ -1033,7 +1033,7 @@ check('B27: a start-up file that is already in the restored session is not opene
 check('B27: the local (localStorage) session is kept too when a start-up file is given', async () => {
   const local = SESSION([{ id: 'tab_l1', title: 'local.md', content: 'from localStorage' }]);
   const env = await createEnv({
-    localStorage: { md_memo_session_v1: local },
+    localStorage: { syki_session_v1: local },
     backend: { getStartupFile: async () => OPENED }
   });
   assert.deepEqual(env.tabs().map((t) => t.title), ['local.md', 'opened.md']);
@@ -1055,7 +1055,7 @@ check('B27: a start-up file that cannot be read says so (naming the file) and th
 
   // the Japanese UI says it in Japanese
   const ja = await createEnv({
-    localStorage: { md_memo_config_v1: JSON.stringify({ general: { language: 'ja' } }) },
+    localStorage: { syki_config_v1: JSON.stringify({ general: { language: 'ja' } }) },
     backend: { getStartupFile: async () => { throw new Error('locked'); } }
   });
   const jaShown = ja.messages.find((m) => m.startsWith(tr('ja', 'startupFileFailed', { err: '' })));
@@ -1129,7 +1129,7 @@ check('C11-08: the sole tab, Ctrl+W, "Don\'t save": the discarded text is not le
   const before = order.slice(0, closeAt).filter((o) => o.kind === 'session');
   assert.ok(before.length >= 1, 'the session was written before the window went');
   assert.ok(!before[before.length - 1].json.includes('thrown away'), 'and what it holds is not the discarded text');
-  assert.ok(!(env.store.get('md_memo_session_v1') || '').includes('thrown away'), 'the page\'s own copy neither');
+  assert.ok(!(env.store.get('syki_session_v1') || '').includes('thrown away'), 'the page\'s own copy neither');
   assert.ok(!env.editor.value.includes('thrown away'), 'a hidden window comes back to a fresh note');
   assert.equal(env.tabs().length, 1);
 });
@@ -1173,7 +1173,7 @@ const BAD_SESSION = JSON.stringify({
 
 for (const via of ['localStorage', 'session.json']) {
   check(`C11-06: malformed elements of a saved session (${via}) are dropped or repaired and the rest is restored`, async () => {
-    const env = await createEnv(via === 'localStorage' ? { localStorage: { md_memo_session_v1: BAD_SESSION } } : { backend: { getSession: async () => BAD_SESSION } });
+    const env = await createEnv(via === 'localStorage' ? { localStorage: { syki_session_v1: BAD_SESSION } } : { backend: { getSession: async () => BAD_SESSION } });
     const tabs = env.tabs();
     assert.deepEqual(tabs.map((t) => t.title), ['ok.md', 'nocontent.md', 'dup.md', 'noid.md', 'numeric id'], 'only the objects are tabs');
     const ids = tabs.map((t) => t.id);
@@ -1183,7 +1183,7 @@ for (const via of ['localStorage', 'session.json']) {
     assert.equal(env.active().title, 'numeric id', 'a numeric activeTabId finds the tab with that id');
     assert.equal(env.editor.value, 'n');
 
-    const text = (i) => env.window.__mdMemoRPC.getBuffer(ids[i]).content;
+    const text = (i) => env.window.__sykiRPC.getBuffer(ids[i]).content;
     assert.equal(text(0), 'kept text');
     assert.equal(text(1), '', 'a tab without content is an empty note, not the text "undefined"');
     assert.equal(text(2), 'second tab with a repeated id', 'the second tab with the same id keeps its own text');
@@ -1203,10 +1203,10 @@ for (const via of ['localStorage', 'session.json']) {
 }
 
 check('C11-06: a session whose tabs are all malformed starts a fresh, usable note (no dead window)', async () => {
-  const env = await createEnv({ localStorage: { md_memo_session_v1: JSON.stringify({ tabs: [null, 'x', 3, []] }) } });
+  const env = await createEnv({ localStorage: { syki_session_v1: JSON.stringify({ tabs: [null, 'x', 3, []] }) } });
   assert.equal(env.tabs().length, 1);
   env.type('works');
-  assert.equal(env.window.__mdMemoRPC.getBuffer(env.active().id).content, 'works');
+  assert.equal(env.window.__sykiRPC.getBuffer(env.active().id).content, 'works');
 });
 
 check('C2-11: a session.json that cannot be read is said so (the file itself is kept by the Go side); no message when nothing was lost', async () => {
@@ -1219,7 +1219,7 @@ check('C2-11: a session.json that cannot be read is said so (the file itself is 
   assert.equal(lost.tabs().length, 1, 'a fresh note starts');
 
   // the page's own copy brought everything back: nothing is missing, nothing is said
-  const rescued = await createEnv({ localStorage: { md_memo_session_v1: whole }, backend: { getSession: async () => cut } });
+  const rescued = await createEnv({ localStorage: { syki_session_v1: whole }, backend: { getSession: async () => cut } });
   assert.deepEqual(rescued.tabs().map((t) => t.title), ['idea.md']);
   assert.ok(!rescued.messages.includes(said));
 
@@ -1229,7 +1229,7 @@ check('C2-11: a session.json that cannot be read is said so (the file itself is 
     assert.ok(!env.messages.includes(said), `${name}: nothing to report`);
   }
 
-  const ja = await createEnv({ localStorage: { md_memo_config_v1: JSON.stringify({ general: { language: 'ja' } }) }, backend: { getSession: async () => cut } });
+  const ja = await createEnv({ localStorage: { syki_config_v1: JSON.stringify({ general: { language: 'ja' } }) }, backend: { getSession: async () => cut } });
   assert.ok(ja.messages.includes(tr('ja', 'sessionUnreadable')), 'the Japanese UI says it in Japanese: ' + JSON.stringify(ja.messages));
 });
 
@@ -1272,7 +1272,7 @@ check('C2-08: switching autosave on picks up every dirty note with a file, not o
 
   // a dirty note that comes back from the last session is not saved just because the app started (the file may have changed meanwhile)
   const restored = await createEnv({
-    localStorage: { md_memo_session_v1: SESSION([{ id: 'tab_r', title: 'r.md', path: 'C:\\n\\r.md', content: 'unsaved from last time', isDirty: true }]) }
+    localStorage: { syki_session_v1: SESSION([{ id: 'tab_r', title: 'r.md', path: 'C:\\n\\r.md', content: 'unsaved from last time', isDirty: true }]) }
   });
   assert.equal(restored.heldCount(1500), 0, 'no autosave timer after a restore');
   restored.fireTimers(1500);

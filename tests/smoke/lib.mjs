@@ -52,7 +52,7 @@ export const waitNote = (s, cond, opts) => s.waitFor(`(function () {
 export const hasWaitingMarker = (text) => /\[[^\]\n]*\.\.\.\]/.test(String(text));
 
 // The live config object of the app, as a plain copy.
-export const liveConfig = (s) => s.ev('JSON.parse(JSON.stringify(MdMemoBridge.getConfig()))');
+export const liveConfig = (s) => s.ev('JSON.parse(JSON.stringify(SykiBridge.getConfig()))');
 
 // The mock records every backend call with its first 3 arguments (window.__docshot.calls).
 export const backendCalls = (s, fn) => s.ev(`window.__docshot.calls.filter(function (c) { return c.fn === ${q(fn)}; })`);
@@ -130,11 +130,11 @@ export async function selectInEditor(s, needle, { caretOnly = false } = {}) {
 
 export const focusEditor = (s) => s.ev("document.getElementById('editor').focus()");
 
-// Calls a function of window.__mdMemoRPC (the page half of the JSON-RPC server) with a page-side argument list, e.g.
+// Calls a function of window.__sykiRPC (the page half of the JSON-RPC server) with a page-side argument list, e.g.
 // rpc(s, 'getCursor("tab_x1")'). Resolves to { ok: result } or, when the call threw, { err: message, kind } where kind is the
 // "[kind] " prefix the Go side maps to a JSON-RPC error code (not_found, invalid_params, conflict). A promise result is awaited.
 export const rpc = (s, call) => s.ev(`(async function () {
-  try { return { ok: await window.__mdMemoRPC.${call} }; }
+  try { return { ok: await window.__sykiRPC.${call} }; }
   catch (e) { return { err: String((e && e.message) || e), kind: e && e.rpcKind }; }
 })()`);
 

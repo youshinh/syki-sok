@@ -342,7 +342,7 @@
     if (!runButtonEl) return;
     const lang = getUILang();
     const dict = (typeof I18N !== 'undefined' && I18N[lang]) || (typeof I18N !== 'undefined' && I18N.ja) || {};
-    const mod = (global.MDMemoPlatform && global.MDMemoPlatform.isMac) ? 'Cmd' : 'Ctrl';
+    const mod = (global.SykiPlatform && global.SykiPlatform.isMac) ? 'Cmd' : 'Ctrl';
     const key = mod + '+Enter';
     runButtonEl.innerHTML = RUN_ICON_SVG + '<span>' + escapeHtml(dict.slotRunButtonLabel || '実行') + '</span>';
     const tooltipTpl = dict.slotRunButtonTooltip || 'このスロットを実行 ({key})';
@@ -1121,11 +1121,11 @@
   }
 
   function bridge() {
-    return global.MdMemoBridge || null;
+    return global.SykiBridge || null;
   }
 
   function modKey() {
-    return global.MDMemoPlatform && global.MDMemoPlatform.isMac ? 'Cmd' : 'Ctrl';
+    return global.SykiPlatform && global.SykiPlatform.isMac ? 'Cmd' : 'Ctrl';
   }
 
   function taskKey(tabId, id) {
@@ -1171,8 +1171,8 @@
     return { ls: ls, le: le };
   }
 
-  const RESULT_OPEN = '<!-- md-memo:res ';
-  const RESULT_CLOSE = '<!-- /md-memo:res -->';
+  const RESULT_OPEN = '<!-- syki:res ';
+  const RESULT_CLOSE = '<!-- /syki:res -->';
 
   // True when pos is between the opener and the closer of a result block (text a run wrote, never an instruction).
   function insideResultBlock(text, pos) {

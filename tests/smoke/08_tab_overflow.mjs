@@ -93,7 +93,7 @@ export default {
 
     t.step('in between, the tabs are squeezed but the column does not scroll');
     const ids = (await s.state()).tabs.map((x) => x.id);
-    await s.ev(`(async function () { var ids = ${JSON.stringify(ids)}; for (var i = 0; i < 16; i++) await window.__mdMemoRPC.closeTab(ids[i]); })()`);
+    await s.ev(`(async function () { var ids = ${JSON.stringify(ids)}; for (var i = 0; i < 16; i++) await window.__sykiRPC.closeTab(ids[i]); })()`);
     await s.waitFor("document.querySelectorAll('#tabs-list .tab-item').length === " + (COUNT + 1 - 16));
     await waitHidden(s, 'btn-all-tabs');
     const mid = await s.ev(rowHeights);

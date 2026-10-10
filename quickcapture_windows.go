@@ -13,7 +13,7 @@ import (
 const (
 	HOTKEY_ID_QUICKCAPTURE = 0x9002
 
-	quickCaptureClassName = "MDMemoQuickCapture"
+	quickCaptureClassName = "SykiQuickCapture"
 
 	wmCreate   = 0x0001
 	wmCommand  = 0x0111
@@ -119,7 +119,7 @@ const (
 	quickCaptureFieldPadX  = 10
 	quickCaptureEditHeight = 20
 
-	// COLORREFs (0x00BBGGRR) taken from md-memo's dark theme in frontend/css/style.css:
+	// COLORREFs (0x00BBGGRR) taken from syki's dark theme in frontend/css/style.css:
 	// --bg-modal, --bg-input, --bg-btn, --bg-btn-hover, --text-main, --text-active, --border-color.
 	// The accent color is not here: it follows the user's selected theme (see quickCaptureAccent).
 	colBg         = 0x262525
@@ -374,8 +374,8 @@ func (a *App) UpdateQuickCaptureShortcut(shortcut string) bool {
 }
 
 // OpenQuickCapture opens the popup from the app's own UI (toolbar, command palette). No foreground
-// title is recorded: the window in front is md-memo itself, so a "> [context: ...]" line would only
-// say the note was written in md-memo.
+// title is recorded: the window in front is syki itself, so a "> [context: ...]" line would only
+// say the note was written in syki.
 func (a *App) OpenQuickCapture() {
 	openQuickCapture(false)
 }
@@ -531,7 +531,7 @@ func registerQuickCaptureClass(hinst windows.Handle) {
 
 		_, _, _ = procRegisterClassExW.Call(uintptr(unsafe.Pointer(&wc)))
 
-		// Same face md-memo's own UI uses first; Japanese glyphs fall back through GDI font
+		// Same face syki's own UI uses first; Japanese glyphs fall back through GDI font
 		// linking. Height -15 px is slightly larger than the main UI's 14 px body text, for typing.
 		fontHandle, _, _ := procCreateFontW.Call(
 			^uintptr(14), 0, 0, 0, 400, 0, 0, 0, 1, 0, 0, 0, 0,

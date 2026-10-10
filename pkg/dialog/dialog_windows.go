@@ -79,7 +79,7 @@ func newOpenFileName(title string, hwndOwner uintptr) (ofn openFileName, fileBuf
 	ofn.lStructSize = uint32(unsafe.Sizeof(ofn))
 	ofn.hwndOwner = hwndOwner
 
-	filter := "All Files (*.*)\x00*.*\x00All Supported Text Files (*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack)\x00*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.mdmemopack\x00syki::sok Package (*.mdmemopack)\x00*.mdmemopack\x00Markdown Files (*.md;*.markdown)\x00*.md;*.markdown\x00JSON / Config Files (*.json;*.yaml;*.yml;*.toml;*.ini;*.env)\x00*.json;*.yaml;*.yml;*.toml;*.ini;*.env\x00Text / Source Code (*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css)\x00*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css\x00\x00"
+	filter := "All Files (*.*)\x00*.*\x00All Supported Text Files (*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.sykipack)\x00*.md;*.txt;*.json;*.yaml;*.yml;*.toml;*.csv;*.tsv;*.xml;*.html;*.css;*.js;*.ts;*.go;*.py;*.rs;*.sh;*.bat;*.ps1;*.log;*.env;*.ini;*.sql;*.c;*.cpp;*.h;*.sykipack\x00syki::sok Package (*.sykipack)\x00*.sykipack\x00Markdown Files (*.md;*.markdown)\x00*.md;*.markdown\x00JSON / Config Files (*.json;*.yaml;*.yml;*.toml;*.ini;*.env)\x00*.json;*.yaml;*.yml;*.toml;*.ini;*.env\x00Text / Source Code (*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css)\x00*.txt;*.log;*.go;*.py;*.js;*.ts;*.html;*.css\x00\x00"
 	filterUTF16, _ := syscall.UTF16PtrFromString(filter)
 	ofn.lpstrFilter = filterUTF16
 
@@ -121,7 +121,7 @@ func newSaveFileName(title, defaultName string, hwndOwner uintptr) (ofn openFile
 	ofn.lStructSize = uint32(unsafe.Sizeof(ofn))
 	ofn.hwndOwner = hwndOwner
 
-	filter := "Markdown Files (*.md)\x00*.md\x00HTML Files (*.html;*.htm)\x00*.html;*.htm\x00JSON Files (*.json)\x00*.json\x00syki::sok Package (*.mdmemopack)\x00*.mdmemopack\x00Text Files (*.txt)\x00*.txt\x00YAML Files (*.yaml;*.yml)\x00*.yaml;*.yml\x00All Files (*.*)\x00*.*\x00\x00"
+	filter := "Markdown Files (*.md)\x00*.md\x00HTML Files (*.html;*.htm)\x00*.html;*.htm\x00JSON Files (*.json)\x00*.json\x00syki::sok Package (*.sykipack)\x00*.sykipack\x00Text Files (*.txt)\x00*.txt\x00YAML Files (*.yaml;*.yml)\x00*.yaml;*.yml\x00All Files (*.*)\x00*.*\x00\x00"
 	if strings.EqualFold(filepath.Ext(defaultName), ".pdf") { // saving a PDF (the print panel): that type first, so that the list shows the PDFs of the folder
 		filter = "PDF Files (*.pdf)\x00*.pdf\x00" + filter
 	}

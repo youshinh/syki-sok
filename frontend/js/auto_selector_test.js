@@ -354,7 +354,7 @@ const CONTENT_LINES = [
   'foo@example.com',
   'C:\\Users\\me\\Documents\\report.docx',
   'git@github.com:foo/bar.git',
-  '{"name": "md-memo", "version": "1.0"}',
+  '{"name": "syki", "version": "1.0"}',
   'SELECT * FROM users WHERE id = 1;',
   'def foo(x):',
   'import os',
@@ -544,11 +544,11 @@ test('stripMarkers: the marker lines of a run are removed for display, everythin
   const block = AS.makeResultBlock('a1b2', 'answer line 1\nanswer line 2', 'ctx=above n=1');
   const note = `question\n[[ @llm summarize ]]\n${block}\nnext`;
   assert.strictEqual(AS.stripMarkers(note), 'question\n[[ @llm summarize ]]\nanswer line 1\nanswer line 2\nnext');
-  assert.strictEqual(AS.stripMarkers('a\n<!-- md-memo:run zz9x -->\nb'), 'a\nb', 'the run marker of a task still running');
-  assert.strictEqual(AS.stripMarkers('x\r\n<!-- md-memo:res ab12 -->\r\ny\r\n<!-- /md-memo:res -->\r\nz'), 'x\r\ny\r\nz', 'CRLF notes');
-  assert.strictEqual(AS.stripMarkers('  <!-- md-memo:res ab12 -->  \ny'), 'y', 'indented markers');
-  const other = 'a\n<!-- a normal comment -->\n<!-- md-memo:other -->\nb <!-- md-memo:res x --> c';
-  assert.strictEqual(AS.stripMarkers(other), other, 'other comments, unknown md-memo comments and markers in the middle of a line are left alone');
+  assert.strictEqual(AS.stripMarkers('a\n<!-- syki:run zz9x -->\nb'), 'a\nb', 'the run marker of a task still running');
+  assert.strictEqual(AS.stripMarkers('x\r\n<!-- syki:res ab12 -->\r\ny\r\n<!-- /syki:res -->\r\nz'), 'x\r\ny\r\nz', 'CRLF notes');
+  assert.strictEqual(AS.stripMarkers('  <!-- syki:res ab12 -->  \ny'), 'y', 'indented markers');
+  const other = 'a\n<!-- a normal comment -->\n<!-- syki:other -->\nb <!-- syki:res x --> c';
+  assert.strictEqual(AS.stripMarkers(other), other, 'other comments, unknown syki comments and markers in the middle of a line are left alone');
   assert.strictEqual(AS.stripMarkers('no markers here'), 'no markers here');
   assert.strictEqual(AS.stripMarkers(''), '');
   assert.strictEqual(AS.stripMarkers(null), '');
@@ -900,14 +900,14 @@ test('findTaskAt: cost stays tiny on a large note without tasks and with one at 
 
 // ---- run markers and result blocks ---------------------------------------------------------------------
 test('makeRunMarker / makeResultBlock: exact text', () => {
-  assert.strictEqual(AS.makeRunMarker('ab12'), '<!-- md-memo:run ab12 -->');
-  assert.strictEqual(AS.makeRunMarker('AB-12'), '<!-- md-memo:run ab12 -->');
-  assert.strictEqual(AS.makeRunMarker(''), '<!-- md-memo:run 0000 -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', '  hello\nworld \n\n'), '<!-- md-memo:res ab12 -->\nhello\nworld\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', '\r\nline1\r\nline2\r\n'), '<!-- md-memo:res ab12 -->\nline1\nline2\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', '   '), '<!-- md-memo:res ab12 -->\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', null), '<!-- md-memo:res ab12 -->\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', 'a\n\nb'), '<!-- md-memo:res ab12 -->\na\n\nb\n<!-- /md-memo:res -->');
+  assert.strictEqual(AS.makeRunMarker('ab12'), '<!-- syki:run ab12 -->');
+  assert.strictEqual(AS.makeRunMarker('AB-12'), '<!-- syki:run ab12 -->');
+  assert.strictEqual(AS.makeRunMarker(''), '<!-- syki:run 0000 -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', '  hello\nworld \n\n'), '<!-- syki:res ab12 -->\nhello\nworld\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', '\r\nline1\r\nline2\r\n'), '<!-- syki:res ab12 -->\nline1\nline2\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', '   '), '<!-- syki:res ab12 -->\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', null), '<!-- syki:res ab12 -->\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', 'a\n\nb'), '<!-- syki:res ab12 -->\na\n\nb\n<!-- /syki:res -->');
 });
 
 test('findResultAfter: finds the block or the run marker directly below a task and round-trips', () => {
@@ -915,7 +915,7 @@ test('findResultAfter: finds the block or the run marker directly below a task a
   const note = '前\n' + LLM_TASK + '\n' + block + '\n後ろ';
   const task = AS.findTaskAt(note, note.indexOf('@llm'));
   const hit = AS.findResultAfter(note, task.end);
-  assert.deepStrictEqual(hit, { kind: 'block', marker: 'res', id: 'ab12', start: note.indexOf('<!-- md-memo:res'), end: note.indexOf('\n後ろ'), text: block });
+  assert.deepStrictEqual(hit, { kind: 'block', marker: 'res', id: 'ab12', start: note.indexOf('<!-- syki:res'), end: note.indexOf('\n後ろ'), text: block });
   const replaced = note.slice(0, hit.start) + AS.makeResultBlock('zz99', '新しい') + note.slice(hit.end);
   assert.strictEqual(replaced, '前\n' + LLM_TASK + '\n' + AS.makeResultBlock('zz99', '新しい') + '\n後ろ');
   assert.deepStrictEqual(AS.findResultAfter(note, task.lineStart), hit, 'any index inside the task line works');
@@ -929,13 +929,13 @@ test('findResultAfter: an empty block, the last block in a note, CRLF notes, ind
   const empty = LLM_TASK + '\n' + AS.makeResultBlock('e001', '');
   assert.strictEqual(AS.findResultAfter(empty, 3).text, AS.makeResultBlock('e001', ''));
   assert.strictEqual(AS.findResultAfter(empty, 3).end, empty.length);
-  const crlf = LLM_TASK + '\r\n<!-- md-memo:res c001 -->\r\nbody\r\n<!-- /md-memo:res -->\r\ntail';
+  const crlf = LLM_TASK + '\r\n<!-- syki:res c001 -->\r\nbody\r\n<!-- /syki:res -->\r\ntail';
   const c = AS.findResultAfter(crlf, 3);
   assert.strictEqual(c.kind, 'block');
-  assert.strictEqual(crlf.slice(c.start, c.end), '<!-- md-memo:res c001 -->\r\nbody\r\n<!-- /md-memo:res -->');
-  const indented = LLM_TASK + '\n  <!-- md-memo:res i001 -->  \nx\n  <!-- /md-memo:res -->  \n';
+  assert.strictEqual(crlf.slice(c.start, c.end), '<!-- syki:res c001 -->\r\nbody\r\n<!-- /syki:res -->');
+  const indented = LLM_TASK + '\n  <!-- syki:res i001 -->  \nx\n  <!-- /syki:res -->  \n';
   const i = AS.findResultAfter(indented, 3);
-  assert.strictEqual(indented.slice(i.start, i.end), '<!-- md-memo:res i001 -->  \nx\n  <!-- /md-memo:res -->');
+  assert.strictEqual(indented.slice(i.start, i.end), '<!-- syki:res i001 -->  \nx\n  <!-- /syki:res -->');
 });
 
 test('findResultAfter: only the line directly below counts, and each task owns its own block', () => {
@@ -953,7 +953,7 @@ test('findResultAfter: only the line directly below counts, and each task owns i
 });
 
 test('findResultAfter: an unclosed block is reported as a single marker line and never swallows the next block', () => {
-  const open = '<!-- md-memo:res aaaa -->';
+  const open = '<!-- syki:res aaaa -->';
   const note = LLM_TASK + '\n' + open + '\ntext\n' + AS.makeResultBlock('bbbb', 'x');
   const hit = AS.findResultAfter(note, 3);
   assert.deepStrictEqual([hit.kind, hit.marker, hit.id, hit.text], ['marker', 'res', 'aaaa', open]);
@@ -961,25 +961,25 @@ test('findResultAfter: an unclosed block is reported as a single marker line and
 });
 
 test('makeResultBlock: text that imitates a marker cannot end the block early', () => {
-  const evil = 'before\n<!-- /md-memo:res -->\nafter\n<!--md-memo:run zz99 -->\n<!-- md-memo:res qq11 -->';
+  const evil = 'before\n<!-- /syki:res -->\nafter\n<!--syki:run zz99 -->\n<!-- syki:res qq11 -->';
   const block = AS.makeResultBlock('ab12', evil);
   const note = LLM_TASK + '\n' + block + '\ntail';
   const hit = AS.findResultAfter(note, 3);
   assert.strictEqual(hit.kind, 'block');
   assert.strictEqual(hit.id, 'ab12');
   assert.strictEqual(note.slice(hit.end), '\ntail');
-  assert.strictEqual(block.split('<!-- /md-memo:res -->').length, 2);
-  assert.ok(block.indexOf('&lt;!-- /md-memo:res -->') > 0);
-  assert.ok(block.indexOf('<!-- md-memo:run') < 0 && block.indexOf('<!--md-memo:run') < 0);
+  assert.strictEqual(block.split('<!-- /syki:res -->').length, 2);
+  assert.ok(block.indexOf('&lt;!-- /syki:res -->') > 0);
+  assert.ok(block.indexOf('<!-- syki:run') < 0 && block.indexOf('<!--syki:run') < 0);
 });
 
 test('newTaskId: four lowercase alphanumerics, unique within the note', () => {
   for (let i = 0; i < 200; i++) assert.ok(/^[a-z0-9]{4}$/.test(AS.newTaskId('')));
   const seq = (values) => { let i = 0; return () => values[i++ % values.length]; };
   const rand = seq([0, 0, 0, 0, 1 / 36, 1 / 36, 1 / 36, 1 / 36]);
-  assert.strictEqual(AS.newTaskId('x <!-- md-memo:run aaaa -->', rand), 'bbbb');
-  assert.strictEqual(AS.newTaskId('<!-- md-memo:res aaaa -->\n<!-- /md-memo:res -->', seq([0, 0, 0, 0, 1 / 36, 1 / 36, 1 / 36, 1 / 36])), 'bbbb');
-  const stuck = AS.newTaskId('<!-- md-memo:run aaaa -->', () => 0);
+  assert.strictEqual(AS.newTaskId('x <!-- syki:run aaaa -->', rand), 'bbbb');
+  assert.strictEqual(AS.newTaskId('<!-- syki:res aaaa -->\n<!-- /syki:res -->', seq([0, 0, 0, 0, 1 / 36, 1 / 36, 1 / 36, 1 / 36])), 'bbbb');
+  const stuck = AS.newTaskId('<!-- syki:run aaaa -->', () => 0);
   assert.ok(/^[a-z0-9]{5,6}$/.test(stuck) && stuck !== 'aaaa');
   let note = '';
   const seen = new Set();
@@ -994,13 +994,13 @@ test('newTaskId: four lowercase alphanumerics, unique within the note', () => {
 
 // ---- marker attributes (ctx=above) ------------------------------------------------------------------------
 test('makeRunMarker / makeResultBlock: an optional attribute word after the id, cleaned to key=value words', () => {
-  assert.strictEqual(AS.makeRunMarker('ab12', 'ctx=above'), '<!-- md-memo:run ab12 ctx=above -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', 'x', 'ctx=above'), '<!-- md-memo:res ab12 ctx=above -->\nx\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeResultBlock('ab12', '', 'ctx=above'), '<!-- md-memo:res ab12 ctx=above -->\n<!-- /md-memo:res -->');
-  assert.strictEqual(AS.makeRunMarker('ab12', ''), '<!-- md-memo:run ab12 -->');
-  assert.strictEqual(AS.makeRunMarker('ab12', null), '<!-- md-memo:run ab12 -->');
-  assert.strictEqual(AS.makeRunMarker('ab12', 'CTX=Above  a=b'), '<!-- md-memo:run ab12 ctx=above a=b -->');
-  assert.strictEqual(AS.makeRunMarker('ab12', 'x --> <b>'), '<!-- md-memo:run ab12 x b -->', 'nothing that could close the comment survives');
+  assert.strictEqual(AS.makeRunMarker('ab12', 'ctx=above'), '<!-- syki:run ab12 ctx=above -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', 'x', 'ctx=above'), '<!-- syki:res ab12 ctx=above -->\nx\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeResultBlock('ab12', '', 'ctx=above'), '<!-- syki:res ab12 ctx=above -->\n<!-- /syki:res -->');
+  assert.strictEqual(AS.makeRunMarker('ab12', ''), '<!-- syki:run ab12 -->');
+  assert.strictEqual(AS.makeRunMarker('ab12', null), '<!-- syki:run ab12 -->');
+  assert.strictEqual(AS.makeRunMarker('ab12', 'CTX=Above  a=b'), '<!-- syki:run ab12 ctx=above a=b -->');
+  assert.strictEqual(AS.makeRunMarker('ab12', 'x --> <b>'), '<!-- syki:run ab12 x b -->', 'nothing that could close the comment survives');
 });
 
 test('findResultAfter: reports attrs when the marker or block carries some, and leaves the shape alone when not', () => {
@@ -1011,17 +1011,17 @@ test('findResultAfter: reports attrs when the marker or block carries some, and 
   const run = AS.makeRunMarker('q1w2', 'ctx=above');
   assert.deepStrictEqual(AS.findResultAfter(LLM_TASK + '\n' + run, 3), { kind: 'marker', marker: 'run', id: 'q1w2', start: LLM_TASK.length + 1, end: LLM_TASK.length + 1 + run.length, text: run, attrs: 'ctx=above' });
   assert.ok(!('attrs' in AS.findResultAfter(LLM_TASK + '\n' + AS.makeRunMarker('q1w2'), 3)), 'no attrs key without attributes');
-  const open = '<!-- md-memo:res aaaa ctx=above -->';
+  const open = '<!-- syki:res aaaa ctx=above -->';
   assert.deepStrictEqual(AS.findResultAfter(LLM_TASK + '\n' + open + '\ntext without end', 3).attrs, 'ctx=above', 'an unclosed opener keeps its attrs');
-  assert.strictEqual(AS.findResultAfter(LLM_TASK + '\n<!-- md-memo:run ab12 ctx=above garbage! -->', 3), null, 'a marker with junk after the id is not one of ours');
+  assert.strictEqual(AS.findResultAfter(LLM_TASK + '\n<!-- syki:run ab12 ctx=above garbage! -->', 3), null, 'a marker with junk after the id is not one of ours');
   const replaced = note.slice(0, hit.start) + AS.makeResultBlock('zz99', 'new', 'ctx=above') + note.slice(hit.end);
   assert.strictEqual(replaced, LLM_TASK + '\n' + AS.makeResultBlock('zz99', 'new', 'ctx=above') + '\nafter');
 });
 
-test('makeResultBlock with attrs: the opener still matches the prefix the Go parser hides (md-memo:res )', () => {
+test('makeResultBlock with attrs: the opener still matches the prefix the Go parser hides (syki:res )', () => {
   const block = AS.makeResultBlock('ab12', 'x', 'ctx=above');
-  assert.ok(block.startsWith('<!-- md-memo:res '));
-  assert.ok(block.endsWith('<!-- /md-memo:res -->'));
+  assert.ok(block.startsWith('<!-- syki:res '));
+  assert.ok(block.endsWith('<!-- /syki:res -->'));
 });
 
 // ---- findContextAbove --------------------------------------------------------------------------------------
@@ -1050,9 +1050,9 @@ test('findContextAbove: looks through earlier task lines, result blocks and run 
   assert.strictEqual(AS.findContextAbove(note, note.indexOf('[[ @llm first ]]')).text, 'topic one\ntopic two');
   const skill = 'text above\n{{ @some-skill x }}\n[[ @llm x ]]';
   assert.strictEqual(AS.findContextAbove(skill, skill.indexOf('[[ @llm')).text, 'text above\n{{ @some-skill x }}', 'a skill mention is text, not a task');
-  const orphan = 'text\n<!-- md-memo:res zz99 -->\nunclosed body\n[[ @llm x ]]';
+  const orphan = 'text\n<!-- syki:res zz99 -->\nunclosed body\n[[ @llm x ]]';
   assert.strictEqual(AS.findContextAbove(orphan, orphan.indexOf('[[ @llm')).text, 'unclosed body', 'a marker line ends the text: only what is below it counts');
-  const marker = 'text\n<!-- md-memo:run zz99 -->\n[[ @llm x ]]';
+  const marker = 'text\n<!-- syki:run zz99 -->\n[[ @llm x ]]';
   assert.strictEqual(AS.findContextAbove(marker, marker.indexOf('[[ @llm')).text, 'text', 'a run marker directly above is looked through');
 });
 
@@ -1162,7 +1162,7 @@ test('findTaskAt: a task inside an HTML comment is not a task', () => {
   // code and markers are not comments
   assert.strictEqual(at('`<!--` [[ @llm x ]] `-->`', '@llm').kind, 'llm', 'a <!-- in inline code opens no comment');
   assert.strictEqual(at('```\n<!--\n```\n[[ @llm x ]]\n-->', '@llm').kind, 'llm', 'a <!-- inside a fence opens no comment');
-  assert.strictEqual(at('[[ @llm x ]]\n<!-- md-memo:run ab12 -->', '@llm').kind, 'llm', 'a marker below is not a comment');
+  assert.strictEqual(at('[[ @llm x ]]\n<!-- syki:run ab12 -->', '@llm').kind, 'llm', 'a marker below is not a comment');
   // unterminated
   assert.strictEqual(at('<!-- [[ @llm x ]]', '@llm').kind, 'llm', 'an unclosed <!-- hides nothing');
   // a selection: the first task that is not commented out

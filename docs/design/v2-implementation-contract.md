@@ -4,7 +4,7 @@
 
 ## 1. 場所と禁止事項（最優先）
 
-- 作業するのは **worktree `C:\Users\yoush\Documents\md-memo-v2`（ブランチ `v2`）だけ**。`C:\Users\yoush\Documents\md-memo`（main の作業ツリー）は、ユーザーの別セッションが使っているので**読むのも書くのも禁止**（作業ツリーの外の `scratchpad` を除く）。
+- 作業するのは **worktree `C:\Users\yoush\Documents\syki-v2`（ブランチ `v2`）だけ**。`C:\Users\yoush\Documents\syki-sok`（main の作業ツリー）は、ユーザーの別セッションが使っているので**読むのも書くのも禁止**（作業ツリーの外の `scratchpad` を除く）。
 - `git add` / `commit` / `stash` / `checkout` / `reset` / `merge` / `push` は**しない**（コミットは統括役が検証してから行う）。`git diff` / `git status` / `git log` は可。
 - ユーザーのふだんの syki::sok（`syki.exe`、起動中）を**止めない・触らない**。`go build` は `-o` で出力先を指定する（worktree 直下に exe を作らない）。Ollama も触らない。
 - **性能と軽さが最優先**（常駐メモリ 5〜15MB、起動 15ms 未満が売り）。未使用なら何も作らない・何も読み込まない。起動時に重い処理を足さない。追加した CSS/JS は、増えたバイト数と、起動・8 万行ノートへの影響を報告する。

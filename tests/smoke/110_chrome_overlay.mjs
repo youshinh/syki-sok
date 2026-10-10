@@ -9,7 +9,7 @@
 //   * auto-hide off: nothing is listening and typing leaves the bars alone.
 import { assert, click, settle, waitFocus } from './lib.mjs';
 
-const NOTE_A = ['# Overlay note', '', '[[ @llm go ]]', '<!-- md-memo:res ab12 -->', '- result', '<!-- /md-memo:res -->', '', ...Array.from({ length: 120 }, (_, i) => `Line ${i + 1} lorem ipsum dolor sit amet`)].join('\n') + '\n';
+const NOTE_A = ['# Overlay note', '', '[[ @llm go ]]', '<!-- syki:res ab12 -->', '- result', '<!-- /syki:res -->', '', ...Array.from({ length: 120 }, (_, i) => `Line ${i + 1} lorem ipsum dolor sit amet`)].join('\n') + '\n';
 const NOTE_B = Array.from({ length: 120 }, (_, i) => `Row ${i + 1} second note`).join('\n') + '\n';
 
 const css = (s, id, prop) => s.ev(`getComputedStyle(document.getElementById(${JSON.stringify(id)}))[${JSON.stringify(prop)}]`);

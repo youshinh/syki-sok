@@ -11,7 +11,7 @@ import (
 // Mode selects how strictly VerifyCommand judges a command. The same rules run in every mode; the
 // mode only decides how serious each finding is, because who is watching differs:
 //
-//   - ModeStrict:     one-click execution with nobody reviewing (Quick Actions, `md-memo jev verify`).
+//   - ModeStrict:     one-click execution with nobody reviewing (Quick Actions, `syki jev verify`).
 //   - ModeReviewed:   a person sees the command before it runs (the Ctrl+Shift+B bar, the AI CLI bar).
 //   - ModeUnattended: no person at all (hooks). Nothing is merely a warning there.
 type Mode int
@@ -105,7 +105,7 @@ func (v Verdict) ValidationResult(cmd string) ValidationResult {
 	}
 }
 
-// VerifyCommand is the single safety judgement for shell commands. `md-memo jev verify`, the filter
+// VerifyCommand is the single safety judgement for shell commands. `syki jev verify`, the filter
 // registry, the GUI run gate and the hook runner all go through it, so a command can never pass one
 // of them and fail another. rules may be nil; it can only make the verdict stricter (see Rules).
 //

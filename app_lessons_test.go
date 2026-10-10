@@ -620,7 +620,7 @@ func TestLessonSaveChecksAgainAndWritesTheFile(t *testing.T) {
 	data, _ := os.ReadFile(res.Path)
 	today := time.Now().Format("2006-01-02")
 	want := "# Lessons for claude-code\n" +
-		"<!-- md-memo lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->\n" +
+		"<!-- syki lessons: one rule per \"- \" line. Edit or delete freely; other lines are ignored. -->\n" +
 		"- Do not include ADF.h: the build fails on this machine. <!-- " + today + " -->\n" +
 		"- Use make -j1 <!-- " + today + " -->\n"
 	if string(data) != want {

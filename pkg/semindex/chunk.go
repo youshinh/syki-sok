@@ -32,7 +32,7 @@ const (
 type ChunkOptions struct {
 	MaxChars  int  // 0 = DefaultMaxChars
 	Header    bool // put "date > heading" in front of the text that is embedded (not of the text that is kept)
-	IncludeAI bool // keep the AI result blocks (md-memo:res); by default they are not indexed: an AI's own words searched again only echo
+	IncludeAI bool // keep the AI result blocks (syki:res); by default they are not indexed: an AI's own words searched again only echo
 }
 
 func (o ChunkOptions) maxChars() int {
@@ -131,7 +131,7 @@ func ChunkFile(rel string, data []byte, opts ChunkOptions) []Chunk {
 	for idx, e := range search.Entries(data) {
 		text := strings.ReplaceAll(string(data[e.StartOff:e.EndOff]), "\r\n", "\n")
 		kind := KindNote
-		if generated || strings.Contains(text, "<!-- md-memo:res") {
+		if generated || strings.Contains(text, "<!-- syki:res") {
 			kind = KindAI
 			if !opts.IncludeAI {
 				continue

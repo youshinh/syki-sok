@@ -613,7 +613,7 @@ func SetupRemote(dir, remoteURL, branch string) error {
 	}
 	emailCheck := gitCmd("-C", expanded, "config", "user.email")
 	if out, err := emailCheck.Output(); err != nil || len(strings.TrimSpace(string(out))) == 0 {
-		_ = gitCmd("-C", expanded, "config", "user.email", "md-memo@local").Run()
+		_ = gitCmd("-C", expanded, "config", "user.email", "syki@local").Run()
 	}
 
 	// Set branch
@@ -675,7 +675,7 @@ func SetupRemote(dir, remoteURL, branch string) error {
 				// Any pending local edits (e.g. notes written before this link/re-link) must not
 				// block or get lost in the rebase/merge below, so stash them first and restore
 				// them once history is reconciled.
-				stashCmd := gitCmd("-C", expanded, "stash", "push", "-u", "-m", "md-memo: pre-link auto-stash")
+				stashCmd := gitCmd("-C", expanded, "stash", "push", "-u", "-m", "syki: pre-link auto-stash")
 				stashOut, stashErr := stashCmd.CombinedOutput()
 				stashed := stashErr == nil && !strings.Contains(string(stashOut), "No local changes to save")
 

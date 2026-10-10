@@ -27,19 +27,19 @@
 | --- | --- | --- |
 | F1 | v2 は Go・CI・packaging を 1 行も変えていない。変更 123 件の内訳: `frontend` 29、`tests` 55、`tools` 24、`docs` 10、`skills` 3、`manual*.html` 2。削除は `tests/zen_active_test.mjs` の 1 件 | `git diff --name-only main v2` |
 | F2 | `main` = `origin/main` = merge-base = `2fe2a2b`。`git log v2..main` と `git log v2..origin/main` は空。`v2` は origin に**まだ無い**（`git branch -r` は `origin/main` だけ）。タグは `v1.14.0` が最新 | `git rev-parse`、`git log`（`git fetch` はしていない。**出す直前に必ず fetch して確かめる**） |
-| F3 | 主ツリーの未コミット（セッション開始時のスナップショット）: `.gitignore` 変更、ルートの 8 本（`e2e_comprehensive_test.uws`、`run_test.bat`、`run_test_step.ps1`、`test_cli_runner.ps1`、`test_e2e_full_suite.uws`、`test_md_memo.uws`、`test_programmable_control.uws`、`test_programmable_gui.uws`）の削除、`tests/e2e/` 未追跡、`docs/design/v2-visual-2026-10.md` 未追跡。v2 の 123 件と**重なるのは最後の 1 件だけ**（v2 では `bac163b` で追跡済み）。`tests/e2e/` は v2 に無く、`run_js_tests.mjs` は `tests/*.mjs` を再帰しないので、取り込んでも競合しない | `git status`（会話の冒頭）と `git diff --name-only main v2` |
+| F3 | 主ツリーの未コミット（セッション開始時のスナップショット）: `.gitignore` 変更、ルートの 8 本（`e2e_comprehensive_test.uws`、`run_test.bat`、`run_test_step.ps1`、`test_cli_runner.ps1`、`test_e2e_full_suite.uws`、`test_syki.uws`、`test_programmable_control.uws`、`test_programmable_gui.uws`）の削除、`tests/e2e/` 未追跡、`docs/design/v2-visual-2026-10.md` 未追跡。v2 の 123 件と**重なるのは最後の 1 件だけ**（v2 では `bac163b` で追跡済み）。`tests/e2e/` は v2 に無く、`run_js_tests.mjs` は `tests/*.mjs` を再帰しないので、取り込んでも競合しない | `git status`（会話の冒頭）と `git diff --name-only main v2` |
 | F4 | `ci.yml` は**すべてのブランチの push** で走る（`push:`、`pull_request:`）。Windows ジョブ: `go vet`（注釈だけ）、`go build ./...`、`go test ./...`、macOS 向けの cgo なし型検査（`go vet` と `go test -c`）、**JS 全件**（`node tools/run_js_tests.mjs`）、exe と CLI の作成と検査、アーティファクト 14 日。macOS ジョブ: `go build ./...`（Obj-C の唯一のコンパイル）、`go test ./...`、`build_mac.sh`（universal の `.app`）、`plutil`・`lipo`・`--version` の起動検査、**JS 全件**、署名検査、`syki-macos-<sha>` のアーティファクト 14 日。**smoke（`tests/smoke`、Edge が要る）と性能（`tools/perf`）は CI に無い** | `.github/workflows/ci.yml` |
 | F5 | `release.yml` は `v*` タグで走る。Windows は exe と CLI を zip、macOS は `go test -v ./...` → `build_mac.sh` → zip。公開されるリリースは本文が空でタイトルがタグ名のまま。`static.yml` は `main` への push で `path: '.'` を Pages に出す | `.github/workflows/*.yml` |
 | F6 | 最小の macOS は 10.15（`build_mac.sh:9`）。WKWebView は Safari 15.6 まで。Windows の WebView2 は 154（P2 の測定条件） | `build_mac.sh`、`tools/perf/v2-p2-translucency.md` |
 | F7 | 埋め込む `frontend/` は main の 6,823,961 バイトから **7,096,706 バイト（+272,745、+4.0%）**。`style.css` 150 KB、`tokens.css` 27 KB、`chrome.css` 12.6 KB、`appearance.js` 20.6 KB、`chrome_overlay.js` 24 KB。JS テスト 134 ファイル（`frontend/js/*_test.js` 39 + `tests/*.mjs` 95）、smoke 62 本 | `git ls-tree -l`、`ls` |
-| F8 | 起動の最初の描画の前に見た目を当てる小さなスクリプト（P1b）: `frontend/index.html:22`。`<body>` の最初のインライン（ES5、400 文字ほど）が `localStorage['md_memo_look']`（`paper` と `blue` のような語を縦線でつないだ印）を読み、`look-paper` と `theme-*` のクラスを `<body>` と `<html>` に付ける。`:root.look-paper { --canvas-bg: #fbfbf9; color-scheme: light }`（`tokens.css`）が canvas を紙にする。印は `app.js` の `applyTheme()` → `rememberLook()`（`app.js:507`）が、**既定の見た目（墨・Dark Olive）でないときだけ**書く。自分で選ぶ色は印に入れない。実機で 4/4 確認済み（`v2-tokens.md` 6.7） | `index.html`、`appearance.js` の `markerFor`、`app.js` |
+| F8 | 起動の最初の描画の前に見た目を当てる小さなスクリプト（P1b）: `frontend/index.html:22`。`<body>` の最初のインライン（ES5、400 文字ほど）が `localStorage['syki_look']`（`paper` と `blue` のような語を縦線でつないだ印）を読み、`look-paper` と `theme-*` のクラスを `<body>` と `<html>` に付ける。`:root.look-paper { --canvas-bg: #fbfbf9; color-scheme: light }`（`tokens.css`）が canvas を紙にする。印は `app.js` の `applyTheme()` → `rememberLook()`（`app.js:507`）が、**既定の見た目（墨・Dark Olive）でないときだけ**書く。自分で選ぶ色は印に入れない。実機で 4/4 確認済み（`v2-tokens.md` 6.7） | `index.html`、`appearance.js` の `markerFor`、`app.js` |
 | F9 | 起動の順序（Windows）: `main.go` が `InitScrapEngine()` を呼ぶ（`readConfigCached()` で `config.json` を読む）→ HTTP サーバ（固定ポート 41739）→ `runPlatformWindow`。`runPlatformWindow` の最初で `globalApp = app`、環境変数 `WEBVIEW2_DEFAULT_BACKGROUND_COLOR`（`window_windows.go:627`）、WH_CBT フック（:666-681）、`webview2.NewWithOptions`、`applyNativeDarkMode(w)`（:715）。`config.json` を読む既存の純粋関数は `parseGlobalSummonShortcut(raw)`（`app_config.go:115`）と `parseJevRelevantSettings` | `main.go:199-262`、`window_windows.go`、`app_config.go` |
 | F10 | `SaveConfig(configJSON)`（`app_config.go:202`）は、設定画面の保存・設定パッケージの取り込み・状態バーのスイッチなど、設定が変わるすべての保存の通り道。書いたあと `invalidateConfigCache()` し、4 つの購読者（scrap・jev・discord・inbox）を、設定が変わったときだけ作り直す。UI スレッドへ渡す既存の道具は `a.w.Dispatch`（`dispatchEval`、`app.go:233`） | `app_config.go`、`app.go` |
 | F11 | 強制色の規則（実在）: `chrome.css:280-296`（バーは不透明・`backdrop-filter` なし・上下に 1px の線。`prefers-reduced-transparency` と同じ塊）、`style.css:434-454`（タブ: 塗りなし、枠線、選択中は `Highlight`、印は `ButtonText`、焦点は `Highlight`）、`style.css:1243-1277`（仕切りは線、紙は枠、フォーカスのあるページは `Highlight`、`.pane-header`）。`prefers-reduced-motion`: `style.css` の全体規則（`transition-duration: 0s !important`、`animation-duration: 0.01ms !important`）と個別 5 か所、`panel_fade.js` の `matchMedia`。`prefers-contrast` の規則は**無い** | `grep` |
 | F12 | 設計書 §4.1 の「窓の下の角と本の下の角 11px」は、**CSS に実装されていない**（`#app` に角丸が無い。`grep` で 0 件）。Windows 11 と macOS は OS が窓を丸める | `style.css`、`chrome.css` |
 | F13 | マニュアルの設定の章（`manual.html` の `cfg-general`）は「Theme color: Dark Olive / VS Code Blue / Forest Teal / Charcoal」の 1 行のままで、**地（墨・紙）、朱、自分で指定する色、バーの透過、自動非表示、ページの間の仕切り、エディタのフォントが載っていない**。タブの帯・Zen・仕切り・F6 は P2〜P4 で書き込み済み。`split-editor` の図は `shots.json` にあるが、マニュアルに**まだ置いていない** | `grep`、`node` での突き合わせ |
 | F14 | docshots: `shots.json` は 70 の状態（全面 58、切り抜き 12、狭い窓 4、スマホ 2）、マーカー 234 個。`img/manual/en` と `ja` に各 71 枚（70 − `split-editor` + ネイティブ 2）。マニュアルが参照するのは 63 状態 + ネイティブ 2 = 65 枚。`run.mjs` は `--look ink` と `--look paper` と `--accent` を持ち、`shot.boot.look` で状態ごとの上書きもできる（`new URLSearchParams({lang, look, accent, ...shot.boot})` の後勝ち）。マーカーの `selector` 233 部分を `frontend` と突き合わせて、**消えた id・class は 0 件**（スマホのページの 4 つと `is-info` は Go の HTML と動的なクラスで別の場所にある） | `tools/docshots/`、`scratchpad/p6/selcheck.mjs` |
-| F15 | winget の PR `microsoft/winget-pkgs#438694`（`youshinh.md-memo` 1.12.0）は、検証は通り（`Azure-Pipeline-Passed`、`Validation-Completed`、`New-Package`）、`reviewDecision: REVIEW_REQUIRED` で**モデレーター待ち**のまま（`updatedAt` 2026-10-03）。Homebrew は `youshinh/homebrew-tap` の cask を版ごとに手で更新する | `gh pr view`、記録 |
+| F15 | winget の PR `microsoft/winget-pkgs#438694`（`youshinh.syki` 1.12.0）は、検証は通り（`Azure-Pipeline-Passed`、`Validation-Completed`、`New-Package`）、`reviewDecision: REVIEW_REQUIRED` で**モデレーター待ち**のまま（`updatedAt` 2026-10-03）。Homebrew は `youshinh/homebrew-tap` の cask を版ごとに手で更新する | `gh pr view`、記録 |
 | F16 | リリースの本文は 英語 → `---` → 日本語 の 2 部で、`### Added / Changed / Checked / Not verified`（日本語は 追加 / 変更 / 確認したこと / 未確認）。v1.14.0 の本文で確認 | `gh release view v1.14.0` |
 
 ---
@@ -99,7 +99,7 @@ func colorrefBGR(l nativeLook) uintptr                          // 0x00BBGGRR（
 - **実行中の追従は `SaveConfig` の中**（新しい bind・RPC・JS の変更なし）: 書いて `invalidateConfigCache()` した直後に `a.noteNativeLook(configJSON)`。`parseAppearanceLook` の結果が、最後に当てた値（`a.nativeLook`、`runPlatformWindow` が起動時に入れる）と違うときだけ、`a.applyNativeLook`（`runPlatformWindow` が入れるフック。窓が無いテストでは `nil`）を呼ぶ。フックの中身は `a.w.Dispatch(func(){ setNativeLook(l) })`（`isDestroyed` を見る。`dispatchEval` と同じ形）。**設定画面の「プレビュー」（保存前の即時反映）にはネイティブは追従しない**（保存で追従。他の OS 連携の設定、トレイ常駐・グローバルショートカットと同じ流儀）。
 - **Windows の `setNativeLook(l)`**（`window_windows.go`）: ① `DwmSetWindowAttribute(globalHwnd, 20, &(!l.Paper))` と 19、② クラスのブラシを `brushFor(l)` に替える（**ink と paper の 2 つのブラシをそれぞれ最初に必要になったときだけ作り、使い回す**。`SetClassLongPtrW` が返す前のブラシは**捨てない**: 起動時のフックで他のクラスにも付けた共有のブラシで、消すと他の窓が壊れる。漏れるのは 0 個）、③ `PutDefaultBackgroundColor`（N5 の既存の反射の道を `applyNativeDarkMode` から切り出して使う）、④ タイトルバーの再描画（`SetWindowPos` の `SWP_FRAMECHANGED` か `RedrawWindow` — **実機で、どれが必要か確かめる**）。環境変数（N1）は起動時だけ。
 - **起動時**: `runPlatformWindow` の最初（`globalApp = app` の直後）で `l := app.startupNativeLook()`、`app.nativeLook = l`。N1 は `webview2BackgroundEnv(l)`、N2 のブラシとフックの DWM の値は `l` から、`applyNativeDarkMode(w)` は `applyNativeLook(w, l)` に改名して `l` を受ける（N3〜N5 を 1 か所に）。
-- **macOS**: `setupMacWindowDelegate(void *nsWindow, double r, double g, double b)` に変え、`[NSColor colorWithSRGBRed:r green:g blue:b alpha:1.0]` を N6・N7 の両方に使う。実行中用に `static void mdmemoSetBackdrop(double r, double g, double b)`（`dispatch_async(main)`、`gWindow` に同じ 2 つを当てる。`underPage…` は `@available(macOS 12.0, *)` の中）。Go 側は `window_darwin.go` に `setNativeLook(l nativeLook)`（`C.mdmemoSetBackdrop`）、`platform_darwin_nocgo.go` に空のスタブ。**Obj-C の差分は 25 行以内**、既存の同じ形（`dispatch_async` と `@available`）の写し。この PC に clang が無く、**CI の macOS ジョブが最初のコンパイル**。
+- **macOS**: `setupMacWindowDelegate(void *nsWindow, double r, double g, double b)` に変え、`[NSColor colorWithSRGBRed:r green:g blue:b alpha:1.0]` を N6・N7 の両方に使う。実行中用に `static void sykiSetBackdrop(double r, double g, double b)`（`dispatch_async(main)`、`gWindow` に同じ 2 つを当てる。`underPage…` は `@available(macOS 12.0, *)` の中）。Go 側は `window_darwin.go` に `setNativeLook(l nativeLook)`（`C.sykiSetBackdrop`）、`platform_darwin_nocgo.go` に空のスタブ。**Obj-C の差分は 25 行以内**、既存の同じ形（`dispatch_async` と `@available`）の写し。この PC に clang が無く、**CI の macOS ジョブが最初のコンパイル**。
 - **値の一致を機械で縛る**: ネイティブの 2 色と `tokens.css` の `--canvas-bg`（`:root` と `:root.look-paper`）が違うとテストが落ちる（§2.5）。`index.html` の `theme-color` の値も墨と同じであることを見る。
 
 ### 2.4 手順（各手順の終わりでアプリが動く）
@@ -110,12 +110,12 @@ func colorrefBGR(l nativeLook) uintptr                          // 0x00BBGGRR（
 | A1 | `nativelook.go` とテスト（純粋なもの）。**まだ誰も呼ばない** | `nativelook.go`、`nativelook_test.go` | 挙動は不変。`go test` と 2 つのクロスチェックが通る |
 | A2 | Windows の起動時: N1・N2・N3（フック）・N4・N5 を `startupNativeLook` から。墨の既定は `#0e0f17` に（ごくわずかに暗くなる）。紙は明るく | `window_windows.go`、`app.go`（フィールド 2 つ） | 墨・紙の最初のフレームが地と一致（§2.6） |
 | A3 | Windows の実行中: `SaveConfig` → `noteNativeLook` → `setNativeLook`。ブラシのキャッシュ、タイトルバー、再描画 | `app_config.go`（3 行）、`nativelook.go`、`window_windows.go` | 設定画面で地を替えて保存すると、タイトルバーと窓の下地が追従 |
-| A4 | macOS: Obj-C の引数・`mdmemoSetBackdrop`・Go の wrapper・nocgo のスタブ・`window_darwin_lifecycle_test.go` の文字列検査 | `window_darwin.go`、`platform_darwin_nocgo.go`、`window_darwin_lifecycle_test.go` | **push して CI の macOS ジョブが緑**（これが唯一のコンパイル） |
+| A4 | macOS: Obj-C の引数・`sykiSetBackdrop`・Go の wrapper・nocgo のスタブ・`window_darwin_lifecycle_test.go` の文字列検査 | `window_darwin.go`、`platform_darwin_nocgo.go`、`window_darwin_lifecycle_test.go` | **push して CI の macOS ジョブが緑**（これが唯一のコンパイル） |
 | A5 | 文書: `v2-tokens.md` 6.7 の「Go のネイティブの色」を「済み」に、Quick Capture を「対象外」に。設計書 §4.1 の「下の角 11px」を、F12 のとおり**直す**（§10 O8） | `docs/design/` | 記述と実装が一致 |
 | A6 | 実機で証明（§2.6）。**墨・紙の両方**、Windows 11（できれば 10 も）。結果を `v2-tokens.md` に数字で書く | scratchpad、`docs/design/` | 受け入れ基準 A（§9） |
 | A7（任意） | 印が無い紙の人のちらつきを消す: Go の HTTP ハンドラが、紙のときだけ `/`（`index.html`）の `<body class="dark-theme theme-olive"` と `<html>` に `look-paper` を入れて返す（埋め込みの `index.html` を 1 回だけ読んで置換して保持）。**推奨: 今回はやらない**（上の「残り」のとおり起動の都度の穴ではなく、`http.FileServer` の経路に手を入れる費用が見合わない）。実機で気になると分かったら 2.0.x で | `main.go` | — |
 
-`tools/…/make_overlay.py`（隔離した実アプリの作成用。scratchpad の `v2e2e/`）は `window_windows.go` の**3 つの文字列がちょうど 1 回**あることを `assert` する（`"Local\\syki_sok_SingleInstance_Mutex_v1"`、`"--disable-hang-monitor",`、`webViewDataPath := filepath.Join(dataDir, "md-memo", "webview")`）。**A2〜A3 はこの 3 行を変えない**（変えるなら `make_overlay.py` を同時に直す。契約 §2.1 の道具）。
+`tools/…/make_overlay.py`（隔離した実アプリの作成用。scratchpad の `v2e2e/`）は `window_windows.go` の**3 つの文字列がちょうど 1 回**あることを `assert` する（`"Local\\syki_sok_SingleInstance_Mutex_v1"`、`"--disable-hang-monitor",`、`webViewDataPath := filepath.Join(dataDir, "syki", "webview")`）。**A2〜A3 はこの 3 行を変えない**（変えるなら `make_overlay.py` を同時に直す。契約 §2.1 の道具）。
 
 ### 2.5 テスト（hermetic。実機に副作用を出さない）
 
@@ -129,7 +129,7 @@ func colorrefBGR(l nativeLook) uintptr                          // 0x00BBGGRR（
 | `TestSaveConfigAppliesNativeLookOnChange` | `App{}` に記録用のフックを入れ、`SaveConfig`（一時フォルダに書く）を 墨 → 墨（0 回）→ 紙（1 回）→ 紙（0 回）→ 壊れた JSON（0 回。直前の値を保つ）→ 墨（1 回）。フックが `nil`（窓なし）でも落ちない | どの OS でも |
 | `BenchmarkParseAppearanceLook` | 5 KB と 200 KB の `config.json`（紙あり・なし）。**結果を `v2-tokens.md` に書く**（墨の道で割り当て 0、1 µs 台） | 手動 |
 | ミューテーション確認 | 値を 1 つ変える、`strings.Contains` の語を変える、比較を `!=` → `==` にする、`SaveConfig` の呼び出しを消す、のそれぞれでテストが落ちること | 手動（戻したら `git diff` で残りが無いこと） |
-| `window_darwin_lifecycle_test.go`（`//go:build darwin`、CI の macOS だけ） | `setupMacWindowDelegate(` の呼び出しが 3 つの色の引数を渡すこと、`mdmemoSetBackdrop` の定義があること、`colorWithCalibratedRed` が**無い**こと（文字列の検査） | CI の macOS |
+| `window_darwin_lifecycle_test.go`（`//go:build darwin`、CI の macOS だけ） | `setupMacWindowDelegate(` の呼び出しが 3 つの色の引数を渡すこと、`sykiSetBackdrop` の定義があること、`colorWithCalibratedRed` が**無い**こと（文字列の検査） | CI の macOS |
 
 既存の `TestCBTHookDarkMode`（`shortcut_windows_test.go`、隠しの窓を作る）は触らない。`quickcapture_test.go` と `platform_bridge_parity_test.go`（bind を足さないので不変）が通ることを確かめる。
 
@@ -144,7 +144,7 @@ func colorrefBGR(l nativeLook) uintptr                          // 0x00BBGGRR（
 | (a) 窓はあるが WebView2 がまだ | クラスのブラシ（N2/N4）とタイトルバー（N3） | 隔離した exe を起動し、PowerShell の `Add-Type`（C#）で、**起動直後から 5 ms 間隔で 600 ms**、窓の矩形を `PrintWindow(PW_RENDERFULLCONTENT)` か `Graphics.CopyFromScreen` で撮り、中心と左上の 4px 四方の色を記録。窓が出てから WebView2 が覆うまでの区間の色が、墨 `#0e0f17`・紙 `#fbfbf9` であること |
 | (b) WebView2 はあるがページが描かれる前 | `PutDefaultBackgroundColor` と環境変数（N1/N5） | **オーバーレイで HTTP ハンドラの `/` を 3 秒遅らせる**（`make_overlay.py` と同じ要領の 1 つの置換）。起動の 1.5 秒後に窓を撮り、クライアント領域の中心の画素を読む。変更前は `(30,30,30)` で、変更後は 墨 `(14,15,23)`、紙 `(251,251,249)` |
 | (c) 実行中の追従 | `SaveConfig` → `setNativeLook` | CDP で設定画面の「外観」から地を紙にして保存（保存前は変わらず、保存後に変わる）。`DwmGetWindowAttribute(hwnd, 20)` を PowerShell から読んで 1 → 0、タイトルバーの色を画面（`computer-use` のスクリーンショットか `CopyFromScreen`）で。墨に戻して逆も。**設定画面の「キャンセル」では変わらない**こと |
-| (d) 起動時 | `startupNativeLook` | `config.json` に `appearance.look: "paper"` を書いた隔離した設定で起動し、(a)(b) を紙で。`md_memo_look` の印が**無い**プロファイルでも、窓の下地は紙であること（ページが墨で一瞬描かれる穴は A7、§2.2 のとおり既知） |
+| (d) 起動時 | `startupNativeLook` | `config.json` に `appearance.look: "paper"` を書いた隔離した設定で起動し、(a)(b) を紙で。`syki_look` の印が**無い**プロファイルでも、窓の下地は紙であること（ページが墨で一瞬描かれる穴は A7、§2.2 のとおり既知） |
 | (e) 起動の費用 | 起動に遅れが出ていない | `v2_perf.mjs`（§7）で、A の前後の exe を交互に 16 回。差が 5 ms 未満 |
 
 目で見る確認も 1 回: 紙で起動して、タイトルバーが明るく、最初の 1 フレームが暗くないこと（`computer-use` のスクリーンショットで足りる速さではないので、(a)(b) の数字が主）。Windows 10 の実機が無ければ「Windows 10 は未確認（`DWMWA_USE_IMMERSIVE_DARK_MODE` の 19 は古い 10 用に残した）」と書く。
@@ -257,15 +257,15 @@ Quick Capture と画面キャプチャの枠の色を見た目に従わせる。
 
 ### 4.3 `window_darwin.go` の見た目に依存する部分
 
-A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイトルバー・ボタン・メニューは OS の外観に従う**（`NSAppearance` は設定しない。OS がダークで見た目が紙、OS がライトで見た目が墨、の組み合わせは「OS の枠が逆」になるが、ネイティブの感触を優先する。§10 O7）。`underPageBackgroundColor` は macOS 12 以上だけなので、**10.15・11 では WKWebView の白い下地が最初のフレームに残る**（墨の人にだけ見える。今も同じ。直すなら `drawsBackground` の KVC だが、`-fobjc-exceptions` が要り cgo で使えないと既存のコメントにある。**既知として書く**）。`mdmemoPrintWebView`（印刷）は見た目に依存しないが、紙の見た目でプレビューを印刷して**白紙にならない**ことを実機で 1 回確かめる（`print.css` は紙のまま）。
+A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイトルバー・ボタン・メニューは OS の外観に従う**（`NSAppearance` は設定しない。OS がダークで見た目が紙、OS がライトで見た目が墨、の組み合わせは「OS の枠が逆」になるが、ネイティブの感触を優先する。§10 O7）。`underPageBackgroundColor` は macOS 12 以上だけなので、**10.15・11 では WKWebView の白い下地が最初のフレームに残る**（墨の人にだけ見える。今も同じ。直すなら `drawsBackground` の KVC だが、`-fobjc-exceptions` が要り cgo で使えないと既存のコメントにある。**既知として書く**）。`sykiPrintWebView`（印刷）は見た目に依存しないが、紙の見た目でプレビューを印刷して**白紙にならない**ことを実機で 1 回確かめる（`print.css` は紙のまま）。
 
 ### 4.4 オーナーの実機チェックリスト（Mac、凝縮版。現行の macOS と 10.15 の両方）
 
 `tools/MACOS_CHECKLIST_JA.md` の 0〜9 章（**P5 が 10 章を足す**）を、**実行できる順**に凝縮する。**ブロック M1〜M3（約 20 分）が出荷の条件、M4 以降は結果を未確認として書いてよい**。各項目は「やること → 成功のしるし」。
 
-**準備（5 分）**: CI の `syki-macos-<sha>` をダウンロードし、`xattr -dr com.apple.quarantine syki::sok.app`、`syki::sok.app` を開く（macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」）。ふだんの設定と混ざらないよう、**別のユーザー**か、`~/Library/Application Support/md-memo` を退避してから。終わったら戻す。macOS のバージョンを控える（10.15 の機械が無ければ、その旨を結果に書く）。
+**準備（5 分）**: CI の `syki-macos-<sha>` をダウンロードし、`xattr -dr com.apple.quarantine syki::sok.app`、`syki::sok.app` を開く（macOS 15 以降は システム設定 → プライバシーとセキュリティ →「このまま開く」）。ふだんの設定と混ざらないよう、**別のユーザー**か、`~/Library/Application Support/syki-sok` を退避してから。終わったら戻す。macOS のバージョンを控える（10.15 の機械が無ければ、その旨を結果に書く）。
 
-**M1 起動と窓（5 分）**: ① 起動して**白いフラッシュが出ない**（墨: 暗い地のまま。**macOS 10.15・11 は白が一瞬出る可能性があり既知**）② 窓が出て、黄・緑のボタンが有効、リサイズできる ③ `⌘M` で Dock、アイコンで戻る ④ 赤ボタン → Dock から復帰、⌘Q で完全に終了（`lsof -i :41739` が空）⑤ **設定 → 外観で「紙」を選んで保存 → 窓の背景が追従**（A4 の `mdmemoSetBackdrop`）、終了して再起動 → **起動の最初から紙の色で出る**（暗い色を経由しない。A4 の起動時）。墨に戻す。
+**M1 起動と窓（5 分）**: ① 起動して**白いフラッシュが出ない**（墨: 暗い地のまま。**macOS 10.15・11 は白が一瞬出る可能性があり既知**）② 窓が出て、黄・緑のボタンが有効、リサイズできる ③ `⌘M` で Dock、アイコンで戻る ④ 赤ボタン → Dock から復帰、⌘Q で完全に終了（`lsof -i :41739` が空）⑤ **設定 → 外観で「紙」を選んで保存 → 窓の背景が追従**（A4 の `sykiSetBackdrop`）、終了して再起動 → **起動の最初から紙の色で出る**（暗い色を経由しない。A4 の起動時）。墨に戻す。
 
 **M2 見た目の基本（10 分）**: ① 長いノートを開く: 左端に 6px の色の帯、ポインタを置いて約 0.12 秒で 200px に広がり名前が読める。本文は動かない（`F6` でも広がる、Fn が要る場合は設定のショートカットで別のキーに）② ヘッダーとステータスバーが本文の上に重なる。**打つと消え、ホイールで消え、マウスを動かすと戻る**。日本語入力で変換を始めた瞬間に消える ③ スクロールの一番下まで行って**最後の行がフッターの上に出る**、↓ を押し続けて**キャレットの行がバーに隠れない** ④ 設定 → 外観: 地（墨・紙）、アクセント 6 つ、バーの透過（**すりガラスで `-webkit-backdrop-filter` が効く**か。効かなければ「うすい」と同じ＝壊れてはいない）、自動非表示のオフ、ページの間の仕切り 3 種、エディタのフォント — **保存前に反映・取り消しで戻る・保存して再起動で残る** ⑤ `⌘\` で左右 2 ページ: ノドのドットが両端へ薄れて**四角い帯に見えない**（`-webkit-mask-image`）、仕切りのドラッグ・`F6` から矢印・`Enter`。`⌘⌥V` でプレビュー: 紙が机の上に浮き、上下いっぱい
 
@@ -291,18 +291,18 @@ A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイト�
 | 同 | **`status-bar`**: 凡例・表（Git・IME・文字コードのチップの見た目、ステータスバーの図） | △（図のみ撮り直し） |
 | 同 | **`editor-split`**: ノド（○）、仕切りのキーボード（○）、**`split-editor` の図を置く（×、凡例 4 つ）**、見開きプレビュー（紙が浮く、×）、プレビューのみ（×）、右ページの帯（×） | △ |
 | 同 | **`cfg-general`**: 「テーマ色」の 1 行を、**外観の節**（地: 墨・紙、アクセント 5 + 自分で指定、バーの透過 3 種、自動非表示、ページの間の仕切り 3 種、エディタのフォント、Mermaid の配色 `auto`）に書き直す。図 `settings-general` の凡例 | × |
-| 同 | **`ai-prompt`・`ghost-text`・`slot-agent`・`jev-action`・`command-palette`・`parallel-grep`・`about-md-memo` ほか、パネルを出す章**: 図の撮り直し（付箋）。文言は位置・幅・Esc は不変なので少ない（P5 が確認） | P5 |
+| 同 | **`ai-prompt`・`ghost-text`・`slot-agent`・`jev-action`・`command-palette`・`parallel-grep`・`about-syki` ほか、パネルを出す章**: 図の撮り直し（付箋）。文言は位置・幅・Esc は不変なので少ない（P5 が確認） | P5 |
 | 同 | **`cfg-shortcuts`**: `F6`（○）、「前のタブ」の `Ctrl+Shift+Tab` の修正（要確認）、Mac では `Fn` | △ |
 | 同 | **用語集（`glossary`）**: 墨・紙（ink / paper）、ノド（gutter）、索引の帯（tab strip）、机（desk）、付箋 | × |
 | 同 | **版**: バッジ・例・フッター（§6.1）。`json-rpc` の `app.info` の例の `"version"` | E で |
 | `docs/features.md` / `features_ja.md` | 「タブは場所を取らない」「2 つのページと仕切り」（○）。**追加**: 見た目（墨・紙・アクセント）、バーの自動非表示、Zen の新しい意味（○ 表に 1 行）、付箋のパネル（P5）、行番号の余白化。末尾の「Windows と macOS で何が動くか」の表に、**見た目の行**（紙・すりガラス・ノドのドット・タイトルバーの追従: Windows 済み／Mac 未確認）。画像: `screen_diagram.png` ほか 6 枚が古い（§5.2） | △ |
 | `README.md` / `README_JA.md` | 1 行足す（「紙か墨か、端の細いタブ、書くと消えるバー」）。GIF（11 本）が新しい見た目になる。**短いまま** | × |
 | `index.html` / `index_ja.html`（ルートのランディング。**`frontend/index.html` ではない**。独自の暗い・明るい切り替えを持つ別のデザイン） | **ショーケースの画像 `img/screen_diagram.png`・`screen_cli_filter.png`・`screen_scraps_search.png`・`setting.png`・`screen_settings_agent.png` ほか**（`data-img` と `og:image`）。説明文: 「General, themes (Dark Olive / Forest Teal), and editor behavior」→ 外観・紙と墨。カード（Customizable Toolbar、Related Notes in the Status Bar）は不変。**ページ自体の配色は変えない**（推奨） | × |
-| `skills/md-memo/`（LF） | `SKILL.md`、`references/interfaces.md`（4.7 状態バー、4.11 の帯（○）、`ui.state`、設定 `appearance`）、`setup-guide.md`（(b) `appearance` の行 ○、(e) 前提と確認）、`troubleshooting.md`（「タブバーが無い」○。**追加**: 「バーが消える」「紙にしたのにタイトルバーが暗い」「強制色で境が出ない」）。**版**（§6.1）。`go test -run "Skill" .` と `go test -run "Help" .` | △ |
+| `skills/syki/`（LF） | `SKILL.md`、`references/interfaces.md`（4.7 状態バー、4.11 の帯（○）、`ui.state`、設定 `appearance`）、`setup-guide.md`（(b) `appearance` の行 ○、(e) 前提と確認）、`troubleshooting.md`（「タブバーが無い」○。**追加**: 「バーが消える」「紙にしたのにタイトルバーが暗い」「強制色で境が出ない」）。**版**（§6.1）。`go test -run "Skill" .` と `go test -run "Help" .` | △ |
 | `docs/design/` | `v2-visual-2026-10.md`（§4.2 のキーボード（○）、§4.1 の下の角 11px を**直す**（F12）、§7 に P6 の結果）、`v2-tokens.md` 6.7（Go の色: 済みに、`forced-colors`、Mac）、`v2-implementation-contract.md`（§12 P6 を足す）、`panel-template.md`（P5）、`settings-dialog.md` は**記録なので直さない**（先頭の注釈 1 行だけ: 「v2 で面は紙になった」）、`ux-review-2026-09.md` も記録 | △ |
 | `tools/MACOS_CHECKLIST_JA.md` | §4.4 の凝縮版を先頭に足す（0〜9 章は残す）。10 章は P5、11 章は P6（見た目とネイティブの色、A4） | × |
 | `tools/docshots/README.md` | `--media`（B1）、紙の撮り方、GIF | △ |
-| `packaging/README.md`、`packaging/homebrew/md-memo.rb` | リリース後（§6.5） | E で |
+| `packaging/README.md`、`packaging/homebrew/syki.rb` | リリース後（§6.5） | E で |
 
 ### 5.2 図のパイプラインと数
 
@@ -346,7 +346,7 @@ A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイト�
 | 4 ドキュメント | §5.1 の表そのもの。英日、`check_manual.py`、docshots、README、ランディング、skills、`docs/design` |
 | 5 版・リリース | §6 |
 | 6 プラットフォーム | §4。Mac で動かないもの・未確認を、**表・マニュアル・ランディング・リリースノートの全部に同じ言い方で** |
-| 7 終わったら | 試験用の exe・Ollama・ブラウザを止める、scratchpad 以外に残さない、ユーザーの本番の exe は起動中は上書きできない（**2.0.0 を入れるときは、ふだんの md-memo を終了してから**） |
+| 7 終わったら | 試験用の exe・Ollama・ブラウザを止める、scratchpad 以外に残さない、ユーザーの本番の exe は起動中は上書きできない（**2.0.0 を入れるときは、ふだんの syki を終了してから**） |
 
 ### 5.6 手順と見積り（D）
 
@@ -370,8 +370,8 @@ A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイト�
 | `frontend/js/app.js` の `currentVersion` の既定値 | :15349 |
 | `tests/update_checker_test.mjs`（既定値が現行版と一致するか見張る） | :27（文字列と失敗メッセージの 2 つ） |
 | `manual.html` / `manual_ja.html` | バッジ :887、`app.info` の例 :4783 / :4961、フッター :5308 / :5508 |
-| `skills/md-memo/SKILL.md`（`Version x`）、`references/interfaces.md`（Basis :3、例 `"appVersion"` :944）、`references/setup-guide.md`（Basis :3） | |
-| **リリース後**: `packaging/homebrew/md-memo.rb`（`version` と `sha256`）、タップ `youshinh/homebrew-tap` の `Casks/md-memo.rb`（LF）、`packaging/README.md` の表、winget（§6.5） | |
+| `skills/syki/SKILL.md`（`Version x`）、`references/interfaces.md`（Basis :3、例 `"appVersion"` :944）、`references/setup-guide.md`（Basis :3） | |
+| **リリース後**: `packaging/homebrew/syki.rb`（`version` と `sha256`）、タップ `youshinh/homebrew-tap` の `Casks/syki.rb`（LF）、`packaging/README.md` の表、winget（§6.5） | |
 
 **上げない**: 機能が入った版を示す履歴の言及（"from 1.10.0"、「1.13.0 より新しい版」）、`docs/design/*.md`、`frontend/index.html` の `?v=`（ファイルごとの独立した番号）、旧版の設定パッケージを表すダミー（`1.5.5`）。置換は**全文字列の置換でなく、現行版の文脈ごとの完全な部分文字列を、出現数 1 を assert して**（`reference_release_procedure.md` の教訓。`app.js` の履歴コメントと `1.13.0` の「より新しい」は残す）。機能のコミットと版更新のコミットは**分ける**。コミットは `&&` でつなぐ。**コミットに Claude の共同作成者の行を付けない**（オーナーの規則。過去のコミットは書き換えない）。
 
@@ -420,13 +420,13 @@ A4 のとおり、窓の背景と下地の 2 か所だけ。**Mac のタイト�
 
 | 対象 | 2.0.0 での扱い |
 | --- | --- |
-| Homebrew（`packaging/homebrew/md-memo.rb` とタップ） | リリースの zip の実物の sha256 で、`version` と `sha256` を更新。タップ `youshinh/homebrew-tap` の `Casks/md-memo.rb` に**同じ内容を LF で**（名義 `-c user.name=youshinh -c user.email=15696922+youshinh@users.noreply.github.com`）。忘れると `brew install` は古い版を入れる。`depends_on macos:` は付けない（既知） |
-| winget | **PR #438694 は 1.12.0 のまま moderator 待ち**（F15）。2.0.0 で PR を差し替えると再検証の列の最後に戻る恐れがあるので、**触らない（推奨）**。マージされてから `wingetcreate update youshinh.md-memo --version 2.0.0 --urls <zip> --submit`（PR のタイトル `Update: youshinh.md-memo to 2.0.0`）。**CLA はオーナー本人が PR に `@microsoft-github-policy-service agree` とコメントする**（代行しない）。README・マニュアル・ランディングは winget を宣伝しない（マージ後に戻す） |
-| zip の中身 | exe・CLI・README・LICENSE・`skills/md-memo`。変わらない |
+| Homebrew（`packaging/homebrew/syki.rb` とタップ） | リリースの zip の実物の sha256 で、`version` と `sha256` を更新。タップ `youshinh/homebrew-tap` の `Casks/syki.rb` に**同じ内容を LF で**（名義 `-c user.name=youshinh -c user.email=15696922+youshinh@users.noreply.github.com`）。忘れると `brew install` は古い版を入れる。`depends_on macos:` は付けない（既知） |
+| winget | **PR #438694 は 1.12.0 のまま moderator 待ち**（F15）。2.0.0 で PR を差し替えると再検証の列の最後に戻る恐れがあるので、**触らない（推奨）**。マージされてから `wingetcreate update youshinh.syki --version 2.0.0 --urls <zip> --submit`（PR のタイトル `Update: youshinh.syki to 2.0.0`）。**CLA はオーナー本人が PR に `@microsoft-github-policy-service agree` とコメントする**（代行しない）。README・マニュアル・ランディングは winget を宣伝しない（マージ後に戻す） |
+| zip の中身 | exe・CLI・README・LICENSE・`skills/syki`。変わらない |
 
 ### 6.6 branch `v2` を `main` に安全に取り込む手順（主ツリーに触れない）
 
-**前提**（F2・F3）: `git log v2..main` は今 0 件（依頼文の「8 コミット」は存在しない。**出す直前に `git fetch` して確かめる**）。主ツリー `C:\Users\yoush\Documents\md-memo` には他セッションの未コミットがあり、`main` がそこにチェックアウトされている。以下の `git` はすべて **worktree `C:\Users\yoush\Documents\md-memo-v2`** で行う。
+**前提**（F2・F3）: `git log v2..main` は今 0 件（依頼文の「8 コミット」は存在しない。**出す直前に `git fetch` して確かめる**）。主ツリー `C:\Users\yoush\Documents\syki-sok` には他セッションの未コミットがあり、`main` がそこにチェックアウトされている。以下の `git` はすべて **worktree `C:\Users\yoush\Documents\syki-v2`** で行う。
 
 ```
 # 0. 読むだけ
@@ -464,7 +464,7 @@ git tag -a v2.0.0 <sha> -F <notes> --cleanup=verbatim && git push origin v2.0.0
 3. `git push origin v2:main`（Pages が公開される）→ すぐ 4
 4. 注釈付きタグ `v2.0.0`（本文はリリースノートそのまま、tagger は youshinh）→ push → `gh run watch`（Release ワークフロー）
 5. `gh release edit v2.0.0 --title … --notes-file …`（英日の本文。空で出る）
-6. zip を取得して `sha256sum` を `gh release view --json assets` の `digest` と照合し、中身（exe・CLI・README・LICENSE・skills、`.app`）を見る。Windows の `syki-cli --version` が `2.0.0`、`jev verify` の終了コード（`"echo hello"` が 0、`"rm -rf /"` が 1）、macOS の `Info.plist`（`CFBundleShortVersionString` と `CFBundleVersion` が 2.0.0）、埋め込みの frontend に v2 の文字列（`grep -a -c -F` で `look-paper`、`tab-index-left` など）、macOS のバイナリに `mdmemoSetBackdrop`
+6. zip を取得して `sha256sum` を `gh release view --json assets` の `digest` と照合し、中身（exe・CLI・README・LICENSE・skills、`.app`）を見る。Windows の `syki-cli --version` が `2.0.0`、`jev verify` の終了コード（`"echo hello"` が 0、`"rm -rf /"` が 1）、macOS の `Info.plist`（`CFBundleShortVersionString` と `CFBundleVersion` が 2.0.0）、埋め込みの frontend に v2 の文字列（`grep -a -c -F` で `look-paper`、`tab-index-left` など）、macOS のバイナリに `sykiSetBackdrop`
 7. `packaging/` を実物のハッシュで更新（Homebrew は小文字）、タップに同じ cask を LF で push。winget は §6.5
 8. 公開すると、1.x のアプリのヘルプに「更新あり」が出る（`releases/latest` を見る）。**ノートの最初の 1 行が、アプリの更新の通知から開かれる**
 
@@ -607,7 +607,7 @@ P5 完了（コミット、検証） ── 入口の条件（下）
 | O12 | 履歴: FF（今 14 コミット、P5・P6 で増える。それを残す）か squash か | **FF**。二分探索ができ、タグの先が履歴に含まれる |
 | O13 | `release/1.x`（2fe2a2b）の保守ブランチを作るか | **作る**（push 1 回、害なし）。2.0.0 が問題でも 1.14.x の修正を出せる |
 | O14 | リリースの前に `v2` を origin に push してよいか | **P5 が済んだらすぐ**（CI と Mac のアーティファクトのため）。Pages は動かず、公開されるのはブランチだけ |
-| O15 | アプリ名は md-memo のままか | **md-memo のまま**（設計書 §1 の範囲外: 改名は別リポジトリの新しいアプリ）。ウィンドウタイトル・ヘッダーの文字・`.app` の名前・cask・winget の ID・設定フォルダは変わらない |
+| O15 | アプリ名は syki のままか | **syki のまま**（設計書 §1 の範囲外: 改名は別リポジトリの新しいアプリ）。ウィンドウタイトル・ヘッダーの文字・`.app` の名前・cask・winget の ID・設定フォルダは変わらない |
 | O16 | smoke を CI に載せるか | 2.0 では**載せない**（記録だけ）。`windows-latest` に Edge があるので、2.0.x で検討 |
 | O17 | 起動時の最初の 1 フレームのちらつき（印が無い紙のプロファイル、A7）を直すか | **直さない**（起動の都度の穴ではない）。実機で気になると分かったら 2.0.x |
 
@@ -619,7 +619,7 @@ P5 完了（コミット、検証） ── 入口の条件（下）
 git diff --name-only main v2                       # 123 件: docs 10、frontend 29、manual 2、skills 3、tests 55、tools 24。.go・.github・packaging は 0
 git rev-parse main origin/main v2                  # 2fe2a2b… 2fe2a2b… fabb29c…
 git log --oneline v2..main                         # 空（main は 2fe2a2b のまま）
-git worktree list                                  # md-memo [main] 2fe2a2b / md-memo-v2 [v2] fabb29c
+git worktree list                                  # syki [main] 2fe2a2b / syki-v2 [v2] fabb29c
 gh pr view 438694 --repo microsoft/winget-pkgs     # OPEN、REVIEW_REQUIRED、検証は通過
 gh run list --repo youshinh/syki-sok --limit 3      # 2fe2a2b の CI と Pages は success
 python tools/check_manual.py                       # clean（manual.html 54 id、65 図、25 表 / manual_ja.html 54 id、65 図、26 表）
@@ -634,7 +634,7 @@ grep -rn "#1e1e1e" window_*.go                     # window_windows.go に 4、w
 | A | `nativelook.go`、`nativelook_test.go` | `window_windows.go`、`window_darwin.go`、`platform_darwin_nocgo.go`、`window_darwin_lifecycle_test.go`、`app.go`（フィールド）、`app_config.go`（`SaveConfig` に 3 行）、`docs/design/v2-tokens.md`、`v2-visual-2026-10.md` |
 | B | `tests/forced_colors_test.mjs`、`tests/reduced_motion_test.mjs`、`tools/docshots/contact_sheet.py` | `frontend/css/chrome.css`（末尾の節）、`frontend/css/tokens.css`（B5）、`tests/look_contrast_test.mjs`、`tools/docshots/run.mjs`、`README.md` |
 | C | `tests/js_compat_test.mjs` | `tools/MACOS_CHECKLIST_JA.md` |
-| D | `img/manual/{en,ja}/*.png`（144）、`img/demo/*.gif`（11）、ランディング用の画像（12）、`tools/perf/v2-p6-release-gate.md`（F） | `manual.html`、`manual_ja.html`、`docs/features*.md`、`README*.md`、`index.html`、`index_ja.html`、`skills/md-memo/**`、`tools/docshots/shots.json`（紙の図 5 つ）・`setups.mjs`・`data/demo.mjs`、`docs/design/*` |
-| E | リリースノート（scratchpad）、`tools/perf/v2-p6-release-gate.md` | 版の 9 ファイル（§6.1）、`packaging/homebrew/md-memo.rb`、タップ |
+| D | `img/manual/{en,ja}/*.png`（144）、`img/demo/*.gif`（11）、ランディング用の画像（12）、`tools/perf/v2-p6-release-gate.md`（F） | `manual.html`、`manual_ja.html`、`docs/features*.md`、`README*.md`、`index.html`、`index_ja.html`、`skills/syki/**`、`tools/docshots/shots.json`（紙の図 5 つ）・`setups.mjs`・`data/demo.mjs`、`docs/design/*` |
+| E | リリースノート（scratchpad）、`tools/perf/v2-p6-release-gate.md` | 版の 9 ファイル（§6.1）、`packaging/homebrew/syki.rb`、タップ |
 
 **触らない**: `frontend/css/print.css`、`pkg/dropzone/html.go`、Quick Capture と画面キャプチャの色、`.github/workflows/*`（CI の変更は今回しない）、RPC・CLI の形、セッションの JSON、`make_overlay.py` の 3 つの文字列。

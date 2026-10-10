@@ -60,7 +60,7 @@ func Main(args []string, version string, stdout, stderr io.Writer, stdin io.Read
 
 		// The standalone commands (jev, agent, ocr, info, scrap, config) are headless-capable
 		// computations (instant execution, no running instance required) - ocr in particular must
-		// work with md-memo not running at all, since it's what the Explorer "Send to" menu
+		// work with syki not running at all, since it's what the Explorer "Send to" menu
 		// entry invokes.
 		if IsStandalone(subcmd) {
 			runner := NewHeadlessRunner(stdout, stderr).WithVersion(version).WithStdin(stdin)

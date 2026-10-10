@@ -10,7 +10,7 @@ export default {
 
   async run(s, t) {
     t.step('the default is Ctrl+Alt+V and Settings > Shortcuts lists it');
-    const cfg = await s.ev('JSON.parse(JSON.stringify(MdMemoBridge.getConfig().shortcuts))');
+    const cfg = await s.ev('JSON.parse(JSON.stringify(SykiBridge.getConfig().shortcuts))');
     assert.equal(cfg.previewToSide, 'Ctrl+Alt+V');
     await s.key(',', { ctrl: true });
     await waitShown(s, 'settings-modal');
@@ -28,7 +28,7 @@ export default {
     t.step('rebound to Ctrl+Alt+P: the new key opens it and the old one does nothing');
     await s.ev('document.getElementById("btn-toggle-split") && document.getElementById("btn-toggle-split").click()');
     await s.waitFor('!document.getElementById("secondary-pane") || document.getElementById("secondary-pane").classList.contains("hidden")');
-    await s.ev('MdMemoBridge.getConfig().shortcuts.previewToSide = "Ctrl+Alt+P"');
+    await s.ev('SykiBridge.getConfig().shortcuts.previewToSide = "Ctrl+Alt+P"');
     await focusEditor(s);
     await s.key('v', { ctrl: true, alt: true });
     await settle(300); // "nothing happens": give the key time to be handled
@@ -39,7 +39,7 @@ export default {
     t.step('cleared: no key opens it');
     await s.ev('document.getElementById("btn-toggle-split") && document.getElementById("btn-toggle-split").click()');
     await s.waitFor('!document.getElementById("secondary-pane") || document.getElementById("secondary-pane").classList.contains("hidden")');
-    await s.ev('MdMemoBridge.getConfig().shortcuts.previewToSide = ""');
+    await s.ev('SykiBridge.getConfig().shortcuts.previewToSide = ""');
     await focusEditor(s);
     await s.key('v', { ctrl: true, alt: true });
     await s.key('p', { ctrl: true, alt: true });

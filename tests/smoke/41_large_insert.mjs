@@ -86,7 +86,7 @@ export default {
     const before = await noteNow(s);
     await s.ev(`window.__bigText = ${JSON.stringify(bigText(LINES))}; 1`);
     await s.ev(RESET_HEARTBEAT);
-    const rpcMs = await s.ev('(function () { var t0 = performance.now(); window.__mdMemoRPC.appendBuffer(window.__bigText); return Math.round(performance.now() - t0); })()');
+    const rpcMs = await s.ev('(function () { var t0 = performance.now(); window.__sykiRPC.appendBuffer(window.__bigText); return Math.round(performance.now() - t0); })()');
     await s.waitFor('window.__explore.state().tabs[0].content.length > 1000');
     frozen = await s.ev(READ_HEARTBEAT);
     assert.ok(rpcMs < MAX_FREEZE_MS && frozen < MAX_FREEZE_MS, `the RPC append blocked the page for ${Math.max(rpcMs, frozen)} ms`);

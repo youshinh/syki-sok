@@ -57,7 +57,7 @@ function parseSlots(text, cfg) {
     return null;
   };
   const excluded = [];
-  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- md-memo:res [\s\S]*?<!-- \/md-memo:res -->/g]) {
+  for (const re of [/```[^\n]*\n[\s\S]*?```/g, /`[^`\n]+`/g, /<!-- syki:res [\s\S]*?<!-- \/syki:res -->/g]) {
     for (const m of text.matchAll(re)) excluded.push([m.index, m.index + m[0].length]);
   }
   excluded.push(...HC.htmlCommentRanges(text));
@@ -307,7 +307,7 @@ async function createEnv(opts = {}) {
   const editor = el('editor');
   const env = {
     window: windowMock, backend, calls, messages, store, el, editor, clock, undoStack,
-    bridge: windowMock.MdMemoBridge,
+    bridge: windowMock.SykiBridge,
     config: windowMock.__testHelper.config,
     slotAgent: windowMock.SlotAgent,
     taskManager: windowMock.TaskManager,
@@ -367,14 +367,14 @@ async function createEnv(opts = {}) {
   return env;
 }
 
-const RUN_MARKER = /<!-- md-memo:run ([a-z0-9]+)((?: [a-z0-9_]+=[a-z0-9_]+)*) -->/;
+const RUN_MARKER = /<!-- syki:run ([a-z0-9]+)((?: [a-z0-9_]+=[a-z0-9_]+)*) -->/;
 const idOf = (text) => {
-  const m = RUN_MARKER.exec(text) || /<!-- md-memo:res ([a-z0-9]+)/.exec(text);
+  const m = RUN_MARKER.exec(text) || /<!-- syki:res ([a-z0-9]+)/.exec(text);
   assert.ok(m, `no marker in ${JSON.stringify(text)}`);
   return m[1];
 };
-const run = (id, attrs = '') => `<!-- md-memo:run ${id}${attrs} -->`;
-const res = (id, body, attrs = '') => `<!-- md-memo:res ${id}${attrs} -->\n${body}\n<!-- /md-memo:res -->`;
+const run = (id, attrs = '') => `<!-- syki:run ${id}${attrs} -->`;
+const res = (id, body, attrs = '') => `<!-- syki:res ${id}${attrs} -->\n${body}\n<!-- /syki:res -->`;
 
 // ---------------------------------------------------------------------------------------------------
 // 1. Instruction lines: rewritten into a task and run
@@ -665,7 +665,7 @@ check('agent: an explicit @alias, agentConfirm off (runs at once), a missing age
   await skill.flush();
   assert.equal(skill.calls.parse.length, 1, 'a skill mention is the old slot: replace mode');
   assert.ok(skill.editor.value.includes('{{ ⟳ 実行中... }}'));
-  assert.ok(!skill.editor.value.includes('md-memo:run'), 'no marker for a skill');
+  assert.ok(!skill.editor.value.includes('syki:run'), 'no marker for a skill');
 });
 
 check('agent: the message of a failed run is cut at 300 characters, like a failed LLM request (a stack trace is not written into the note)', async () => {
@@ -706,7 +706,7 @@ check('agent task typed by hand: a caret before it (multi-line selection) still 
   await env.flush();
   assert.equal(env.calls.runAgent.length, 1, 'not started twice');
   assert.equal(env.toast(), I18N.en.slotAlreadyRunning);
-  assert.equal(env.editor.value.match(/md-memo:run/g).length, 1, 'no second marker');
+  assert.equal(env.editor.value.match(/syki:run/g).length, 1, 'no second marker');
 });
 
 // ---------------------------------------------------------------------------------------------------
@@ -854,7 +854,7 @@ check('content line: the ask bar opens on it (note untouched); the instruction i
   assert.equal(env.editor.value, `# メモ\n${line}\n[[ @llm 要約して ]]\n${run(id2, ' ctx=above n=1')}\n次の段落`, 'the old block is replaced by the new marker');
   assert.equal(env.calls.llm[1].prompt, `【指示】:\n要約して\n\n【対象テキスト】:\n${line}`, 'the subject is found again above the task');
   env.llmAnswer(env.calls.llm[1], '別の要約');
-  assert.equal(env.editor.value.match(/<!-- md-memo:res /g).length, 1, 'exactly one block');
+  assert.equal(env.editor.value.match(/<!-- syki:res /g).length, 1, 'exactly one block');
 });
 
 check('a second instruction under the same text: the first task and its block are looked through to find the text', async () => {
@@ -920,7 +920,7 @@ check('a partial-line selection and a multi-line selection open the ask bar abou
   whole.press();
   await whole.flush();
   assert.equal(whole.calls.llm.length, 1);
-  assert.ok(whole.editor.value.startsWith('- [[ @llm 英語に翻訳して ]]\n<!-- md-memo:run '));
+  assert.ok(whole.editor.value.startsWith('- [[ @llm 英語に翻訳して ]]\n<!-- syki:run '));
 });
 
 check('an ask-bar task recorded after the note changed: the text is found again, or the task is not written', async () => {
@@ -974,7 +974,7 @@ check('re-run replaces a finished block and an orphan marker; a marker that is r
   const orphanId = idOf(orphan.editor.value);
   assert.notEqual(orphanId, 'zzzz');
   assert.equal(orphan.editor.value, `[[ $ ls ]]\n${run(orphanId)}\nend`, 'a marker left by a crash is replaced');
-  assert.equal(orphan.editor.value.match(/md-memo:run/g).length, 1);
+  assert.equal(orphan.editor.value.match(/syki:run/g).length, 1);
 
   const running = await createEnv();
   running.setNote('[[ @llm 要約して ]]');
@@ -984,7 +984,7 @@ check('re-run replaces a finished block and an orphan marker; a marker that is r
   await running.flush();
   assert.equal(running.calls.llm.length, 1, 'no second request');
   assert.equal(running.toast(), I18N.en.slotAlreadyRunning);
-  assert.equal(running.editor.value.match(/md-memo:run/g).length, 1);
+  assert.equal(running.editor.value.match(/syki:run/g).length, 1);
 
   const indented = await createEnv();
   indented.setNote(`[[ @llm 要約して ]]\n   ${res('bbbb', 'x')}`);
@@ -992,7 +992,7 @@ check('re-run replaces a finished block and an orphan marker; a marker that is r
   indented.press();
   await indented.flush();
   assert.ok(!indented.editor.value.includes('   <!--'), 'an indented old block goes too');
-  assert.equal(indented.editor.value.match(/md-memo:(run|res)/g).length, 1);
+  assert.equal(indented.editor.value.match(/syki:(run|res)/g).length, 1);
 });
 
 check('cancel from the task panel: the note is restored byte for byte, the late answer is dropped (LLM, command, agent)', async () => {
@@ -1064,7 +1064,7 @@ check('a note closed while its task runs: the answer is dropped and everything s
   env.press();
   await env.flush();
   assert.equal(env.slotAgent._runningTaskCount(), 1);
-  env.window.__mdMemoRPC.closeTab(tabB);
+  env.window.__sykiRPC.closeTab(tabB);
   env.llmAnswer(env.calls.llm[0], 'answer');
   assert.equal(env.slotAgent._runningTaskCount(), 0, 'the running entry is released');
   assert.equal(env.activeTasks().length, 0);
@@ -1076,12 +1076,12 @@ check('a note closed while its task runs: the answer is dropped and everything s
   other.press();
   await other.flush();
   const id = idOf(other.editor.value);
-  other.window.__mdMemoRPC.newTab('B.md', 'B text');
+  other.window.__sykiRPC.newTab('B.md', 'B text');
   assert.notEqual(other.bridge.getActiveTab().id, tabA);
   other.llmAnswer(other.calls.llm[0], '別ノートの答え');
   assert.equal(other.slotAgent._runningTaskCount(), 0);
-  other.window.__mdMemoRPC.switchTab(tabA);
-  assert.equal(other.window.__mdMemoRPC.getBuffer(tabA).content, `A の行\n[[ @llm 要約して ]]\n${res(id, '別ノートの答え')}`, 'the note it was started in got the block');
+  other.window.__sykiRPC.switchTab(tabA);
+  assert.equal(other.window.__sykiRPC.getBuffer(tabA).content, `A の行\n[[ @llm 要約して ]]\n${res(id, '別ノートの答え')}`, 'the note it was started in got the block');
 });
 
 check('UTF-16 end to end: Japanese and emoji before the task, on the line and inside it', async () => {
@@ -1122,7 +1122,7 @@ check('two adjacent tasks run independently (no false "already running"), and th
   await llm.flush();
   assert.equal(llm.calls.llm.length, 2);
   assert.equal(llm.slotAgent._runningTaskCount(), 2);
-  const ids = [...llm.editor.value.matchAll(/md-memo:run ([a-z0-9]+)/g)].map((m) => m[1]);
+  const ids = [...llm.editor.value.matchAll(/syki:run ([a-z0-9]+)/g)].map((m) => m[1]);
   assert.equal(ids.length, 2);
   assert.notEqual(ids[0], ids[1]);
   llm.llmAnswer(llm.calls.llm[1], '答え二');
@@ -1139,7 +1139,7 @@ check('two adjacent tasks run independently (no false "already running"), and th
   await agents.flush();
   assert.equal(agents.calls.runAgent.length, 2, 'the offset-distance guard is gone: two different slots are two runs');
   assert.equal(agents.messages.filter((m) => m === I18N.en.slotAlreadyRunning).length, 0);
-  const agentIds = [...agents.editor.value.matchAll(/md-memo:run ([a-z0-9]+)/g)].map((m) => m[1]);
+  const agentIds = [...agents.editor.value.matchAll(/syki:run ([a-z0-9]+)/g)].map((m) => m[1]);
   agents.agentAnswer(agents.calls.runAgent[1], { output: 'second' });
   agents.agentAnswer(agents.calls.runAgent[0], { output: 'first' });
   assert.equal(agents.editor.value, `{{ @claude one }}\n${res(agentIds[0], 'first')}\n{{ @claude two }}\n${res(agentIds[1], 'second')}`);
@@ -1176,7 +1176,7 @@ check('double press: a second Ctrl+Enter while the parse RPC is pending does not
   release();
   await env.flush();
   assert.equal(env.calls.runAgent.length, 1);
-  assert.equal(env.editor.value.match(/md-memo:run/g).length, 1);
+  assert.equal(env.editor.value.match(/syki:run/g).length, 1);
   env.press();
   await env.flush();
   assert.equal(env.toast(), I18N.en.slotAlreadyRunning, 'after the first has started, the guard is the marker id');
@@ -1232,7 +1232,7 @@ check('text that only looks like notation is left alone: [[Wiki Link]], legacy {
   assert.equal(inside.calls.llm.length, 0);
   assert.equal(inside.slotAgent._insideResultBlock(block, block.indexOf('[[ @llm 入れ子')), true);
   assert.equal(inside.slotAgent._insideResultBlock(block, 3), false, 'the task line above the block is outside it');
-  assert.equal(inside.slotAgent._insideResultBlock('<!-- md-memo:res a -->\nx\n\ntext\n<!-- md-memo:res b -->\ny\n<!-- /md-memo:res -->', 30), false, 'text between an unclosed opener and a later block');
+  assert.equal(inside.slotAgent._insideResultBlock('<!-- syki:res a -->\nx\n\ntext\n<!-- syki:res b -->\ny\n<!-- /syki:res -->', 27), false, 'text between an unclosed opener and a later block'); // 27: the end of the word "text" (the markers are 3 characters shorter than they were)
 });
 
 check('undo: the rewrite is one step; the answer replaces the marker in one more; nothing is hijacked', async () => {
