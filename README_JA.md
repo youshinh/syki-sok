@@ -3,7 +3,8 @@
 カーソルの位置にAIがいる、軽量Markdownスクラッチパッド。  
 
 <p align="center">
-  <img src="img/poster_minimal.svg" width="960" alt="syki::sok architecture & primitives">
+  <img src="img/poster_icon.svg" width="470" alt="syki::sok">
+  <img src="img/poster_spec.svg" width="470" alt="syki::sok primitives">
 </p>
 
 ---
