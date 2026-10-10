@@ -99,7 +99,11 @@ type App struct {
 	nativeLookApply func(nativeLook)
 }
 
-const AppVersion = "0.0.8"
+// AppVersion is the version the app reports (About, the update check, the exported settings) and that build_mac.sh puts in Info.plist. It is a var, not
+// a const, so that the release build can set it from the tag (-X main.AppVersion=..., and a sed of this line for macOS, which .github/workflows/release.yml
+// does): a number kept by hand here fell behind the releases (it said 0.0.8 at v0.0.16, so the update check offered the version the person already had).
+// The value below is the last release made by hand; keep it equal to the newest tag when you change this line.
+var AppVersion = "0.0.16"
 
 func (a *App) GetAppVersion() string {
 	return AppVersion

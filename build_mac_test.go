@@ -332,3 +332,19 @@ func TestMacIconComesFromAppPngAndNeverFromTheGenerator(t *testing.T) {
 		t.Errorf("app.png is %d bytes: the black icon is about 147 KB; a file this small is the generated olive one", len(data))
 	}
 }
+
+// The version the app reports follows the release tag: AppVersion is a var (so -X can set it), the Windows build sets it from the tag, and the macOS build
+// rewrites its line in app.go (build_mac.sh reads it for Info.plist and the binary is compiled from it) and stops if that did not work.
+func TestReleaseSetsTheAppVersionFromTheTag(t *testing.T) {
+	app := readRepoFile(t, "app.go")
+	if !regexp.MustCompile(`(?m)^var AppVersion = "[0-9]+\.[0-9]+\.[0-9]+"`).MatchString(app) {
+		t.Error("app.go must declare `var AppVersion = \"x.y.z\"`: a const cannot be set by the release build")
+	}
+	release := readRepoFile(t, ".github/workflows/release.yml")
+	if !strings.Contains(release, "-X main.AppVersion=$version") {
+		t.Error("the Windows release build must set main.AppVersion from the tag")
+	}
+	if !strings.Contains(release, "Set the app version from the tag") || !strings.Contains(release, `grep -q "AppVersion = \"$VER\"" app.go`) {
+		t.Error("the macOS release build must rewrite AppVersion in app.go from the tag and check that it did")
+	}
+}

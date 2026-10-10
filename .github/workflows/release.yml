@@ -23,10 +23,11 @@ jobs:
       - name: Build Windows Executable
         shell: pwsh
         run: |
-          go build -ldflags="-H windowsgui -s -w" -trimpath -o syki.exe .
+          # The version the app reports is the tag, not a number kept by hand in app.go (it fell behind the releases once).
+          $version = "$env:GITHUB_REF_NAME".TrimStart('v')
+          go build "-ldflags=-H windowsgui -s -w -X main.AppVersion=$version" -trimpath -o syki.exe .
           # syki-cli.exe is the console-subsystem twin of syki.exe: PowerShell waits for it, and its exit codes and
           # output are reliable in scripts, agents and CI. syki.exe stays the one that starts the app.
-          $version = "$env:GITHUB_REF_NAME".TrimStart('v')
           $ldflags = "-s -w -X main.version=$version"
           go build "-ldflags=$ldflags" -trimpath -o syki-cli.exe ./cmd/syki
           $reported = (& ./syki-cli.exe --version) -join ''
@@ -60,6 +61,13 @@ jobs:
 
       - name: Run Tests
         run: go test -v ./...
+
+      - name: Set the app version from the tag
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          perl -pi -e 's/(AppVersion\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(")/${1}'"$VER"'${2}/' app.go
+          grep -n 'AppVersion = ' app.go
+          grep -q "AppVersion = \"$VER\"" app.go
 
       - name: Build macOS App Bundle
         run: |
