@@ -1,7 +1,6 @@
 # syki::sok
 
-カーソルの位置にAIがいる、超軽量Markdownスクラッチパッド。  
-思考が立ち上がった瞬間に、すでに開いている。チャット窓の往復もコピペも不要。
+カーソルの位置にAIがいる、軽量Markdownスクラッチパッド。  
 
 <p align="center">
   <img src="img/poster_minimal.svg" width="960" alt="syki::sok architecture & primitives">
@@ -40,7 +39,7 @@ brew install --cask youshinh/tap/syki
 
 ### Docs for AI
 
-詳細や設定は、**[`llms.txt`](llms.txt)** をそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。全仕様・ショートカット・APIが1ファイルに網羅されています。
+詳細や設定は、**[`llms.txt`](llms.txt)** をそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。
 
 *人間用: [Webマニュアル](https://youshinh.github.io/syki-sok/manual_ja.html) • [English README](README.md)*
 
