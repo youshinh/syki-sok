@@ -36,6 +36,13 @@ common_style = f"""
         font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
         font-size: 11px;
         font-weight: 500;
+        letter-spacing: 0.22em;
+        fill: #52525b;
+      }}
+      .sans-title-upper {{
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        font-size: 11px;
+        font-weight: 500;
         letter-spacing: 0.26em;
         fill: #52525b;
         text-transform: uppercase;
@@ -66,6 +73,7 @@ common_style = f"""
 """
 
 # ================= 1. LEFT PANEL: ICON (poster_icon.svg) =================
+# syki::sok is explicitly lowercase here
 svg_icon = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 480 540" width="100%" height="100%">
   <defs>
     <style>{common_style}</style>
@@ -75,8 +83,8 @@ svg_icon = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w
   <rect width="480" height="540" fill="#09090b" rx="4"/>
   <rect x="0.5" y="0.5" width="479" height="539" fill="none" stroke="#18181b" stroke-width="1" rx="3.5"/>
 
-  <!-- Top Title -->
-  <text x="48" y="72" class="sans-title">SYKI::SOK</text>
+  <!-- Top Title: lowercase syki::sok -->
+  <text x="48" y="72" class="sans-title">syki::sok</text>
 
   <!-- Centered App Icon -->
   <g transform="translate(140, 160)">
@@ -124,7 +132,7 @@ svg_spec = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w
   <rect x="0.5" y="0.5" width="479" height="539" fill="none" stroke="#18181b" stroke-width="1" rx="3.5"/>
 
   <!-- Top Title -->
-  <text x="48" y="72" class="sans-title">PRIMITIVES</text>
+  <text x="48" y="72" class="sans-title-upper">PRIMITIVES</text>
 
   <!-- Rows Grid -->
   <g transform="translate(48, 0)">
@@ -145,4 +153,4 @@ with open('img/poster_spec.svg', 'w', encoding='utf-8') as f:
 # Validate XML parses
 ET.parse('img/poster_icon.svg')
 ET.parse('img/poster_spec.svg')
-print("Successfully generated img/poster_icon.svg and img/poster_spec.svg!")
+print("Successfully generated lowercase 'syki::sok' in poster_icon.svg!")

@@ -63,6 +63,13 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://ww
         font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
         font-size: 9px;
         font-weight: 500;
+        letter-spacing: 0.22em;
+        fill: #52525b;
+      }}
+      .sans-title-upper {{
+        font-family: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+        font-size: 9px;
+        font-weight: 500;
         letter-spacing: 0.26em;
         fill: #52525b;
         text-transform: uppercase;
@@ -103,7 +110,7 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://ww
   <line x1="480" y1="50" x2="480" y2="490" stroke="#131316" stroke-width="1"/>
 
   <!-- ================= LEFT PANEL : ICON & BREATHTAKING NEGATIVE SPACE ================= -->
-  <text x="64" y="76" class="sans-title">SYKI::SOK</text>
+  <text x="64" y="76" class="sans-title">syki::sok</text>
 
   <!-- App Icon: Scaled to 175px to allow maximum surrounding negative space -->
   <g transform="translate(152, 170)">
@@ -116,7 +123,7 @@ svg_content = f"""<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://ww
 
 
   <!-- ================= RIGHT PANEL : DISCIPLINED REFINED PRIMITIVES ================= -->
-  <text x="536" y="76" class="sans-title">PRIMITIVES</text>
+  <text x="536" y="76" class="sans-title-upper">PRIMITIVES</text>
 
   <!-- Generously Spaced Typographic Grid (Geist + Geist Mono) -->
   <g transform="translate(536, 0)">
