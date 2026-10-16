@@ -1150,10 +1150,33 @@
     renderSecondaryPreview();
   }
 
+  // The SVG to export. Mermaid draws labels as HTML inside <foreignObject>; the webview marks a canvas that an SVG with a
+  // <foreignObject> was drawn on as tainted, so toBlob()/toDataURL() throw and nothing can be copied or saved. The diagram is
+  // drawn once more from its source with plain SVG text labels (same theme), and that one is exported. The on-screen diagram is untouched.
+  async function mermaidExportSvg(container) {
+    const shown = container.querySelector('svg');
+    const src = container.dataset && container.dataset.mermaidSrc;
+    if (!shown || !src || !window.mermaid) return shown;
+    const noHtml = '%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%\n';
+    // Front matter (---) has to stay first in the source; the directive goes after it.
+    const fm = /^\s*---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n/.exec(src);
+    const code = fm ? fm[0] + noHtml + src.slice(fm[0].length) : noHtml + src;
+    try {
+      const { svg } = await window.mermaid.render('mermaid-export-' + Date.now(), code);
+      const holder = document.createElement('div');
+      holder.innerHTML = svg;
+      const el = holder.querySelector('svg');
+      if (el && !el.querySelector('foreignObject')) return el;
+    } catch (err) {
+      console.warn('Plain-label diagram for export failed, using the shown one:', err);
+    }
+    return shown;
+  }
+
   // Rasterizes a Mermaid SVG element to an HTML5 Canvas at high DPI (scale 2)
   async function rasterizeMermaidSvgToCanvas(container) {
     if (!container) throw new Error('Container not found');
-    const svgEl = container.querySelector('svg');
+    const svgEl = await mermaidExportSvg(container);
     if (!svgEl) throw new Error('SVG element not found in diagram container');
 
     const svgClone = svgEl.cloneNode(true);
