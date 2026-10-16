@@ -1,6 +1,7 @@
 package dialog
 
 import (
+	"path/filepath"
 	"strings"
 	"testing"
 )
@@ -148,5 +149,16 @@ func TestParseChooseResult(t *testing.T) {
 				t.Fatalf("parseChooseResult(%q, %v) = %q, want %q", c.out, c.isFolder, got, c.want)
 			}
 		})
+	}
+}
+
+func TestOsascriptSaveStartsInTheFolderOfAFullPath(t *testing.T) {
+	dir := filepath.Join(t.TempDir(), "My Notes")
+	args := osascriptArgs(kindSaveFile, "T", filepath.Join(dir, "a.md"))
+	if len(args) != 5 || args[3] != "a.md" || args[4] != dir {
+		t.Fatalf("osascriptArgs(save, full path) = %v, want [-e <script> T a.md %s]", args, dir)
+	}
+	if !strings.Contains(args[1], "default location") || !strings.Contains(args[1], "item 3 of argv") {
+		t.Errorf("the script does not start in the folder from argv: %s", args[1])
 	}
 }

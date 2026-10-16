@@ -511,13 +511,31 @@ func diskTextChanged(path, expectSig string) bool {
 	return textsig.Sum(text) != expectSig
 }
 
+// saveDialogTarget is what the Save dialog is given: a full path, so that the dialog starts in a folder this app chose. The page
+// passes the note's own path when the note has a file (Save As starts next to it) and a path in the folder set for new notes when
+// there is one. A bare name gets the scraps folder, the app's own default folder; without a folder the system would start the dialog
+// in the folder of the last Open or Save, which after opening a file from somewhere else is that other place.
+func (a *App) saveDialogTarget(name string) string {
+	if dir, _ := dialog.SplitSaveTarget(name); dir != "" {
+		return name
+	}
+	dir := a.GetScrapDir()
+	if dir == "" {
+		return name
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil { // a folder that is not there is not a place the dialog can start in
+		return name
+	}
+	return filepath.Join(dir, name)
+}
+
 // SaveFileAs opens a native Save dialog and writes text (as-is original).
 func (a *App) SaveFileAs(content, enc, defaultName string) (*SaveResult, error) {
 	if defaultName == "" {
 		defaultName = "無題.md"
 	}
 
-	path, err := dialog.SaveFileDialog("名前を付けて保存", defaultName)
+	path, err := dialog.SaveFileDialog("名前を付けて保存", a.saveDialogTarget(defaultName))
 	if err != nil {
 		return nil, fmt.Errorf("保存ダイアログエラー: %w", err)
 	}

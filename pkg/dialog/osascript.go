@@ -28,6 +28,14 @@ func osascriptArgs(kind, title, defaultName string) []string {
 		end run`
 		return []string{"-e", script, title}
 	case kindSaveFile:
+		// defaultName may be a full path (SplitSaveTarget): the folder is where the dialog starts.
+		dir, name := SplitSaveTarget(defaultName)
+		if dir != "" {
+			script := `on run argv
+				return POSIX path of (choose file name with prompt (item 1 of argv) default name (item 2 of argv) default location (POSIX file (item 3 of argv) as alias))
+			end run`
+			return []string{"-e", script, title, name, dir}
+		}
 		script := `on run argv
 			return POSIX path of (choose file name with prompt (item 1 of argv) default name (item 2 of argv))
 		end run`

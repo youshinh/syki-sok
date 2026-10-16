@@ -128,12 +128,21 @@ func newSaveFileName(title, defaultName string, hwndOwner uintptr) (ofn openFile
 	filterUTF16, _ := syscall.UTF16PtrFromString(filter)
 	ofn.lpstrFilter = filterUTF16
 
+	// A full path in the buffer is what makes the dialog start in that folder: without one it opens in the folder Windows remembers
+	// from the last Open or Save dialog. The initial folder is set as well, for the systems that read that first.
+	dir, name := SplitSaveTarget(defaultName)
 	fileBuf = make([]uint16, 2048)
 	if defaultName != "" {
-		copy(fileBuf, syscall.StringToUTF16(defaultName))
+		copy(fileBuf[:len(fileBuf)-1], syscall.StringToUTF16(defaultName))
 	}
 	ofn.lpstrFile = &fileBuf[0]
 	ofn.nMaxFile = uint32(len(fileBuf))
+	if dir != "" {
+		if dirUTF16, err := syscall.UTF16PtrFromString(dir); err == nil {
+			ofn.lpstrInitialDir = dirUTF16
+		}
+	}
+	defaultName = name
 
 	titleUTF16, _ := syscall.UTF16PtrFromString(title)
 	ofn.lpstrTitle = titleUTF16

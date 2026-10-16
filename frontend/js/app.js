@@ -5519,7 +5519,10 @@
           suggestedName = derived || (tab.title || `${t('untitled')}.md`);
         }
         const asBody = window.DiskSync ? window.DiskSync.applyEol(persistedContent(tab), tab.eol) : persistedContent(tab);
-        const res = await withNativeDialog(() => window.backend.saveFileAs(asBody, tab.encoding, suggestedName));
+        // A note that has a file: Save As starts next to that file, with its name (a full path says where the dialog starts). A new
+        // note gets a bare name, and the app starts the dialog in its default folder (saveDialogTarget in app_files.go) instead of in
+        // the folder of whatever was opened or saved last.
+        const res = await withNativeDialog(() => window.backend.saveFileAs(asBody, tab.encoding, tab.path || suggestedName));
         if (res && res.path) {
           // Another tab may show this very file (Save As over an open note): it is out of date now and must not own the path too.
           const displaced = releasePathFromOtherTabs(tab, res.path);

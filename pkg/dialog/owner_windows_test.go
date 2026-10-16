@@ -3,7 +3,9 @@
 package dialog
 
 import (
+	"syscall"
 	"testing"
+	"unsafe"
 )
 
 // desktopWindow is a window that always exists and is visible, so the tests need no window of their own.
@@ -70,5 +72,24 @@ func TestFileDialogsAreOwned(t *testing.T) {
 	}
 	if _, _, ext2 := newSaveFileName("save", "noext", 0); ext2 != "md" {
 		t.Fatalf("a name without an extension must default to md, got %q", ext2)
+	}
+}
+
+// The Save dialog opened in the folder of the last Open or Save, not in the folder of the note being saved: a full path in the buffer and
+// the initial folder are what make it start where the caller says.
+func TestSaveDialogStartsInTheFolderOfAFullPath(t *testing.T) {
+	const dir = `C:\Users\me\notes`
+	ofn, buf, ext := newSaveFileName("save", dir+`\memo.html`, 0)
+	if got := syscall.UTF16ToString(buf); got != dir+`\memo.html` {
+		t.Errorf("buffer = %q, want the full path", got)
+	}
+	if ofn.lpstrInitialDir == nil || syscall.UTF16ToString(unsafe.Slice(ofn.lpstrInitialDir, len(dir)+1)) != dir {
+		t.Error("the initial folder is not the folder of the path")
+	}
+	if ext != "html" {
+		t.Errorf("default extension = %q, want html", ext)
+	}
+	if bare, _, _ := newSaveFileName("save", "memo.md", 0); bare.lpstrInitialDir != nil {
+		t.Error("a bare name must not set a folder")
 	}
 }
