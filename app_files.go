@@ -526,6 +526,25 @@ func (a *App) saveDialogTarget(name string) string {
 	if err := os.MkdirAll(dir, 0755); err != nil { // a folder that is not there is not a place the dialog can start in
 		return name
 	}
+	// The suggested name is one that is free: a note of the same day and summary does not offer to replace the earlier one.
+	return freeNotePath(dir, name)
+}
+
+// freeNotePath is dir/name when nothing is there, else dir/<name>-2.<ext>, -3 ... the first that is free. The same rule names the file
+// that autosave makes for a new note (CreateNoteInFolder).
+func freeNotePath(dir, name string) string {
+	ext := filepath.Ext(name)
+	stem := strings.TrimSuffix(name, ext)
+	for n := 1; n <= 999; n++ {
+		candidate := name
+		if n > 1 {
+			candidate = fmt.Sprintf("%s-%d%s", stem, n, ext)
+		}
+		path := filepath.Join(dir, candidate)
+		if _, err := os.Lstat(path); os.IsNotExist(err) {
+			return path
+		}
+	}
 	return filepath.Join(dir, name)
 }
 

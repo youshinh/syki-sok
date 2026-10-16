@@ -24,6 +24,14 @@ func TestSaveDialogTarget(t *testing.T) {
 	if info, err := os.Stat(scrap); err != nil || !info.IsDir() {
 		t.Errorf("the default folder was not made: %v", err)
 	}
+
+	// A name that is taken is not suggested: the dialog starts on the next free one.
+	if err := os.WriteFile(want, []byte("x"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	if got, want2 := app.saveDialogTarget("2026-10-16_memo.md"), filepath.Join(scrap, "2026-10-16_memo-2.md"); got != want2 {
+		t.Errorf("a taken name = %q, want %q", got, want2)
+	}
 }
 
 // A file dropped on the window has no path in the page; ResolveDroppedFile finds the file by name, size and modification time in the
