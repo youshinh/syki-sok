@@ -42,6 +42,9 @@ var windowsOnlyBinds = map[string]bool{
 	"backend_installSendToShortcut":      true,
 	"backend_uninstallSendToShortcut":    true,
 	"backend_isSendToShortcutInstalled":  true,
+	"backend_fileTypesStatus":            true, // the registry list of text types; macOS declares them in Info.plist
+	"backend_registerFileTypes":          true,
+	"backend_unregisterFileTypes":        true,
 }
 
 // darwinOnlyBinds names backend_ functions bound on macOS but not on Windows. The map exists so a

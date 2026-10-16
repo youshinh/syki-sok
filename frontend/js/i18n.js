@@ -1315,6 +1315,15 @@ const I18N = {
     btnInstallSendTo: "Add",
     btnUninstallSendTo: "Remove",
     sendToInstallFailed: "Failed: {err}",
+    fileTypesLabel: "Open text files with syki",
+    fileTypesHint: "Adds syki to \"Open with\" and to the Default apps of Windows for .md, .txt, .log, .csv, .json, .html and other text types. Windows lets only you choose the default: after registering, Settings opens, where you pick syki for the types you want. Registered for this copy of the program: register again if you move it.",
+    fileTypesStatusYes: "Registered",
+    fileTypesStatusNo: "Not registered",
+    fileTypesStatusMoved: "Registered for another location",
+    btnRegisterFileTypes: "Register",
+    btnUnregisterFileTypes: "Remove",
+    fileTypesRegisteredNote: "Registered. In Windows Settings (Default apps), pick syki for the types you want.",
+    fileTypesFailed: "Failed: {err}",
 
     // --- Settings screen mistake-proofing & clarity ---
     languageImeGuardianHint: "Choosing Japanese also turns on IME Guardian, in the Editor & Input section below (you can turn it off there).",
@@ -2800,6 +2809,15 @@ const I18N = {
     btnInstallSendTo: "追加",
     btnUninstallSendTo: "解除",
     sendToInstallFailed: "失敗しました: {err}",
+    fileTypesLabel: "テキストファイルを syki で開く",
+    fileTypesHint: "「プログラムから開く」と Windows の「既定のアプリ」に、syki を .md .txt .log .csv .json .html などのテキスト系の種類で追加します。既定にできるのは本人だけです。登録すると設定画面が開くので、syki にしたい種類を選んでください。このプログラムの場所で登録されます。移動したら、もう一度登録してください。",
+    fileTypesStatusYes: "登録済み",
+    fileTypesStatusNo: "未登録",
+    fileTypesStatusMoved: "別の場所で登録済み",
+    btnRegisterFileTypes: "登録",
+    btnUnregisterFileTypes: "解除",
+    fileTypesRegisteredNote: "登録しました。Windows の設定(既定のアプリ)で、syki にしたい種類を選んでください。",
+    fileTypesFailed: "失敗しました: {err}",
 
     // --- 設定画面: 誤操作防止・明確化 ---
     languageImeGuardianHint: "日本語を選ぶと、下の「エディタ & 入力」にある IME Guardian も自動でオンになります（そこで変更できます）。",

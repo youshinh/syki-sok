@@ -14294,6 +14294,39 @@ STRICT SYNTAX SAFETY RULES:
     });
   }
 
+  // Text file types (Windows): syki in "Open with" and in Default apps (filetypes_windows.go). Only where the binding exists.
+  const fileTypesCard = document.getElementById('filetypes-card');
+  const hasFileTypesBackend = !!(window.backend && window.backend.fileTypesStatus);
+  if (!hasFileTypesBackend && fileTypesCard) fileTypesCard.classList.add('hidden');
+
+  async function refreshFileTypesStatus() {
+    if (!hasFileTypesBackend) return;
+    const badge = document.getElementById('filetypes-status-badge');
+    const btnRegister = document.getElementById('btn-register-filetypes');
+    const btnUnregister = document.getElementById('btn-unregister-filetypes');
+    let state = 'no';
+    try { state = await window.backend.fileTypesStatus(); } catch (e) { state = 'no'; }
+    if (badge) badge.textContent = t(state === 'yes' ? 'fileTypesStatusYes' : (state === 'moved' ? 'fileTypesStatusMoved' : 'fileTypesStatusNo'));
+    if (btnRegister) btnRegister.classList.toggle('hidden', state === 'yes');
+    if (btnUnregister) btnUnregister.classList.toggle('hidden', state === 'no');
+  }
+
+  async function runFileTypesAction(action, doneKey) {
+    const hint = document.getElementById('filetypes-result-hint');
+    if (!window.backend || !window.backend[action]) return;
+    try {
+      await window.backend[action]();
+      if (hint) hint.textContent = doneKey ? t(doneKey) : '';
+    } catch (e) {
+      if (hint) hint.textContent = t('fileTypesFailed', { err: goErr((e && e.message) || e) });
+    }
+    refreshFileTypesStatus();
+  }
+  const btnRegisterFileTypes = document.getElementById('btn-register-filetypes');
+  if (btnRegisterFileTypes) btnRegisterFileTypes.addEventListener('click', () => runFileTypesAction('registerFileTypes', 'fileTypesRegisteredNote'));
+  const btnUnregisterFileTypes = document.getElementById('btn-unregister-filetypes');
+  if (btnUnregisterFileTypes) btnUnregisterFileTypes.addEventListener('click', () => runFileTypesAction('unregisterFileTypes', ''));
+
   const btnBrowseInboxDir = document.getElementById('btn-browse-inbox-dir');
   if (btnBrowseInboxDir) {
     btnBrowseInboxDir.onclick = async () => {
@@ -14634,6 +14667,7 @@ STRICT SYNTAX SAFETY RULES:
     }
 
     refreshSendToStatus();
+    refreshFileTypesStatus();
 
     const currentScrapDir = scrapDirEl ? scrapDirEl.value.trim() : '';
     updateGitRepoStatusUI(currentScrapDir);

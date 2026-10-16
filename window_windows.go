@@ -886,6 +886,9 @@ func runPlatformWindow(app *App, serverURL string) {
 	_ = w.Bind("backend_installSendToShortcut", app.InstallSendToShortcut)
 	_ = w.Bind("backend_uninstallSendToShortcut", app.UninstallSendToShortcut)
 	_ = w.Bind("backend_isSendToShortcutInstalled", app.IsSendToShortcutInstalled)
+	_ = w.Bind("backend_fileTypesStatus", app.FileTypesStatus)
+	_ = w.Bind("backend_registerFileTypes", app.RegisterFileTypes)
+	_ = w.Bind("backend_unregisterFileTypes", app.UnregisterFileTypes)
 
 	w.Init(`
 		// --- Async bridge -------------------------------------------------------------
@@ -1011,6 +1014,9 @@ func runPlatformWindow(app *App, serverURL string) {
 			installSendToShortcut: () => window.backend_installSendToShortcut(),
 			uninstallSendToShortcut: () => window.backend_uninstallSendToShortcut(),
 			isSendToShortcutInstalled: () => window.backend_isSendToShortcutInstalled(),
+			fileTypesStatus: () => window.backend_fileTypesStatus(),
+			registerFileTypes: () => window.backend_registerFileTypes(),
+			unregisterFileTypes: () => window.backend_unregisterFileTypes(),
 			generateCliCommandAsync: (reqID, prompt, configJson, contextJson) => window.backend_generateCliCommandAsync(reqID, prompt, configJson, contextJson || ""),
 			validateCliCommand: (cmdStr) => window.backend_validateCliCommand(cmdStr),
 			searchScraps: (query, maxResults, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('searchScraps_', 30000, (reqID) => window.backend_searchScrapsAsync(reqID, query, maxResults || 100, f)); },

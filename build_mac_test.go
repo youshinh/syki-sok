@@ -25,6 +25,8 @@ import (
 	"regexp"
 	"strings"
 	"testing"
+
+	"syki-sok/pkg/fileassoc"
 )
 
 func readRepoFile(t *testing.T, name string) string {
@@ -278,7 +280,13 @@ func TestBuildMacInfoPlistHeredoc(t *testing.T) {
 			}
 		}
 	}
-	for _, want := range []string{"md", "markdown", "txt"} {
+	// The types the Windows registration offers (pkg/fileassoc) are the ones the app bundle declares, with .html among them.
+	for _, want := range fileassoc.Extensions {
+		if !seenExt[want] {
+			t.Errorf("CFBundleDocumentTypes does not declare extension %q that the Windows file types offer", want)
+		}
+	}
+	for _, want := range []string{"md", "markdown", "txt", "log", "csv", "html", "htm"} {
 		if !seenExt[want] {
 			t.Errorf("CFBundleDocumentTypes does not declare extension %q; declared: %v", want, seenExt)
 		}

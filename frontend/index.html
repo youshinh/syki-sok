@@ -1515,6 +1515,20 @@
               <small data-i18n="sendToHint">Right-click an image file in Explorer → Send To → syki::sok (OCR) to extract its text into today's scrap.</small>
               <small id="sendto-result-hint" style="display: block; margin-top: 4px; color: var(--text-muted);"></small>
             </div>
+            <div id="filetypes-card" class="local-ai-card" style="background: var(--veil-04); border: 1px solid var(--border-color); border-radius: 6px; padding: 12px 14px; margin-top: 10px;">
+              <div style="display: flex; justify-content: space-between; align-items: center; gap: 8px;">
+                <div style="display: flex; align-items: center; gap: 8px;">
+                  <strong style="font-size: 13px;" data-i18n="fileTypesLabel">Open text files with syki</strong>
+                  <span id="filetypes-status-badge" data-i18n="statusChecking" style="font-size: 11px; padding: 2px 8px; border-radius: 10px; background: var(--veil-10); color: var(--text-muted);">Checking...</span>
+                </div>
+                <div style="display: flex; gap: 6px;">
+                  <button type="button" id="btn-register-filetypes" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnRegisterFileTypes">Register</button>
+                  <button type="button" id="btn-unregister-filetypes" class="btn-secondary hidden" style="padding: 3px 10px; font-size: 11px;" data-i18n="btnUnregisterFileTypes">Remove</button>
+                </div>
+              </div>
+              <small data-i18n="fileTypesHint">Adds syki to "Open with" and to the Default apps of Windows for .md, .txt, .log, .csv, .json, .html and other text types. Windows lets only you choose the default: after registering, Settings opens, where you pick syki for the types you want. Registered for this copy of the program: register again if you move it.</small>
+              <small id="filetypes-result-hint" style="display: block; margin-top: 4px; color: var(--text-muted);"></small>
+            </div>
           </div>
 
           <!-- 4. 同期 (Sync: Scraps & Git) -->

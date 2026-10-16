@@ -170,6 +170,43 @@ cat <<EOF > "$CONTENTS_DIR/Info.plist"
                 <string>public.plain-text</string>
             </array>
         </dict>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Text and Data File</string>
+            <key>CFBundleTypeRole</key>
+            <string>Editor</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>log</string>
+                <string>csv</string>
+                <string>tsv</string>
+                <string>json</string>
+                <string>jsonl</string>
+                <string>yaml</string>
+                <string>yml</string>
+                <string>toml</string>
+                <string>xml</string>
+                <string>ini</string>
+                <string>cfg</string>
+                <string>conf</string>
+                <string>env</string>
+                <string>html</string>
+                <string>htm</string>
+                <string>css</string>
+                <string>js</string>
+                <string>ts</string>
+                <string>sql</string>
+                <string>sh</string>
+                <string>py</string>
+                <string>go</string>
+                <string>rs</string>
+                <string>c</string>
+                <string>cpp</string>
+                <string>h</string>
+            </array>
+        </dict>
     </array>
 </dict>
 </plist>
