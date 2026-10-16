@@ -1633,6 +1633,15 @@
             <li><strong>Stop</strong> Click the item to stop recording and start the transcription (the same as pressing the shortcut again). Press Esc to throw the recording away</li>
           </ol></figure>
 
+        <p><strong>The microphone button of the Ask, Rewrite and Command bars</strong></p>
+        <ul>
+          <li><strong>Where:</strong> a microphone button sits left of Run in the bars of <span class="kbd">Ctrl + L</span> (Ask), <span class="kbd">Ctrl + K</span> (Rewrite) and <span class="kbd">Ctrl + E</span> in its AI mode. There is none in the command bar's CLI mode: a command needs exact input. With a bar open, the voice-input shortcut works this button.</li>
+          <li><strong>What it does:</strong> press it and talk. It becomes a Stop button and stops by itself about 1.5 seconds after you stop talking (1&ndash;5 seconds in settings; the silence before the first word is not counted). What you said goes into the box, and <strong>nothing is sent</strong>: <span class="kbd">Enter</span> or Run sends it, as with typed text. While it listens, Enter stops the recording instead of sending.</li>
+          <li><strong>Esc:</strong> closes the bar and throws everything away: the recording, and a transcript that is still on its way. The recording is never written to disk.</li>
+          <li><strong>Which engine:</strong> the <strong>Realtime</strong> one of the Voice input settings (Gemini, or the on-device Whisper). Only the microphone is recorded, even when &quot;Also record the playback sound&quot; is on. There is no tidy-up second stage.</li>
+          <li><strong>Settings:</strong> &quot;Voice button in the ask, rewrite and command bars&quot; turns it off; &quot;Pause that ends a bar's recording&quot; sets the seconds.</li>
+        </ul>
+
         <p><strong>Recording a meeting: the microphone and the sound the PC plays (Windows)</strong></p>
         <ul>
           <li><strong>What it does:</strong> turn on <em>Settings &rarr; AI Models &rarr; Voice input &rarr; Also record the playback sound</em>. Voice input then records the microphone and whatever the PC is playing (Zoom&#39;s other participants, a video) as one recording. Nothing changes for the call: the other side hears you as before and you keep hearing them. The status bar shows the red blinking recording item with <em>Playback + mic</em>; click it (or press the shortcut again) to stop, Esc to discard.</li>
