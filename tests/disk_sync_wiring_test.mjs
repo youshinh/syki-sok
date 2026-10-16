@@ -44,7 +44,7 @@ check('the file watcher\'s read reaches the page, and a restored session is chec
 
 check('an automatic save never asks: a tab in conflict waits for Ctrl+S', () => {
   assert.ok(/opts && opts\.auto && tab\.diskConflict && tab\.path && !forceSaveAs\) return false/.test(app));
-  assert.ok(/tab\.isDirty && tab\.path && !tab\.diskConflict\) \{\s*saveTab\(tab, false, \{ auto: true \}\)/.test(app));
+  assert.ok(/tab\.isDirty && \(tab\.path \|\| canAutoCreate\(tab\)\) && !tab\.diskConflict\) \{\s*saveTab\(tab, false, \{ auto: true \}\)/.test(app));
 });
 
 check('every path that changes a tab\'s text from its file, or the file behind its back, updates what the tab knows of the file', () => {

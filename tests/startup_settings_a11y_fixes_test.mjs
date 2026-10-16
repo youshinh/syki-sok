@@ -77,7 +77,7 @@ function saveEnv(opts = {}) {
     clearTimeout: () => {}
   };
   vm.createContext(env);
-  vm.runInContext(`const saveInFlight = new WeakMap();\n${['saveTab', 'saveTabNow', 'writeTabToItsFile', 'rememberWritten', 'markSavedUpTo', 'scheduleAutoSave', 'armAutoSave', 'renderAutosaveStatus'].map(fnSrc).join('\n')}`, env);
+  vm.runInContext(`const saveInFlight = new WeakMap();\n${['saveTab', 'saveTabNow', 'writeTabToItsFile', 'rememberWritten', 'markSavedUpTo', 'scheduleAutoSave', 'armAutoSave', 'canAutoCreate', 'suggestedNoteName', 'joinDefaultNoteDir', 'renderAutosaveStatus'].map(fnSrc).join('\n')}`, env);
   return env;
 }
 

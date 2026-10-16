@@ -110,6 +110,7 @@
       theme: 'olive',
       mermaidTone: 'auto', // diagram colors in the preview: auto (follows the look) | dark | light | neutral | forest (mermaid_tone.js)
       autoSave: true,
+      defaultNoteDir: '', // where a note with no file yet is saved (empty: the daily scraps folder)
       pasteImageOcr: true,
       pasteHtmlAsMarkdown: true,
       restoreSession: true,
@@ -5482,6 +5483,39 @@
     return true;
   }
 
+  // The name a new note is saved under: "YYYY-MM-DD_<summary>.md" (the note's own date heading, else today) for a note that still has its
+  // automatic title, else the title it has.
+  function suggestedNoteName(tab) {
+    let suggestedName = tab.title;
+    const isDefaultUntitled = !suggestedName ||
+      tab.isAutoTitle ||
+      suggestedName.startsWith(t('untitled')) ||
+      suggestedName.startsWith('untitled') ||
+      suggestedName.startsWith('無題') ||
+      /^\d{4}[-/]\d{2}/.test(suggestedName);
+    if (isDefaultUntitled) {
+      const derived = window.NoteTitle ? window.NoteTitle.defaultSaveName(tab.content, new Date()) : '';
+      suggestedName = derived || (tab.title || `${t('untitled')}.md`);
+    }
+    return suggestedName;
+  }
+
+  // The folder set for new notes joined to a file name (a full path tells the Save dialog where to start); a bare name when no folder is set.
+  function joinDefaultNoteDir(name) {
+    const dir = String((config.general && config.general.defaultNoteDir) || '').trim();
+    if (!dir || /^~/.test(dir)) return name; // "~" is resolved by the app, which starts the dialog in its default folder
+    const sep = dir.indexOf('\\') !== -1 ? '\\' : '/';
+    return dir.replace(/[\\/]+$/, '') + sep + name;
+  }
+
+  // Whether autosave may make a file for this note: it has none yet, it has text (an empty note makes no file), and the app can create one.
+  function canAutoCreate(tab) {
+    if (!tab || tab.path || tab.noAutoCreate) return false;
+    if (!(window.backend && window.backend.createNoteInFolder)) return false;
+    const text = getTabText(tab.id);
+    return String(text == null ? tab.content : text).trim() !== '';
+  }
+
   async function saveTabNow(tab, forceSaveAs, opts) {
     if (tab.id === activeTabId && editorEl) {
       tab.content = editorEl.value;
@@ -5504,25 +5538,32 @@
     }
 
     try {
-      if (!tab.path || forceSaveAs) {
-        let suggestedName = tab.title;
-        const isDefaultUntitled = !suggestedName ||
-          tab.isAutoTitle ||
-          suggestedName.startsWith(t('untitled')) ||
-          suggestedName.startsWith('untitled') ||
-          suggestedName.startsWith('無題') ||
-          /^\d{4}[-/]\d{2}/.test(suggestedName);
-
-        if (isDefaultUntitled) {
-          // "YYYY-MM-DD_<summary>.md" (the note's own date heading, else today); the tab label stays the plain summary.
-          const derived = window.NoteTitle ? window.NoteTitle.defaultSaveName(tab.content, new Date()) : '';
-          suggestedName = derived || (tab.title || `${t('untitled')}.md`);
+      // Autosave of a note that has no file yet: the file is made in the folder for new notes, without asking (see CreateNoteInFolder).
+      if (opts && opts.auto && !tab.path && !forceSaveAs) {
+        if (!canAutoCreate(tab)) return false;
+        const body = window.DiskSync ? window.DiskSync.applyEol(persistedContent(tab), tab.eol) : persistedContent(tab);
+        const made = await window.backend.createNoteInFolder(body, tab.encoding, suggestedNoteName(tab), (config.general && config.general.defaultNoteDir) || '');
+        if (made && made.path) {
+          releasePathFromOtherTabs(tab, made.path);
+          tab.path = made.path;
+          tab.title = made.title;
+          tab.isAutoTitle = false;
+          rememberWritten(tab, made);
+          markSavedUpTo(tab, sent);
+          renderTabs();
+          showMessage(t('newNoteAutoSaved', { path: made.path }), 4000);
+          return true;
         }
+        return false;
+      }
+      if (!tab.path || forceSaveAs) {
+        const suggestedName = suggestedNoteName(tab);
         const asBody = window.DiskSync ? window.DiskSync.applyEol(persistedContent(tab), tab.eol) : persistedContent(tab);
         // A note that has a file: Save As starts next to that file, with its name (a full path says where the dialog starts). A new
         // note gets a bare name, and the app starts the dialog in its default folder (saveDialogTarget in app_files.go) instead of in
         // the folder of whatever was opened or saved last.
-        const res = await withNativeDialog(() => window.backend.saveFileAs(asBody, tab.encoding, tab.path || suggestedName));
+        const startAt = tab.path || joinDefaultNoteDir(suggestedName);
+        const res = await withNativeDialog(() => window.backend.saveFileAs(asBody, tab.encoding, startAt));
         if (res && res.path) {
           // Another tab may show this very file (Save As over an open note): it is out of date now and must not own the path too.
           const displaced = releasePathFromOtherTabs(tab, res.path);
@@ -5590,7 +5631,7 @@
       // Re-validate: the tab may have been closed, saved, or emptied of its
       // path in the time between scheduling and firing. One whose close prompt is
       // open waits for the answer.
-      if (getTab(tab.id) === tab && !tab.closePrompt && tab.isDirty && tab.path && !tab.diskConflict) {
+      if (getTab(tab.id) === tab && !tab.closePrompt && tab.isDirty && (tab.path || canAutoCreate(tab)) && !tab.diskConflict) {
         saveTab(tab, false, { auto: true });
       }
     }, delay);
@@ -5599,7 +5640,8 @@
   // The tab's debounced autosave, on the tab's own timer (every note, shown in a pane or not, keeps one; a keystroke in another
   // note, switching tabs, or the other pane cannot cancel it). Nothing happens with autosave off or for a note without a file.
   function armAutoSave(tab) {
-    if (!tab || !tab.path || !config.general.autoSave) return;
+    if (!tab || !config.general.autoSave) return;
+    if (!tab.path && !canAutoCreate(tab)) return; // a note with no file gets one only when it has text (see canAutoCreate)
     if (!rpcAutoSaveTimers) rpcAutoSaveTimers = new Map();
     rpcAutoSaveTimers.set(tab.id, scheduleAutoSave(tab, rpcAutoSaveTimers.get(tab.id)));
   }
@@ -12958,6 +13000,20 @@ STRICT SYNTAX SAFETY RULES:
     btnHelp.onclick = () => openHelpMenu();
   }
 
+  const btnBrowseNoteDir = document.getElementById('btn-browse-note-dir');
+  if (btnBrowseNoteDir) {
+    btnBrowseNoteDir.onclick = async () => {
+      if (!window.backend || !window.backend.openFolder) return;
+      try {
+        const selected = await withNativeDialog(() => window.backend.openFolder());
+        const input = document.getElementById('cfg-default-note-dir');
+        if (selected && input) input.value = selected;
+      } catch (e) {
+        console.error('Failed to open the folder dialog for new notes:', e);
+      }
+    };
+  }
+
   const btnBrowseScrapDir = document.getElementById('btn-browse-scrap-dir');
   if (btnBrowseScrapDir) {
     btnBrowseScrapDir.onclick = async () => {
@@ -14538,6 +14594,8 @@ STRICT SYNTAX SAFETY RULES:
     document.getElementById('cfg-language').value = config.general.language || 'en';
     document.getElementById('cfg-restore-session').checked = config.general.restoreSession !== false;
     document.getElementById('cfg-autosave').checked = config.general.autoSave;
+    const noteDirEl = document.getElementById('cfg-default-note-dir');
+    if (noteDirEl) noteDirEl.value = config.general.defaultNoteDir || '';
     document.getElementById('cfg-paste-image-ocr').checked = config.general.pasteImageOcr;
     const pasteHtmlMdEl = document.getElementById('cfg-paste-html-md');
     if (pasteHtmlMdEl) pasteHtmlMdEl.checked = config.general.pasteHtmlAsMarkdown !== false;
@@ -15569,6 +15627,8 @@ STRICT SYNTAX SAFETY RULES:
     config.general.language = document.getElementById('cfg-language').value || 'en';
     config.general.restoreSession = document.getElementById('cfg-restore-session').checked;
     config.general.autoSave = document.getElementById('cfg-autosave').checked;
+    const saveNoteDirEl = document.getElementById('cfg-default-note-dir');
+    if (saveNoteDirEl) config.general.defaultNoteDir = saveNoteDirEl.value.trim();
     config.general.pasteImageOcr = document.getElementById('cfg-paste-image-ocr').checked;
     const savePasteHtmlMdEl = document.getElementById('cfg-paste-html-md');
     if (savePasteHtmlMdEl) config.general.pasteHtmlAsMarkdown = savePasteHtmlMdEl.checked;
@@ -16532,25 +16592,108 @@ STRICT SYNTAX SAFETY RULES:
     }
   }
 
+  // An image or a recording dropped to be opened is read by the vision / voice service (the settings of Mobile Drop and voice input) and
+  // becomes a new note of its text, without a dialog. '' for anything else. A file that came with no type is told by its extension.
+  const DROP_MEDIA_MAX_BYTES = 20 * 1024 * 1024;
+  const DROP_CONFIRM_FILES = 5; // this many files or more dropped at once ask before anything happens
+  function droppedMediaKind(file) {
+    const type = String(file.type || '').toLowerCase();
+    if (type === 'image/svg+xml') return '';
+    if (type.startsWith('image/')) return 'image';
+    if (type.startsWith('audio/')) return 'audio';
+    if (type) return '';
+    const ext = (/\.([A-Za-z0-9]+)$/.exec(file.name || '') || [])[1];
+    const e = ext ? ext.toLowerCase() : '';
+    if (/^(png|jpe?g|webp|gif|heic|heif|bmp)$/.test(e)) return 'image';
+    if (/^(mp3|wav|m4a|aac|ogg|oga|opus|flac|weba)$/.test(e)) return 'audio';
+    return '';
+  }
+
+  function fileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(reader.error || new Error('read failed'));
+      reader.onload = () => {
+        const s = String(reader.result || '');
+        resolve(s.slice(s.indexOf(',') + 1));
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  const droppedMediaPending = new Map();
+  async function openDroppedMedia(file, kind) {
+    if (!window.backend || !window.backend.processDroppedMedia) {
+      showMessage(t('dropNotTextFile', { name: file.name }), 4000);
+      return;
+    }
+    if (file.size > DROP_MEDIA_MAX_BYTES) {
+      showMessage(t('dropMediaTooLarge', { name: file.name }), 5000, { important: true });
+      return;
+    }
+    const id = genReqId('dropmedia_');
+    droppedMediaPending.set(id, { name: file.name, kind: kind });
+    showMessage(t(kind === 'audio' ? 'dropMediaWorkingAudio' : 'dropMediaWorkingImage', { name: file.name }), 4000);
+    try {
+      const data = await fileAsBase64(file);
+      const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON ? window.VoiceInput.configJSON(config, { timeout: 0 }) : '{}';
+      await window.backend.processDroppedMedia(id, file.name, file.type || '', data, JSON.stringify(config.vision || {}), voiceJSON);
+    } catch (err) {
+      droppedMediaPending.delete(id);
+      showMessage(t('dropMediaFailed', { name: file.name, err: goErr((err && err.message) || err) }), 6000, { important: true });
+    }
+  }
+
+  // The answer of ProcessDroppedMedia: the text becomes a new note named after the file; autosave then gives it a file in the folder for new notes.
+  window.__onDroppedMedia = function (reqId, text, err) {
+    const entry = droppedMediaPending.get(reqId);
+    if (!entry) return;
+    droppedMediaPending.delete(reqId);
+    if (err) {
+      showMessage(t('dropMediaFailed', { name: entry.name, err: goErr(err) }), 6000, { important: true });
+      return;
+    }
+    const tab = createTab(entry.name.replace(/\.[^.]+$/, '') + '.md', String(text || '').replace(/\s+$/, '') + '\n');
+    tab.isAutoTitle = false;
+    tab.isDirty = true;
+    armAutoSave(tab);
+    renderTabs();
+    showMessage(t('dropMediaDone', { name: entry.name }), 3000);
+  };
+
   window.addEventListener('drop', async (e) => {
     // The zone the file was dropped on, when the zones were shown ('link' | 'open'); without them the old rule: on the text it is a
     // link, anywhere else the file opens.
     const zone = dropZones ? dropZones.zoneOf(e) : '';
     if (dropZones) dropZones.hide();
     const editor = zone === 'link' ? dropLinkEditor() : (zone === 'open' ? null : editorUnderPointer(e));
+    // The files are taken now: a drop's data cannot be read after the first await.
+    const dropped = e.dataTransfer && e.dataTransfer.files ? Array.from(e.dataTransfer.files) : [];
     // preventDefault() must run synchronously, before any await below - otherwise the
     // browser's own "navigate to the dropped file" default can win the race.
     e.preventDefault();
     e.stopPropagation();
 
+    // Many files at once: ask before opening or linking all of them.
+    if (dropped.length >= DROP_CONFIRM_FILES) {
+      const ok = await customConfirm(t(editor ? 'dropManyLinkConfirm' : 'dropManyOpenConfirm', { n: dropped.length }),
+        { okLabel: t(editor ? 'dropManyLinkOk' : 'dropManyOpenOk') });
+      if (!ok) return;
+    }
+
     if (editor && window.FileAnchor) {
-      const handled = await window.FileAnchor.handleDrop(e, editor);
+      const handled = await window.FileAnchor.handleDrop(dropped.length > 0 ? { dataTransfer: { types: ['Files'], files: dropped }, preventDefault() {} } : e, editor);
       if (handled) return;
     }
 
-    if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      for (const file of e.dataTransfer.files) {
+    if (dropped.length > 0) {
+      for (const file of dropped) {
         try {
+          const mediaKind = droppedMediaKind(file);
+          if (mediaKind) {
+            openDroppedMedia(file, mediaKind); // in the background: the next file does not wait for the answer
+            continue;
+          }
           if (!(await looksLikeTextFile(file))) {
             showMessage(t('dropNotTextFile', { name: file.name }), 4000);
             continue;

@@ -38,6 +38,8 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_getStartupFile", app.GetStartupFile)
 	_ = w.Bind("backend_openFile", app.OpenFile)
 	_ = w.Bind("backend_resolveDroppedFile", app.ResolveDroppedFile)
+	_ = w.Bind("backend_createNoteInFolder", app.CreateNoteInFolder)
+	_ = w.Bind("backend_processDroppedMedia", app.ProcessDroppedMedia)
 	_ = w.Bind("backend_saveFile", app.SaveFile)
 	_ = w.Bind("backend_saveFileChecked", app.SaveFileChecked)
 	_ = w.Bind("backend_saveFileAs", app.SaveFileAs)

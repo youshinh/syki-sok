@@ -865,8 +865,16 @@
             </div>
             <div class="form-group inline-group">
               <label>
-                <input type="checkbox" id="cfg-autosave" checked> <span data-i18n="autoSaveLabel">Autosave existing files on 1.5s pause</span>
+                <input type="checkbox" id="cfg-autosave" checked> <span data-i18n="autoSaveLabel">Autosave on 1.5s pause (a new note gets a file in the folder below)</span>
               </label>
+            </div>
+            <div class="form-group">
+              <label for="cfg-default-note-dir" data-i18n="defaultNoteDirLabel">Folder for new notes:</label>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <input type="text" id="cfg-default-note-dir" data-i18n-placeholder="defaultNoteDirPlaceholder" placeholder="(daily scraps folder)" style="flex: 1; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 7px 10px; border-radius: 4px; font-size: 13px;">
+                <button id="btn-browse-note-dir" type="button" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+              </div>
+              <small data-i18n="defaultNoteDirHint">Where autosave puts a note that has no file yet, and where the Save dialog starts for it. Empty: the daily scraps folder. A name that is taken gets -2, -3; nothing is replaced.</small>
             </div>
             <div class="settings-subhead" data-i18n="subheadIme">Japanese input (IME)</div>
             <div class="form-group inline-group">

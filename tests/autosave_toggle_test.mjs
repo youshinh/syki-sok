@@ -31,6 +31,8 @@ const renderSrc = appJs.match(/function renderAutosaveStatus\(\) \{[\s\S]*?\n  \
 const toggleSrc = appJs.match(/function toggleAutoSave\(\) \{[\s\S]*?\n  \}/);
 const scheduleSrc = appJs.match(/function scheduleAutoSave\(tab, currentTimer\) \{[\s\S]*?\n  \}/);
 const armSrc = appJs.match(/function armAutoSave\(tab\) \{[\s\S]*?\n  \}/);
+const canCreateSrc = appJs.match(/function canAutoCreate\(tab\) \{[\s\S]*?\n  \}/);
+assert.ok(canCreateSrc, 'canAutoCreate(tab) must exist (a note with no file gets one only when it has text)');
 assert.ok(renderSrc && toggleSrc, 'renderAutosaveStatus / toggleAutoSave must exist');
 assert.ok(scheduleSrc, 'scheduleAutoSave(tab, currentTimer) helper must exist (tab captured at schedule time)');
 assert.ok(armSrc, 'armAutoSave(tab) must exist (one timer per tab)');
@@ -83,7 +85,9 @@ function makeEnv(opts) {
   env.savePersistentConfig = () => { env.persisted++; };
   env.document = { getElementById: (id) => (id === 'cfg-autosave' ? env.checkbox : null) };
   vm.createContext(env);
-  vm.runInContext(`${renderSrc[0]}\n${scheduleSrc[0]}\n${armSrc[0]}\n${toggleSrc[0]}`, env);
+  env.window = { backend: {} };
+  env.getTabText = () => null; // canAutoCreate: with no backend that can make a file, a note with no file is never a candidate
+  vm.runInContext(`${renderSrc[0]}\n${scheduleSrc[0]}\n${armSrc[0]}\n${canCreateSrc[0]}\n${toggleSrc[0]}`, env);
   return env;
 }
 
