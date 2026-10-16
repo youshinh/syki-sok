@@ -798,7 +798,7 @@ check('I3: an Enter still held down does not answer the question; a real click d
 });
 
 check('I3: the bar does not fade away while the question is open, and the fade rule knows it', () => {
-  assert.ok(/isBusy: \(\) => askErrorShown \|\| askConsentShown,/.test(appCode));
+  assert.ok(/isBusy: \(\) => askErrorShown \|\| askConsentShown( \|\| [^\n]*)?,/.test(appCode));
 });
 
 check('I3: Settings > General lists the allowed hosts with a button that forgets them; Cancel puts them back, Save keeps the change', async () => {

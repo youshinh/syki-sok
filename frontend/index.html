@@ -1272,6 +1272,16 @@
                 <input type="number" id="cfg-voice-silence" min="1" max="30" step="1" value="5">
               </div>
             </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-bar-voice" checked> <span data-i18n="barVoiceLabel">Voice button in the ask, rewrite and command bars</span>
+              </label>
+              <small data-i18n="barVoiceHint">A microphone button in the bars of Ctrl+L, Ctrl+K and Ctrl+E (AI mode). What you say goes into the box; Enter sends it. It uses the Realtime engine above.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-voice-bar-silence" data-i18n="barVoiceSilenceLabel">Pause that ends a bar's recording (s):</label>
+              <input type="number" id="cfg-voice-bar-silence" min="1" max="5" step="0.5" value="1.5">
+            </div>
             <div class="form-group inline-group hidden" id="cfg-voice-system-audio-group">
               <label>
                 <input type="checkbox" id="cfg-voice-system-audio"> <span data-i18n="voiceSystemAudioLabel">Also record the sound this PC plays (Zoom, video)</span>
@@ -2120,6 +2130,7 @@
   <script src="js/html_to_md.js?v=1.0.0"></script>
   <script src="js/voice_profiles.js?v=1.0.0"></script>
   <script src="js/voice_input.js?v=1.0.0"></script>
+  <script src="js/bar_voice.js?v=1.0.0"></script>
   <script src="js/speech_settings.js?v=1.0.0"></script>
   <script src="js/semantic_settings.js?v=1.0.0"></script>
   <script src="js/file_anchor.js?v=1.1.0"></script>

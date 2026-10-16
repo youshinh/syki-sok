@@ -536,6 +536,9 @@ func saveVoiceCache(reqID, audioBase64 string) (string, error) {
 type voiceRequestConfig struct {
 	llm.VoiceConfig
 	RefineContext llm.RefineContext `json:"refineContext"`
+	// NoCache: the recording belongs to a bar's box and is not kept: a failure does not leave it in the voice cache (no retry marker
+	// points at it). Everything else keeps the recording so that a failed dictation is not lost.
+	NoCache bool `json:"noCache"`
 }
 
 func parseVoiceRequestConfig(voiceConfigJSON string) voiceRequestConfig {
@@ -589,7 +592,10 @@ func (a *App) TranscribeAudioAsync(reqID, audioBase64, mimeType, voiceConfigJSON
 		// A panic here would take the whole app down (and leave "文字起こし中" in the note): answer with an error instead.
 		defer func() {
 			if r := recover(); r != nil {
-				cachePath, _ := saveVoiceCache(reqID, audioBase64)
+				cachePath := ""
+				if !parseVoiceRequestConfig(voiceConfigJSON).NoCache {
+					cachePath, _ = saveVoiceCache(reqID, audioBase64)
+				}
 				a.dispatchVoiceResult(reqID, "", fmt.Sprintf("文字起こし中に内部エラーが起きました: %v", r), cachePath)
 			}
 		}()
@@ -600,9 +606,12 @@ func (a *App) TranscribeAudioAsync(reqID, audioBase64, mimeType, voiceConfigJSON
 			return
 		}
 		if err != nil {
-			cachePath, cacheErr := saveVoiceCache(reqID, audioBase64)
-			if cacheErr != nil {
-				cachePath = ""
+			cachePath := ""
+			if !cfg.NoCache {
+				var cacheErr error
+				if cachePath, cacheErr = saveVoiceCache(reqID, audioBase64); cacheErr != nil {
+					cachePath = ""
+				}
 			}
 			a.dispatchVoiceResult(reqID, "", err.Error(), cachePath)
 			return

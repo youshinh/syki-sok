@@ -213,8 +213,8 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   const voiceBranch = appJs.indexOf('matchShortcut(e, config.shortcuts && config.shortcuts.voiceInput)');
   const specialPasteArm = appJs.indexOf('specialPasteArmedAt = Date.now();');
   assert(voiceBranch > mainHandlerIdx && voiceBranch < specialPasteArm, 'the voice-input branch keeps its place at the top of the global handler');
-  assert(/matchShortcut\(e, config\.shortcuts && config\.shortcuts\.voiceInput\)\) \{\s*e\.preventDefault\(\);\s*if \(window\.VoiceInput\) window\.VoiceInput\.toggle\(\);\s*return;/.test(appJs),
-    'the voice-input shortcut must toggle VoiceInput');
+  assert(/matchShortcut\(e, config\.shortcuts && config\.shortcuts\.voiceInput\)\) \{\s*e\.preventDefault\(\);[\s\S]{0,420}?if \(window\.VoiceInput\) window\.VoiceInput\.toggle\(\);\s*return;/.test(appJs),
+    'the voice-input shortcut must toggle VoiceInput (or, with a bar open, the bar\'s microphone)');
   console.log('PASS: voice ESC guard (capture phase) and the configurable voice-input shortcut branch.');
 }
 
@@ -352,6 +352,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
     customVocabulary: [],
     prompt: 'この音声を正確に文字起こししてください。前置きや解説は不要です。句読点を含む自然な日本語テキストのみを出力してください。',
     silence_timeout_sec: 5,
+    barSilenceSec: 1.5,
     refine: { enabled: true, model: 'gemini-flash-lite-latest', timeoutSec: 5 },
     includeSystemAudio: false
   });

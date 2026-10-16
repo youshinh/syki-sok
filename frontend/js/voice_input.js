@@ -319,7 +319,7 @@
 
   // What went wrong with a recording or its text. In Zen mode an ordinary message is not shown, but these are failures: the status bar is
   // called back for them (showMessage's { important: true }; chrome_overlay.js). Guidance such as "put the cursor in a note first" is not.
-  const FAILURE_KEYS = ['voiceMicBlocked', 'voiceMicNotFound', 'voiceMicBusy', 'voiceMicDenied', 'voiceMeetingFailed', 'voiceMeetingNoMic',
+  const FAILURE_KEYS = ['voiceBarBusy', 'voiceMicBlocked', 'voiceMicNotFound', 'voiceMicBusy', 'voiceMicDenied', 'voiceMeetingFailed', 'voiceMeetingNoMic',
     'voiceTranscribeUnavailable', 'voiceTranscribeTimeout', 'voiceTranscribeFailed', 'voiceEditFailed', 'voiceRefineFailed', 'voiceCacheMissing', 'voiceKeepFailed', 'voiceDiscardFailed'];
 
   function toast(bridge, key, params, durationMs) {
@@ -763,6 +763,11 @@
     if (recording || starting) return;
     const bridge = global.SykiBridge;
     if (!bridge) return;
+    // The microphone is taken by the voice button of a bar (js/bar_voice.js): one recording at a time.
+    if (typeof global.__barVoiceBusy === 'function' && global.__barVoiceBusy()) {
+      toast(bridge, 'voiceBarBusy', null, ERROR_TOAST_MS);
+      return;
+    }
     const backendNow = global.backend;
     const voiceNow = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
     // With "record the PC's sound too" on, every recording is a meeting, and a meeting leaves the selected text alone and writes after it. But text that is
@@ -986,6 +991,8 @@
   // refineErr: the reason the second stage failed ("" = it worked or was not asked for). text is then the
   // transcript as spoken.
   global.__onVoiceResult = function (reqId, text, err, cachePath, refineErr) {
+    // The answer to a bar's voice button goes into that bar's box, not into the note (js/bar_voice.js).
+    if (typeof global.__barVoiceHandle === 'function' && global.__barVoiceHandle(reqId, text, err)) return;
     const id = idFromReqId(reqId);
     if (!id) return;
     const bridge = global.SykiBridge;
@@ -1162,6 +1169,11 @@
     isRecording: isRecording,
     onStateChange: onStateChange,
     configJSON: configJSON,
+    // what the bars' voice button (js/bar_voice.js) shares with the dictation: one config, one request shape, one set of mic errors
+    helpers: {
+      resolveVoiceConfig: resolveVoiceConfig, requestConfigJSON: requestConfigJSON, chooseMimeType: chooseMimeType,
+      micErrorKey: micErrorKey, watchdogMs: watchdogMs, RMS_THRESHOLD: RMS_THRESHOLD
+    },
     handleEditorClick: handleEditorClick,
     handleKeydown: handleKeydown
   };

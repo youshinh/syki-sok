@@ -905,3 +905,31 @@ func TestOpenPath_NoteWithoutAWindowFallsBackToTheSystem(t *testing.T) {
 		t.Fatalf("expected the system to be asked once, got %v", *calls)
 	}
 }
+
+// A recording made for a bar's box (noCache) is never left on disk, even when the transcription fails; the answer still says why.
+func TestTranscribeAudioAsync_NoCacheLeavesNothingOnDisk(t *testing.T) {
+	withStubbedQueryAudio(t, func(prompt, audioBase64, mimeType string, cfg llm.VoiceConfig) (string, error) {
+		return "", fmt.Errorf("network down")
+	})
+	mock := &voiceMockWebView{}
+	app := &App{w: mock}
+
+	app.TranscribeAudioAsync("bar_ask_7", base64.StdEncoding.EncodeToString([]byte("audio-bytes")), "audio/webm", `{"noCache":true}`)
+	eval := mock.waitFor(t, "__onVoiceResult", 5*time.Second)
+	if !strings.Contains(eval, "network down") || !strings.Contains(eval, "bar_ask_7") {
+		t.Errorf("the failure must still be reported: %s", eval)
+	}
+	dir, err := voiceCacheDir()
+	if err != nil {
+		t.Fatal(err)
+	}
+	entries, _ := os.ReadDir(dir)
+	for _, e := range entries {
+		if strings.Contains(e.Name(), "ask_7") {
+			t.Errorf("a recording of a bar was kept: %s", e.Name())
+		}
+	}
+	if strings.Contains(eval, ".webm") {
+		t.Errorf("the answer points at a cache file: %s", eval)
+	}
+}

@@ -6598,3 +6598,47 @@ body.is-panel-dragging * {
     background: rgb(var(--sheet-rgb) / 0.97) !important;
   }
 }
+
+/* ---- The microphone button of the ask / rewrite / command bars (js/bar_voice.js) ---- */
+.bar-voice-btn {
+  flex: 0 0 auto;
+}
+
+.bar-voice-btn.is-recording {
+  color: var(--coral);
+  animation: bar-voice-pulse 1.2s ease-in-out infinite;
+}
+
+.bar-voice-btn.is-busy {
+  color: var(--text-muted);
+}
+
+.bar-voice-spin {
+  animation: bar-voice-turn 0.9s linear infinite;
+}
+
+.bar-voice-status {
+  padding: 2px 12px 6px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.bar-voice-status.is-error {
+  color: var(--coral);
+}
+
+@keyframes bar-voice-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.45; }
+}
+
+@keyframes bar-voice-turn {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bar-voice-btn.is-recording,
+  .bar-voice-spin {
+    animation: none;
+  }
+}

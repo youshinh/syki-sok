@@ -241,9 +241,11 @@ function rig(extra) {
   assert.ok(/const cliBarFade = window\.PanelFade && cliFilterBar \? window\.PanelFade\.create\(cliFilterBar,/.test(app), 'command bar has a controller');
   assert.ok(/isBusy: \(\) => isCliFilterRunning \|\| isAiCliGenerating/.test(app), 'a running or generating command keeps the command bar');
   assert.ok(/if \(askBarFade\) askBarFade\.reset\(\);\s*inlinePromptBar\.classList\.remove\('hidden'\)/.test(app), 'opening the ask bar starts clean');
-  assert.ok(/function closeInlinePromptBar\(\) \{\s*if \(askBarFade\) askBarFade\.cancel\(\);/.test(app), 'closing the ask bar cancels a pending fade');
+  assert.ok(/function closeInlinePromptBar\(\) \{\s*if \(barVoice\) barVoice\.cancel\('ask'\);[^\n]*\s*if \(askBarFade\) askBarFade\.cancel\(\);/.test(app), 'closing the ask bar cancels a pending fade (and a recording of its voice button)');
   assert.ok(/if \(cliBarFade\) cliBarFade\.reset\(\);\s*cliFilterBar\.classList\.remove\('hidden'\)/.test(app), 'opening the command bar starts clean');
   assert.ok(/function closeCliFilterBar\(\) \{\s*if \(cliBarFade\) cliBarFade\.cancel\(\);/.test(app), 'closing the command bar cancels a pending fade');
+  assert.ok(/isBusy: \(\) => askErrorShown \|\| askConsentShown \|\| !!\(barVoice && barVoice\.busy\('ask'\)\)/.test(app), 'a recording of the voice button keeps the ask bar open');
+  assert.ok(/isBusy: \(\) => isCliFilterRunning \|\| isAiCliGenerating \|\| !!\(barVoice && barVoice\.busy\('cmd'\)\)/.test(app), 'and the command bar');
 
   assert.ok(/global\.PanelFade \? global\.PanelFade\.create\(jevPanelEl,\s*\{\s*watchFocus: false,/.test(jev), 'the suggest panel is driven by the editor, not by its own focus');
   assert.ok(/ed\.addEventListener\('blur', \(\) => \{\s*if \(!isPanelVisible\) return;\s*if \(panelFade\) panelFade\.arm\(\); else hidePanel\(\);/.test(jev), 'the editor losing focus arms the fade');

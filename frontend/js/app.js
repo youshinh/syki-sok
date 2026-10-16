@@ -79,6 +79,7 @@
       customVocabulary: [],
       prompt: 'この音声を正確に文字起こししてください。前置きや解説は不要です。句読点を含む自然な日本語テキストのみを出力してください。',
       silence_timeout_sec: 5,
+      barSilenceSec: 1.5, // the pause that ends a recording made in a bar
       // Second stage: tidy the transcript (or apply it to a selection as an edit instruction). Keep in
       // step with resolveRefineConfig in voice_input.js and llm.RefineSettings.
       refine: { enabled: true, model: 'gemini-flash-lite-latest', timeoutSec: 5 },
@@ -111,6 +112,7 @@
       mermaidTone: 'auto', // diagram colors in the preview: auto (follows the look) | dark | light | neutral | forest (mermaid_tone.js)
       autoSave: true,
       defaultNoteDir: '', // where a note with no file yet is saved (empty: the daily scraps folder)
+      barVoice: true, // the microphone button of the ask / rewrite / command bars (js/bar_voice.js)
       pasteImageOcr: true,
       pasteHtmlAsMarkdown: true,
       restoreSession: true,
@@ -6928,11 +6930,14 @@
 
   // Ctrl+L / Ctrl+K: when focus leaves the bar (a click in the note, Tab away) it closes after a 0.4 s grace and a 0.2 s
   // fade, unless something was typed into it. Alt+Tab away does not count (panel_fade.js; docs/design/panel-template.md).
+  // The microphone button of the ask / rewrite and command bars (js/bar_voice.js); set up with the command bar below.
+  let barVoice = null;
+
   const askBarFade = window.PanelFade && inlinePromptBar ? window.PanelFade.create(inlinePromptBar, {
     isOpen: isAskBarOpen,
     close: () => closeInlinePromptBar(),
     getValue: () => (inlinePromptInput ? inlinePromptInput.value : ''),
-    isBusy: () => askErrorShown || askConsentShown,
+    isBusy: () => askErrorShown || askConsentShown || !!(barVoice && barVoice.busy('ask')),
     refocus: () => { if (inlinePromptInput) inlinePromptInput.focus(); }
   }) : null;
 
@@ -7143,6 +7148,7 @@
 
     if (askBarFade) askBarFade.reset();
     inlinePromptBar.classList.remove('hidden');
+    if (barVoice) barVoice.refresh(); // the voice button shows when the setting and the page allow it
     inlinePromptBar.classList.toggle('inline-prompt-rewrite', isRewrite);
     if (inlinePromptBadge) inlinePromptBadge.textContent = t(isRewrite ? 'badgeRewrite' : 'badgeAsk');
     setInlinePromptSetupState(!llmReady);
@@ -7494,6 +7500,7 @@
   }
 
   function closeInlinePromptBar() {
+    if (barVoice) barVoice.cancel('ask'); // Esc / closing: the recording and an answer on its way are thrown away
     if (askBarFade) askBarFade.cancel();
     setInlinePromptConsent(false);
     if (inlinePromptBar) inlinePromptBar.classList.add('hidden');
@@ -8063,6 +8070,8 @@
 
   function setCliMode(aiMode, remember) {
     isAiCliMode = !!aiMode;
+    // the manual mode takes a command, typed: a recording of the AI mode is thrown away and the voice button goes
+    if (barVoice) { if (!isAiCliMode) barVoice.cancel('cmd'); barVoice.refresh(); }
     updateCliFilterBarModeUI();
     if (remember) {
       try {
@@ -8160,6 +8169,7 @@
     }
     if (cliBarFade) cliBarFade.reset();
     cliFilterBar.classList.remove('hidden');
+    if (barVoice) barVoice.refresh();
     if (cliFilterInput) {
       cliFilterInput.removeAttribute('title');
       cliFilterInput.value = '';
@@ -8226,9 +8236,34 @@
     isOpen: () => !cliFilterBar.classList.contains('hidden'),
     close: () => closeCliFilterBar(),
     getValue: () => (cliFilterInput ? cliFilterInput.value : ''),
-    isBusy: () => isCliFilterRunning || isAiCliGenerating,
+    isBusy: () => isCliFilterRunning || isAiCliGenerating || !!(barVoice && barVoice.busy('cmd')),
     refocus: () => { if (cliFilterInput && !cliFilterInput.disabled) cliFilterInput.focus(); }
   }) : null;
+
+  // The voice button of the bars. The box takes what was said; Enter sends it. Esc, closing the bar, and the command bar's CLI mode
+  // (a command needs exact input) throw the recording away.
+  if (window.BarVoice) {
+    barVoice = window.BarVoice.create({
+      document: document, window: window, navigator: navigator, VoiceInput: window.VoiceInput,
+      getConfig: () => config, getBackend: () => window.backend, t: (key, params) => t(key, params)
+    });
+    if (inlinePromptInput && inlinePromptBar) {
+      barVoice.attach('ask', {
+        input: inlinePromptInput, row: inlinePromptBar.querySelector('.inline-prompt-row'), send: btnInlinePromptSend,
+        onText: () => { if (askBarFade && askBarFade.markTyped) askBarFade.markTyped(); }
+      });
+    }
+    if (cliFilterInput && cliFilterBar) {
+      barVoice.attach('cmd', {
+        input: cliFilterInput, row: cliFilterBar.querySelector('.inline-prompt-row'), send: btnCliFilterSend,
+        available: () => isAiCliMode, // the manual mode takes a command: exact input, typed
+        onText: () => { if (cliBarFade && cliBarFade.markTyped) cliBarFade.markTyped(); }
+      });
+    }
+    window.__barVoiceHandle = (reqId, text, err) => barVoice.handleResult(reqId, text, err);
+    window.__barVoiceBusy = () => barVoice.busy();
+  }
+
 
   function closeCliFilterBar() {
     if (cliBarFade) cliBarFade.cancel();
@@ -8241,6 +8276,7 @@
       if (activeAiCliGenReqId && window.__aiCliGenCallbacks) window.__aiCliGenCallbacks.delete(activeAiCliGenReqId);
       resetCliFilterUI();
     }
+    if (barVoice) barVoice.cancel('cmd');
     if (cliFilterBar) cliFilterBar.classList.add('hidden');
     if (cliFilterPreview) {
       cliFilterPreview.classList.add('hidden');
@@ -11990,6 +12026,9 @@ STRICT SYNTAX SAFETY RULES:
     // window_windows.go), so there is no native "reload" to race with.
     if (matchShortcut(e, config.shortcuts && config.shortcuts.voiceInput)) {
       e.preventDefault();
+      // with an ask / rewrite bar (or the command bar in AI mode) open, the same key works the bar's microphone
+      const barId = barVoice ? (isAskBarOpen() ? 'ask' : ((cliFilterBar && !cliFilterBar.classList.contains('hidden') && isAiCliMode) ? 'cmd' : '')) : '';
+      if (barId) { barVoice.toggle(barId); return; }
       if (window.VoiceInput) window.VoiceInput.toggle();
       return;
     }
@@ -14580,6 +14619,10 @@ STRICT SYNTAX SAFETY RULES:
     if (voiceVocabularyEl) voiceVocabularyEl.value = listToText(config.voice && config.voice.customVocabulary, '\n');
     const voiceSilenceEl = document.getElementById('cfg-voice-silence');
     if (voiceSilenceEl) voiceSilenceEl.value = (config.voice && config.voice.silence_timeout_sec) || 5;
+    const barVoiceEl = document.getElementById('cfg-bar-voice');
+    if (barVoiceEl) barVoiceEl.checked = !(config.general && config.general.barVoice === false);
+    const barSilenceEl = document.getElementById('cfg-voice-bar-silence');
+    if (barSilenceEl) barSilenceEl.value = (config.voice && config.voice.barSilenceSec) || 1.5;
     const voiceRefine = (config.voice && config.voice.refine) || {};
     const voiceRefineEnabledEl = document.getElementById('cfg-voice-refine-enabled');
     if (voiceRefineEnabledEl) voiceRefineEnabledEl.checked = voiceRefineEnabled();
@@ -15605,6 +15648,11 @@ STRICT SYNTAX SAFETY RULES:
     if (saveVoiceVocabularyEl) config.voice.customVocabulary = textToList(saveVoiceVocabularyEl.value, /\r?\n/);
     const saveVoiceSilenceEl = document.getElementById('cfg-voice-silence');
     if (saveVoiceSilenceEl) config.voice.silence_timeout_sec = clampNumber(saveVoiceSilenceEl.value, 1, 30, 5);
+    const saveBarSilenceEl = document.getElementById('cfg-voice-bar-silence');
+    if (saveBarSilenceEl) config.voice.barSilenceSec = clampNumber(saveBarSilenceEl.value, 1, 5, 1.5);
+    const saveBarVoiceEl = document.getElementById('cfg-bar-voice');
+    if (saveBarVoiceEl) config.general.barVoice = !!saveBarVoiceEl.checked;
+    if (barVoice) barVoice.refresh();
     const saveVoicePromptEl = document.getElementById('cfg-voice-prompt');
     if (saveVoicePromptEl) config.voice.prompt = saveVoicePromptEl.value.trim();
     const saveSystemAudioEl = document.getElementById('cfg-voice-system-audio');
