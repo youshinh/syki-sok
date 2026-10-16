@@ -221,17 +221,29 @@
   // Merges voice config with vision fallback (shared Gemini credentials) and spec defaults. The vision key is lent to voice only
   // while both talk to the same host: a Gemini key must not reach a speech server of someone else.
   // opts.timeout overrides the request timeout in seconds (0 = the backend's own default).
+  // opts.profile is 'realtime' (the default: dictation, the bars, a dropped audio file) or 'batch' (the meeting recording, Mobile Drop):
+  // the engine, the Gemini model, the API style and the Whisper model are the ones of that profile (js/voice_profiles.js).
+  function profileOf(voice, name) {
+    const VP = global.VoiceProfiles;
+    if (VP && typeof VP.resolve === 'function') return VP.resolve(voice, name);
+    // without the module (a page that does not load it): the single model and Gemini, as before the profiles
+    return { engine: 'gemini', model: voice.model || '', apiStyle: voice.apiStyle || '', whisper: voice.whisper || {} };
+  }
+
   function resolveVoiceConfig(rawConfig, opts) {
     const cfg = rawConfig || {};
     const voice = cfg.voice || {};
     const vision = cfg.vision || {};
     const baseUrl = voice.baseUrl || vision.baseUrl || DEFAULT_BASE_URL;
+    const profile = profileOf(voice, opts && opts.profile === 'batch' ? 'batch' : 'realtime');
     return {
       refine: resolveRefineConfig(voice),
       baseUrl: baseUrl,
       apiKey: voice.apiKey || (apiHost(baseUrl) === apiHost(vision.baseUrl) ? (vision.apiKey || '') : ''),
-      model: voice.model || DEFAULT_MODEL,
-      apiStyle: voice.apiStyle || 'auto',
+      model: profile.model || DEFAULT_MODEL,
+      apiStyle: profile.apiStyle || 'auto',
+      engine: profile.engine,
+      whisper: profile.whisper,
       prompt: voice.prompt || DEFAULT_PROMPT,
       languageCodes: toStringList(voice.languageCodes, /[,\n]/),
       mode: String(voice.mode || '').toLowerCase() === 'verbatim' ? 'verbatim' : 'smart',
@@ -716,7 +728,7 @@
     }
     pending.set(id, tabId);
     const backend = global.backend;
-    const cfg = resolveVoiceConfig(bridge && bridge.getConfig ? bridge.getConfig() : {});
+    const cfg = resolveVoiceConfig(bridge && bridge.getConfig ? bridge.getConfig() : {}, { profile: 'batch' }); // a meeting is the batch profile
     let result;
     try {
       result = backend.stopMeetingRecordingAsync('voice_' + id, requestConfigJSON(cfg, null));

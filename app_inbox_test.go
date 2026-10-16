@@ -256,3 +256,27 @@ func TestHandleInboxAudio(t *testing.T) {
 		}
 	})
 }
+
+// The hot folder and the Discord bridge are the batch profile: a config saved before the profiles existed keeps the engine it chose, and
+// a config with a batch block uses that block (not the realtime one).
+func TestInboxAndDiscordReadTheBatchProfile(t *testing.T) {
+	legacy := `{"voice":{"model":"m1","engine":"whisper-local","whisper":{"model":"small-q5_1"}}}`
+	_, v := inboxVisionVoiceConfigs(legacy)
+	if v.Engine != "whisper-local" || v.Whisper.Model != "small-q5_1" || v.Model != "m1" {
+		t.Errorf("inbox, legacy config: %+v", v)
+	}
+	_, v = discordDropConfigs(legacy)
+	if v.Engine != "whisper-local" || v.Whisper.Model != "small-q5_1" || v.Model != "m1" {
+		t.Errorf("discord, legacy config: %+v", v)
+	}
+
+	both := `{"voice":{"model":"old","realtime":{"engine":"gemini","model":"rt"},"batch":{"engine":"whisper-local","model":"bt","whisper":{"model":"base"}}}}`
+	_, v = inboxVisionVoiceConfigs(both)
+	if v.Engine != "whisper-local" || v.Model != "bt" || v.Whisper.Model != "base" || v.Realtime != nil || v.Batch != nil {
+		t.Errorf("inbox, profiles: %+v", v)
+	}
+	_, v = discordDropConfigs(both)
+	if v.Engine != "whisper-local" || v.Model != "bt" || v.Whisper.Model != "base" {
+		t.Errorf("discord, profiles: %+v", v)
+	}
+}

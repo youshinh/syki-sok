@@ -357,8 +357,9 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   });
   // The old default must not linger anywhere the voice model is named.
   assert(!/voice[^\n]{0,80}gemini-2\.5-flash/.test(appJs), 'app.js must not fall back to gemini-2.5-flash for voice');
-  assert(!/id="cfg-voice-model"[^>]*placeholder="gemini-2\.5-flash"/.test(indexHtml), 'the voice model placeholder is the new default');
-  assert(/id="cfg-voice-model"[^>]*placeholder="gemini-3\.5-transcribe"/.test(indexHtml));
+  assert(!/id="cfg-voice-model-(rt|bt)"[^>]*placeholder="gemini-2\.5-flash"/.test(indexHtml), 'the voice model placeholder is the new default');
+  assert(/id="cfg-voice-model-rt"[^>]*placeholder="gemini-3\.5-transcribe"/.test(indexHtml));
+  assert(/id="cfg-voice-model-bt"[^>]*placeholder="gemini-3\.5-transcribe"/.test(indexHtml));
   // Saved configs merge over these defaults, so a config predating the new keys keeps working.
   assert(/if \(parsed\.voice\) Object\.assign\(config\.voice, parsed\.voice\);/.test(appJs), 'saved voice settings are merged over the defaults');
   console.log('PASS: config.voice defaults (gemini-3.5-transcribe, apiStyle auto, smart mode, empty lists).');
@@ -370,15 +371,16 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   const voiceEnd = indexHtml.indexOf('<!-- Image Generation -->');
   assert(voiceStart > 0 && voiceEnd > voiceStart, 'the Voice input settings group was not found');
   const group = indexHtml.slice(voiceStart, voiceEnd);
-  for (const id of ['cfg-voice-model', 'cfg-voice-api-style', 'cfg-voice-language', 'cfg-voice-mode', 'cfg-voice-vocabulary',
+  for (const id of ['cfg-voice-model-rt', 'cfg-voice-model-bt', 'cfg-voice-api-style-rt', 'cfg-voice-api-style-bt', 'cfg-voice-language', 'cfg-voice-mode', 'cfg-voice-vocabulary',
     'cfg-voice-silence', 'cfg-voice-prompt', 'voice-model-suggestions']) {
     assert(group.includes(`id="${id}"`), `the Voice input group must contain #${id}`);
   }
-  assert(/id="cfg-voice-model"[^>]*list="voice-model-suggestions"/.test(group), 'the model field offers suggestions');
+  assert(/id="cfg-voice-model-rt"[^>]*list="voice-model-suggestions"/.test(group) && /id="cfg-voice-model-bt"[^>]*list="voice-model-suggestions"/.test(group), 'both model fields offer suggestions');
   const suggestions = [...group.slice(group.indexOf('id="voice-model-suggestions"')).matchAll(/<option value="([^"]+)"/g)].slice(0, 2).map((m) => m[1]);
   assert.deepStrictEqual(suggestions, ['gemini-3.5-transcribe', 'gemini-flash-lite-latest'], 'gemini-2.5-flash is retired and is no longer suggested');
   const selectValues = (id) => [...group.slice(group.indexOf(`id="${id}"`)).split('</select>')[0].matchAll(/<option value="([^"]+)"/g)].map((m) => m[1]);
-  assert.deepStrictEqual(selectValues('cfg-voice-api-style'), ['auto', 'interactions', 'generateContent']);
+  assert.deepStrictEqual(selectValues('cfg-voice-api-style-rt'), ['auto', 'interactions', 'generateContent']);
+  assert.deepStrictEqual(selectValues('cfg-voice-api-style-bt'), ['auto', 'interactions', 'generateContent']);
   assert.deepStrictEqual(selectValues('cfg-voice-mode'), ['smart', 'verbatim']);
   assert(/id="cfg-voice-language"[^>]*placeholder="ja-JP, en-US"/.test(group), 'the language field shows the format');
   assert(/<textarea id="cfg-voice-vocabulary"/.test(group), 'the vocabulary is a multi-line field');
@@ -393,14 +395,19 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   assert(openStart > 0 && saveStart > openStart);
   const openSrc = appJs.slice(openStart, appJs.indexOf("const cliModelEl = document.getElementById('cfg-cli-model')", openStart));
   const saveSrc = appJs.slice(saveStart, appJs.indexOf('if (!config.cli) config.cli = {};', saveStart));
-  for (const id of ['cfg-voice-model', 'cfg-voice-api-style', 'cfg-voice-language', 'cfg-voice-mode', 'cfg-voice-vocabulary']) {
+  for (const id of ['cfg-voice-language', 'cfg-voice-mode', 'cfg-voice-vocabulary']) {
     assert(openSrc.includes(`'${id}'`), `openSettings must load #${id}`);
     assert(saveSrc.includes(`'${id}'`), `Save must read #${id}`);
+  }
+  // the model and API style of the two profiles (realtime -rt, batch -bt) are loaded and saved in one loop each
+  for (const src of [openSrc, saveSrc]) {
+    assert(src.includes("[['-rt', 'realtime'], ['-bt', 'batch']]"), 'both profiles are handled');
+    assert(src.includes("'cfg-voice-model' + sfx") && src.includes("'cfg-voice-api-style' + sfx"), 'the model and API style of each profile');
   }
   assert(/config\.voice\.languageCodes = textToList\(/.test(saveSrc) && /config\.voice\.customVocabulary = textToList\(/.test(saveSrc));
   assert(/listToText\(config\.voice && config\.voice\.languageCodes, ', '\)/.test(openSrc));
   assert(/listToText\(config\.voice && config\.voice\.customVocabulary, '\\n'\)/.test(openSrc));
-  assert(/saveVoiceModelEl\.value\.trim\(\) \|\| 'gemini-3\.5-transcribe'/.test(saveSrc), 'an emptied model field falls back to the new default');
+  assert(/modelEl\.value\.trim\(\) \|\| 'gemini-3\.5-transcribe'/.test(saveSrc), 'an emptied model field falls back to the new default');
 
   // The text <-> list conversions, run for real.
   const extract = (name) => {
@@ -428,7 +435,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
 // ---- 13. Mobile Drop uses the one voice-config builder, and can ask for the note folder ---------
 {
   const startFn = appJs.slice(appJs.indexOf('async function startMobileDrop()'), appJs.indexOf('function cancelMobileDrop()'));
-  assert(startFn.includes('window.VoiceInput.configJSON(config, { timeout: 0 })'), 'Mobile Drop builds the voice config through VoiceInput.configJSON');
+  assert(startFn.includes("window.VoiceInput.configJSON(config, { timeout: 0, profile: 'batch' })"), 'Mobile Drop builds the voice config through VoiceInput.configJSON, as the batch profile');
   assert(!/Object\.assign\(\{\}, config\.voice/.test(startFn), 'no second, inline voice-config builder');
   assert(/getNoteDir: function \(\) \{\s*return getNoteDir\(\);\s*\}/.test(appJs), 'window.__sykiRPC.getNoteDir is what the Go side asks for');
   assert(/mobileDropReceivedFallback', \{ count: kept \}/.test(appJs), 'the received callback reports the kept items');

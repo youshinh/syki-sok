@@ -42,7 +42,7 @@ func inboxVisionVoiceConfigs(configJSON string) (llm.VisionConfig, llm.VoiceConf
 	// The voice settings have no credentials of their own by default (the Settings screen says
 	// "uses the API key from the image OCR settings"), so fill them in from vision exactly as the
 	// Voice Input UI does; without this every dropped audio file failed with "API Key not set".
-	return raw.Vision, llm.ResolveVoiceConfig(raw.Voice, raw.Vision)
+	return raw.Vision, llm.ResolveVoiceConfigFor(raw.Voice, raw.Vision, llm.ProfileBatch)
 }
 
 // resolveInboxDir is inbox.ResolveDir (shared with the command line's `syki info`).

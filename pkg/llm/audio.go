@@ -89,6 +89,11 @@ type VoiceConfig struct {
 	Engine  string          `json:"engine"`
 	Whisper WhisperSettings `json:"whisper"`
 
+	// Realtime and Batch are config.voice.realtime / config.voice.batch (see ForProfile): the engine and models of each kind of
+	// transcription. They are read from config.json; a request from the page already carries the flat fields of one profile.
+	Realtime *VoiceProfile `json:"realtime,omitempty"`
+	Batch    *VoiceProfile `json:"batch,omitempty"`
+
 	// Refine is the second stage of the Voice Input UI (see RefineVoiceText); QueryAudio and the
 	// on-device engine ignore it.
 	Refine RefineSettings `json:"refine"`

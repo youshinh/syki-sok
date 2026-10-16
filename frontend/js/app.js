@@ -10695,7 +10695,7 @@ STRICT SYNTAX SAFETY RULES:
       // including the fall back to the vision (OCR) key/base URL: VoiceInput builds both. The
       // timeout stays at the backend's own default (0) because a phone recording can be long.
       const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON
-        ? window.VoiceInput.configJSON(config, { timeout: 0 })
+        ? window.VoiceInput.configJSON(config, { timeout: 0, profile: 'batch' }) // Mobile Drop is the batch profile
         : '{}';
 
       const info = window.backend.startMobileDropWithVoice
@@ -14563,13 +14563,15 @@ STRICT SYNTAX SAFETY RULES:
     document.getElementById('cfg-vision-api-key').value = config.vision.apiKey || '';
     document.getElementById('cfg-vision-prompt').value = config.vision.prompt || '';
 
-    const voiceModelEl = document.getElementById('cfg-voice-model');
-    if (voiceModelEl) voiceModelEl.value = (config.voice && config.voice.model) || 'gemini-3.5-transcribe';
-    const voiceStyleEl = document.getElementById('cfg-voice-api-style');
-    if (voiceStyleEl) {
-      const style = config.voice && config.voice.apiStyle;
-      voiceStyleEl.value = (style === 'interactions' || style === 'generateContent') ? style : 'auto';
-    }
+    // The Gemini model and API style of each kind of transcription (js/voice_profiles.js): realtime (-rt) and batch (-bt). A config saved
+    // before the two existed has one of each, which both start from.
+    [['-rt', 'realtime'], ['-bt', 'batch']].forEach(([sfx, name]) => {
+      const prof = window.VoiceProfiles ? window.VoiceProfiles.resolve(config.voice, name) : { model: config.voice && config.voice.model, apiStyle: config.voice && config.voice.apiStyle };
+      const voiceModelEl = document.getElementById('cfg-voice-model' + sfx);
+      if (voiceModelEl) voiceModelEl.value = prof.model || 'gemini-3.5-transcribe';
+      const voiceStyleEl = document.getElementById('cfg-voice-api-style' + sfx);
+      if (voiceStyleEl) voiceStyleEl.value = (prof.apiStyle === 'interactions' || prof.apiStyle === 'generateContent') ? prof.apiStyle : 'auto';
+    });
     const voiceLanguageEl = document.getElementById('cfg-voice-language');
     if (voiceLanguageEl) voiceLanguageEl.value = listToText(config.voice && config.voice.languageCodes, ', ');
     const voiceModeEl = document.getElementById('cfg-voice-mode');
@@ -15145,7 +15147,8 @@ STRICT SYNTAX SAFETY RULES:
   [
     textModelField,
     { input: document.getElementById('cfg-vision-model'), kind: 'text', endpoint: visionEndpoint },
-    { input: document.getElementById('cfg-voice-model'), kind: 'voice', endpoint: visionEndpoint },
+    { input: document.getElementById('cfg-voice-model-rt'), kind: 'voice', endpoint: visionEndpoint },
+    { input: document.getElementById('cfg-voice-model-bt'), kind: 'voice', endpoint: visionEndpoint },
     { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
     { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint }
   ].forEach(field => {
@@ -15582,10 +15585,18 @@ STRICT SYNTAX SAFETY RULES:
     }
 
     if (!config.voice) config.voice = {};
-    const saveVoiceModelEl = document.getElementById('cfg-voice-model');
-    if (saveVoiceModelEl) config.voice.model = saveVoiceModelEl.value.trim() || 'gemini-3.5-transcribe';
-    const saveVoiceStyleEl = document.getElementById('cfg-voice-api-style');
-    if (saveVoiceStyleEl) config.voice.apiStyle = saveVoiceStyleEl.value || 'auto';
+    // The model and API style of each profile go into config.voice.realtime / .batch; SpeechSettings.save adds the engine and the Whisper
+    // model and writes the two profiles (VoiceProfiles.writeProfiles, which also keeps voice.model for readers that know only one).
+    [['-rt', 'realtime'], ['-bt', 'batch']].forEach(([sfx, name]) => {
+      const modelEl = document.getElementById('cfg-voice-model' + sfx);
+      const styleEl = document.getElementById('cfg-voice-api-style' + sfx);
+      if (!modelEl && !styleEl) return;
+      const old = config.voice[name] && typeof config.voice[name] === 'object' ? config.voice[name] : {};
+      config.voice[name] = Object.assign({}, old, {
+        model: modelEl ? (modelEl.value.trim() || 'gemini-3.5-transcribe') : old.model,
+        apiStyle: styleEl ? (styleEl.value || 'auto') : old.apiStyle
+      });
+    });
     const saveVoiceLanguageEl = document.getElementById('cfg-voice-language');
     if (saveVoiceLanguageEl) config.voice.languageCodes = textToList(saveVoiceLanguageEl.value, /[\s,、，]+/);
     const saveVoiceModeEl = document.getElementById('cfg-voice-mode');
@@ -16687,7 +16698,7 @@ STRICT SYNTAX SAFETY RULES:
     try {
       const data = await fileAsBase64(file);
       if (batch && batch.canceled) { droppedMediaPending.delete(id); return { canceled: true }; }
-      const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON ? window.VoiceInput.configJSON(config, { timeout: 0 }) : '{}';
+      const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON ? window.VoiceInput.configJSON(config, { timeout: 0, profile: 'realtime' }) : '{}'; // a dropped audio file is the realtime profile
       await window.backend.processDroppedMedia(id, file.name, file.type || '', data, JSON.stringify(config.vision || {}), voiceJSON);
     } catch (err) {
       droppedMediaPending.delete(id);

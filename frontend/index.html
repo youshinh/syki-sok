@@ -1122,25 +1122,130 @@
               <h4 data-i18n="sectionVoiceInput">Voice input</h4>
             </div>
             <div class="form-group" id="cfg-voice-credential-hint" data-i18n="voiceCredentialHint">Uses the API key from the image OCR settings</div>
-            <div class="form-row" style="display: flex; gap: 12px;">
-              <div class="form-group" style="flex: 2;">
-                <label for="cfg-voice-model" data-i18n="voiceModelLabel">Voice model:</label>
-                <input type="text" id="cfg-voice-model" list="voice-model-suggestions" placeholder="gemini-3.5-transcribe">
+            <div class="voice-profile" id="voice-profile-rt">
+              <div class="settings-subhead" data-i18n="voiceProfileRealtime">Realtime: voice input, the ask / rewrite bars, dropped audio files</div>
+              <small data-i18n="voiceProfileRealtimeHint">Short recordings you wait for. A fast model suits them.</small>
+              <div class="form-group" id="speech-engine-choice-rt">
+                <label for="cfg-speech-engine-rt" data-i18n="speechEngineLabel">Engine:</label>
+                <select id="cfg-speech-engine-rt" class="form-select">
+                  <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
+                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
+                </select>
+              </div>
+              <div id="voice-gemini-rt">
+                <div class="form-row" style="display: flex; gap: 12px;">
+                  <div class="form-group" style="flex: 2;">
+                    <label for="cfg-voice-model-rt" data-i18n="voiceModelLabel">Voice model:</label>
+                    <input type="text" id="cfg-voice-model-rt" list="voice-model-suggestions" placeholder="gemini-3.5-transcribe">
                 <datalist id="voice-model-suggestions">
                   <option value="gemini-3.5-transcribe">Gemini 3.5 Transcribe (Recommended)</option>
                   <option value="gemini-flash-lite-latest">Gemini Flash Lite (generateContent)</option>
                 </datalist>
-                <small data-i18n="voiceModelHint">Auto uses the Interactions API for models named ...transcribe and generateContent for all others.</small>
+                    <small data-i18n="voiceModelHint">Auto uses the Interactions API for models named ...transcribe and generateContent for all others.</small>
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label for="cfg-voice-api-style-rt" data-i18n="voiceApiStyleLabel">API style:</label>
+                    <select id="cfg-voice-api-style-rt" class="form-select">
+                      <option value="auto" data-i18n="voiceApiStyleAuto">Auto</option>
+                      <option value="interactions" data-i18n="voiceApiStyleInteractions">Interactions API</option>
+                      <option value="generateContent" data-i18n="voiceApiStyleGenerateContent">generateContent</option>
+                    </select>
+                  </div>
+                </div>
               </div>
-              <div class="form-group" style="flex: 1;">
-                <label for="cfg-voice-api-style" data-i18n="voiceApiStyleLabel">API style:</label>
-                <select id="cfg-voice-api-style" class="form-select">
-                  <option value="auto" data-i18n="voiceApiStyleAuto">Auto</option>
-                  <option value="interactions" data-i18n="voiceApiStyleInteractions">Interactions API</option>
-                  <option value="generateContent" data-i18n="voiceApiStyleGenerateContent">generateContent</option>
-                </select>
+              <div id="speech-whisper-rt" class="hidden">
+                <div class="form-group">
+                  <label for="cfg-speech-model-rt" data-i18n="speechModelLabel">Model</label>
+                  <select id="cfg-speech-model-rt" class="form-select"></select>
+                  <small id="speech-model-note-rt"></small>
+                  <div id="speech-model-actions-rt" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+                    <span id="speech-model-status-rt" style="flex: 1; min-width: 160px;"></span>
+                    <button type="button" id="btn-speech-model-install-rt" class="btn-secondary" data-i18n="speechDownload">Download</button>
+                    <button type="button" id="btn-speech-model-remove-rt" class="btn-secondary hidden" data-i18n="speechRemove">Remove</button>
+                    <button type="button" id="btn-speech-model-cancel-rt" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
+                  </div>
+                  <progress id="speech-model-progress-rt" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
+                </div>
+                <div id="speech-custom-path-rt" class="form-group hidden">
+                  <label for="cfg-speech-model-path-rt" data-i18n="speechModelPathLabel">Model file (ggml .bin):</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="cfg-speech-model-path-rt" spellcheck="false" autocomplete="off" style="flex: 1;">
+                    <button type="button" id="btn-speech-model-browse-rt" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+                  </div>
+                  <small data-i18n="speechModelPathHint">Choose "All Files" in the dialog to see .bin files. A Whisper model in ggml format is required.</small>
+                  <small id="speech-model-path-result-rt"></small>
+                </div>
+                <div id="speech-custom-url-rt" class="form-group hidden">
+                  <label for="cfg-speech-model-url-rt" data-i18n="speechModelUrlLabel">Model URL (https):</label>
+                  <input type="text" id="cfg-speech-model-url-rt" spellcheck="false" autocomplete="off" placeholder="https://huggingface.co/.../ggml-....bin">
+                  <label for="cfg-speech-model-sha-rt" style="margin-top: 6px;" data-i18n="speechModelShaLabel">SHA-256 (optional):</label>
+                  <input type="text" id="cfg-speech-model-sha-rt" spellcheck="false" autocomplete="off">
+                  <small data-i18n="speechModelUrlHint">Optional but recommended: the download is verified against it.</small>
+                </div>
+                <div class="form-group"><small id="speech-ready-hint-rt"></small></div>
               </div>
             </div>
+
+            <div class="voice-profile" id="voice-profile-bt">
+              <div class="settings-subhead" data-i18n="voiceProfileBatch">Batch: meeting recording, hot folder, Discord, Mobile Drop</div>
+              <small data-i18n="voiceProfileBatchHint">Long or unattended recordings. The most accurate model suits them.</small>
+              <div class="form-group" id="speech-engine-choice-bt">
+                <label for="cfg-speech-engine-bt" data-i18n="speechEngineLabel">Engine:</label>
+                <select id="cfg-speech-engine-bt" class="form-select">
+                  <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
+                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
+                </select>
+              </div>
+              <div id="voice-gemini-bt">
+                <div class="form-row" style="display: flex; gap: 12px;">
+                  <div class="form-group" style="flex: 2;">
+                    <label for="cfg-voice-model-bt" data-i18n="voiceModelLabel">Voice model:</label>
+                    <input type="text" id="cfg-voice-model-bt" list="voice-model-suggestions" placeholder="gemini-3.5-transcribe">
+                    <small data-i18n="voiceModelHint">Auto uses the Interactions API for models named ...transcribe and generateContent for all others.</small>
+                  </div>
+                  <div class="form-group" style="flex: 1;">
+                    <label for="cfg-voice-api-style-bt" data-i18n="voiceApiStyleLabel">API style:</label>
+                    <select id="cfg-voice-api-style-bt" class="form-select">
+                      <option value="auto" data-i18n="voiceApiStyleAuto">Auto</option>
+                      <option value="interactions" data-i18n="voiceApiStyleInteractions">Interactions API</option>
+                      <option value="generateContent" data-i18n="voiceApiStyleGenerateContent">generateContent</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div id="speech-whisper-bt" class="hidden">
+                <div class="form-group">
+                  <label for="cfg-speech-model-bt" data-i18n="speechModelLabel">Model</label>
+                  <select id="cfg-speech-model-bt" class="form-select"></select>
+                  <small id="speech-model-note-bt"></small>
+                  <div id="speech-model-actions-bt" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
+                    <span id="speech-model-status-bt" style="flex: 1; min-width: 160px;"></span>
+                    <button type="button" id="btn-speech-model-install-bt" class="btn-secondary" data-i18n="speechDownload">Download</button>
+                    <button type="button" id="btn-speech-model-remove-bt" class="btn-secondary hidden" data-i18n="speechRemove">Remove</button>
+                    <button type="button" id="btn-speech-model-cancel-bt" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
+                  </div>
+                  <progress id="speech-model-progress-bt" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
+                </div>
+                <div id="speech-custom-path-bt" class="form-group hidden">
+                  <label for="cfg-speech-model-path-bt" data-i18n="speechModelPathLabel">Model file (ggml .bin):</label>
+                  <div style="display: flex; gap: 8px;">
+                    <input type="text" id="cfg-speech-model-path-bt" spellcheck="false" autocomplete="off" style="flex: 1;">
+                    <button type="button" id="btn-speech-model-browse-bt" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
+                  </div>
+                  <small data-i18n="speechModelPathHint">Choose "All Files" in the dialog to see .bin files. A Whisper model in ggml format is required.</small>
+                  <small id="speech-model-path-result-bt"></small>
+                </div>
+                <div id="speech-custom-url-bt" class="form-group hidden">
+                  <label for="cfg-speech-model-url-bt" data-i18n="speechModelUrlLabel">Model URL (https):</label>
+                  <input type="text" id="cfg-speech-model-url-bt" spellcheck="false" autocomplete="off" placeholder="https://huggingface.co/.../ggml-....bin">
+                  <label for="cfg-speech-model-sha-bt" style="margin-top: 6px;" data-i18n="speechModelShaLabel">SHA-256 (optional):</label>
+                  <input type="text" id="cfg-speech-model-sha-bt" spellcheck="false" autocomplete="off">
+                  <small data-i18n="speechModelUrlHint">Optional but recommended: the download is verified against it.</small>
+                </div>
+                <div class="form-group"><small id="speech-ready-hint-bt"></small></div>
+              </div>
+            </div>
+
             <div class="form-row" style="display: flex; gap: 12px;">
               <div class="form-group" style="flex: 2;">
                 <label for="cfg-voice-language" data-i18n="voiceLanguageLabel">Language codes:</label>
@@ -1200,20 +1305,13 @@
               <small data-i18n="voicePromptHint">Used only by generateContent-style models.</small>
             </div>
 
-            <!-- Speech engine (on-device Whisper) -->
+            <!-- Whisper (on-device): the program and the options the two profiles share; each profile picks its engine and model above -->
             <div id="speech-engine-block">
               <div class="settings-section-header" style="margin-top: 18px;">
-                <h4 data-i18n="sectionSpeechEngine">Speech engine (hot folder &amp; Discord)</h4>
+                <h4 data-i18n="sectionSpeechEngine">Whisper (on this PC)</h4>
               </div>
-              <div class="form-group">
-                <label for="cfg-speech-engine" data-i18n="speechEngineLabel">Engine:</label>
-                <select id="cfg-speech-engine" class="form-select">
-                  <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
-                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
-                </select>
-                <small data-i18n="speechEngineHint">Applies to the hot folder and the Discord bridge. Live voice input and Mobile Drop keep using Gemini.</small>
-              </div>
-              <div id="speech-whisper-panel" class="hidden">
+              <small data-i18n="speechEngineHint">Both kinds share one Whisper program and these options; each picks its own model above.</small>
+              <div id="speech-whisper-panel">
                 <div id="speech-unsupported" class="form-group hidden"><small data-i18n="speechUnsupported">On-device Whisper is only available on Windows (x64) for now.</small></div>
                 <div class="form-group">
                   <label data-i18n="speechRuntimeLabel">Whisper program</label>
@@ -1224,34 +1322,6 @@
                     <button type="button" id="btn-speech-runtime-cancel" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
                   </div>
                   <progress id="speech-runtime-progress" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
-                </div>
-                <div class="form-group">
-                  <label for="cfg-speech-model" data-i18n="speechModelLabel">Model</label>
-                  <select id="cfg-speech-model" class="form-select"></select>
-                  <small id="speech-model-note"></small>
-                  <div id="speech-model-actions" style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 6px;">
-                    <span id="speech-model-status" style="flex: 1; min-width: 160px;"></span>
-                    <button type="button" id="btn-speech-model-install" class="btn-secondary" data-i18n="speechDownload">Download</button>
-                    <button type="button" id="btn-speech-model-remove" class="btn-secondary hidden" data-i18n="speechRemove">Remove</button>
-                    <button type="button" id="btn-speech-model-cancel" class="btn-secondary hidden" data-i18n="speechCancel">Cancel</button>
-                  </div>
-                  <progress id="speech-model-progress" class="hidden" max="100" value="0" style="width: 100%; margin-top: 6px;"></progress>
-                </div>
-                <div id="speech-custom-path" class="form-group hidden">
-                  <label for="cfg-speech-model-path" data-i18n="speechModelPathLabel">Model file (ggml .bin):</label>
-                  <div style="display: flex; gap: 8px;">
-                    <input type="text" id="cfg-speech-model-path" spellcheck="false" autocomplete="off" style="flex: 1;">
-                    <button type="button" id="btn-speech-model-browse" class="btn-secondary" data-i18n="btnBrowse">Browse...</button>
-                  </div>
-                  <small data-i18n="speechModelPathHint">Choose "All Files" in the dialog to see .bin files. A Whisper model in ggml format is required.</small>
-                  <small id="speech-model-path-result"></small>
-                </div>
-                <div id="speech-custom-url" class="form-group hidden">
-                  <label for="cfg-speech-model-url" data-i18n="speechModelUrlLabel">Model URL (https):</label>
-                  <input type="text" id="cfg-speech-model-url" spellcheck="false" autocomplete="off" placeholder="https://huggingface.co/.../ggml-....bin">
-                  <label for="cfg-speech-model-sha" style="margin-top: 6px;" data-i18n="speechModelShaLabel">SHA-256 (optional):</label>
-                  <input type="text" id="cfg-speech-model-sha" spellcheck="false" autocomplete="off">
-                  <small data-i18n="speechModelUrlHint">Optional but recommended: the download is verified against it.</small>
                 </div>
                 <details id="speech-advanced" class="form-group">
                   <summary data-i18n="speechAdvanced">Advanced</summary>
@@ -1278,7 +1348,6 @@
                   </div>
                 </details>
                 <div class="form-group">
-                  <small id="speech-ready-hint"></small>
                   <small><span data-i18n="speechStorageDir">Stored in:</span> <span id="speech-storage-dir"></span></small>
                 </div>
               </div>
@@ -2049,6 +2118,7 @@
   <script src="js/tab_overflow.js?v=1.0.0"></script>
   <script src="js/view_layout.js?v=1.0.0"></script>
   <script src="js/html_to_md.js?v=1.0.0"></script>
+  <script src="js/voice_profiles.js?v=1.0.0"></script>
   <script src="js/voice_input.js?v=1.0.0"></script>
   <script src="js/speech_settings.js?v=1.0.0"></script>
   <script src="js/semantic_settings.js?v=1.0.0"></script>
