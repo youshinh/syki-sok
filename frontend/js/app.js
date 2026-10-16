@@ -16637,45 +16637,90 @@ STRICT SYNTAX SAFETY RULES:
     });
   }
 
+  // Images and recordings dropped to be opened are read in parallel (a few at a time) and become ONE note: a section for each file in the
+  // order they were dropped (a single file makes a note of its text alone). The note is named after the first file, and autosave then
+  // gives it a file in the folder for new notes.
+  const DROP_MEDIA_PARALLEL = 3; // the same bound as Mobile Drop: a dozen photos do not hit the vision / voice service all at once
+  const DROP_MEDIA_WAIT_MS = 10 * 60 * 1000;
   const droppedMediaPending = new Map();
-  async function openDroppedMedia(file, kind) {
-    if (!window.backend || !window.backend.processDroppedMedia) {
-      showMessage(t('dropNotTextFile', { name: file.name }), 4000);
-      return;
-    }
-    if (file.size > DROP_MEDIA_MAX_BYTES) {
-      showMessage(t('dropMediaTooLarge', { name: file.name }), 5000, { important: true });
-      return;
-    }
+
+  // One file through the backend: resolves to { text } or { error }; never rejects.
+  async function readDroppedMedia(file, kind) {
     const id = genReqId('dropmedia_');
-    droppedMediaPending.set(id, { name: file.name, kind: kind });
-    showMessage(t(kind === 'audio' ? 'dropMediaWorkingAudio' : 'dropMediaWorkingImage', { name: file.name }), 4000);
+    const answered = new Promise((resolve) => {
+      const timer = setTimeout(() => { droppedMediaPending.delete(id); resolve({ error: t('dropMediaTimeout') }); }, DROP_MEDIA_WAIT_MS);
+      droppedMediaPending.set(id, (r) => { clearTimeout(timer); resolve(r); });
+    });
     try {
       const data = await fileAsBase64(file);
       const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON ? window.VoiceInput.configJSON(config, { timeout: 0 }) : '{}';
       await window.backend.processDroppedMedia(id, file.name, file.type || '', data, JSON.stringify(config.vision || {}), voiceJSON);
     } catch (err) {
       droppedMediaPending.delete(id);
-      showMessage(t('dropMediaFailed', { name: file.name, err: goErr((err && err.message) || err) }), 6000, { important: true });
+      return { error: goErr((err && err.message) || err) };
     }
+    return answered;
   }
 
-  // The answer of ProcessDroppedMedia: the text becomes a new note named after the file; autosave then gives it a file in the folder for new notes.
+  // The answer of ProcessDroppedMedia (the backend calls this when a file has been read).
   window.__onDroppedMedia = function (reqId, text, err) {
-    const entry = droppedMediaPending.get(reqId);
-    if (!entry) return;
+    const settle = droppedMediaPending.get(reqId);
+    if (!settle) return;
     droppedMediaPending.delete(reqId);
-    if (err) {
-      showMessage(t('dropMediaFailed', { name: entry.name, err: goErr(err) }), 6000, { important: true });
+    settle(err ? { error: goErr(err) } : { text: String(text || '') });
+  };
+
+  // items: [{ file, kind }] in the order dropped.
+  async function openDroppedMediaBatch(items) {
+    if (!window.backend || !window.backend.processDroppedMedia) {
+      items.forEach((it) => showMessage(t('dropNotTextFile', { name: it.file.name }), 4000));
       return;
     }
-    const tab = createTab(entry.name.replace(/\.[^.]+$/, '') + '.md', String(text || '').replace(/\s+$/, '') + '\n');
+    const readable = items.filter((it) => {
+      if (it.file.size > DROP_MEDIA_MAX_BYTES) {
+        showMessage(t('dropMediaTooLarge', { name: it.file.name }), 5000, { important: true });
+        return false;
+      }
+      return true;
+    });
+    if (readable.length === 0) return;
+    showMessage(readable.length === 1
+      ? t(readable[0].kind === 'audio' ? 'dropMediaWorkingAudio' : 'dropMediaWorkingImage', { name: readable[0].file.name })
+      : t('dropMediaWorkingMany', { n: readable.length }), 4000);
+
+    // A few at a time, each worker taking the next file; the results keep the order of the drop.
+    const results = new Array(readable.length);
+    let next = 0;
+    const worker = async () => {
+      while (next < readable.length) {
+        const i = next++;
+        results[i] = await readDroppedMedia(readable[i].file, readable[i].kind);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(DROP_MEDIA_PARALLEL, readable.length) }, worker));
+
+    const sections = [];
+    let failed = 0;
+    readable.forEach((it, i) => {
+      const r = results[i] || { error: '' };
+      if (r.error) {
+        failed++;
+        showMessage(t('dropMediaFailed', { name: it.file.name, err: r.error }), 6000, { important: true });
+      }
+      const body = r.error ? '> ' + t('dropMediaItemFailed', { err: r.error }) : r.text.replace(/\s+$/, '');
+      sections.push(readable.length === 1 ? body : '## ' + it.file.name + '\n\n' + body);
+    });
+    if (failed === readable.length) return; // nothing was read: no note, the messages above say why
+
+    const first = readable[0].file.name.replace(/\.[^.]+$/, '');
+    const title = (readable.length === 1 ? first : t('dropMediaBatchTitle', { first: first, n: readable.length - 1 })) + '.md';
+    const tab = createTab(title, sections.join('\n\n') + '\n');
     tab.isAutoTitle = false;
     tab.isDirty = true;
     armAutoSave(tab);
     renderTabs();
-    showMessage(t('dropMediaDone', { name: entry.name }), 3000);
-  };
+    showMessage(readable.length === 1 ? t('dropMediaDone', { name: readable[0].file.name }) : t('dropMediaDoneMany', { n: readable.length - failed }), 3000);
+  }
 
   window.addEventListener('drop', async (e) => {
     // The zone the file was dropped on, when the zones were shown ('link' | 'open'); without them the old rule: on the text it is a
@@ -16703,11 +16748,12 @@ STRICT SYNTAX SAFETY RULES:
     }
 
     if (dropped.length > 0) {
+      const mediaBatch = []; // the images and recordings of this drop: one note, read in parallel (openDroppedMediaBatch)
       for (const file of dropped) {
         try {
           const mediaKind = droppedMediaKind(file);
           if (mediaKind) {
-            openDroppedMedia(file, mediaKind); // in the background: the next file does not wait for the answer
+            mediaBatch.push({ file: file, kind: mediaKind });
             continue;
           }
           if (!(await looksLikeTextFile(file))) {
@@ -16731,6 +16777,7 @@ STRICT SYNTAX SAFETY RULES:
           console.warn('Failed to read dropped file:', err);
         }
       }
+      if (mediaBatch.length > 0) openDroppedMediaBatch(mediaBatch); // in the background: the text files above are already open
     }
   });
 

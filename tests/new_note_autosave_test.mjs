@@ -67,10 +67,64 @@ assert.equal(kind({ type: '', name: 'scan.jpeg' }), 'image');
 assert.equal(kind({ type: 'image/svg+xml', name: 'x.svg' }), '', 'an SVG is text, not a picture to read');
 assert.equal(kind({ type: 'video/mp4', name: 'v.mp4' }), '', 'a video is not read');
 assert.equal(kind({ type: 'text/markdown', name: 'a.md' }), '');
-assert.ok(/openDroppedMedia\(file, mediaKind\);/.test(app) && /window\.__onDroppedMedia = function/.test(app), 'a dropped image or recording goes to the backend and its answer becomes a note');
-assert.ok(/armAutoSave\(tab\);\s*renderTabs\(\);\s*showMessage\(t\('dropMediaDone'/.test(app), 'the note made of the text is autosaved into the folder for new notes');
+assert.ok(/mediaBatch\.push\(\{ file: file, kind: mediaKind \}\)/.test(app) && /openDroppedMediaBatch\(mediaBatch\)/.test(app) && /window\.__onDroppedMedia = function/.test(app), 'the images and recordings of a drop go to the backend together and the answers come back');
+assert.ok(/const DROP_MEDIA_PARALLEL = 3;/.test(app) && /Math\.min\(DROP_MEDIA_PARALLEL, readable\.length\)/.test(app), 'they are read in parallel, a bounded number at a time');
+assert.ok(/results\[i\] = await readDroppedMedia/.test(app) && /readable\.length === 1 \? body : '## ' \+ it\.file\.name/.test(app), 'one note: a section for each file in the order dropped (a single file has no heading)');
+assert.ok(/failed === readable\.length\) return;/.test(app), 'when nothing could be read there is no note');
+assert.ok(/armAutoSave\(tab\);\s*renderTabs\(\);\s*showMessage\(readable\.length === 1/.test(app), 'the note made of the text is autosaved into the folder for new notes');
 
-for (const key of ['defaultNoteDirLabel', 'defaultNoteDirHint', 'newNoteAutoSaved', 'dropManyOpenConfirm', 'dropManyLinkConfirm', 'dropMediaWorkingAudio', 'dropMediaWorkingImage', 'dropMediaFailed', 'dropMediaTooLarge', 'dropMediaDone']) {
+for (const key of ['defaultNoteDirLabel', 'defaultNoteDirHint', 'newNoteAutoSaved', 'dropManyOpenConfirm', 'dropManyLinkConfirm', 'dropMediaWorkingAudio', 'dropMediaWorkingImage', 'dropMediaFailed', 'dropMediaTooLarge', 'dropMediaDone', 'dropMediaWorkingMany', 'dropMediaItemFailed', 'dropMediaTimeout', 'dropMediaBatchTitle', 'dropMediaDoneMany']) {
   assert.strictEqual((i18n.match(new RegExp('\n    ' + key + ': ', 'g')) || []).length, 2, key + ' exists in both languages');
 }
 console.log('new note autosave and dropped media tests passed');
+
+// ---- the real batch: parallel but bounded, in the order dropped, one note, a failed file marked in place ----
+{
+  const grab = (re, what) => { const m = re.exec(app); assert.ok(m, what + ' exists'); return m[0]; };
+  const src = [
+    'const DROP_MEDIA_MAX_BYTES = 20 * 1024 * 1024;',
+    grab(/const DROP_MEDIA_PARALLEL = 3;/, 'the bound'),
+    grab(/const DROP_MEDIA_WAIT_MS = [^;]+;/, 'the wait'),
+    'const droppedMediaPending = new Map();',
+    grab(/async function readDroppedMedia\(file, kind\) \{[\s\S]*?\r?\n  \}\r?\n/, 'readDroppedMedia'),
+    grab(/window\.__onDroppedMedia = function \(reqId, text, err\) \{[\s\S]*?\r?\n  \};/, 'the answer'),
+    grab(/async function openDroppedMediaBatch\(items\) \{[\s\S]*?\r?\n  \}\r?\n/, 'openDroppedMediaBatch'),
+  ].join('\n');
+  let running = 0;
+  let maxRunning = 0;
+  const win = { backend: {} };
+  const made = [];
+  const msgs = [];
+  const ctx = {
+    window: win, config: { vision: {} }, console, setTimeout, clearTimeout, Promise,
+    t: (k, p) => k + (p ? JSON.stringify(p) : ''), goErr: (x) => String(x), genReqId: (p) => p + Math.random().toString(36).slice(2),
+    fileAsBase64: async () => 'AAAA', showMessage: (m) => msgs.push(m), renderTabs() {}, armAutoSave() {},
+    createTab: (title, content) => { const tab = { title, content }; made.push(tab); return tab; },
+  };
+  win.backend.processDroppedMedia = async (id, name) => {
+    running++; maxRunning = Math.max(maxRunning, running);
+    // later files answer sooner, so the order of the answers is the reverse of the order dropped
+    const delay = name === 'c.png' ? 1 : name === 'b.png' ? 15 : 30;
+    setTimeout(() => { running--; win.__onDroppedMedia(id, name === 'bad.png' ? '' : 'text of ' + name, name === 'bad.png' ? 'no key' : ''); }, delay);
+  };
+  vm.createContext(ctx);
+  vm.runInContext(src.replace('window.__onDroppedMedia =', 'window.__onDroppedMedia ='), ctx);
+  const f = (name, kind) => ({ file: { name, size: 10, type: 'image/png' }, kind: kind || 'image' });
+  await vm.runInContext('openDroppedMediaBatch', ctx)([f('a.png'), f('b.png'), f('c.png'), f('d.png'), f('bad.png'), f('e.png')]);
+  assert.equal(made.length, 1, 'six files make ONE note');
+  assert.ok(maxRunning > 1 && maxRunning <= 3, 'they run in parallel, at most 3 at a time (saw ' + maxRunning + ')');
+  const order = ['a.png', 'b.png', 'c.png', 'd.png', 'bad.png', 'e.png'].map((n) => made[0].content.indexOf('## ' + n));
+  assert.ok(order.every((x, i) => x >= 0 && (i === 0 || x > order[i - 1])), 'the sections are in the order dropped, not the order answered');
+  assert.ok(/## bad\.png\s+> dropMediaItemFailed\{"err":"no key"\}/.test(made[0].content), 'a file that failed says so in its own section');
+  assert.ok(/text of a\.png/.test(made[0].content) && /text of e\.png/.test(made[0].content), 'the others are there');
+  assert.ok(/^dropMediaBatchTitle\{"first":"a","n":5\}\.md$/.test(made[0].title), 'named after the first file and the count');
+
+  made.length = 0;
+  await vm.runInContext('openDroppedMediaBatch', ctx)([f('one.png')]);
+  assert.equal(made[0].title, 'one.md');
+  assert.equal(made[0].content, 'text of one.png\n', 'a single file is its text alone, no heading');
+  made.length = 0;
+  await vm.runInContext('openDroppedMediaBatch', ctx)([f('bad.png')]);
+  assert.equal(made.length, 0, 'nothing read: no note');
+}
+console.log('batch tests passed');
