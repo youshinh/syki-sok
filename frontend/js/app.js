@@ -4996,6 +4996,20 @@
     return true;
   }
 
+  // A request that waits in the note ("[Generating the Mermaid diagram...]") is listed in the task panel, with a way to stop waiting: the
+  // request itself cannot be aborted on the Go side, so stopping forgets it, takes the waiting text out, and the late answer is thrown away
+  // (see cancelImageRead and the pendingLLMRequests guard of __onLLMResult).
+  function listCancellableRequest(reqId, anchorId) {
+    if (!(window.TaskManager && window.TaskManager.addTask)) return;
+    window.TaskManager.addTask({
+      id: reqId,
+      type: 'llm',
+      agent: 'LLM',
+      instruction: String(anchorId).replace(/^\[|\]$/g, ''),
+      onCancel: () => cancelImageRead(reqId)
+    });
+  }
+
   // Register a pending LLM request together with its watchdog timer.
   // Mirrors the per-request timer used by jev_action.js's jevExecuteAsync.
   function registerPendingLLMRequest(reqId, info) {
@@ -8785,8 +8799,12 @@ STRICT SYNTAX SAFETY RULES:
 
     registerPendingLLMRequest(reqId, {
       tabId: curTab.id,
-      anchorId: anchorId
+      anchorId: anchorId,
+      persistedText: insertion,
+      persistRestore: '',
+      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
     });
+    listCancellableRequest(reqId, anchorId);
 
     updateLLMIndicator();
 
@@ -8988,8 +9006,12 @@ STRICT SYNTAX SAFETY RULES:
 
     registerPendingLLMRequest(reqId, {
       tabId: curTab.id,
-      anchorId: anchorId
+      anchorId: anchorId,
+      persistedText: insertion,
+      persistRestore: '',
+      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
     });
+    listCancellableRequest(reqId, anchorId);
 
     updateLLMIndicator();
 
@@ -9045,8 +9067,12 @@ STRICT SYNTAX SAFETY RULES:
 
     registerPendingLLMRequest(reqId, {
       tabId: curTab.id,
-      anchorId: anchorId
+      anchorId: anchorId,
+      persistedText: insertion,
+      persistRestore: '',
+      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
     });
+    listCancellableRequest(reqId, anchorId);
 
     updateLLMIndicator();
 
