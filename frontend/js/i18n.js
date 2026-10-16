@@ -1324,6 +1324,11 @@ const I18N = {
     btnUnregisterFileTypes: "Remove",
     fileTypesRegisteredNote: "Registered. In Windows Settings (Default apps), pick syki for the types you want.",
     fileTypesFailed: "Failed: {err}",
+    dropZoneOpenTitle: "Open",
+    dropZoneOpenSub: "Open the file as a note",
+    dropZoneOpenSubMany: "Open the {n} files as notes",
+    dropZoneLinkTitle: "Insert link",
+    dropZoneLinkSub: "Put a link to the file in the note",
 
     // --- Settings screen mistake-proofing & clarity ---
     languageImeGuardianHint: "Choosing Japanese also turns on IME Guardian, in the Editor & Input section below (you can turn it off there).",
@@ -2818,6 +2823,11 @@ const I18N = {
     btnUnregisterFileTypes: "解除",
     fileTypesRegisteredNote: "登録しました。Windows の設定(既定のアプリ)で、syki にしたい種類を選んでください。",
     fileTypesFailed: "失敗しました: {err}",
+    dropZoneOpenTitle: "開く",
+    dropZoneOpenSub: "ファイルをノートとして開く",
+    dropZoneOpenSubMany: "{n} 個のファイルをノートとして開く",
+    dropZoneLinkTitle: "リンクを挿入",
+    dropZoneLinkSub: "ファイルへのリンクをノートに入れる",
 
     // --- 設定画面: 誤操作防止・明確化 ---
     languageImeGuardianHint: "日本語を選ぶと、下の「エディタ & 入力」にある IME Guardian も自動でオンになります（そこで変更できます）。",

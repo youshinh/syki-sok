@@ -16463,7 +16463,27 @@ STRICT SYNTAX SAFETY RULES:
     return null;
   }
 
+  // The editor a dropped file's link goes into: the one in the pane being worked in (the second pane only when it shows text).
+  function dropLinkEditor() {
+    if (isSplitMode && activePane === 'secondary' && editorSecondary && secondaryViewMode === 'editor') return editorSecondary;
+    return editorEl;
+  }
+
+  // The two places a dragged file can go, drawn over the window while it is dragged (js/drop_zones.js): open, and insert a link.
+  const dropZones = window.DropZones ? window.DropZones.create({
+    document: document,
+    tr: (key, params) => t(key, params),
+    canLink: () => { const ed = dropLinkEditor(); return !!(ed && ed.offsetParent !== null); }
+  }) : null;
+
   window.addEventListener('dragover', (e) => {
+    if (dropZones && window.DropZones.hasFiles(e.dataTransfer)) {
+      e.preventDefault();
+      e.stopPropagation();
+      if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy';
+      dropZones.onDragOver(e);
+      return;
+    }
     const editor = editorUnderPointer(e);
     if (editor && window.FileAnchor && window.FileAnchor.handleDragOver(e, editor)) {
       e.stopPropagation();
@@ -16481,6 +16501,7 @@ STRICT SYNTAX SAFETY RULES:
   });
   window.addEventListener('dragend', (e) => {
     if (window.FileAnchor) window.FileAnchor.handleDragLeave(e);
+    if (dropZones) dropZones.hide();
   });
 
   // A file dropped on the tab bar or the header opens as a note only when it is text: a picture, a PDF or an archive became a tab of
@@ -16512,7 +16533,11 @@ STRICT SYNTAX SAFETY RULES:
   }
 
   window.addEventListener('drop', async (e) => {
-    const editor = editorUnderPointer(e);
+    // The zone the file was dropped on, when the zones were shown ('link' | 'open'); without them the old rule: on the text it is a
+    // link, anywhere else the file opens.
+    const zone = dropZones ? dropZones.zoneOf(e) : '';
+    if (dropZones) dropZones.hide();
+    const editor = zone === 'link' ? dropLinkEditor() : (zone === 'open' ? null : editorUnderPointer(e));
     // preventDefault() must run synchronously, before any await below - otherwise the
     // browser's own "navigate to the dropped file" default can win the race.
     e.preventDefault();

@@ -6417,3 +6417,119 @@ body.is-panel-dragging * {
     box-shadow: none;
   }
 }
+
+/* ---- Drop zones (js/drop_zones.js): the two places a dragged file can go, shown while it is dragged over the window ----
+   Frosted glass: the page shows blurred through the two cards (the blur of the glass bars and panels above); an engine without
+   backdrop-filter, and a person who asked for less transparency, get a nearly solid card. The one under the pointer is outlined in the
+   accent colour. The two share the window in halves; "link" is gone when there is no editor to put a link in. */
+.drop-overlay {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: 10000;
+  display: none;
+  gap: 18px;
+  padding: 28px;
+  box-sizing: border-box;
+  background: rgb(var(--page-rgb) / 0.35);
+}
+
+.drop-overlay.is-on {
+  display: flex;
+}
+
+.drop-zone {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  color: var(--text-main);
+  background: rgb(var(--sheet-rgb) / 0.9);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  transition: box-shadow 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
+}
+
+.drop-zone.is-gone {
+  display: none;
+}
+
+.drop-zone.is-hot {
+  border-color: var(--accent-color);
+  box-shadow: inset 0 0 0 2px var(--accent-color);
+  transform: scale(1.01);
+}
+
+.drop-zone-icon {
+  display: block;
+  line-height: 0;
+  color: var(--text-muted);
+}
+
+.drop-zone.is-hot .drop-zone-icon {
+  color: var(--accent-color);
+}
+
+.drop-zone-title {
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.drop-zone-sub {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .drop-overlay {
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+
+  .drop-zone {
+    background: rgb(var(--sheet-rgb) / 0.55);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    backdrop-filter: blur(16px) saturate(1.2);
+  }
+
+  .drop-zone.is-hot {
+    background: rgb(var(--sheet-rgb) / 0.7);
+  }
+}
+
+@media (max-width: 640px) {
+  .drop-overlay {
+    flex-direction: column;
+    padding: 16px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .drop-zone {
+    transition: none;
+  }
+
+  .drop-zone.is-hot {
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  .drop-overlay,
+  .drop-zone {
+    -webkit-backdrop-filter: none !important;
+    backdrop-filter: none !important;
+  }
+
+  .drop-zone,
+  .drop-zone.is-hot {
+    background: rgb(var(--sheet-rgb) / 0.97) !important;
+  }
+}
