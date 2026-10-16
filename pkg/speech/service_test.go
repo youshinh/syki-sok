@@ -747,3 +747,55 @@ func TestLocalWaitingCallerCanBeCancelled(t *testing.T) {
 		t.Errorf("the running one failed: %v", err)
 	}
 }
+
+func TestWhisperPrompt(t *testing.T) {
+	long := strings.Repeat("あ", 150)
+	cases := []struct {
+		name   string
+		prompt string
+		vocab  []string
+		want   string
+	}{
+		{"nothing", "", nil, ""},
+		{"prompt only", " syki、Gemini ", nil, "syki、Gemini"},
+		{"vocabulary only", "", []string{"Kubernetes", "BigQuery"}, "Kubernetes, BigQuery"},
+		{"both: the prompt first", "会議の議事録", []string{"Kubernetes", "BigQuery"}, "会議の議事録, Kubernetes, BigQuery"},
+		{"blank and repeated terms are dropped", "", []string{" ", "A", "A", " B "}, "A, B"},
+		{"a term that does not fit is left out whole, a shorter one after it still fits", "", []string{long, strings.Repeat("い", 100), "短い"}, long + ", 短い"},
+		{"the prompt itself is cut", long + long, nil, strings.Repeat("あ", 200)},
+		{"terms after a full prompt are left out", strings.Repeat("あ", 200), []string{"X"}, strings.Repeat("あ", 200)},
+	}
+	for _, c := range cases {
+		got := whisperPrompt(c.prompt, c.vocab)
+		if got != c.want {
+			t.Errorf("%s: whisperPrompt(%q, %q) = %q, want %q", c.name, c.prompt, c.vocab, got, c.want)
+		}
+		if n := len([]rune(got)); n > maxWhisperPromptRunes {
+			t.Errorf("%s: %d characters, the limit is %d", c.name, n, maxWhisperPromptRunes)
+		}
+	}
+}
+
+// The custom vocabulary of the voice settings reaches whisper-cli as its initial prompt, after the prompt the person wrote for Whisper.
+func TestLocalPassesTheCustomVocabularyToWhisper(t *testing.T) {
+	e := newTestEnv(t)
+	cfg := localCfg()
+	cfg.CustomVocabulary = []string{"syki", "Kubernetes"}
+	cfg.Whisper.Prompt = "技術会議"
+	if _, err := e.svc.Transcribe(context.Background(), cfg, speechWAV(), "audio/wav"); err != nil {
+		t.Fatal(err)
+	}
+	args := e.whisper.calls[0]
+	if n := len(args); n < 2 || args[n-2] != "--prompt" || args[n-1] != "技術会議, syki, Kubernetes" {
+		t.Errorf("whisper-cli args %q", args)
+	}
+
+	// no vocabulary and no prompt: no --prompt at all, as before
+	e2 := newTestEnv(t)
+	if _, err := e2.svc.Transcribe(context.Background(), localCfg(), speechWAV(), "audio/wav"); err != nil {
+		t.Fatal(err)
+	}
+	if strings.Contains(strings.Join(e2.whisper.calls[0], " "), "--prompt") {
+		t.Errorf("a prompt was passed without one: %q", e2.whisper.calls[0])
+	}
+}

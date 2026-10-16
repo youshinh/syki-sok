@@ -3007,7 +3007,7 @@ recipes:
           <ul>
             <li><strong>Language:</strong> Empty means auto-detect. Examples: <code>ja</code>, <code>en</code>.</li>
             <li><strong>Threads (0 = auto):</strong> How many processor threads it may use. 0 lets it choose.</li>
-            <li><strong>Initial prompt:</strong> Names or terms to favour, so they are recognised more reliably.</li>
+            <li><strong>Initial prompt:</strong> Names or terms to favour, so they are recognised more reliably. The custom vocabulary of the Voice input settings is added after it (200 characters in all; terms that do not fit are left out).</li>
             <li><strong>If Whisper fails, retry with Gemini (sends the audio out):</strong> Off by default. When on, audio that Whisper cannot transcribe (or Whisper not being installed) is sent to Gemini instead.</li>
             <li><strong>Audio formats:</strong> Audio in m4a, mp3 and similar formats is converted on your PC before it is recognized.</li>
             <li><strong>Not on macOS:</strong> The settings there show "On-device Whisper is only available on Windows (x64) for now."</li>
@@ -3965,7 +3965,7 @@ Clipped from a web page.
                 <td>Custom vocabulary</td>
                 <td><code>voice.customVocabulary</code></td>
                 <td>Empty</td>
-                <td>One term per line (names, jargon). Up to 1000 terms, but about 100 works best. Used only with the Interactions API.</td>
+                <td>One term per line (names, jargon). Up to 1000 terms, but about 100 works best. The Interactions API takes it as a spelling hint; the on-device Whisper takes the first terms (up to 200 characters) after its own initial prompt.</td>
               </tr>
               <tr>
                 <td>Silence timeout (s)</td>

@@ -103,7 +103,7 @@ The maintainer's shape for this change (Go side `pkg/llm/audio.go` and the front
 | `voice.baseUrl`, `voice.apiKey` | string | `""` | Empty falls back individually to `vision.baseUrl` / `vision.apiKey` (frontend `resolveVoiceConfig`, and the Mobile Drop starter). Both empty everywhere = no key: error. Only Gemini hosts/models are accepted. |
 | `voice.languageCodes` | string[] | `[]` | BCP-47 hints such as `["ja-JP"]`; empty = auto-detect. Interactions style only. |
 | `voice.mode` | `smart` \| `verbatim` | `smart` | Interactions style only. |
-| `voice.customVocabulary` | string[] | `[]` | Terms to bias recognition; interactions only; blank and duplicate entries dropped; Go caps at 1000; keep it at 100 or fewer (maintainer guidance, not enforced). |
+| `voice.customVocabulary` | string[] | `[]` | Terms to bias recognition; the interactions style takes them as a spelling hint, and the on-device Whisper adds them after its own initial prompt (comma separated; at most 200 characters in all, a term that does not fit is left out whole); blank and duplicate entries dropped; Go caps at 1000; keep it at 100 or fewer (maintainer guidance, not enforced). |
 | `voice.prompt` | string | Japanese "transcribe accurately, no preamble" prompt | Used ONLY by the `generateContent` style. |
 | `voice.silence_timeout_sec` | number | `5` | Frontend auto-stop after this much silence; UI range 1-30. |
 | `voice.barSilenceSec` | number | `1.5` | The pause that ends a recording made with the microphone button of the Ask (Ctrl+L), Rewrite (Ctrl+K) and Command (Ctrl+E, AI mode) bars; UI range 1-5 s, counted after the first word. What was said goes into the box and is never sent by voice; Esc discards it; the realtime engine is used, microphone only, no second stage, nothing kept on disk. |
@@ -118,7 +118,7 @@ The maintainer's shape for this change (Go side `pkg/llm/audio.go` and the front
 | `voice.<profile>.whisper.customUrl`, `.customSha256` | string | `""` | `custom-url` only: an `https` URL of a ggml model and an optional expected SHA-256 (hex) that the download is verified against. |
 | `voice.<profile>.whisper.language` | string | `""` | Empty or `auto` = detect; otherwise a Whisper language code such as `ja` or `en`. |
 | `voice.<profile>.whisper.threads` | number | `0` | 0 = automatic. |
-| `voice.<profile>.whisper.prompt` | string | `""` | Initial prompt: names or terms to bias recognition toward. |
+| `voice.<profile>.whisper.prompt` | string | `""` | Initial prompt: names or terms to bias recognition toward. `voice.customVocabulary` is appended to it (200 characters in all). |
 | `voice.<profile>.whisper.cloudFallback` | bool | `false` | When true and the local engine fails or is not installed, the audio is retried with Gemini (it is sent out; that is why it is off). |
 
 Wire formats (from `pkg/llm/audio.go`, verified in source):

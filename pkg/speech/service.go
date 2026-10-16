@@ -179,7 +179,7 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 		lang:      whisperLanguage(w.Language, info.Multilingual),
 		threads:   w.Threads,
 		outPrefix: filepath.Join(dir, transcriptFileName),
-		prompt:    strings.TrimSpace(w.Prompt),
+		prompt:    whisperPrompt(w.Prompt, cfg.CustomVocabulary),
 	}
 	if job.threads <= 0 {
 		job.threads = autoThreads(runtime.NumCPU())
@@ -192,6 +192,47 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 		return "", fmt.Errorf("whisper-cli の出力を読み取れません: %w", err)
 	}
 	return cleanTranscript(string(raw)), nil
+}
+
+// maxWhisperPromptRunes bounds the initial prompt: whisper-cli keeps only a few hundred tokens of it (the rest is dropped), and a
+// long list of terms that is cut at an arbitrary point only crowds the audio out. The first terms are the ones that stay.
+const maxWhisperPromptRunes = 200
+
+// whisperPrompt is the initial prompt of one recognition: the prompt the person wrote for Whisper, then the custom vocabulary of the
+// voice settings (the same list the cloud takes as a spelling hint), so a name or a term that is written once is favoured by both
+// engines. Blank and repeated terms are dropped, and terms that no longer fit in maxWhisperPromptRunes are left out whole.
+func whisperPrompt(prompt string, vocabulary []string) string {
+	out := strings.TrimSpace(prompt)
+	if r := []rune(out); len(r) > maxWhisperPromptRunes {
+		out = string(r[:maxWhisperPromptRunes])
+	}
+	seen := map[string]bool{}
+	var terms []string
+	used := len([]rune(out))
+	for _, v := range vocabulary {
+		v = strings.TrimSpace(v)
+		if v == "" || seen[v] {
+			continue
+		}
+		seen[v] = true
+		add := len([]rune(v))
+		if len(terms) > 0 || out != "" {
+			add += 2 // the separator in front of it
+		}
+		if used+add > maxWhisperPromptRunes {
+			continue // a shorter term further on may still fit
+		}
+		terms = append(terms, v)
+		used += add
+	}
+	if len(terms) == 0 {
+		return out
+	}
+	list := strings.Join(terms, ", ")
+	if out == "" {
+		return list
+	}
+	return out + ", " + list
 }
 
 func decodeBase64(s string) ([]byte, error) {

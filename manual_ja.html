@@ -4115,7 +4115,7 @@ syki ocr --json memo.png</code></pre>
                 <td>言語コード</td>
                 <td><code>voice.languageCodes</code></td>
                 <td>空欄</td>
-                <td>BCP-47 をカンマ区切りで指定します（例 <code>ja-JP, en-US</code>）。空欄なら自動判定で、言語の混在にも対応します。Interactions API のときだけ使われます。</td>
+                <td>BCP-47 をカンマ区切りで指定します（例 <code>ja-JP, en-US</code>）。空欄なら自動判定で、言語の混在にも対応します。Interactions API では綴りのヒントになり、このPC内の Whisper では、Whisper 自身の初期プロンプトのあとに、先頭の語から（合計 200 文字まで）渡されます。</td>
               </tr>
               <tr>
                 <td>モード</td>
@@ -4203,7 +4203,7 @@ syki ocr --json memo.png</code></pre>
                 <td>初期プロンプト</td>
                 <td><code>voice.&lt;profile&gt;.whisper.prompt</code></td>
                 <td>空欄</td>
-                <td>固有名詞や専門用語を入れると、認識が安定します。</td>
+                <td>固有名詞や専門用語を入れると、認識が安定します。音声入力の設定のカスタム語彙が、このあとに足されます（合計 200 文字まで。収まらない語は省かれます）。</td>
               </tr>
               <tr>
                 <td>Whisper が失敗したら Gemini で再試行する</td>
