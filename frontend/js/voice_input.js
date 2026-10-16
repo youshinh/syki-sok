@@ -262,7 +262,9 @@
   function requestConfigJSON(cfg, job) {
     const req = {
       baseUrl: cfg.baseUrl, apiKey: cfg.apiKey, model: cfg.model, apiStyle: cfg.apiStyle, prompt: cfg.prompt,
-      languageCodes: cfg.languageCodes, mode: cfg.mode, customVocabulary: cfg.customVocabulary, timeout: cfg.timeout
+      languageCodes: cfg.languageCodes, mode: cfg.mode, customVocabulary: cfg.customVocabulary, timeout: cfg.timeout,
+      // who transcribes (Gemini, or the on-device Whisper) and its model: the ones of the profile this request belongs to
+      engine: cfg.engine, whisper: cfg.whisper
     };
     if (job) {
       req.refine = { enabled: !!job.refine, model: cfg.refine.model, timeoutSec: cfg.refine.timeoutSec };

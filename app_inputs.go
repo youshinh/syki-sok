@@ -549,7 +549,8 @@ func parseVoiceRequestConfig(voiceConfigJSON string) voiceRequestConfig {
 // a failing or slow refine never costs the dictation. The UI decides what a failure means (a plain
 // dictation keeps the transcript; speak-to-edit puts the selection back).
 func refineTranscript(text string, cfg voiceRequestConfig) (string, string) {
-	if !cfg.Refine.Enabled || strings.TrimSpace(text) == "" {
+	// The second stage is a cloud model: with the on-device engine chosen, the text does not leave the PC.
+	if !cfg.Refine.Enabled || strings.TrimSpace(text) == "" || isLocalEngine(cfg.VoiceConfig) {
 		return text, ""
 	}
 	refined, err := inputsRefine(context.Background(), text, cfg.VoiceConfig, cfg.RefineContext)
@@ -581,7 +582,7 @@ func (a *App) dispatchVoiceResultRefined(reqID, text, errMsg, cachePath, refineE
 	a.dispatchEval(js)
 }
 
-// TranscribeAudioAsync transcribes audioBase64 via Gemini in the background. On failure it
+// TranscribeAudioAsync transcribes audioBase64 in the background, with the engine the request names (Gemini, or the on-device Whisper). On failure it
 // first saves the audio into voice_cache so the user does not lose the recording.
 func (a *App) TranscribeAudioAsync(reqID, audioBase64, mimeType, voiceConfigJSON string) {
 	go func() {
@@ -594,7 +595,7 @@ func (a *App) TranscribeAudioAsync(reqID, audioBase64, mimeType, voiceConfigJSON
 		}()
 		cfg := parseVoiceRequestConfig(voiceConfigJSON)
 
-		text, err := inputsQueryAudio(cfg.Prompt, audioBase64, mimeType, cfg.VoiceConfig)
+		text, err := inputsTranscribe(context.Background(), audioBase64, mimeType, cfg.VoiceConfig)
 		if atomic.LoadInt32(&a.isDestroyed) != 0 {
 			return
 		}
@@ -637,7 +638,7 @@ func (a *App) RetryVoiceCacheAsync(reqID, cachePath, voiceConfigJSON string) {
 		cfg := parseVoiceRequestConfig(voiceConfigJSON)
 		audioBase64 := base64.StdEncoding.EncodeToString(data)
 
-		text, err := inputsQueryAudio(cfg.Prompt, audioBase64, "audio/webm", cfg.VoiceConfig)
+		text, err := inputsTranscribe(context.Background(), audioBase64, "audio/webm", cfg.VoiceConfig)
 		if atomic.LoadInt32(&a.isDestroyed) != 0 {
 			return
 		}

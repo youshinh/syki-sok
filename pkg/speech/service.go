@@ -113,6 +113,21 @@ func (s *Service) transcribeCloud(cfg llm.VoiceConfig, in audioInput) (string, e
 	return queryGeminiAudio(cfg.Prompt, b64, mime, cfg)
 }
 
+// localGate lets one on-device recognition run at a time, whoever asks: the hot folder, the Discord bridge, a meeting's pieces, a
+// dictation and a batch of dropped files all reach transcribeLocal. whisper-cli loads the whole model each time it starts, so several
+// at once would hold several models in memory and fight for the CPU; one after another costs the same total time and a third of the memory.
+var localGate = make(chan struct{}, 1)
+
+// acquireLocalGate waits for its turn (or for ctx to end) and returns what gives the turn back.
+func acquireLocalGate(ctx context.Context) (func(), error) {
+	select {
+	case localGate <- struct{}{}:
+		return func() { <-localGate }, nil
+	case <-ctx.Done():
+		return nil, ctx.Err()
+	}
+}
+
 func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in audioInput) (string, error) {
 	w := cfg.Whisper
 	exe, err := s.locateRuntime()
@@ -133,6 +148,12 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 		}
 		in.b64 = ""
 	}
+
+	release, err := acquireLocalGate(ctx)
+	if err != nil {
+		return "", err
+	}
+	defer release()
 
 	dir, err := os.MkdirTemp(s.tempRoot, "syki-speech-")
 	if err != nil {

@@ -282,7 +282,7 @@ const flush = (calls) => { const t = calls.timeouts.splice(0); t.forEach(({ fn }
   assert.deepStrictEqual(JSON.parse(voiceArg), {
     baseUrl: 'https://v.example', apiKey: 'k', model: 'gemini-3.5-transcribe', apiStyle: 'auto',
     prompt: 'この音声を正確に文字起こししてください。前置きや解説は不要です。句読点を含む自然な日本語テキストのみを出力してください。',
-    languageCodes: [], mode: 'smart', customVocabulary: [], timeout: 0
+    languageCodes: [], mode: 'smart', customVocabulary: [], timeout: 0, engine: 'gemini', whisper: {}
   }, 'defaults, the vision key/base URL as fallback credentials, and the backend default timeout for long phone recordings');
   assert.strictEqual(voiceArg, VoiceInput.configJSON({ vision: { baseUrl: 'https://v.example', apiKey: 'k' }, voice: {} }, { timeout: 0 }), 'identical to what the builder returns');
 
@@ -298,7 +298,7 @@ const flush = (calls) => { const t = calls.timeouts.splice(0); t.forEach(({ fn }
   await own.api.startMobileDrop();
   assert.deepStrictEqual(JSON.parse(ownArg), {
     baseUrl: 'https://voice.example', apiKey: 'own', model: 'gemini-2.5-flash', apiStyle: 'generateContent', prompt: 'my prompt',
-    languageCodes: ['ja-JP'], mode: 'verbatim', customVocabulary: ['Kubernetes'], timeout: 0
+    languageCodes: ['ja-JP'], mode: 'verbatim', customVocabulary: ['Kubernetes'], timeout: 0, engine: 'gemini', whisper: {}
   }, 'an already-saved model and the new options all travel to the backend');
 
   // Without the module (it failed to load) Mobile Drop still starts; the voice config is simply empty.

@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"sync"
 	"testing"
 	"time"
 
@@ -673,5 +674,76 @@ func TestNewServiceAcceptsPartStore(t *testing.T) {
 	var _ PartStore = fakeStore{}
 	if NewService(fakeStore{}) == nil {
 		t.Fatal("NewService returned nil")
+	}
+}
+
+// Several callers at once (the hot folder, a meeting's pieces, a dictation, a batch of dropped files) must not run several whisper-cli at
+// the same time: each loads the whole model. They take turns, and a caller that is waiting can still be cancelled.
+func TestLocalRunsOneAtATime(t *testing.T) {
+	e := newTestEnv(t)
+	var mu sync.Mutex
+	running, maxRunning := 0, 0
+	e.whisper.handler = func(ctx context.Context, exe string, args []string) error {
+		mu.Lock()
+		running++
+		maxRunning = max(maxRunning, running)
+		mu.Unlock()
+		time.Sleep(40 * time.Millisecond)
+		mu.Lock()
+		running--
+		mu.Unlock()
+		return writeTranscript("ok\n")(ctx, exe, args)
+	}
+	var wg sync.WaitGroup
+	for i := 0; i < 4; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if got, err := e.svc.Transcribe(context.Background(), localCfg(), speechWAV(), "audio/wav"); err != nil || got != "ok" {
+				t.Errorf("got %q, %v", got, err)
+			}
+		}()
+	}
+	wg.Wait()
+	if maxRunning != 1 {
+		t.Errorf("%d whisper-cli ran at the same time, want 1", maxRunning)
+	}
+}
+
+func TestLocalWaitingCallerCanBeCancelled(t *testing.T) {
+	e := newTestEnv(t)
+	release := make(chan struct{})
+	started := make(chan struct{})
+	e.whisper.handler = func(ctx context.Context, exe string, args []string) error {
+		close(started)
+		<-release
+		return writeTranscript("first\n")(ctx, exe, args)
+	}
+	first := make(chan error, 1)
+	go func() {
+		_, err := e.svc.Transcribe(context.Background(), localCfg(), speechWAV(), "audio/wav")
+		first <- err
+	}()
+	<-started // the first one holds the turn
+
+	ctx, cancel := context.WithCancel(context.Background())
+	second := make(chan error, 1)
+	go func() {
+		_, err := e.svc.Transcribe(ctx, localCfg(), speechWAV(), "audio/wav")
+		second <- err
+	}()
+	time.Sleep(30 * time.Millisecond)
+	cancel()
+	select {
+	case err := <-second:
+		if !errors.Is(err, context.Canceled) {
+			t.Errorf("waiting caller got %v, want context.Canceled", err)
+		}
+	case <-time.After(3 * time.Second):
+		t.Fatal("a caller waiting for its turn did not stop when cancelled")
+	}
+	close(release)
+	if err := <-first; err != nil {
+		t.Errorf("the running one failed: %v", err)
 	}
 }

@@ -314,7 +314,7 @@ function rescueAnchor(id) {
   const cfg = VI.resolveVoiceConfig({});
   const parsed = JSON.parse(VI.requestConfigJSON(cfg));
   assert.deepStrictEqual(Object.keys(parsed).sort(),
-    ['apiKey', 'apiStyle', 'baseUrl', 'customVocabulary', 'languageCodes', 'mode', 'model', 'prompt', 'timeout'].sort());
+    ['apiKey', 'apiStyle', 'baseUrl', 'customVocabulary', 'engine', 'languageCodes', 'mode', 'model', 'prompt', 'timeout', 'whisper'].sort());
   assert.strictEqual(parsed.model, 'gemini-3.5-transcribe');
   assert.strictEqual(parsed.apiStyle, 'auto');
   assert.strictEqual(parsed.mode, 'smart');

@@ -1,7 +1,7 @@
 package main
 
 import (
-	"encoding/base64"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -222,11 +222,7 @@ func (a *App) StopMeetingRecordingAsync(reqID, voiceConfigJSON string) {
 func transcribeMeetingFiles(files []string, cfg voiceRequestConfig) (string, error) {
 	var parts []string
 	for i, f := range files {
-		data, err := os.ReadFile(f)
-		if err != nil {
-			return "", fmt.Errorf("録音の読み込みに失敗しました: %w", err)
-		}
-		text, err := inputsQueryAudio(cfg.Prompt, base64.StdEncoding.EncodeToString(data), "audio/wav", cfg.VoiceConfig)
+		text, err := inputsTranscribeFile(context.Background(), f, "audio/wav", cfg.VoiceConfig)
 		if err != nil {
 			return "", fmt.Errorf("文字起こしに失敗しました（%d/%d つ目の区間）: %w", i+1, len(files), err)
 		}
