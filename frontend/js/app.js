@@ -16670,15 +16670,18 @@ STRICT SYNTAX SAFETY RULES:
   const DROP_MEDIA_WAIT_MS = 10 * 60 * 1000;
   const droppedMediaPending = new Map();
 
-  // One file through the backend: resolves to { text } or { error }; never rejects.
-  async function readDroppedMedia(file, kind) {
+  // One file through the backend: resolves to { text }, { error } or { canceled }; never rejects. batch ({ canceled, ids }) is the drop it
+  // belongs to: once it is cancelled a file that has not been sent is not sent, and one that is out has its answer thrown away.
+  async function readDroppedMedia(file, kind, batch) {
     const id = genReqId('dropmedia_');
     const answered = new Promise((resolve) => {
       const timer = setTimeout(() => { droppedMediaPending.delete(id); resolve({ error: t('dropMediaTimeout') }); }, DROP_MEDIA_WAIT_MS);
       droppedMediaPending.set(id, (r) => { clearTimeout(timer); resolve(r); });
     });
+    if (batch) batch.ids.add(id);
     try {
       const data = await fileAsBase64(file);
+      if (batch && batch.canceled) { droppedMediaPending.delete(id); return { canceled: true }; }
       const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON ? window.VoiceInput.configJSON(config, { timeout: 0 }) : '{}';
       await window.backend.processDroppedMedia(id, file.name, file.type || '', data, JSON.stringify(config.vision || {}), voiceJSON);
     } catch (err) {
@@ -16714,16 +16717,40 @@ STRICT SYNTAX SAFETY RULES:
       ? t(readable[0].kind === 'audio' ? 'dropMediaWorkingAudio' : 'dropMediaWorkingImage', { name: readable[0].file.name })
       : t('dropMediaWorkingMany', { n: readable.length }), 4000);
 
+    // The drop is one entry of the task panel, with a cancel: it stops the files not yet sent, throws away the answers of those that are
+    // out (the request itself cannot be aborted on the Go side), and no note is made.
+    const batch = { canceled: false, ids: new Set() };
+    const taskId = genReqId('dropbatch_');
+    if (window.TaskManager && window.TaskManager.addTask) {
+      window.TaskManager.addTask({
+        id: taskId,
+        type: 'llm',
+        agent: 'LLM',
+        instruction: readable.length === 1 ? readable[0].file.name : t('dropMediaWorkingMany', { n: readable.length }),
+        onCancel: () => {
+          batch.canceled = true;
+          batch.ids.forEach((id) => {
+            const settle = droppedMediaPending.get(id);
+            droppedMediaPending.delete(id);
+            if (settle) settle({ canceled: true });
+          });
+          showMessage(t('llmTaskCanceled'), 2500);
+        }
+      });
+    }
+    const endTask = (status) => { if (window.TaskManager && window.TaskManager.updateTask) window.TaskManager.updateTask(taskId, { status: status }); };
+
     // A few at a time, each worker taking the next file; the results keep the order of the drop.
     const results = new Array(readable.length);
     let next = 0;
     const worker = async () => {
-      while (next < readable.length) {
+      while (next < readable.length && !batch.canceled) {
         const i = next++;
-        results[i] = await readDroppedMedia(readable[i].file, readable[i].kind);
+        results[i] = await readDroppedMedia(readable[i].file, readable[i].kind, batch);
       }
     };
     await Promise.all(Array.from({ length: Math.min(DROP_MEDIA_PARALLEL, readable.length) }, worker));
+    if (batch.canceled) return; // cancelled in the task panel (the panel has already marked the entry): no note
 
     const sections = [];
     let failed = 0;
@@ -16736,7 +16763,8 @@ STRICT SYNTAX SAFETY RULES:
       const body = r.error ? '> ' + t('dropMediaItemFailed', { err: r.error }) : r.text.replace(/\s+$/, '');
       sections.push(readable.length === 1 ? body : '## ' + it.file.name + '\n\n' + body);
     });
-    if (failed === readable.length) return; // nothing was read: no note, the messages above say why
+    if (failed === readable.length) { endTask('failed'); return; } // nothing was read: no note, the messages above say why
+    endTask('completed');
 
     const first = readable[0].file.name.replace(/\.[^.]+$/, '');
     const title = (readable.length === 1 ? first : t('dropMediaBatchTitle', { first: first, n: readable.length - 1 })) + '.md';

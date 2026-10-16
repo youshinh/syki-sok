@@ -70,7 +70,7 @@ assert.equal(kind({ type: 'text/markdown', name: 'a.md' }), '');
 assert.ok(/mediaBatch\.push\(\{ file: file, kind: mediaKind \}\)/.test(app) && /openDroppedMediaBatch\(mediaBatch\)/.test(app) && /window\.__onDroppedMedia = function/.test(app), 'the images and recordings of a drop go to the backend together and the answers come back');
 assert.ok(/const DROP_MEDIA_PARALLEL = 3;/.test(app) && /Math\.min\(DROP_MEDIA_PARALLEL, readable\.length\)/.test(app), 'they are read in parallel, a bounded number at a time');
 assert.ok(/results\[i\] = await readDroppedMedia/.test(app) && /readable\.length === 1 \? body : '## ' \+ it\.file\.name/.test(app), 'one note: a section for each file in the order dropped (a single file has no heading)');
-assert.ok(/failed === readable\.length\) return;/.test(app), 'when nothing could be read there is no note');
+assert.ok(/failed === readable\.length\) \{ endTask\('failed'\); return; \}/.test(app), 'when nothing could be read there is no note');
 assert.ok(/armAutoSave\(tab\);\s*renderTabs\(\);\s*showMessage\(readable\.length === 1/.test(app), 'the note made of the text is autosaved into the folder for new notes');
 
 for (const key of ['defaultNoteDirLabel', 'defaultNoteDirHint', 'newNoteAutoSaved', 'dropManyOpenConfirm', 'dropManyLinkConfirm', 'dropMediaWorkingAudio', 'dropMediaWorkingImage', 'dropMediaFailed', 'dropMediaTooLarge', 'dropMediaDone', 'dropMediaWorkingMany', 'dropMediaItemFailed', 'dropMediaTimeout', 'dropMediaBatchTitle', 'dropMediaDoneMany']) {
@@ -86,7 +86,7 @@ console.log('new note autosave and dropped media tests passed');
     grab(/const DROP_MEDIA_PARALLEL = 3;/, 'the bound'),
     grab(/const DROP_MEDIA_WAIT_MS = [^;]+;/, 'the wait'),
     'const droppedMediaPending = new Map();',
-    grab(/async function readDroppedMedia\(file, kind\) \{[\s\S]*?\r?\n  \}\r?\n/, 'readDroppedMedia'),
+    grab(/async function readDroppedMedia\(file, kind, batch\) \{[\s\S]*?\r?\n  \}\r?\n/, 'readDroppedMedia'),
     grab(/window\.__onDroppedMedia = function \(reqId, text, err\) \{[\s\S]*?\r?\n  \};/, 'the answer'),
     grab(/async function openDroppedMediaBatch\(items\) \{[\s\S]*?\r?\n  \}\r?\n/, 'openDroppedMediaBatch'),
   ].join('\n');
@@ -126,5 +126,56 @@ console.log('new note autosave and dropped media tests passed');
   made.length = 0;
   await vm.runInContext('openDroppedMediaBatch', ctx)([f('bad.png')]);
   assert.equal(made.length, 0, 'nothing read: no note');
+}
+
+// ---- cancelling the drop in the task panel: no note, files not yet sent are not sent, late answers are thrown away ----
+{
+  const grab = (re, what) => { const m = re.exec(app); assert.ok(m, what + ' exists'); return m[0]; };
+  const src = [
+    'const DROP_MEDIA_MAX_BYTES = 20 * 1024 * 1024;',
+    grab(/const DROP_MEDIA_PARALLEL = 3;/, 'the bound'),
+    grab(/const DROP_MEDIA_WAIT_MS = [^;]+;/, 'the wait'),
+    'const droppedMediaPending = new Map();',
+    grab(/async function readDroppedMedia\(file, kind, batch\) \{[\s\S]*?\r?\n  \}\r?\n/, 'readDroppedMedia'),
+    grab(/window\.__onDroppedMedia = function \(reqId, text, err\) \{[\s\S]*?\r?\n  \};/, 'the answer'),
+    grab(/async function openDroppedMediaBatch\(items\) \{[\s\S]*?\r?\n  \}\r?\n/, 'openDroppedMediaBatch'),
+  ].join('\n');
+  const sent = [];
+  const made = [];
+  const tasks = {};
+  const win = { backend: {}, TaskManager: {
+    addTask: (o) => { tasks[o.id] = o; },
+    updateTask: (id, u) => { tasks[id].status = u.status; },
+  } };
+  const ctx = {
+    window: win, config: { vision: {} }, console, setTimeout, clearTimeout, Promise,
+    t: (k, p) => k + (p ? JSON.stringify(p) : ''), goErr: (x) => String(x), genReqId: (p) => p + Math.random().toString(36).slice(2),
+    fileAsBase64: async () => 'AAAA', showMessage() {}, renderTabs() {}, armAutoSave() {},
+    createTab: (title, content) => { made.push({ title, content }); return {}; },
+  };
+  const answers = [];
+  win.backend.processDroppedMedia = async (id, name) => { sent.push(name); answers.push({ id, name }); }; // never answers by itself
+  vm.createContext(ctx);
+  vm.runInContext(src, ctx);
+  const f = (name) => ({ file: { name, size: 10, type: 'image/png' }, kind: 'image' });
+  const run = vm.runInContext('openDroppedMediaBatch', ctx)([f('a.png'), f('b.png'), f('c.png'), f('d.png'), f('e.png')]);
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(sent.length, 3, 'three are out, two wait for a free place');
+  const taskId = Object.keys(tasks)[0];
+  assert.ok(taskId && typeof tasks[taskId].onCancel === 'function', 'the drop is one entry of the task panel, with a cancel');
+  tasks[taskId].onCancel();
+  answers.forEach((a) => win.__onDroppedMedia(a.id, 'late text of ' + a.name, '')); // the answers that were out arrive after the cancel
+  await run;
+  await new Promise((r) => setTimeout(r, 30));
+  assert.equal(made.length, 0, 'cancelled: no note is made, not even of the answers that arrive late');
+  assert.equal(sent.length, 3, 'and the two files that had not been sent are not sent');
+
+  // finished normally: the entry is marked completed
+  made.length = 0; sent.length = 0; answers.length = 0;
+  win.backend.processDroppedMedia = async (id, name) => { setTimeout(() => win.__onDroppedMedia(id, 'text of ' + name, ''), 1); };
+  await vm.runInContext('openDroppedMediaBatch', ctx)([f('x.png'), f('y.png')]);
+  assert.equal(made.length, 1);
+  const done = Object.values(tasks).find((x) => x.instruction.indexOf('dropMediaWorkingMany') !== -1 && x.status === 'completed');
+  assert.ok(done, 'the entry of a finished drop is marked completed');
 }
 console.log('batch tests passed');
