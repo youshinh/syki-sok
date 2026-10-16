@@ -763,6 +763,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			saveFile: (path, content, enc) => window.backend_saveFile(path, content, enc),
 			saveFileChecked: (path, content, enc, expectSig) => window.backend_saveFileChecked(path, content, enc, expectSig || ""),
 			saveFileAs: (content, enc, defaultName) => window.backend_saveFileAs(content, enc, defaultName || ""),
+			resolveDroppedFile: (name, size, modifiedMs, hintDirs) => window.backend_resolveDroppedFile(name || "", size || 0, modifiedMs || 0, hintDirs || ""),
 			exportPlainTextAs: (content, enc, defaultName) => window.backend_exportPlainTextAs(content, enc, defaultName || ""),
 			queryLLMAsync: (reqID, prompt, configJson) => window.backend_queryLLMAsync(reqID, prompt, configJson),
 			queryVisionAsync: (reqID, prompt, imageBase64, mimeType, configJson) => window.backend_queryVisionAsync(reqID, prompt, imageBase64, mimeType, configJson),

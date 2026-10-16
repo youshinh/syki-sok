@@ -16462,6 +16462,21 @@ STRICT SYNTAX SAFETY RULES:
     return true;
   }
 
+  // The folder-less File of a drop -> the path of the file on disk, or ''. A path the page already has (file.path) is used as it is.
+  async function resolveDroppedFilePath(file) {
+    if (file.path) return file.path;
+    if (!window.backend || !window.backend.resolveDroppedFile || !window.backend.readFileByPath) return '';
+    const dirs = [];
+    if (typeof workspaceRootPath === 'string' && workspaceRootPath) dirs.push(workspaceRootPath);
+    tabs.forEach((tb) => { if (tb.path) dirs.push(tb.path.replace(/[\\/][^\\/]*$/, '')); });
+    try {
+      return (await window.backend.resolveDroppedFile(file.name, file.size, file.lastModified, Array.from(new Set(dirs)).join('\n'))) || '';
+    } catch (err) {
+      console.warn('Could not look for the dropped file on disk:', err);
+      return '';
+    }
+  }
+
   window.addEventListener('drop', async (e) => {
     const editor = editorUnderPointer(e);
     // preventDefault() must run synchronously, before any await below - otherwise the
@@ -16480,6 +16495,17 @@ STRICT SYNTAX SAFETY RULES:
           if (!(await looksLikeTextFile(file))) {
             showMessage(t('dropNotTextFile', { name: file.name }), 4000);
             continue;
+          }
+          // The webview gives a dropped file no path, and a note without a file asks "Save as" on every save. The file it came from
+          // is looked for by name, size and modification time (app_drop.go); when it is found the note is that file (read the way
+          // Open reads it, so a Shift_JIS file is not garbled) and Ctrl+S overwrites it. Not found, or two copies that fit: a new note.
+          const linked = await resolveDroppedFilePath(file);
+          if (linked) {
+            const res = await window.backend.readFileByPath(linked).catch(() => null);
+            if (res && typeof res.content === 'string') {
+              createTab(res.title || file.name, res.content, res.path || linked, res.encoding);
+              continue;
+            }
           }
           const text = await file.text();
           createTab(file.name, text, file.path || '');

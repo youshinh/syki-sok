@@ -25,3 +25,24 @@ func TestSaveDialogTarget(t *testing.T) {
 		t.Errorf("the default folder was not made: %v", err)
 	}
 }
+
+// A file dropped on the window has no path in the page; ResolveDroppedFile finds the file by name, size and modification time in the
+// folders the page names (the folders of the open notes), so that the note is linked to it and saves over it.
+func TestResolveDroppedFileFindsItInAHintFolder(t *testing.T) {
+	dir := t.TempDir()
+	p := filepath.Join(dir, "projects", "memo.md")
+	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(p, []byte("abc"), 0644); err != nil {
+		t.Fatal(err)
+	}
+	info, _ := os.Stat(p)
+	app := &App{scrapDir: t.TempDir()}
+	if got := app.ResolveDroppedFile("memo.md", 3, float64(info.ModTime().UnixMilli()), dir); got != p {
+		t.Errorf("ResolveDroppedFile = %q, want %q", got, p)
+	}
+	if got := app.ResolveDroppedFile("memo.md", 4, float64(info.ModTime().UnixMilli()), dir); got != "" {
+		t.Errorf("a file of another size was linked: %q", got)
+	}
+}
