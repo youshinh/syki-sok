@@ -111,3 +111,19 @@ func TestRefineIsSkippedForTheLocalEngine(t *testing.T) {
 		t.Errorf("local: got %q, %q, calls %d (the second stage must not run)", got, errText, calls)
 	}
 }
+
+func TestSniffRecordingMIME(t *testing.T) {
+	cases := map[string]string{
+		"\x00\x00\x00\x24ftypisom....": "audio/mp4",
+		"OggS\x00\x02":                 "audio/ogg",
+		"RIFF\x00\x00\x00\x00WAVEfmt ": "audio/wav",
+		"\x1a\x45\xdf\xa3webm":         "audio/webm",
+		"fake-audio":                   "audio/webm",
+		"":                             "audio/webm",
+	}
+	for in, want := range cases {
+		if got := sniffRecordingMIME([]byte(in)); got != want {
+			t.Errorf("sniffRecordingMIME(%q) = %q, want %q", in, got, want)
+		}
+	}
+}

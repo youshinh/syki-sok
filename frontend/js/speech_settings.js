@@ -245,6 +245,11 @@
     if (!any) return;
     const supported = !!any.supported;
     setHidden($('speech-unsupported'), supported);
+    // where the on-device engine does not exist (macOS), it cannot be chosen
+    PROFILES.forEach((p) => {
+      const sel = $('cfg-speech-engine' + p.sfx);
+      if (sel && sel.options) Array.from(sel.options).forEach((o) => { if (o.value === LOCAL_ENGINE) o.disabled = !supported; });
+    });
 
     renderRow('runtime', '', any.runtime, installs.runtime !== null, supported);
     setText('speech-storage-dir', any.storageDir || '');

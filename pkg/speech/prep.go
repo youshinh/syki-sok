@@ -238,6 +238,10 @@ func unreadableFormatError(format, mime string, triedFFmpeg bool, causes []strin
 	} else {
 		msg += "ffmpeg をインストールして PATH に追加するか、WAV / MP3 / M4A で保存し直してください。"
 	}
+	if format == fmtWebM || format == fmtOGG {
+		// what the browser records; Windows reads it once the Store's codec package is there
+		msg += " Windows では、Microsoft Store の「Web Media Extensions」を入れると、WebM / Ogg を読み取れるようになります。"
+	}
 	if len(causes) > 0 {
 		msg += " (" + strings.Join(causes, " / ") + ")"
 	}

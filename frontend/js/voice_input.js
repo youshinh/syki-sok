@@ -16,6 +16,7 @@
   // "文字起こし中" for good (a lost callback, or an app restart, would otherwise leave it there for ever).
   const TRANSCRIBE_GRACE_MS = 20000;
   const DEFAULT_REQUEST_TIMEOUT_SEC = 120;
+  const LOCAL_REQUEST_TIMEOUT_SEC = 300; // the on-device engine: loading the model, waiting for its turn, then the recognition itself
   const MAX_KEPT_AUDIO = 5;
   // Second stage (tidying the transcript, or applying it to a selection as an edit instruction).
   const DEFAULT_REFINE_MODEL = 'gemini-flash-lite-latest';
@@ -47,7 +48,8 @@
       voiceStopTitle: '録音を止めて、文字起こしを始めます',
       voiceRefineFailed: '推敲できなかったため、文字起こしをそのまま入れました: {error}',
       voiceEditFailed: '選択範囲を書き換えられなかったため、元のテキストに戻しました: {error}',
-      voiceEditTooLong: '音声で書き換えられる選択範囲は {max} 文字までです。範囲を狭めてください'
+      voiceEditTooLong: '音声で書き換えられる選択範囲は {max} 文字までです。範囲を狭めてください',
+      voiceEditNeedsCloud: '文字を選択したまま話して書き換えるには、音声入力(リアルタイム)をクラウドにしてください。選択を外すと、そのまま音声入力できます'
     },
     en: {
       voiceMicDenied: 'Could not use the microphone',
@@ -70,7 +72,8 @@
       voiceStopTitle: 'Stop recording and start the transcription',
       voiceRefineFailed: 'Could not tidy the text, so the transcript was inserted as spoken: {error}',
       voiceEditFailed: 'Could not rewrite the selection, so the original text was put back: {error}',
-      voiceEditTooLong: 'Speak-to-edit works on selections of up to {max} characters. Select less text.'
+      voiceEditTooLong: 'Speak-to-edit works on selections of up to {max} characters. Select less text.',
+      voiceEditNeedsCloud: 'Speaking over a selection needs the cloud engine for realtime voice input. Clear the selection to dictate with the on-device engine.'
     }
   };
 
@@ -168,9 +171,14 @@
   }
 
   // Picks the best MediaRecorder mime type via an injected isTypeSupported so this stays testable.
-  function chooseMimeType(isSupportedFn) {
+  // Sent to the cloud, the recording stays what the browser makes best (webm/opus: small, no conversion, the fastest to send). For the
+  // on-device Whisper (preferMp4) the first choice is MP4/AAC: Windows decodes it with its own media transcoder, while webm needs the
+  // "Web Media Extensions" of the Microsoft Store (or ffmpeg) to be readable.
+  function chooseMimeType(isSupportedFn, preferMp4) {
     if (typeof isSupportedFn !== 'function') return '';
-    const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2'];
+    const candidates = preferMp4
+      ? ['audio/mp4;codecs=mp4a.40.2', 'audio/mp4', 'audio/webm;codecs=opus', 'audio/webm']
+      : ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/mp4;codecs=mp4a.40.2'];
     for (const c of candidates) {
       try { if (isSupportedFn(c)) return c; } catch (e) { /* keep trying */ }
     }
@@ -439,7 +447,9 @@
   }
 
   function watchdogMs(cfg, job) {
-    const sec = (cfg && typeof cfg.timeout === 'number' && cfg.timeout > 0) ? cfg.timeout : DEFAULT_REQUEST_TIMEOUT_SEC;
+    let sec = (cfg && typeof cfg.timeout === 'number' && cfg.timeout > 0) ? cfg.timeout : DEFAULT_REQUEST_TIMEOUT_SEC;
+    // on this PC the model is loaded for every recording and recognitions take turns (one at a time), so the cloud's wait is too short
+    if (cfg && cfg.engine === 'whisper-local') sec = Math.max(sec, LOCAL_REQUEST_TIMEOUT_SEC);
     const refineSec = (job && job.refine && cfg && cfg.refine) ? cfg.refine.timeoutSec : 0;
     return (sec + refineSec) * 1000 + TRANSCRIBE_GRACE_MS;
   }
@@ -778,7 +788,15 @@
 
     // With the second stage on, a selection is what the dictation edits (speak-to-edit), and the whole
     // of it goes to the model: refuse one that is too big before the microphone is even asked for.
-    const refineOn = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {}).refine.enabled && !(opts && opts.raw);
+    const cfgNow = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
+    const localEngine = cfgNow.engine === 'whisper-local';
+    // The second stage is a cloud model, so it does not run with the on-device engine (the text would leave the PC). A selection then
+    // cannot be spoken over: the dictation would replace it with what was said. It is refused before the microphone is asked for.
+    if (localEngine && cfgNow.refine.enabled && !(opts && opts.raw) && editor.selectionEnd > editor.selectionStart) {
+      toast(bridge, 'voiceEditNeedsCloud', null, ERROR_TOAST_MS);
+      return;
+    }
+    const refineOn = cfgNow.refine.enabled && !localEngine && !(opts && opts.raw);
     if (refineOn && editor.selectionEnd - editor.selectionStart > MAX_EDIT_SELECTION) {
       toast(bridge, 'voiceEditTooLong', { max: MAX_EDIT_SELECTION }, ERROR_TOAST_MS);
       return;
@@ -817,7 +835,7 @@
       return;
     }
 
-    const mimeType = chooseMimeType(global.MediaRecorder.isTypeSupported ? global.MediaRecorder.isTypeSupported.bind(global.MediaRecorder) : null);
+    const mimeType = chooseMimeType(global.MediaRecorder.isTypeSupported ? global.MediaRecorder.isTypeSupported.bind(global.MediaRecorder) : null, localEngine);
     let recorder;
     try {
       recorder = mimeType ? new global.MediaRecorder(stream, { mimeType: mimeType }) : new global.MediaRecorder(stream);
@@ -1157,6 +1175,7 @@
       createSilenceState: createSilenceState,
       silenceUpdate: silenceUpdate,
       chooseMimeType: chooseMimeType,
+      watchdogMs: watchdogMs,
       resolveVoiceConfig: resolveVoiceConfig,
       resolveRefineConfig: resolveRefineConfig,
       editorContext: editorContext,

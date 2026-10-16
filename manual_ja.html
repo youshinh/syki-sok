@@ -1757,7 +1757,7 @@
             </tbody>
           </table>
         </div>
-        <p>設定 → AIモデル には、この下に「音声認識エンジン(フォルダ監視・Discord)」もあります。Whisper（このPC内）を選んでも、効くのはホットフォルダと Discord 連携だけです。この画面での音声入力（<span class="kbd">Ctrl + Shift + R</span>）は、これまでどおり Gemini を使います。詳しくは <a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a> をご覧ください。</p>
+        <p>文字起こしには 2 つの種類があり、設定 → AIモデル → 音声入力 で、それぞれにエンジンを選べます。<strong>リアルタイム</strong>は待っている短い録音で、この画面での音声入力（<span class="kbd">Ctrl + Shift + R</span>）と、ウィンドウにドロップした音声ファイルです。<strong>バッチ</strong>は長い録音や待たない録音で、会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、Discord 連携です。どちらも「Gemini(クラウド)」（既定）か、Windows (x64) では、このPC内で動く Whisper を選べます。</p>
 
         <details class="more"><summary>メッセージとエラー</summary><div class="more-body">
           <p>状況に応じたメッセージが、ステータスバーに6〜9秒ほど表示されます。</p>
@@ -3047,7 +3047,7 @@ recipes:
         <p>この設定は、ホットフォルダのほか、<a href="#screen-capture" style="color: var(--accent);">画面キャプチャ</a>、エクスプローラーの「送る」、<code>syki ocr</code> コマンドにも効きます。Ctrl + V で貼り付けた画像の OCR（<a href="#vision-ocr" style="color: var(--accent);">画像貼り付け OCR</a>）は、画像解析で設定したモデルが読み取ります。この設定は関係しません。</p>
 
         <p><strong>音声は、どう文字起こしされるか</strong></p>
-        <p>エンジンは、設定 → AIモデル の「音声認識エンジン(フォルダ監視・Discord)」（音声入力の設定の下）にある「エンジン:」で選びます。</p>
+        <p>エンジンは、設定 → AIモデル → 音声入力 の「リアルタイム」と「バッチ」のそれぞれにある「エンジン:」で選びます。</p>
         <div class="compare">
           <div class="compare-card"><div class="compare-head">Gemini(クラウド) <span class="pill ok">既定</span></div>
             <ul>
@@ -3075,7 +3075,7 @@ recipes:
         <p id="whisper-local"><strong>音声をこのPCの中だけで文字起こしする（Whisper・Windows x64 のみ）</strong></p>
         <p>Whisper は、音声をインターネットに送らずに、このPCの中で文字にするエンジンです。使うには、2つの部品を、必要なときに一度だけダウンロードします。</p>
         <ol class="steps">
-          <li><strong>エンジンを切り替える</strong><span>設定 → AIモデル の「音声認識エンジン(フォルダ監視・Discord)」で、「エンジン:」を「Whisper(このPC内・オフライン)」にします</span></li>
+          <li><strong>エンジンを切り替える</strong><span>設定 → AIモデル → 音声入力 の「リアルタイム」または「バッチ」で、「エンジン:」を「Whisper(このPC内・オフライン)」にします。そのブロックにモデルのダウンロードが出ます。Whisper 本体は、下の「Whisper(このPC内)」にあり、2 つで共通の 1 回のダウンロードです</span></li>
           <li><strong>Whisper 本体をダウンロードする</strong><span>「Whisper 本体(実行ファイル)」の「ダウンロード」を押します（whisper.cpp、約9MB）</span></li>
           <li><strong>モデルを選んでダウンロードする</strong><span>「モデル」の一覧から選び、「ダウンロード」を押します。最初に選ばれているのは、日本語に特化した kotoba-whisper の量子化版です</span></li>
           <li><strong>準備ができたことを確かめる</strong><span>「準備完了: 音声はこのPC内で文字起こしされます。」と出れば、完了です</span></li>
@@ -3157,7 +3157,7 @@ syki ocr --json memo.png</code></pre>
         <details class="more"><summary>制限・詳しい仕様（設定ファイルのキー）</summary><div class="more-body">
           <ul>
             <li>設定ファイルのキーは、ホットフォルダが <code>inbox.enabled</code>（オン / オフ）と <code>inbox.dir</code>（フォルダ）、「画像をこのPCの外に出さない」が <code>vision.ocrMode</code>（空 = 既定のクラウド優先、<code>on-device</code> = 端末内だけ）です。</li>
-            <li>音声のエンジンは <code>voice.engine</code>（<code>gemini</code> が既定、<code>whisper-local</code>）です。Whisper の設定は <code>voice.whisper</code> の中にあります。詳しくは <a href="#cfg-model" style="color: var(--accent);">AIモデル タブ</a> の表をご覧ください。</li>
+            <li>音声のエンジンは <code>voice.realtime.engine</code> と <code>voice.batch.engine</code>（<code>gemini</code> が既定、<code>whisper-local</code>）です。Whisper の設定は、それぞれの <code>whisper</code> の中にあります。詳しくは <a href="#cfg-model" style="color: var(--accent);">AIモデル タブ</a> の表をご覧ください。</li>
             <li>音声の文字起こしに使うAPIキーとBase URLは、音声入力の設定が空のとき、画像解析 (OCR) のものを使います。</li>
           </ul>
         </div></details>
@@ -3759,7 +3759,7 @@ syki ocr --json memo.png</code></pre>
               </tr>
               <tr>
                 <td>音声メッセージ・音声ファイル</td>
-                <td>設定 → AIモデル の「音声認識エンジン(フォルダ監視・Discord)」で選んだ方法で文字起こしされます（既定は <a href="#voice-input" style="color: var(--accent);">音声入力</a>と同じ Gemini です。Windows (x64) では、このPC内で動く Whisper も選べます。<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照）。失敗したときは音声ファイルとして <code>assets/</code> に保存されます。</td>
+                <td>設定 → AIモデル → 音声入力 の「バッチ」で選んだ方法で文字起こしされます（既定は <a href="#voice-input" style="color: var(--accent);">音声入力</a>と同じ Gemini です。Windows (x64) では、このPC内で動く Whisper も選べます。<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照）。失敗したときは音声ファイルとして <code>assets/</code> に保存されます。</td>
               </tr>
               <tr>
                 <td>テキスト・URL</td>
@@ -4075,7 +4075,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>画像解析 (OCR):</strong> Gemini Flash Lite や Qwen 2.5 VL などの画像モデルとキーを指定します。「画像ペースト(Ctrl+V)時に自動で画像マークダウン化 (Vision OCR) を実行」のスイッチもここにあります（既定でオン）。スイッチがオフのとき、またはAPIキーが未設定のときは、貼り付けた画像を assets に保存してリンクで貼ります（Ctrl+Shift+V と同じ）。</li>
           <li><strong>画像生成:</strong> 図を画像として書き出すときに使うモデル・アスペクト比・解像度を指定します。Gemini API Key の欄が空のときは、Vision のキー、次にテキストのキーの順に引き継がれます。</li>
           <li><strong>音声入力 (Voice input):</strong> 画像解析 (OCR)の設定のすぐ下にあります。使い方は <a href="#voice-input" style="color: var(--accent);">音声入力</a> を参照してください。設定項目は次の表のとおりです。</li>
-          <li><strong>音声認識エンジン(フォルダ監視・Discord):</strong> 音声入力の設定の下にあります。「エンジン:」で、「Gemini(クラウド)」（既定）か「Whisper(このPC内・オフライン)」を選びます。選んだエンジンが効くのは、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>と <a href="#discord-bridge" style="color: var(--accent);">Discord連携</a> の文字起こしだけです。画面での音声入力とMobile Dropは、これまでどおり Gemini を使います。Whisper は <strong>Windows (x64) のみ</strong> で、macOS では「このPC内 Whisper は、現在 Windows (x64) のみ対応しています。」と表示されます。ダウンロードの手順とモデルの一覧は、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>の Whisper の項目にあります。</li>
+          <li><strong>リアルタイムとバッチ(音声入力のグループ):</strong> それぞれのブロックに「エンジン:」があり、「Gemini(クラウド)」（既定）か「Whisper(このPC内・オフライン)」を選びます。Gemini のモデルと API の種類、Whisper のモデルも、ブロックごとに選べます。リアルタイムは音声入力とドロップした音声ファイル、バッチは会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#discord-bridge" style="color: var(--accent);">Discord連携</a> です。Whisper 本体とオプションは、「Whisper(このPC内)」にあります。Whisper は <strong>Windows (x64) のみ</strong> で、macOS では「このPC内 Whisper は、現在 Windows (x64) のみ対応しています。」と表示されます。ダウンロードの手順とモデルの一覧は、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>の Whisper の項目にあります。</li>
         </ul>
 
         <p><strong>音声入力 (Voice input) の設定項目</strong></p>
@@ -4142,7 +4142,7 @@ syki ocr --json memo.png</code></pre>
           </table>
         </div>
 
-        <p><strong>音声認識エンジン (フォルダ監視・Discord) の設定項目</strong></p>
+        <p><strong>音声認識エンジンの設定項目</strong>（音声入力の「リアルタイム」「バッチ」と、「Whisper(このPC内)」。<code>&lt;profile&gt;</code> は <code>realtime</code> か <code>batch</code> です）</p>
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
@@ -4156,49 +4156,49 @@ syki ocr --json memo.png</code></pre>
             <tbody>
               <tr>
                 <td>エンジン</td>
-                <td><code>voice.engine</code></td>
+                <td><code>voice.realtime.engine</code>、<code>voice.batch.engine</code></td>
                 <td>Gemini(クラウド) (<code>gemini</code>)</td>
-                <td>Gemini(クラウド) / Whisper(このPC内・オフライン) (<code>whisper-local</code>)。ホットフォルダと Discord 連携にだけ効きます。Whisper は Windows (x64) のみです。</td>
+                <td>Gemini(クラウド) / Whisper(このPC内・オフライン) (<code>whisper-local</code>)。リアルタイム（音声入力、ドロップした音声）とバッチ（会議メモ、Mobile Drop、ホットフォルダ、Discord 連携）で、別々に選べます。リアルタイムを Whisper にすると、「整え」の段階はオフになり、選択して話す書き換えは使えません。Whisper は Windows (x64) のみです。</td>
               </tr>
               <tr>
                 <td>モデル</td>
-                <td><code>voice.whisper.model</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.model</code></td>
                 <td>kotoba-whisper v2.0 量子化版</td>
                 <td>一覧のモデル、またはカスタム（<code>custom-path</code> / <code>custom-url</code>）です。</td>
               </tr>
               <tr>
                 <td>モデルファイル(ggml 形式の .bin)</td>
-                <td><code>voice.whisper.modelPath</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.modelPath</code></td>
                 <td>空欄</td>
                 <td>カスタム「PC上のモデルファイルを指定」のときの、ファイルの場所です。</td>
               </tr>
               <tr>
                 <td>モデルの URL(https) / SHA-256(任意)</td>
-                <td><code>voice.whisper.customUrl</code> / <code>voice.whisper.customSha256</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.customUrl</code> / <code>voice.&lt;profile&gt;.whisper.customSha256</code></td>
                 <td>空欄</td>
                 <td>カスタム「URL からダウンロード」のときの、モデルのアドレスと、照合用の SHA-256 です。</td>
               </tr>
               <tr>
                 <td>言語</td>
-                <td><code>voice.whisper.language</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.language</code></td>
                 <td>空欄（自動判定）</td>
                 <td>例: <code>ja</code>、<code>en</code>。</td>
               </tr>
               <tr>
                 <td>スレッド数</td>
-                <td><code>voice.whisper.threads</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.threads</code></td>
                 <td>0（自動）</td>
                 <td>認識に使うスレッドの数です。</td>
               </tr>
               <tr>
                 <td>初期プロンプト</td>
-                <td><code>voice.whisper.prompt</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.prompt</code></td>
                 <td>空欄</td>
                 <td>固有名詞や専門用語を入れると、認識が安定します。</td>
               </tr>
               <tr>
                 <td>Whisper が失敗したら Gemini で再試行する</td>
-                <td><code>voice.whisper.cloudFallback</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.cloudFallback</code></td>
                 <td>オフ</td>
                 <td>オンにすると、Whisper が失敗したとき、または準備できていないときに、Gemini で文字起こしし直します。音声が外部に送信されます。</td>
               </tr>

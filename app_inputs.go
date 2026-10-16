@@ -615,6 +615,20 @@ func (a *App) TranscribeAudioAsync(reqID, audioBase64, mimeType, voiceConfigJSON
 	}()
 }
 
+// sniffRecordingMIME tells what a cached recording is from its first bytes. The cache keeps every recording under .webm, but what the
+// page recorded depends on the engine of that moment (MP4 for the on-device Whisper, webm for the cloud), and the cloud is told the type.
+func sniffRecordingMIME(data []byte) string {
+	switch {
+	case len(data) >= 8 && string(data[4:8]) == "ftyp":
+		return "audio/mp4"
+	case len(data) >= 4 && string(data[:4]) == "OggS":
+		return "audio/ogg"
+	case len(data) >= 12 && string(data[:4]) == "RIFF" && string(data[8:12]) == "WAVE":
+		return "audio/wav"
+	}
+	return "audio/webm"
+}
+
 // RetryVoiceCacheAsync re-attempts transcription of a previously cached recording; on success
 // the cache file is deleted.
 func (a *App) RetryVoiceCacheAsync(reqID, cachePath, voiceConfigJSON string) {
@@ -638,7 +652,7 @@ func (a *App) RetryVoiceCacheAsync(reqID, cachePath, voiceConfigJSON string) {
 		cfg := parseVoiceRequestConfig(voiceConfigJSON)
 		audioBase64 := base64.StdEncoding.EncodeToString(data)
 
-		text, err := inputsTranscribe(context.Background(), audioBase64, "audio/webm", cfg.VoiceConfig)
+		text, err := inputsTranscribe(context.Background(), audioBase64, sniffRecordingMIME(data), cfg.VoiceConfig)
 		if atomic.LoadInt32(&a.isDestroyed) != 0 {
 			return
 		}

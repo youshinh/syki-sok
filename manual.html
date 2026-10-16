@@ -1677,7 +1677,7 @@
         <p>When the reason is <code>話し声が検出されませんでした</code> (no speech was detected), the API works and the recording simply holds almost no speech: check the microphone choice and level (Windows Settings -&gt; System -&gt; Sound).</p>
         <p>When no answer comes back at all, the marker turns into the <code>[Retry]</code> form once the wait (30 s by default, plus 20 s) is over, and an old &ldquo;transcribing&rdquo; marker left by an answer that was lost while the app was closed is cleaned up when you click in the note.</p>
 
-        <p><strong>A note on the speech engine:</strong> Live voice input on this page, and Mobile Drop, always use Gemini. The on-device Whisper engine (Settings → AI Models → "Speech engine (hot folder &amp; Discord)") applies only to the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and the Discord Bridge.</p>
+        <p><strong>A note on the speech engine:</strong> Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. <strong>Realtime</strong> is what you wait for: voice input on this page and an audio file dropped on the window. <strong>Batch</strong> is long or unattended: the meeting recording, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a>, the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and the Discord Bridge. Each is "Gemini (cloud)" (the default) or, on Windows x64, the on-device Whisper.</p>
 
         <p><strong>Settings</strong> (Settings → AI Models, "Voice input" group, right below the Image analysis (OCR) settings)</p>
         <div class="doc-table-wrap">
@@ -1795,7 +1795,7 @@
 
         <details class="more"><summary>Limits and details (model, privacy, requirements)</summary><div class="more-body">
           <ul>
-            <li><strong>Model:</strong> The default is <code>gemini-3.5-transcribe</code>. Live voice input uses Gemini models only. The offline engine (on-device Whisper) covers the hot folder and the Discord Bridge only, not this feature.</li>
+            <li><strong>Model:</strong> The default is <code>gemini-3.5-transcribe</code>. The Gemini model is set separately for Realtime and for Batch. With the on-device Whisper as the Realtime engine, voice input is recognised on this PC instead (the tidy-up second stage and speaking over a selection need the cloud, so they are off then).</li>
             <li><strong>How it is called:</strong> Google's Gemini 3.5 Transcribe is called through the Interactions API (<code>POST {base}/v1beta/interactions</code>, header <code>x-goog-api-key</code>). Other Gemini models, such as <code>gemini-flash-lite-latest</code>, run through generateContent with a prompt.</li>
             <li><strong>The live model cannot be used:</strong> <code>gemini-3.5-transcribe-live</code> is the streaming (Live API) variant and cannot be used for recorded audio. Choosing it shows an error that says so.</li>
             <li><strong>Privacy:</strong> syki::sok always sends <code>store: false</code>, so Google does not keep the recording or the transcript.</li>
@@ -2915,8 +2915,8 @@ recipes:
 
         <p><strong>Which engine transcribes the audio</strong></p>
         <ul>
-          <li><strong>The choice:</strong> Settings → AI Models tab, the group "Speech engine (hot folder &amp; Discord)", <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only, described next).</li>
-          <li><strong>Where it applies:</strong> to the hot folder and the <a href="#discord-bridge" style="color: var(--accent);">Discord Bridge</a>. Live <a href="#voice-input" style="color: var(--accent);">Voice Input</a> (<span class="kbd">Ctrl + Shift + R</span>) and <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> keep using Gemini.</li>
+          <li><strong>The choice:</strong> Settings → AI Models tab, the group "Voice input": the blocks <strong>Realtime</strong> and <strong>Batch</strong> each have an <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only, described next).</li>
+          <li><strong>Where it applies:</strong> <strong>Batch</strong>: the hot folder, the <a href="#discord-bridge" style="color: var(--accent);">Discord Bridge</a>, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> and the meeting recording. <strong>Realtime</strong>: live <a href="#voice-input" style="color: var(--accent);">Voice Input</a> (<span class="kbd">Ctrl + Shift + R</span>) and an audio file dropped on the window. A configuration saved before the two kinds existed keeps its engine for Batch, and Realtime stays Gemini.</li>
           <li><strong>Keys:</strong> The voice settings reuse the API key of Image analysis (OCR) when they have none of their own.</li>
         </ul>
 
@@ -2931,14 +2931,14 @@ recipes:
             <li><strong>Off by default:</strong> nothing is watched until you tick the checkbox and save.</li>
             <li><strong>Timing:</strong> files already in the folder are checked once at startup, then new files are picked up live, after their writing has settled.</li>
             <li><strong>Git sync:</strong> If Git sync is on for the scraps folder, the pictures and audio moved into <code>assets/</code> are committed and pushed together with the notes.</li>
-            <li><strong>Settings names:</strong> in the config file, <code>inbox.enabled</code> and <code>inbox.dir</code> hold the switch and the folder, <code>vision.ocrMode</code> is empty for the default (cloud first) or <code>"on-device"</code>, and <code>voice.engine</code> is <code>"gemini"</code> (the default) or <code>"whisper-local"</code>.</li>
+            <li><strong>Settings names:</strong> in the config file, <code>inbox.enabled</code> and <code>inbox.dir</code> hold the switch and the folder, <code>vision.ocrMode</code> is empty for the default (cloud first) or <code>"on-device"</code>, and <code>voice.realtime.engine</code> and <code>voice.batch.engine</code> are <code>"gemini"</code> (the default) or <code>"whisper-local"</code>.</li>
           </ul>
         </div></details>
 
         <h3 id="whisper-local">On-device Whisper (Windows x64)</h3>
         <p>Whisper is a speech recognition program that runs on your own PC, so the audio is transcribed offline. It is available on 64-bit Windows only. Nothing is sent out unless you turn on the retry option under Advanced below. It works for the hot folder and the Discord Bridge only.</p>
         <ol class="steps">
-          <li><strong>Choose the engine</strong><span>Settings → AI Models → "Speech engine (hot folder &amp; Discord)", <strong>Engine</strong>: "Whisper (on this PC, offline)". A panel with two parts to download opens</span></li>
+          <li><strong>Choose the engine</strong><span>Settings → AI Models → Voice input, block <strong>Realtime</strong> or <strong>Batch</strong>, <strong>Engine</strong>: "Whisper (on this PC, offline)". A model to download appears in that block, and the group "Whisper (on this PC)" below holds the Whisper program (one download for both)</span></li>
           <li><strong>Download the Whisper program</strong><span>Press <strong>Download</strong> next to "Whisper program" (about 9 MB). A progress display shows how far it is. <strong>Cancel</strong> stops it, and the next Download continues where it stopped. <strong>Remove</strong> deletes the part again</span></li>
           <li><strong>Choose a model and download it</strong><span>Pick one under "Model" and press <strong>Download</strong>. The default is kotoba-whisper v2.0 quantized (about 513 MB)</span></li>
           <li><strong>Save</strong><span>When both parts are installed, the panel says "Ready: audio is transcribed on this PC." Press <strong>Save</strong>, and audio in the hot folder is transcribed on your PC</span></li>
@@ -3913,7 +3913,7 @@ Clipped from a web page.
           <li><strong>Image analysis (OCR):</strong> the vision model and key, such as Gemini Flash Lite or Qwen 2.5 VL, plus a toggle "Automatically transcribe pasted images (Ctrl+V) using Gemini OCR" (on by default). When the toggle is off, or there is no API key, a pasted image is saved to assets and linked instead (like Ctrl+Shift+V). Pictures from the <a href="#hot-folder" style="color: var(--accent);">hot folder</a>, <a href="#screen-capture" style="color: var(--accent);">Screen Capture</a> and Send To are read with these settings too.</li>
           <li><strong>Image generation:</strong> the model, aspect ratio, and resolution used by "Render Image...". If its Gemini API key is blank, it inherits the Vision key and then the Text key, in that order.</li>
           <li><strong>Voice input:</strong> Right below the Image analysis (OCR) settings. For how to use it, see <a href="#voice-input" style="color: var(--accent);">Voice Input</a>. The settings are listed in the table below.</li>
-          <li><strong>Speech engine (hot folder &amp; Discord):</strong> Right below the Voice input group. <strong>Engine</strong> chooses "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only). It applies to the hot folder and the Discord Bridge; live voice input and Mobile Drop keep using Gemini. The settings are in the second table below, and the download steps are under <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a>.</li>
+          <li><strong>Realtime and Batch (Voice input group):</strong> each block has an <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only), its own Gemini model and API style, and its own Whisper model. Realtime is voice input and dropped audio files; Batch is the meeting recording, Mobile Drop, the hot folder and the Discord Bridge. The Whisper program and options are in the group "Whisper (on this PC)". The settings are in the second table below, and the download steps are under <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a>.</li>
         </ul>
 
         <p><strong>Voice input settings</strong></p>
@@ -3980,7 +3980,7 @@ Clipped from a web page.
           </table>
         </div>
 
-        <p><strong>Speech engine settings</strong> (group "Speech engine (hot folder &amp; Discord)", right below the Voice input group)</p>
+        <p><strong>Speech engine settings</strong> (the blocks Realtime and Batch of the Voice input group, and the group "Whisper (on this PC)"; <code>&lt;profile&gt;</code> is <code>realtime</code> or <code>batch</code>)</p>
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
@@ -3994,49 +3994,49 @@ Clipped from a web page.
             <tbody>
               <tr>
                 <td>Engine</td>
-                <td><code>voice.engine</code></td>
+                <td><code>voice.realtime.engine</code>, <code>voice.batch.engine</code></td>
                 <td>Gemini (cloud) (<code>gemini</code>)</td>
-                <td>"Gemini (cloud)" or "Whisper (on this PC, offline)" (<code>whisper-local</code>). Applies to the hot folder and the Discord Bridge. Live voice input and Mobile Drop keep using Gemini. Whisper is for Windows x64 only; on macOS the settings say so.</td>
+                <td>"Gemini (cloud)" or "Whisper (on this PC, offline)" (<code>whisper-local</code>). One for each kind: Realtime (voice input, dropped audio files) and Batch (meeting recording, Mobile Drop, hot folder, Discord Bridge). With Whisper as the Realtime engine the tidy-up second stage is off and speaking over a selection is refused. Whisper is for Windows x64 only; on macOS the settings say so.</td>
               </tr>
               <tr>
                 <td>Whisper program, Model</td>
-                <td><code>voice.whisper.model</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.model</code></td>
                 <td>kotoba-whisper v2.0 quantized</td>
                 <td>Two parts downloaded on demand, each with Download, Remove and Cancel and a progress display: the Whisper program (about 9 MB) and a model. Stored under <code>%LOCALAPPDATA%\syki-sok\components</code>. See <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a> for the model list.</td>
               </tr>
               <tr>
                 <td>Model file (ggml .bin)</td>
-                <td><code>voice.whisper.modelPath</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.modelPath</code></td>
                 <td>Empty</td>
                 <td>Used with "Custom: a model file on this PC".</td>
               </tr>
               <tr>
                 <td>Model URL (https), SHA-256 (optional)</td>
-                <td><code>voice.whisper.customUrl</code>, <code>voice.whisper.customSha256</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.customUrl</code>, <code>voice.&lt;profile&gt;.whisper.customSha256</code></td>
                 <td>Empty</td>
                 <td>Used with "Custom: download from a URL". The download is verified against the SHA-256 when you enter one.</td>
               </tr>
               <tr>
                 <td>Language</td>
-                <td><code>voice.whisper.language</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.language</code></td>
                 <td>Empty (auto-detect)</td>
                 <td>Examples: <code>ja</code>, <code>en</code>.</td>
               </tr>
               <tr>
                 <td>Threads (0 = auto)</td>
-                <td><code>voice.whisper.threads</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.threads</code></td>
                 <td>0</td>
                 <td>How many processor threads Whisper may use. 0 lets it choose.</td>
               </tr>
               <tr>
                 <td>Initial prompt</td>
-                <td><code>voice.whisper.prompt</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.prompt</code></td>
                 <td>Empty</td>
                 <td>Names or terms to bias recognition toward.</td>
               </tr>
               <tr>
                 <td>If Whisper fails, retry with Gemini (sends the audio out)</td>
-                <td><code>voice.whisper.cloudFallback</code></td>
+                <td><code>voice.&lt;profile&gt;.whisper.cloudFallback</code></td>
                 <td>Off</td>
                 <td>Turn it on to fall back to Gemini when Whisper fails or is not installed. The audio then leaves your PC.</td>
               </tr>
