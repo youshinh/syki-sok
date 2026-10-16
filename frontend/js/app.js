@@ -6791,6 +6791,22 @@
     }
   }
   window.addEventListener('resize', syncFullscreenState);
+
+  // The round button that lowers from the top edge, near the middle, in Zen mode and full screen, and leaves them (js/immersive_exit.js).
+  if (window.ImmersiveExit) {
+    const immersiveExit = window.ImmersiveExit.create({
+      document: document,
+      window: window,
+      label: t('immersiveExitTitle'),
+      isImmersive: () => document.body.classList.contains('zen-mode') || document.body.classList.contains('is-fullscreen'),
+      onExit: () => {
+        if (document.body.classList.contains('is-fullscreen')) toggleFullscreen();
+        if (document.body.classList.contains('zen-mode')) toggleZenMode();
+        refocusEditor();
+      }
+    });
+    immersiveExit.ensure(); // in the page from the start, so that Tab can reach it too
+  }
   document.addEventListener('fullscreenchange', syncFullscreenState);
 
   // --- Ask Bar (Ctrl+L): ask the built-in LLM about the selection, the current line or the whole note ---
