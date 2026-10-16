@@ -5279,6 +5279,10 @@
     const restoreOnly = isRollback || (reqInfo.isTask && !!errorText && !!reqInfo.restoreOnError) || (emptyAnswer && !reqInfo.isTask);
     const nothingToRestore = restoreOnly && liveText !== null && liveText.indexOf(landOn) === -1;
     if (!nothingToRestore) applyAnchorReplacement(reqInfo.tabId, landOn, replacement, reqInfo.baseline);
+    // The note the answer went into is not one the person is looking at (they moved to another note while it was out): it is said by name,
+    // and the note is autosaved (nothing else would start that: the text was not typed). It stays where it was, the screen does not move.
+    const notViewedTitle = (reqInfo.tabId !== activeTabId && !(isSplitMode && reqInfo.tabId === secondaryTabId)) ? (targetTab.title || '') : '';
+    if (notViewedTitle && !nothingToRestore && !errorText && typeof armAutoSave === 'function') armAutoSave(targetTab);
     // The task list gets the same plain words as the note and the toast, not the raw line (Japanese text, a Go error, an address).
     finishLlmTask(reqId, reqInfo, errorText ? 'failed' : 'completed', errorText ? plainLlmError(errorText, llmConfigOf(reqId)) : undefined);
 
@@ -5293,24 +5297,25 @@
       if (handled) return;
     }
 
+    const elsewhere = () => t('llmInsertedInOther', { title: notViewedTitle });
     if (reqInfo.isCorrection) {
       if (isRollback) {
         showMessage(t('aiCorrectionRestored'), 4000);
       } else {
-        showMessage(t('aiCorrectionSuccess'), 3000);
+        showMessage(notViewedTitle ? elsewhere() : t('aiCorrectionSuccess'), 3000);
       }
     } else if (reqInfo.isRewrite) {
       if (isRollback) {
         showMessage(t('aiCorrectionRestored'), 4000);
       } else {
-        showMessage(t('rewriteSuccess'), 3000);
+        showMessage(notViewedTitle ? elsewhere() : t('rewriteSuccess'), 3000);
       }
     } else if (errorText) {
       showMessage(`${t('llmError')}${plainLlmError(errorText, llmConfigOf(reqId))}`, 5000, { important: true });
     } else if (emptyAnswer) {
       showMessage(`${t('llmError')}${t('llmEmptyAnswer')}`, 5000, { important: true });
     } else {
-      showMessage(t('llmResponseInserted'), 3000);
+      showMessage(notViewedTitle ? elsewhere() : t('llmResponseInserted'), 3000);
     }
   };
 

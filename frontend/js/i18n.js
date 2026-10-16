@@ -530,6 +530,7 @@ const I18N = {
     askLlmNotConfigured: "No AI model is set up yet. Set one up in Settings › AI Models.", // the same words as askSetupNeeded and statAiTitleNotSet
     askShortcutMoved: "Ask AI is now {sc}. The separate prompt dialog was merged into it.",
     llmTaskCanceled: "LLM request canceled",
+    llmInsertedInOther: "The answer was added to \"{title}\" (not the note you are viewing)",
 
     // Settings Modal
     settingsModalTitle: "Settings",
@@ -2047,6 +2048,7 @@ const I18N = {
     askLlmNotConfigured: "AIモデルがまだ設定されていません。設定 › AIモデル で設定してください。", // askSetupNeeded、statAiTitleNotSet と同じ言い方
     askShortcutMoved: "AIへの質問は {sc} になりました。別画面だったプロンプト入力は、この質問バーに統合されました。",
     llmTaskCanceled: "LLMへの依頼を中断しました",
+    llmInsertedInOther: "回答を「{title}」に入れました(今開いているノートではありません)",
 
     // Settings Modal
     settingsModalTitle: "設定",
