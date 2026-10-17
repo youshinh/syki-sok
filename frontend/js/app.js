@@ -3806,36 +3806,36 @@
     return unwrapFencedHtmlDocument(trimmed) !== null;
   }
 
-  // Pictures next to an HTML page. The page runs in a frame that has no address of its own, so <img src="assets/x.png"> finds nothing.
-  // Before the frame is filled, each picture that is written as a path below the note's folder is read (through the same /api/image the
-  // Markdown preview uses: only image files) and put in the page as a data: URI. A page can run scripts, so a path that leaves the folder
-  // (.., a drive, an absolute path, a network share) is left alone: its contents would be readable by the page.
+  // Pictures of an HTML page that are files on this PC. The page runs in a frame that has no address of its own, so <img src="assets/x.png">
+  // or <img src="C:\pics\x.png"> finds nothing. Before the frame is filled, each such picture (a path next to the note, above it, or an
+  // absolute one, a file:// address too) is read (through the same /api/image the Markdown preview uses: only image files, never a network
+  // share) and put in the page as a data: URI. These are the person's own pages: any picture on this PC may be named.
   const HTML_PREVIEW_IMG_MAX = 12;
   const HTML_PREVIEW_IMG_BYTES = 8 * 1024 * 1024;
   const HTML_PREVIEW_IMG_TOTAL = 24 * 1024 * 1024;
   const htmlPreviewImgCache = new Map(); // full path + size + date -> data URI (the last few)
   const HTML_PREVIEW_IMG_TAG = /(<img\b[^>]*?\ssrc\s*=\s*)(["'])([^"']+)\2/gi;
 
-  // The path of a picture inside the note's folder, or null for anything else (a web address, a data: URI, an absolute path, a way out).
+  // The file a picture's src stands for, or null when it is not a picture file on this PC (a web address, a data: URI, a network share, a
+  // relative path with no folder to be relative to). A relative path is taken from the note's folder; /api/image cleans a ".." away.
   function htmlPreviewImagePath(src, noteDir) {
-    if (!src || !noteDir) return null;
-    let rel = String(src).split(/[?#]/)[0];
-    try { rel = decodeURIComponent(rel); } catch (e) { /* a stray % stays as it is */ }
-    if (!rel || rel.indexOf('\0') !== -1) return null;
-    if (/^[a-z][a-z0-9+.-]*:/i.test(rel)) return null; // http:, data:, file:, a drive letter (C:\)
-    if (/^[\\/]/.test(rel)) return null; // absolute, or \\host\share
-    const parts = [];
-    for (const seg of rel.split(/[\\/]/)) {
-      if (seg === '' || seg === '.') continue;
-      if (seg === '..') {
-        if (!parts.length) return null; // out of the note's folder
-        parts.pop();
-      } else {
-        parts.push(seg);
-      }
+    if (!src) return null;
+    let p = String(src);
+    if (/^file:/i.test(p)) {
+      p = p.replace(/^file:/i, '');
+      if (/^\/\/[^/]/.test(p)) return null; // file://host/share/x.png names a file on another machine
+      p = p.replace(/^\/\//, '');
+      if (/^\/[a-zA-Z]:[\\/]/.test(p)) p = p.slice(1); // file:///C:/x has the drive after a slash that is not part of the path
     }
-    if (!parts.length || !/\.(png|jpe?g|gif|webp|bmp|svg|avif|tiff?|ico)$/i.test(parts[parts.length - 1])) return null;
-    return noteDir.replace(/[\\/]+$/, '') + '/' + parts.join('/');
+    p = p.split(/[?#]/)[0];
+    try { p = decodeURIComponent(p); } catch (e) { /* a stray % stays as it is */ }
+    if (!p || p.indexOf('\0') !== -1) return null;
+    if (/^[a-z][a-z0-9+.-]+:/i.test(p)) return null; // http:, https:, data:, blob:, javascript: ... (a drive letter is one letter)
+    if (/^[\\/]{2}/.test(p)) return null; // \\host\share and //host/share: Windows would offer the person's credentials to that host
+    if (!/\.(png|jpe?g|gif|webp|bmp|svg|avif|tiff?|ico)$/i.test(p)) return null;
+    if (/^[a-zA-Z]:[\\/]/.test(p) || p.charAt(0) === '/' || p.charAt(0) === '\\') return p; // an absolute path
+    if (!noteDir) return null;
+    return noteDir.replace(/[\\/]+$/, '') + '/' + p.replace(/^(\.[\\/])+/, '');
   }
 
   function hasHtmlPreviewImages(html) {
@@ -3879,7 +3879,6 @@
   }
 
   async function inlineHtmlPreviewImages(html, noteDir) {
-    if (!noteDir) return html;
     const wanted = new Map(); // the src as written -> its data URI
     HTML_PREVIEW_IMG_TAG.lastIndex = 0;
     let m;

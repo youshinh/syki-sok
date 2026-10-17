@@ -1,6 +1,6 @@
 // HTML pages in the preview: (1) a note that is only a fenced page (```html ... ```, what a model returns) is an HTML note, and a fenced page
 // that is all a note will hold loses its fence when the answer is put in; (2) <img src="assets/x.png"> next to the page is read in and put
-// in the page as a data: URI (the frame has no address of its own), for paths below the note's folder only.
+// in the page as a data: URI (the frame has no address of its own); a picture anywhere on this PC may be named, a network share may not.
 import assert from 'assert';
 import fs from 'fs';
 import vm from 'vm';
@@ -73,15 +73,23 @@ const page = '<!DOCTYPE html>\n<html><body><h1>Hi</h1></body></html>';
   const dir = 'C:/notes/deck';
   assert.strictEqual(p('assets/a.png', dir), 'C:/notes/deck/assets/a.png');
   assert.strictEqual(p('./a.png', dir), 'C:/notes/deck/a.png');
-  assert.strictEqual(p('img/../a.jpg', dir), 'C:/notes/deck/a.jpg', 'a way up that stays below the folder');
+  assert.strictEqual(p('../pics/a.jpg', dir), 'C:/notes/deck/../pics/a.jpg', 'a picture above the note: the server cleans the ".." away');
   assert.strictEqual(p('my%20pics/%E5%86%99%E7%9C%9F.png?v=2#x', dir), 'C:/notes/deck/my pics/写真.png', 'escapes are decoded, the query and the hash are dropped');
-  assert.strictEqual(p('assets\\a.svg', 'C:\\notes\\deck\\'), 'C:\\notes\\deck/assets/a.svg'.replace('C:\\notes\\deck/', 'C:\\notes\\deck/'), 'a backslash path and a folder with a trailing separator');
-  for (const no of ['../secret.png', 'a/../../secret.png', '/etc/x.png', '\\\\host\\share\\x.png', '//host/share/x.png', 'C:\\x.png', 'C:/x.png', 'file:///C:/x.png',
-    'http://example.com/a.png', 'https://example.com/a.png', 'data:image/png;base64,AAAA', 'blob:abc', 'javascript:alert(1).png', 'a.txt', 'a.html', 'noext', 'dir/', '', null, '%00.png', 'a\0.png']) {
+  assert.strictEqual(p('assets\\a.svg', 'C:\\notes\\deck\\'), 'C:\\notes\\deck/assets\\a.svg', 'a backslash path and a folder with a trailing separator');
+  // absolute paths: anywhere on this PC
+  assert.strictEqual(p('C:\\Users\\me\\Pictures\\a.png', dir), 'C:\\Users\\me\\Pictures\\a.png');
+  assert.strictEqual(p('D:/photos/a.JPG', dir), 'D:/photos/a.JPG');
+  assert.strictEqual(p('/Users/me/Pictures/a.png', dir), '/Users/me/Pictures/a.png');
+  assert.strictEqual(p('file:///C:/Users/me/a%20b.png', dir), 'C:/Users/me/a b.png', 'a file:// address with a drive');
+  assert.strictEqual(p('file:///Users/me/a.png', dir), '/Users/me/a.png', 'a file:// address on macOS');
+  assert.strictEqual(p('C:\\Users\\me\\a.png', ''), 'C:\\Users\\me\\a.png', 'an absolute path needs no folder');
+  for (const no of ['\\\\host\\share\\x.png', '//host/share/x.png', 'file://host/share/x.png', 'http://example.com/a.png', 'https://example.com/a.png', 'data:image/png;base64,AAAA',
+    'blob:abc', 'javascript:alert(1).png', 'ftp://x/a.png', 'a.txt', 'a.html', 'C:\\Users\\me\\secret.txt', 'noext', 'dir/', '', null, '%00.png', 'a\0.png']) {
     assert.strictEqual(p(no, dir), null, JSON.stringify(no) + ' is not inlined');
   }
-  assert.strictEqual(p('a.png', ''), null, 'no folder (a note with no file, no workspace): nothing is guessed');
+  assert.strictEqual(p('a.png', ''), null, 'a relative path with no folder (a note with no file, no workspace): nothing is guessed');
   assert.strictEqual(api.hasHtmlPreviewImages('<img src="a.png">'), true);
+  assert.strictEqual(api.hasHtmlPreviewImages('<img src="C:\\pics\\a.png">'), true);
   assert.strictEqual(api.hasHtmlPreviewImages("<IMG class='x' SRC = 'a/b.webp' >"), true);
   assert.strictEqual(api.hasHtmlPreviewImages('<img src="https://x/a.png"><img src="data:image/png;base64,AA">'), false);
   assert.strictEqual(api.hasHtmlPreviewImages('<img data-src="a.png"><p>src="a.png"</p>'), false, 'only the src of an img tag');
@@ -91,10 +99,10 @@ const page = '<!DOCTYPE html>\n<html><body><h1>Hi</h1></body></html>';
 {
   const png = [0x89, 0x50, 0x4e, 0x47, 1, 2, 3];
   const w = world({ 'C:/notes/deck/assets/a.png': { bytes: png }, 'C:/notes/deck/b.png': { bytes: png, type: 'image/png' } });
-  const out = await w.api.inlineHtmlPreviewImages('<p><img src="assets/a.png" width=3><img src=\'assets/a.png\'><img src="b.png"><img src="https://x/y.png"><img src="../x.png"><img src="missing.png"></p>', 'C:/notes/deck');
+  const out = await w.api.inlineHtmlPreviewImages('<p><img src="assets/a.png" width=3><img src=\'assets/a.png\'><img src="b.png"><img src="https://x/y.png"><img src="missing.png"></p>', 'C:/notes/deck');
   const b64 = 'data:image/png;base64,' + Buffer.from(png).toString('base64');
-  assert.strictEqual(out, '<p><img src="' + b64 + '" width=3><img src=\'' + b64 + '\'><img src="' + b64 + '"><img src="https://x/y.png"><img src="../x.png"><img src="missing.png"></p>',
-    'both ways of writing the same picture, another picture; web, a way out and a missing file stay as written');
+  assert.strictEqual(out, '<p><img src="' + b64 + '" width=3><img src=\'' + b64 + '\'><img src="' + b64 + '"><img src="https://x/y.png"><img src="missing.png"></p>',
+    'both ways of writing the same picture, another picture; a web address and a missing file stay as written');
   assert.strictEqual(w.calls.get, 2, 'one read per picture, not per use');
   // the same page again: the pictures are not read again (the file's size and date say they did not change)
   await w.api.inlineHtmlPreviewImages('<img src="b.png">', 'C:/notes/deck');
@@ -104,9 +112,15 @@ const page = '<!DOCTYPE html>\n<html><body><h1>Hi</h1></body></html>';
   const again = await w.api.inlineHtmlPreviewImages('<img src="b.png">', 'C:/notes/deck');
   assert.strictEqual(w.calls.get, 3, 'a picture that changed is read again');
   assert.ok(again.includes(Buffer.from([0x89, 0x50, 0x4e, 0x47, 9, 9]).toString('base64')));
-  // no folder: untouched
+  // no folder: a relative path stays as written, an absolute one is still read
   const h = '<img src="a.png">';
   assert.strictEqual(await w.api.inlineHtmlPreviewImages(h, ''), h);
+  const away = world({ 'E:\\photos\\trip.png': { bytes: png }, 'C:/notes/deck/../pics/up.png': { bytes: png }, '\\\\host\\share\\x.png': { bytes: png } });
+  assert.ok((await away.api.inlineHtmlPreviewImages('<img src="E:\\photos\\trip.png">', '')).includes('base64'), 'an absolute path with no folder');
+  assert.ok((await away.api.inlineHtmlPreviewImages('<img src="../pics/up.png">', 'C:/notes/deck')).includes('base64'), 'a picture above the note: the server is asked for the path as written (it cleans the ".." away)');
+  const share = await away.api.inlineHtmlPreviewImages('<img src="\\\\host\\share\\x.png"><img src="//host/share/x.png">', 'C:/notes/deck');
+  assert.strictEqual(share.includes('base64'), false, 'a network share is never asked for');
+  assert.strictEqual(away.calls.get, 2, 'and nothing was fetched for it');
   // limits: one picture over 8 MB, the total over 24 MB, more than 12 pictures
   const big = world({ 'D/x.png': { bytes: [1], size: 9 * 1024 * 1024 }, 'D/y.png': { bytes: [1] } });
   const lim = await big.api.inlineHtmlPreviewImages('<img src="x.png"><img src="y.png">', 'D');
