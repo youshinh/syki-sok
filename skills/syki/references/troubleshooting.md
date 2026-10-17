@@ -213,6 +213,11 @@ Every cause below was traced in source (file named in "Source of truth"). `(unve
 | Ctrl+Click on a web address does nothing (Alt+Click does not either) | Ctrl/Cmd+Click opens a web address in the browser; Alt/Option+Click is only for files and folders (it shows them in Explorer / Finder) and does nothing for a web address. The caret must be on the link itself. | Use Ctrl+Click (Cmd+Click on macOS). |
 
 ---
+| An HTML note shows a broken picture icon | The `<img src>` is a relative path in a note that has no file yet (no folder to be relative to), a network share, a file that is not an image, a picture over 8 MB (24 MB in all, 12 pictures), or a path that does not exist. `srcset`, CSS `url()` and `<source>` are not rewritten. | Save the note (a relative path then works), use an absolute path or `file:///` address, embed the picture as a `data:` URI, or use an `https://` URL. |
+| An AI answer with a page in an ```html block is shown as code | The fence is only taken off when the answer is one whole page (`<!DOCTYPE html>` or `<html>` first) and the note holds nothing else; a note that is exactly that one fence is shown as a page as well. | Ask for "only the HTML, no code block", or put the answer in an empty note (or name it `*.html`). |
+| An HTML page does nothing offline | It loads its script or fonts from a CDN. | Ask for one self-contained HTML file with no external files. |
+| The activity log has no app lines | `general.activityApps` is not `true`, or this is macOS (the front app is Windows only), or the PC was locked (no foreground window), or the program is on the exclude list (it appears as "(excluded app)"). | Check `syki config get general`; turn it on in Settings -> General (the user's choice). |
+| The rhythm / activity log folder is empty | The switch is off (only `true` turns it on), nothing was typed or moved in a 30-s window, or the line was refused by the Go side (rate limit, a field out of range). The logs are not in an exported package and an import does not switch them on. | Check `syki config get general.telemetry` / `general.activityEdits`. |
 
 ## 7. Interpreting other people's reports
 

@@ -2618,6 +2618,15 @@ recipes:
           <li><strong>Scrolling stays in sync</strong><span>Scroll one pane and the other follows</span></li>
         </ol>
         <p>To open only the preview to the side, use <span class="kbd">Ctrl + Alt + V</span> (macOS: <span class="kbd">Cmd + Option + V</span>). It is listed in <strong>Settings → Shortcuts</strong> as "Open Preview to the Side", where you can change it.</p>
+
+        <p><strong>What is shown as an HTML page:</strong> a note whose name ends in <code>.html</code>, a note that starts with <code>&lt;!DOCTYPE html&gt;</code> or <code>&lt;html&gt;</code>, and a note that is nothing but one <code>```html</code> block are shown as an HTML page (interactive explainers and slide decks that an AI made can be viewed in the preview).</p>
+        <ul>
+          <li><strong>What works:</strong> inline JS and CSS, data: URI images, inline SVG, canvas. Online, CDN libraries (reveal.js, Chart.js, ...) and <code>https://</code> images work too.</li>
+          <li><strong>Pictures on this PC:</strong> <code>&lt;img src="assets/x.png"&gt;</code> (next to the note), <code>../x.png</code> (above it), an absolute path such as <code>C:\Users\me\a.png</code>, or a <code>file:///</code> address are shown (8 MB each, 24 MB in all, 12 pictures at most). A network share (<code>\\host\share</code>) is never read. A note with no file has no folder for a relative path: only absolute paths work there.</li>
+          <li><strong>Good to know:</strong> offline, a page that needs a CDN does not work; ask for "one self-contained HTML file, no external files or CDN". Click once inside the page for the arrow keys to move slides. <code>localStorage</code> and saving files are not available.</li>
+          <li><strong>When an AI makes the page:</strong> ask for "only the HTML, starting with <code>&lt;!DOCTYPE html&gt;</code>, no code block". If the answer is one HTML page in an <code>```html</code> block and the note it goes into is otherwise empty, the fence is taken off when it is inserted.</li>
+          <li><strong>Right-click:</strong> the editor's right-click menu has <strong>Open Preview to the Side</strong> as well.</li>
+        </ul>
         <p><strong>The divider.</strong> Between two note pages the divider is a gutter: a soft shadow with dots that fade towards both sides. Beside a preview it is only the step between the page and the desk. Drag it with the mouse, or press <span class="kbd">F6</span> until the focus is on it (the editors keep <span class="kbd">Tab</span> for indenting, so <span class="kbd">F6</span> is how the keyboard gets there, after the tab strips) and use <span class="kbd">←</span> / <span class="kbd">→</span> (2 points at a time, <span class="kbd">Shift</span> for 10), <span class="kbd">Home</span> / <span class="kbd">End</span> (the left page at its narrowest, 15%, or its widest, 85%) and <span class="kbd">Enter</span> (back to half and half; a double-click does the same). <span class="kbd">Esc</span> returns to the note. At half and half the two pages are exactly as wide as each other. The widths are not remembered: the next start is half and half again. <strong>Settings → General → Appearance &amp; Window → Divider between two pages</strong> changes how it looks: gutter (the default), shadow only, or a thin line.</p>
         <details class="more"><summary>Find, replace, indent, and the pane commands act on</summary><div class="more-body">
           <ul>
@@ -3043,6 +3052,7 @@ syki ocr --json C:\scans\receipt.png</code></pre>
               <li>Flowcharts, sequence diagrams and Gantt charts written in <code>```mermaid</code> are supported</li>
               <li>They are rendered as diagrams in real time in the preview</li>
               <li>When AI makes the diagram from your text ("Diagram: Convert Selection to Mermaid"), a text about one subject gives one diagram. A text with separate parts (a process and a data model, independent flows, or a flow too large for one picture) is split into up to four diagrams, each with its own title and the type that fits it best</li>
+              <li>The usual slips of the AI in a diagram (a fence tagged ```timeline instead of ```mermaid, a label with parentheses, Japanese attribute names in an ER diagram, ...) are put right by rule before the diagram is inserted. A diagram that fails to draw gets the same repair and is drawn once more (the note itself is not changed)</li>
               <li>If a diagram is hard to read, press the half-filled circle at its top-right corner to switch between dark and light. A light diagram is drawn on a white card. The choice is kept</li>
             </ul>
           </div>
@@ -3744,7 +3754,7 @@ Clipped from a web page.
         <ul>
           <li><strong>Where:</strong> a file per day, <code>YYYY-MM-DD.jsonl</code>, in the <code>telemetry</code> folder next to <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\telemetry\</code>). It is not in your notes folder, so it is not synced with git. Nothing is ever sent over the network.</li>
           <li><strong>How long:</strong> files older than 30 days are deleted automatically. <strong>Delete all logs</strong> in the same place removes them at once, and <strong>Open the folder</strong> shows them.</li>
-          <li><strong>For administrators:</strong> the switch is <code>general.telemetry</code> in <code>config.json</code> (true = on; missing or anything else = off).</li>
+          <li><strong>For administrators:</strong> the switch is <code>general.telemetry</code> in <code>config.json</code> (true = on; missing or anything else = off). It belongs to this PC: it is not in a settings package (.sykipack) and an import does not switch it on.</li>
         </ul>
 
         <p><strong>The activity log (off by default, two switches)</strong></p>
@@ -3757,7 +3767,7 @@ Clipped from a web page.
         <ul>
           <li><strong>Where:</strong> a file per day in the <code>activity</code> folder next to <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\activity\</code>), never in your notes folder, so it is not synced with git. Nothing is sent over the network. Files older than 30 days are deleted; <strong>Delete the activity log</strong> removes them at once.</li>
           <li><strong>Cloud models:</strong> the log is handed to a local model. It is given to a cloud model only for a request you approved, after being shown what would be sent.</li>
-          <li><strong>For administrators:</strong> <code>general.activityEdits</code> and <code>general.activityApps</code> in <code>config.json</code> (true = on; anything else = off).</li>
+          <li><strong>For administrators:</strong> <code>general.activityEdits</code> and <code>general.activityApps</code> in <code>config.json</code> (true = on; anything else = off), and <code>general.activityExclude</code> (an array of words for programs to leave out). All belong to this PC: they are not in a settings package (.sykipack) and an import does not switch them on.</li>
         </ul>
 
         <p><strong>Meaning search, Deep search, Lessons and printing</strong></p>

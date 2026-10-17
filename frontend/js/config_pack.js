@@ -39,7 +39,11 @@
   // package from a colleague must not answer that question for the person who imports it, and an export must not carry it away.
   // The same goes for the one-time flags of this PC: the welcome has been shown (welcomeShown) and the model choice was made
   // (aiChoiceMade). Importing them would bring the model choice back on a PC that answered it, or hide it on a PC that did not.
-  const LOCAL_ONLY_NESTED = Object.freeze({ general: Object.freeze(['cloudConsent', 'welcomeShown', 'aiChoiceMade']) });
+  // The switches of the operation-rhythm log and the activity log (telemetry, activityEdits, activityApps, activityExclude) are the person's
+  // own decision on their own PC: a package must not switch the logging on for whoever imports it, and an export does not carry them.
+  const LOCAL_ONLY_NESTED = Object.freeze({
+    general: Object.freeze(['cloudConsent', 'welcomeShown', 'aiChoiceMade', 'telemetry', 'activityEdits', 'activityApps', 'activityExclude'])
+  });
   function withoutLocalOnlyNested(key, value) {
     if (!Object.prototype.hasOwnProperty.call(LOCAL_ONLY_NESTED, key) || !isObj(value)) return value;
     const drop = LOCAL_ONLY_NESTED[key];

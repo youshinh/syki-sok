@@ -2668,6 +2668,15 @@ recipes:
           <li><strong>スクロールは連動します</strong><span>片方をスクロールすると、もう片方も追従します</span></li>
         </ol>
         <p>プレビューだけを横に開くコマンドは <span class="kbd">Ctrl + Alt + V</span>（macOS: <span class="kbd">Cmd + Option + V</span>）です。<strong>設定 → ショートカット</strong> の「プレビューを横（右側）に開く」にあり、キーを変更できます。</p>
+
+        <p><strong>HTML のページとして表示されるもの:</strong> 拡張子が <code>.html</code> のノート、内容が <code>&lt;!DOCTYPE html&gt;</code> か <code>&lt;html&gt;</code> で始まるノート、内容が <code>```html</code> のコードブロック 1 つだけのノートは、HTML のページとして表示されます（AI に作らせたインタラクティブな説明資料やスライドも、プレビューで見られます）。</p>
+        <ul>
+          <li><strong>動くもの:</strong> インラインの JS と CSS、data URI の画像、インライン SVG、canvas。オンラインなら、CDN のライブラリ（reveal.js、Chart.js など）や <code>https://</code> の画像も使えます。</li>
+          <li><strong>PC 内の画像:</strong> <code>&lt;img src="assets/x.png"&gt;</code>（ノートの隣）、<code>../x.png</code>（ノートより上）、<code>C:\Users\me\a.png</code> のような絶対パス、<code>file:///</code> のアドレスで、PC 内の画像を表示できます（1 枚 8MB、合計 24MB、12 枚まで）。ネットワーク共有（<code>\\host\share</code>）は読みません。保存していないノートでは、相対パスの基準になるフォルダがないため、絶対パスだけが使えます。</li>
+          <li><strong>注意:</strong> オフラインでは CDN 依存のページは動きません。「外部ファイルや CDN を使わない、1 ファイルで完結する HTML」と頼むのが確実です。矢印キーでスライドを送るには、表示の中を一度クリックします。<code>localStorage</code> やファイルへの保存はできません。</li>
+          <li><strong>AI に作らせるとき:</strong> 「コードブロックなしで、<code>&lt;!DOCTYPE html&gt;</code> から始まる HTML だけを出力して」と頼むか、そのままでも、回答が HTML のページ 1 つだけで、挿入先のノートがほかに何もないときは、<code>```html</code> の枠を外して挿入します。</li>
+          <li><strong>右クリック:</strong> エディタの右クリックメニューの「プレビューを横に開く」でも、同じことができます。</li>
+        </ul>
         <p><strong>仕切り。</strong>2つのノートの間の仕切りは「ノド」で、やわらかい影と、両側へ薄れていくドットでできています。プレビューの横では、ページと机の色の段差だけが仕切りです。マウスでドラッグするほか、<span class="kbd">F6</span> を何度か押してフォーカスを仕切りに移し（エディタは <span class="kbd">Tab</span> をインデントに使うので、キーボードで仕切りに行くのは、タブの帯の次にある <span class="kbd">F6</span> です）、<span class="kbd">←</span> / <span class="kbd">→</span>（2ポイントずつ、<span class="kbd">Shift</span> で10）、<span class="kbd">Home</span> / <span class="kbd">End</span>（左のページをいちばん狭く 15%、いちばん広く 85%）、<span class="kbd">Enter</span>（半分ずつに戻す。ダブルクリックでも戻ります）で幅を変えます。<span class="kbd">Esc</span> で本文に戻ります。半分ずつのとき、2つのページはぴったり同じ幅です。幅は記憶されず、次に起動したときは半分ずつです。<strong>設定 → 一般 → 外観 &amp; ウィンドウ →「2つのページの仕切り」</strong>で、見た目をノド（既定）・影だけ・細い線から選べます。</p>
         <details class="more"><summary>検索・置換・インデントと、コマンドが働くペイン</summary><div class="more-body">
           <ul>
@@ -3184,6 +3193,7 @@ syki ocr --json memo.png</code></pre>
               <li><code>```mermaid</code> で記述したフローチャート、シーケンス図、ガントチャートが対象です</li>
               <li>プレビュー画面で、リアルタイムに図としてレンダリングされます</li>
               <li>AI が文章から図を作るとき（「図解: 選択範囲をMermaid図に変換」）、1 つの話題なら図は 1 つです。性質の違う内容（流れとデータの関係など）、独立した複数の流れ、1 枚に収まらない大きな流れが含まれるときは、意味のまとまりごとに最大 4 つの図に分け、それぞれにタイトルと、いちばん合う種類を付けます</li>
+              <li>AI が作った図の書き間違い（コードブロックの言語名が ```timeline のようになっている、括弧を含むラベル、ER 図の日本語の属性名など）は、自動で直してから挿入します。描画できなかった図は、同じ直しをかけて 1 回だけ描き直します（ノートの本文は書き換えません）</li>
               <li>図が見づらいときは、図の右上にある半分塗りの円のボタンで、ダークとライトを切り替えられます。ライトの図は白い背景に描かれます。選んだ配色は記憶されます</li>
             </ul>
           </div>
@@ -3907,7 +3917,7 @@ syki ocr --json memo.png</code></pre>
         <ul>
           <li><strong>保存先:</strong> 1日1ファイル（<code>YYYY-MM-DD.jsonl</code>）で、<code>config.json</code> と同じ場所の <code>telemetry</code> フォルダ（Windows: <code>%APPDATA%\syki-sok\telemetry\</code>）。ノートのフォルダには置かないので、git 同期の対象にはなりません。ネットワークには一切送信しません。</li>
           <li><strong>保管期間:</strong> 30日より古いファイルは自動で削除します。同じ場所の<strong>ログをすべて削除</strong>で即座に消せ、<strong>フォルダを開く</strong>で中身を確認できます。</li>
-          <li><strong>管理者向け:</strong> 設定は <code>config.json</code> の <code>general.telemetry</code>（true でオン。無い場合やそれ以外はオフ）。</li>
+          <li><strong>管理者向け:</strong> 設定は <code>config.json</code> の <code>general.telemetry</code>（true でオン。無い場合やそれ以外はオフ）。この PC 専用の設定で、設定パッケージ（.sykipack）には含まれず、取り込んでもオンになりません。</li>
         </ul>
 
         <p><strong>活動記録（初期設定はオフ・スイッチは2つ）</strong></p>
@@ -3920,7 +3930,7 @@ syki ocr --json memo.png</code></pre>
         <ul>
           <li><strong>保存先:</strong> <code>config.json</code> と同じ場所の <code>activity</code> フォルダに1日1ファイル（Windows: <code>%APPDATA%\syki-sok\activity\</code>）。ノートのフォルダには置かないので、git 同期の対象にはなりません。ネットワークには一切送信しません。30日より古いファイルは自動で削除し、<strong>活動記録を削除</strong>で即座に消せます。</li>
           <li><strong>クラウドのモデル:</strong> 記録はローカルのモデルに渡します。クラウドのモデルには、送る内容を見せたうえで、あなたが許可した依頼にだけ渡します。</li>
-          <li><strong>管理者向け:</strong> <code>config.json</code> の <code>general.activityEdits</code> と <code>general.activityApps</code>（true でオン。それ以外はオフ）。</li>
+          <li><strong>管理者向け:</strong> <code>config.json</code> の <code>general.activityEdits</code> と <code>general.activityApps</code>（true でオン。それ以外はオフ）。除外するプログラムの語は <code>general.activityExclude</code>（文字列の配列）。どれもこの PC 専用で、設定パッケージ（.sykipack）には含まれず、取り込んでもオンになりません。</li>
         </ul>
 
         <p><strong>意味検索・深掘り・教訓・印刷では、文章はどこへ行くか</strong></p>

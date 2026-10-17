@@ -360,7 +360,23 @@ test('general.welcomeShown and general.aiChoiceMade stay on this PC too: not exp
   const done = { general: { theme: 'blue', welcomeShown: true, aiChoiceMade: true } };
   const merged2 = CP.mergeImported(fresh, done, ['general']);
   assert.strictEqual(merged2.general.aiChoiceMade, undefined, 'still unanswered here');
-  assert.deepStrictEqual(CP.LOCAL_ONLY_NESTED.general.slice().sort(), ['aiChoiceMade', 'cloudConsent', 'welcomeShown']);
+  assert.deepStrictEqual(CP.LOCAL_ONLY_NESTED.general.slice().sort(), ['activityApps', 'activityEdits', 'activityExclude', 'aiChoiceMade', 'cloudConsent', 'telemetry', 'welcomeShown']);
+});
+
+test('the switches of the operation-rhythm log and the activity log stay on this PC: a package neither carries them nor switches the logging on', () => {
+  const cfg = { general: { theme: 'olive', telemetry: true, activityEdits: true, activityApps: true, activityExclude: ['bank'] } };
+  assert.deepStrictEqual(CP.splitConfig(cfg, ['general']), { general: { theme: 'olive' } }, 'not in an export');
+  const mine = { general: { theme: 'olive', telemetry: false, activityEdits: false, activityApps: false } };
+  const theirs = { general: { theme: 'blue', telemetry: true, activityEdits: true, activityApps: true, activityExclude: ['x'] } };
+  const merged = CP.mergeImported(mine, theirs, ['general']);
+  assert.strictEqual(merged.general.theme, 'blue');
+  assert.strictEqual(merged.general.telemetry, false, 'an import does not switch the log on');
+  assert.strictEqual(merged.general.activityEdits, false);
+  assert.strictEqual(merged.general.activityApps, false);
+  assert.strictEqual(merged.general.activityExclude, undefined);
+  // and one that is on here stays on when the package says nothing, or says off
+  const on = { general: { theme: 'olive', telemetry: true } };
+  assert.strictEqual(CP.mergeImported(on, { general: { theme: 'blue', telemetry: false } }, ['general']).general.telemetry, true);
 });
 
 test('mergeImported: a package cannot pollute prototypes or overflow the stack', () => {
