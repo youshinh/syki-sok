@@ -3789,15 +3789,113 @@
     }
   }
 
+  // What a model returns when it is asked for a page: the whole page in one fence (```html ... ```). A note that is nothing but that is an
+  // HTML note (it is shown as the page); the page itself is returned, or null when the text is not that.
+  function unwrapFencedHtmlDocument(text) {
+    const m = /^\s*```[ \t]*(?:html|htm|xhtml)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*\s*$/i.exec(text || '');
+    if (!m) return null;
+    const inner = m[1].trim();
+    return (/^<!DOCTYPE\s+html/i.test(inner) || /^<html[\s>]/i.test(inner)) ? m[1] : null;
+  }
+
   function isHtmlDocument(targetContent, targetPath) {
     const filename = targetPath || '';
     if (/\.(html|htm)$/i.test(filename)) return true;
     const trimmed = (targetContent || '').trim();
     if (/^<!DOCTYPE\s+html/i.test(trimmed) || /^<html[\s>]/i.test(trimmed)) return true;
+    return unwrapFencedHtmlDocument(trimmed) !== null;
+  }
+
+  // Pictures next to an HTML page. The page runs in a frame that has no address of its own, so <img src="assets/x.png"> finds nothing.
+  // Before the frame is filled, each picture that is written as a path below the note's folder is read (through the same /api/image the
+  // Markdown preview uses: only image files) and put in the page as a data: URI. A page can run scripts, so a path that leaves the folder
+  // (.., a drive, an absolute path, a network share) is left alone: its contents would be readable by the page.
+  const HTML_PREVIEW_IMG_MAX = 12;
+  const HTML_PREVIEW_IMG_BYTES = 8 * 1024 * 1024;
+  const HTML_PREVIEW_IMG_TOTAL = 24 * 1024 * 1024;
+  const htmlPreviewImgCache = new Map(); // full path + size + date -> data URI (the last few)
+  const HTML_PREVIEW_IMG_TAG = /(<img\b[^>]*?\ssrc\s*=\s*)(["'])([^"']+)\2/gi;
+
+  // The path of a picture inside the note's folder, or null for anything else (a web address, a data: URI, an absolute path, a way out).
+  function htmlPreviewImagePath(src, noteDir) {
+    if (!src || !noteDir) return null;
+    let rel = String(src).split(/[?#]/)[0];
+    try { rel = decodeURIComponent(rel); } catch (e) { /* a stray % stays as it is */ }
+    if (!rel || rel.indexOf('\0') !== -1) return null;
+    if (/^[a-z][a-z0-9+.-]*:/i.test(rel)) return null; // http:, data:, file:, a drive letter (C:\)
+    if (/^[\\/]/.test(rel)) return null; // absolute, or \\host\share
+    const parts = [];
+    for (const seg of rel.split(/[\\/]/)) {
+      if (seg === '' || seg === '.') continue;
+      if (seg === '..') {
+        if (!parts.length) return null; // out of the note's folder
+        parts.pop();
+      } else {
+        parts.push(seg);
+      }
+    }
+    if (!parts.length || !/\.(png|jpe?g|gif|webp|bmp|svg|avif|tiff?|ico)$/i.test(parts[parts.length - 1])) return null;
+    return noteDir.replace(/[\\/]+$/, '') + '/' + parts.join('/');
+  }
+
+  function hasHtmlPreviewImages(html) {
+    HTML_PREVIEW_IMG_TAG.lastIndex = 0;
+    let m;
+    while ((m = HTML_PREVIEW_IMG_TAG.exec(html)) !== null) {
+      if (htmlPreviewImagePath(m[3], 'x') !== null) return true;
+    }
     return false;
   }
 
-  function renderHtmlPreviewTo(rawHtml, targetPane) {
+  function blobToDataUrl(blob) {
+    return new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(String(r.result));
+      r.onerror = () => reject(r.error);
+      r.readAsDataURL(blob);
+    });
+  }
+
+  async function htmlPreviewImageData(fullPath, budget) {
+    const url = '/api/image?path=' + encodeURIComponent(fullPath);
+    const head = await fetch(url, { method: 'HEAD', cache: 'no-store' });
+    if (!head.ok) return null;
+    const size = Number(head.headers.get('content-length')) || 0;
+    if (size > HTML_PREVIEW_IMG_BYTES || size > budget.left) return null;
+    const key = fullPath + '|' + size + '|' + (head.headers.get('last-modified') || '');
+    if (htmlPreviewImgCache.has(key)) {
+      budget.left -= size;
+      return htmlPreviewImgCache.get(key);
+    }
+    const res = await fetch(url, { cache: 'no-store' });
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    if (blob.size > HTML_PREVIEW_IMG_BYTES || blob.size > budget.left) return null;
+    const data = await blobToDataUrl(blob);
+    budget.left -= blob.size;
+    if (htmlPreviewImgCache.size >= 16) htmlPreviewImgCache.delete(htmlPreviewImgCache.keys().next().value);
+    htmlPreviewImgCache.set(key, data);
+    return data;
+  }
+
+  async function inlineHtmlPreviewImages(html, noteDir) {
+    if (!noteDir) return html;
+    const wanted = new Map(); // the src as written -> its data URI
+    HTML_PREVIEW_IMG_TAG.lastIndex = 0;
+    let m;
+    while ((m = HTML_PREVIEW_IMG_TAG.exec(html)) !== null) {
+      if (wanted.size >= HTML_PREVIEW_IMG_MAX) break;
+      if (!wanted.has(m[3]) && htmlPreviewImagePath(m[3], noteDir) !== null) wanted.set(m[3], null);
+    }
+    if (!wanted.size) return html;
+    const budget = { left: HTML_PREVIEW_IMG_TOTAL };
+    for (const src of wanted.keys()) {
+      try { wanted.set(src, await htmlPreviewImageData(htmlPreviewImagePath(src, noteDir), budget)); } catch (e) { /* the picture stays as written */ }
+    }
+    return html.replace(HTML_PREVIEW_IMG_TAG, (all, head, quote, src) => (wanted.get(src) ? head + quote + wanted.get(src) + quote : all));
+  }
+
+  function renderHtmlPreviewTo(rawHtml, targetPane, tabObj) {
     targetPane.classList.add('html-mode');
     trackOwnInput(); // see openExternalFromHtmlPreview: a page that starts running now must not ride on the input that opened it
     let frame = targetPane.querySelector('#html-preview-frame');
@@ -3852,7 +3950,18 @@
       targetPane.appendChild(frame);
     }
 
-    frame.srcdoc = fullDoc;
+    // A page with pictures next to it is shown once they are read in; any other at once. A newer render makes an older one that is still
+    // reading pictures give up.
+    const seq = (targetPane.__htmlPreviewSeq = (targetPane.__htmlPreviewSeq || 0) + 1);
+    if (!hasHtmlPreviewImages(fullDoc)) {
+      frame.srcdoc = fullDoc;
+      return;
+    }
+    getNoteDir(tabObj).then((dir) => inlineHtmlPreviewImages(fullDoc, dir)).then((doc) => {
+      if (targetPane.__htmlPreviewSeq === seq) frame.srcdoc = doc;
+    }).catch(() => {
+      if (targetPane.__htmlPreviewSeq === seq) frame.srcdoc = fullDoc;
+    });
   }
 
   // Core Markdown & Diagram Renderer (Reusable for both Primary and Secondary panes)
@@ -3861,7 +3970,8 @@
     const text = rawContent || '';
 
     if (isHtmlDocument(text, (tabObj && (tabObj.path || tabObj.title)) || '')) {
-      renderHtmlPreviewTo(text, targetPane);
+      const fencedPage = unwrapFencedHtmlDocument(text);
+      renderHtmlPreviewTo(fencedPage !== null ? fencedPage : text, targetPane, tabObj);
       return;
     }
 
@@ -5463,6 +5573,14 @@
     // An answer with nothing in it (blank, or only a <think> block) is a failure, not "inserted": it used to leave the blank lines
     // the waiting text had around it and say the answer was inserted. A rewrite / correction already restores its text above.
     // A task goes down the failure path (the ask bar shows it with Retry); a plain request just has its waiting text taken out.
+    // A page asked for from a model comes back in a fence (```html). When it is all the note is going to hold, the fence is taken off: the note
+    // is the page itself (it is shown as a page, and saved as .html it is one).
+    if (reqInfo.isTask && !errorText && !reqInfo.isCorrection && !reqInfo.isRewrite) {
+      const page = unwrapFencedHtmlDocument(cleanedResult);
+      const live = page !== null ? getTabText(reqInfo.tabId) : null;
+      if (live !== null && live.split(reqInfo.anchorId).join('').trim() === '') cleanedResult = page.trim();
+    }
+
     const emptyAnswer = !errorText && !cleanedResult && !reqInfo.isCorrection && !reqInfo.isRewrite;
     if (emptyAnswer && reqInfo.isTask) errorText = t('llmEmptyAnswer');
 
