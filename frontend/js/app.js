@@ -1160,20 +1160,28 @@
     const shown = container.querySelector('svg');
     const src = container.dataset && container.dataset.mermaidSrc;
     if (!shown || !src || !window.mermaid) return shown;
+    const exportId = 'mermaid-export-' + Date.now();
     const noHtml = '%%{init: {"htmlLabels": false, "flowchart": {"htmlLabels": false}}}%%\n';
     // Front matter (---) has to stay first in the source; the directive goes after it.
     const fm = /^\s*---\r?\n[\s\S]*?\r?\n---[ \t]*\r?\n/.exec(src);
     const code = fm ? fm[0] + noHtml + src.slice(fm[0].length) : noHtml + src;
     try {
-      const { svg } = await window.mermaid.render('mermaid-export-' + Date.now(), code);
+      const { svg } = await window.mermaid.render(exportId, code);
       const holder = document.createElement('div');
       holder.innerHTML = svg;
       const el = holder.querySelector('svg');
       if (el && !el.querySelector('foreignObject')) return el;
     } catch (err) {
       console.warn('Plain-label diagram for export failed, using the shown one:', err);
+      removeMermaidLeftovers(exportId);
     }
     return shown;
+  }
+
+  // A diagram that fails to render leaves Mermaid's own error element ("Syntax error in text") at the end of the page, under the status bar.
+  // Mermaid names it after the id it was given (d + id).
+  function removeMermaidLeftovers(id) {
+    ['d' + id, id].forEach((x) => { const el = document.getElementById(x); if (el && el.parentNode) el.parentNode.removeChild(el); });
   }
 
   // Rasterizes a Mermaid SVG element to an HTML5 Canvas at high DPI (scale 2)
@@ -3856,6 +3864,7 @@
               onSave: () => saveMermaidDiagramAsPng(container)
             });
           } catch (err) {
+            removeMermaidLeftovers(id);
             container.innerHTML = '<div class="mermaid-error" style="color:var(--coral);">' + escapeHtml(t('mermaidError')) + escapeHtml(err.message) + '</div>';
           }
         });
@@ -8843,6 +8852,7 @@ STRICT SYNTAX SAFETY RULES:
 5. Replace inner double quotes with single quotes. Use fullwidth （ ） for parentheses in labels.
 6. Flowchart subgraphs MUST use: subgraph SG1["Title"] ... end.
 7. Return ONLY the diagram(s) described under OUTPUT FORMAT, with NO conversational filler, greetings or explanations.
+8. In erDiagram, entity names AND attribute names MUST be ASCII words (Customer, customerId). Put Japanese only in double-quoted text: the relationship label (Customer ||--o{ Order : "places") and the optional comment at the end of an attribute line (string customerId PK "顧客ID"). An attribute name in Japanese is a syntax error.
 
 HOW MANY DIAGRAMS (one is the default; split only when it makes the result clearer):
 - ONE diagram when the text is about a single subject or a single flow that fits on a screen (up to about 15 nodes). Do not split a cohesive text just to produce more diagrams.

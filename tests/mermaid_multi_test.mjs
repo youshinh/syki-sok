@@ -39,4 +39,10 @@ assert.strictEqual(strip(twoBare, true), twoBare, 'two blocks without titles are
 
 // the preview draws every mermaid block of a note (it looks for all of them), so each diagram shows
 assert.ok(/querySelectorAll\('pre code\.language-mermaid'\)/.test(app) && /mermaidCodeBlocks\.forEach/.test(app), 'the preview renders every mermaid block');
+// an ER diagram with Japanese attribute names is a syntax error in Mermaid: the prompt says where Japanese may go
+assert.ok(/8\. In erDiagram, entity names AND attribute names MUST be ASCII words/.test(prompt) && /An attribute name in Japanese is a syntax error/.test(prompt), 'ER names are ASCII, Japanese goes in quotes');
+// a diagram that fails to render must not leave Mermaid's error element in the page
+assert.ok(/function removeMermaidLeftovers\(id\) \{[\s\S]*?'d' \+ id, id/.test(app), 'the leftover is found by its id (d + id)');
+assert.ok(/catch \(err\) \{\s*removeMermaidLeftovers\(id\);\s*container\.innerHTML = '<div class="mermaid-error"/.test(app), 'the preview removes it when a diagram fails');
+assert.ok(/removeMermaidLeftovers\(exportId\)/.test(app), 'so does the export');
 console.log('mermaid: several diagrams tests passed');
