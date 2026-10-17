@@ -870,6 +870,7 @@
     recorder.ondataavailable = (ev) => { if (ev.data && ev.data.size > 0) chunks.push(ev.data); };
     recorder.onstop = onRecorderStop;
     recorder.start();
+    logVoice(true);
 
     const cfg = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
     setupSilenceDetection(stream, cfg);
@@ -929,7 +930,13 @@
     if (anchorText) removeMarker(bridge, tabId, anchorText, currentId);
   }
 
+  // The operation-rhythm log is told only that a recording started and stopped (js/telemetry.js): never the audio, never what was said.
+  function logVoice(on) {
+    try { if (global.Telemetry) global.Telemetry.voice(on); } catch (e) { /* best effort */ }
+  }
+
   function onRecorderStop() {
+    logVoice(false);
     recording = false;
     stopping = false;
     hideIndicator();

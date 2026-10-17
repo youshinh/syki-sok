@@ -5667,6 +5667,26 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   font-size: 12px;
 }
 
+/* The operation-rhythm log (Settings > General): what is kept and where, and the two buttons */
+.cfg-telemetry-info {
+  display: block;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+.cfg-telemetry-info:empty { display: none; }
+.cfg-telemetry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 6px;
+}
+.cfg-telemetry-actions .btn-secondary {
+  height: 24px;
+  padding: 0 10px;
+  font-size: 12px;
+}
+
 .pack-group {
   display: flex;
   flex-direction: column;

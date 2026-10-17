@@ -921,6 +921,18 @@
               </label>
               <small data-i18n="checkUpdatesHint">About 2.5 seconds after start-up, syki::sok asks api.github.com for the number of the latest release. Nothing else is sent. Turn this off on a managed PC; you can still check by hand in About syki::sok.</small>
             </div>
+            <!-- The operation-rhythm log (general.telemetry): off until turned on; numbers about how the person works, kept on this PC (js/telemetry.js) -->
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-telemetry"> <span data-i18n="telemetryLabel">Keep an operation-rhythm log (off by default)</span>
+              </label>
+              <small data-i18n="telemetryHint">Every 30 seconds, syki::sok writes down numbers about how you work: the rhythm of your key presses, how the mouse moves and the page scrolls, which AI bars you opened, how often you used voice input. It never records what you type, which keys, where you click, or any audio. The file stays on this PC, nothing is sent anywhere, and files older than 30 days are deleted.</small>
+              <small id="cfg-telemetry-info" class="cfg-telemetry-info"></small>
+              <div class="cfg-telemetry-actions">
+                <button type="button" id="btn-telemetry-open" class="btn-secondary" data-i18n="telemetryOpenFolder">Open the folder</button>
+                <button type="button" id="btn-telemetry-clear" class="btn-secondary" data-i18n="telemetryClear">Delete all logs</button>
+              </div>
+            </div>
             <div id="cfg-cloud-consent-row" class="cfg-consent-row hidden">
               <span data-i18n="cloudConsentLabel">Cloud AI hosts you have allowed:</span>
               <span id="cfg-cloud-consent-hosts" class="cfg-consent-hosts"></span>
@@ -2141,6 +2153,7 @@
   <script src="js/appearance.js?v=1.0.0"></script>
   <script src="js/mermaid_tone.js?v=1.0.0"></script>
   <script src="js/mermaid_repair.js?v=1.0.0"></script>
+  <script src="js/telemetry.js?v=1.0.0"></script>
   <script src="js/scrap_quote.js?v=1.0.0"></script>
   <script src="js/scraps_filter.js?v=1.0.0"></script>
   <script src="js/note_title.js?v=1.0.0"></script>

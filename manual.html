@@ -3731,6 +3731,21 @@ Clipped from a web page.
           <li><strong>Only these two bars, Deep search and Lessons ask.</strong> The other features that use a model (text prediction, proofreading, Suggestions, tasks, voice input, image OCR) use their own settings in Settings → AI Models and are not asked about. The AI label in the status bar tells local from cloud. A bar that only collects an instruction for a task (<span class="kbd">Ctrl + Enter</span> on a plain sentence) shows no destination, because the task decides.</li>
         </ul>
 
+        <p><strong>The operation-rhythm log (off by default)</strong></p>
+        <p>Settings → General → "Updates &amp; Privacy" → <strong>Keep an operation-rhythm log</strong>. It is <strong>off</strong> until you turn it on; while it is off, syki::sok does not even listen for key presses or the mouse. When it is on, every 30 seconds (only if something happened) one line of numbers about <em>how</em> you work is written to a file on this PC:</p>
+        <ul>
+          <li><strong>Typing:</strong> how many key presses, how long a key is held, the interval between presses and how even it is, how often you press Backspace / Delete and the arrow keys, how many pauses of 2 seconds or more. Presses made while an IME is composing (Japanese input) are counted apart, because a Backspace there edits the reading, not the text.</li>
+          <li><strong>Mouse and scrolling:</strong> how far the pointer moved, how often it turned sharply, how many wheel events, how often the scroll direction reversed, how far you scrolled.</li>
+          <li><strong>Commands:</strong> how many times you opened the Ask, Rewrite or Command bar or Quick Actions, which one was last (a number), and how soon after your last key press.</li>
+          <li><strong>Voice input:</strong> how many times it was started and for how long the microphone was on. Nothing about the audio or what was said.</li>
+        </ul>
+        <p><strong>What is never kept:</strong> what you type, which keys you press, where the pointer is or where you click, the contents of any note, and any audio. Every field is a number; the program that writes the file refuses a line that holds anything else. Only the editors and the inputs of the AI bars are watched (not the fields in Settings).</p>
+        <ul>
+          <li><strong>Where:</strong> a file per day, <code>YYYY-MM-DD.jsonl</code>, in the <code>telemetry</code> folder next to <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\telemetry\</code>). It is not in your notes folder, so it is not synced with git. Nothing is ever sent over the network.</li>
+          <li><strong>How long:</strong> files older than 30 days are deleted automatically. <strong>Delete all logs</strong> in the same place removes them at once, and <strong>Open the folder</strong> shows them.</li>
+          <li><strong>For administrators:</strong> the switch is <code>general.telemetry</code> in <code>config.json</code> (true = on; missing or anything else = off).</li>
+        </ul>
+
         <p><strong>Meaning search, Deep search, Lessons and printing</strong></p>
         <p>These work as follows. See <a href="#meaning-search" style="color: var(--accent);">Meaning Search</a>, <a href="#deep-search" style="color: var(--accent);">Deep Search</a>, <a href="#lessons" style="color: var(--accent);">Lessons</a> and <a href="#print-pdf" style="color: var(--accent);">Print or Save as PDF</a>.</p>
         <ul>
@@ -3824,6 +3839,11 @@ Clipped from a web page.
                 <td>Check for updates at start-up</td>
                 <td>Enabled</td>
                 <td>About 2.5 seconds after start-up, asks <code>api.github.com</code> for the number of the latest release (nothing else is sent) and shows a dot on the Help button when a newer one exists. Off means no request at start-up. <strong>Check now</strong> in About syki::sok works either way. Stored as <code>general.checkUpdates</code>. See <a href="#about-syki-sok" style="color: var(--accent);">About syki::sok</a>.</td>
+              </tr>
+              <tr>
+                <td>Keep an operation-rhythm log</td>
+                <td>Disabled</td>
+                <td>Every 30 seconds, writes numbers about how you work (key rhythm, mouse and scroll, which AI bars you opened, voice input started and for how long) to a file on this PC. Never what you type, which keys, where you click or any audio; kept 30 days. While off, nothing is watched. See <a href="#about-syki-sok" style="color: var(--accent);">the operation-rhythm log</a>.</td>
               </tr>
               <tr>
                 <td>Cloud AI hosts you have allowed</td>

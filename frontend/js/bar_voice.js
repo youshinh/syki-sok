@@ -159,8 +159,14 @@
 
     // ---- the recording ------------------------------------------------------------------------------------------------
 
+    // The operation-rhythm log is told only that the microphone went on and off (js/telemetry.js): never the audio, never what was said.
+    function logVoice(on) {
+      try { if (win.Telemetry) win.Telemetry.voice(on); } catch (e) { /* best effort */ }
+    }
+
     function releaseMic(a) {
       if (!a) return;
+      if (a.stream) logVoice(false);
       if (a.interval) { clearI(a.interval); a.interval = null; }
       if (a.timer) { clearT(a.timer); a.timer = null; }
       try { if (a.audioCtx && typeof a.audioCtx.close === 'function') a.audioCtx.close(); } catch (e) { /* ignore */ }
@@ -250,6 +256,7 @@
       // the longest recording, even where the pause detector could not start
       a.timer = setT(() => { if (active === a && a.phase === 'listening') stop(id, 'max'); }, MAX_SEC * 1000);
       a.phase = 'listening';
+      logVoice(true);
       setStatus(bar, t('barVoiceListening'));
       paint(id);
     }

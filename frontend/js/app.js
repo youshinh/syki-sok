@@ -120,6 +120,7 @@
       trimWebViewWhenHidden: true, // Windows: the WebView2 processes give back unused memory while the window is hidden or minimized
       webViewInProcessGpu: false, // Windows: the GPU work runs in the browser process (one process less); read at start-up
       splitViewOnStartup: false,
+      telemetry: false, // the operation-rhythm log (js/telemetry.js): off until turned on; numbers only, kept on this PC (Settings > General)
       checkUpdates: true, // ask GitHub for the latest release ~2.5 s after start-up; false = no request at start-up (About > Check now still works)
       cloudConsent: {}, // cloud hosts the ask / rewrite bars may send text to: { "host": "date allowed" }; kept on this PC, never exported
       imeGuardian: (typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('ja')),
@@ -529,6 +530,37 @@
     const off = !!(config.general && config.general.tabDock === false);
     document.body.classList.toggle('tab-dock-off', off);
     if (off && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
+  }
+
+  // The ids of the commands in the log (last_cmd): the AI bars and Quick Actions, by what they are, wherever the shortcut is rebound to.
+  // (Voice input has its own fields, voice_starts and voice_ms; 4 and 5 are not used.)
+  const TELEMETRY_CMD = { quickActions: 1, ask: 2, commandBar: 3, rewrite: 6, other: 99 };
+  function telemetryCommand(id) {
+    if (window.Telemetry) window.Telemetry.command(id);
+  }
+
+  function renderTelemetryInfo() {
+    const el = document.getElementById('cfg-telemetry-info');
+    if (!el) return;
+    el.textContent = '';
+    if (!(window.backend && window.backend.getTelemetryInfo)) return;
+    Promise.resolve(window.backend.getTelemetryInfo()).then((info) => {
+      if (!info) return;
+      const kb = Math.max(info.bytes ? 1 : 0, Math.round((info.bytes || 0) / 1024));
+      el.textContent = t(info.files > 0 ? 'telemetryInfo' : 'telemetryInfoNone', { files: info.files, kb: kb, days: info.retainDays, dir: info.dir });
+    }).catch(() => {});
+  }
+
+  // The operation-rhythm log (js/telemetry.js, pkg/telemetry): on only when the person turned it on (general.telemetry === true). Off means
+  // no listener and no timer at all. What it keeps is numbers about how they work, never what they typed (see the manual).
+  function applyTelemetry() {
+    const T = window.Telemetry;
+    if (!T) return;
+    T.init({
+      send: (json) => (window.backend && window.backend.recordTelemetry ? window.backend.recordTelemetry(json) : null),
+      targets: [editorEl, editorSecondary, inlinePromptInput, cliFilterInput]
+    });
+    T.setEnabled(!!(config.general && config.general.telemetry === true));
   }
 
   function applyTheme() {
@@ -7930,6 +7962,26 @@
     btnInlinePromptConsentAllow.addEventListener('keydown', (e) => { if (e.repeat) e.preventDefault(); });
   }
   if (btnInlinePromptConsentCancel) btnInlinePromptConsentCancel.onclick = declineCloudConsent;
+  const btnTelemetryOpen = document.getElementById('btn-telemetry-open');
+  if (btnTelemetryOpen) {
+    btnTelemetryOpen.onclick = () => {
+      if (window.backend && window.backend.openTelemetryFolder) Promise.resolve(window.backend.openTelemetryFolder()).catch(() => {});
+    };
+  }
+  const btnTelemetryClear = document.getElementById('btn-telemetry-clear');
+  if (btnTelemetryClear) {
+    btnTelemetryClear.onclick = async () => {
+      if (!(window.backend && window.backend.clearTelemetry)) return;
+      if (!(await customConfirm(t('telemetryClearConfirm'), { okLabel: t('telemetryClear'), safeDefault: true }))) return;
+      try {
+        const n = await window.backend.clearTelemetry();
+        showMessage(t('telemetryCleared', { n: n || 0 }), 4000);
+      } catch (err) {
+        showMessage(String((err && err.message) || err), 5000, { important: true });
+      }
+      renderTelemetryInfo();
+    };
+  }
   if (btnForgetCloudConsent) {
     btnForgetCloudConsent.onclick = () => {
       if (!config.general) return;
@@ -12474,21 +12526,22 @@ OUTPUT FORMAT:
       }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.inlinePrompt)) {
       e.preventDefault();
-      if (!isDialogOpen()) openInlinePromptBar();
+      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.ask); openInlinePromptBar(); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.rewriteSelection)) {
       e.preventDefault();
-      if (!isDialogOpen()) openInlinePromptBar({ mode: 'rewrite' });
+      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.rewrite); openInlinePromptBar({ mode: 'rewrite' }); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.runCliFilter)) {
       e.preventDefault();
-      if (!isDialogOpen()) openCommandBar('cli');
+      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar('cli'); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.runAiCli)) {
       e.preventDefault();
-      if (!isDialogOpen()) openCommandBar('ai');
+      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar('ai'); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.mobileDrop)) {
       e.preventDefault();
       startMobileDrop();
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.quickActions)) {
       e.preventDefault();
+      telemetryCommand(TELEMETRY_CMD.quickActions);
       if (window.JevAction && window.JevAction.triggerJevPrediction) {
         window.JevAction.triggerJevPrediction();
       }
@@ -12498,7 +12551,7 @@ OUTPUT FORMAT:
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.commandBar)) {
       // Last in the chain: a binding the user chose for another action before this default existed still wins.
       e.preventDefault();
-      if (!isDialogOpen()) openCommandBar();
+      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar(); }
     } else if (isCtrl && e.key === 'Tab') {
       e.preventDefault();
       if (tabs.length > 1) {
@@ -14829,6 +14882,9 @@ OUTPUT FORMAT:
     }
     const checkUpdatesCheckbox = document.getElementById('cfg-check-updates');
     if (checkUpdatesCheckbox) checkUpdatesCheckbox.checked = updateCheckAtStartup();
+    const telemetryCheckbox = document.getElementById('cfg-telemetry');
+    if (telemetryCheckbox) telemetryCheckbox.checked = !!(config.general && config.general.telemetry === true);
+    renderTelemetryInfo();
     renderCloudConsentRow();
 
     // Slot & Autonomous Agent Settings (v2.2.0)
@@ -15873,6 +15929,8 @@ OUTPUT FORMAT:
     }
     const checkUpdatesSaveCheckbox = document.getElementById('cfg-check-updates');
     if (checkUpdatesSaveCheckbox) config.general.checkUpdates = checkUpdatesSaveCheckbox.checked;
+    const telemetrySaveCheckbox = document.getElementById('cfg-telemetry');
+    if (telemetrySaveCheckbox) config.general.telemetry = telemetrySaveCheckbox.checked;
 
     // Save Slot & Autonomous Agent Settings
     const saveSlotTimeoutEl = document.getElementById('cfg-slot-timeout');
@@ -15985,6 +16043,7 @@ OUTPUT FORMAT:
     if (config.general.language !== prevGeneral.language) {
       applyLanguage();
     }
+    applyTelemetry();
     // The status-bar toggles follow what was just saved: autosave, IME and the AI item (model label, switches).
     renderAutosaveStatus();
     renderImeStatus();
@@ -17261,6 +17320,8 @@ OUTPUT FORMAT:
       if (config.general && config.general.restoreSession === false && config.general.splitViewOnStartup && !isSplitMode) {
         await toggleSplitMode();
       }
+
+      applyTelemetry();
 
       // Check for app updates asynchronously in background (deferred 2.5s to keep startup 0ms smooth)
       // (general.checkUpdates = false: no timer and no request; About syki::sok > Check now still works)
