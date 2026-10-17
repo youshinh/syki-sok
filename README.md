@@ -54,4 +54,4 @@ Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, 
 
 ### License & Trademarks
 
-The source code is distributed under the [MIT License](LICENSE). The MIT License does not cover the name and logo: **syki::sok™** is a trademark of youshinh. If you distribute a fork or a modified build, give it another name and logo. See the [Trademark Policy](TRADEMARKS.md).
+The source code is distributed under the [MIT License](LICENSE). The MIT License does not cover the names and logos: **syki::sok™** and **ku::sok™** are unregistered trademarks of youshinh. If you distribute a fork or a modified build, give it another name and logo. See the [Trademark Policy](TRADEMARKS.md).

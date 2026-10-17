@@ -4,7 +4,7 @@
 
 The source code of syki::sok is released under the [MIT License](LICENSE). That license covers the source code only. It does not grant any right to use the names and logos of the project.
 
-**syki::sok™** and its logo are unregistered trademarks of youshinh. All rights in the names and logos are reserved.
+**syki::sok™**, **ku::sok™**, and their respective logos are unregistered trademarks of youshinh. All rights in the names and logos are reserved.
 
 You are free to fork, modify, and redistribute the code under the MIT License. For the name and logo:
 
@@ -21,7 +21,7 @@ This page describes the project's policy. It is not legal advice.
 
 syki::sok のソースコードは [MIT License](LICENSE) で公開されています。このライセンスの対象はソースコードのみで、プロジェクトの名称やロゴを使う権利は含まれません。
 
-**syki::sok™** とそのロゴは、youshinhの未登録商標です。名称およびロゴに関する権利は留保されています。
+**syki::sok™**、**ku::sok™**、およびそれぞれのロゴは、youshinh の未登録商標です。名称およびロゴに関する権利は留保されています。
 
 コードのフォーク、改変、再配布は MIT License の範囲で自由に行えます。名称とロゴについては次のとおりです。
 

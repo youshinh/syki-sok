@@ -54,4 +54,4 @@ brew install --cask youshinh/tap/syki
 
 ### ライセンスと商標
 
-ソースコードは [MIT License](LICENSE) で配布しています。名称とロゴは MIT License の対象外で、**syki::sok™** はyoushinhの商標です。フォークや改変版を配布する場合は、別の名称とロゴを使ってください。詳しくは[商標ポリシー](TRADEMARKS.md)をご覧ください。
+ソースコードは [MIT License](LICENSE) で配布しています。名称とロゴは MIT License の対象外で、**syki::sok™** と **ku::sok™** は youshinh の未登録商標です。フォークや改変版を配布する場合は、別の名称とロゴを使ってください。詳しくは[商標ポリシー](TRADEMARKS.md)をご覧ください。
