@@ -62,6 +62,12 @@ type Snapshot struct {
 	CmdLatencyMS   int     `json:"cmd_latency_ms"`   // time from the last key press to that command (0: unknown)
 	VoiceStarts    int     `json:"voice_starts"`     // voice input started (the count only: no audio and no analysis)
 	VoiceMS        int     `json:"voice_ms"`         // time the microphone was on for it
+	WinState       int     `json:"win_state"`        // the window when the window ended: 0 floating, 1 maximized, 2 snapped to a side of the screen, 3 full screen
+	Zen            int     `json:"zen"`              // 1 in Zen mode
+	View           int     `json:"view"`             // 0 editor, 1 preview, 2 split
+	WinChanged     int     `json:"win_changed"`      // 1 when win_state, zen or view differ from the window before
+	BlurCount      int     `json:"blur_count"`       // times the window lost the focus (another app was used)
+	FocusMS        int     `json:"focus_ms"`         // time the window had the focus (dur_ms - focus_ms is the time spent elsewhere)
 }
 
 // Validate refuses a snapshot with a number out of its range.
@@ -85,6 +91,8 @@ func (s *Snapshot) Validate(now time.Time) error {
 		{"scroll_events", s.ScrollEvents, 1 << 24}, {"scroll_flips", s.ScrollFlips, 1 << 24}, {"scroll_px", s.ScrollPX, 1 << 30},
 		{"cmd_count", s.CmdCount, 1 << 20}, {"last_cmd", s.LastCmd, 99}, {"cmd_latency_ms", s.CmdLatencyMS, 24 * 3600 * 1000},
 		{"voice_starts", s.VoiceStarts, 1 << 16}, {"voice_ms", s.VoiceMS, maxWindowMS},
+		{"win_state", s.WinState, 3}, {"zen", s.Zen, 1}, {"view", s.View, 2}, {"win_changed", s.WinChanged, 1},
+		{"blur_count", s.BlurCount, 1 << 16}, {"focus_ms", s.FocusMS, maxWindowMS},
 	}
 	for _, f := range ints {
 		if f.v < 0 || f.v > f.max {

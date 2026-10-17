@@ -553,12 +553,35 @@
 
   // The operation-rhythm log (js/telemetry.js, pkg/telemetry): on only when the person turned it on (general.telemetry === true). Off means
   // no listener and no timer at all. What it keeps is numbers about how they work, never what they typed (see the manual).
+  // The window as it is when a 30-second window of the log ends (called from the log's timer only): small whole numbers, no position and no
+  // size. state: 0 floating, 1 maximized, 2 snapped to a side of the screen (about half the width, the full height, against the left or
+  // right edge: Win+Left / Win+Right), 3 full screen. A gap of 24 px covers the invisible borders of a Windows window.
+  function telemetryWindowSample() {
+    const cls = document.body.classList;
+    let state = 0;
+    try {
+      const scr = window.screen || {};
+      const aw = scr.availWidth || 0;
+      const ah = scr.availHeight || 0;
+      const ow = window.outerWidth || 0;
+      const oh = window.outerHeight || 0;
+      const left = (scr.availLeft || 0);
+      const gap = 24;
+      if (cls.contains('is-fullscreen')) state = 3;
+      else if (aw > 0 && ow >= aw - gap && oh >= ah - gap) state = 1;
+      else if (aw > 0 && oh >= ah * 0.85 && ow >= aw * 0.2 && ow <= aw * 0.7 &&
+        (window.screenX <= left + gap || window.screenX + ow >= left + aw - gap)) state = 2;
+    } catch (e) { /* best effort */ }
+    return { state: state, zen: cls.contains('zen-mode') ? 1 : 0, view: isSplitMode ? 2 : (isPreviewMode ? 1 : 0) };
+  }
+
   function applyTelemetry() {
     const T = window.Telemetry;
     if (!T) return;
     T.init({
       send: (json) => (window.backend && window.backend.recordTelemetry ? window.backend.recordTelemetry(json) : null),
-      targets: [editorEl, editorSecondary, inlinePromptInput, cliFilterInput]
+      targets: [editorEl, editorSecondary, inlinePromptInput, cliFilterInput],
+      windowSample: telemetryWindowSample
     });
     T.setEnabled(!!(config.general && config.general.telemetry === true));
   }

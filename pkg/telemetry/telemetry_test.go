@@ -15,7 +15,8 @@ var t0 = time.Date(2026, 10, 17, 12, 0, 0, 0, time.Local)
 func good(ts time.Time) string {
 	return `{"v":1,"ts":` + itoa(ts.UnixMilli()) + `,"dur_ms":30000,"keys":120,"mean_dwell_ms":72,"iki_mean_ms":180,"iki_cv":0.28,"delete_ratio":0.08,"nav_ratio":0.05,` +
 		`"ime_ratio":0.7,"ime_delete_ratio":0.1,"stall_pauses":1,"mouse_dist_px":1200,"mouse_turns":14,"scroll_events":6,"scroll_flips":1,"scroll_px":900,` +
-		`"cmd_count":2,"last_cmd":2,"cmd_latency_ms":1200,"voice_starts":1,"voice_ms":8000}`
+		`"cmd_count":2,"last_cmd":2,"cmd_latency_ms":1200,"voice_starts":1,"voice_ms":8000,` +
+		`"win_state":2,"zen":0,"view":1,"win_changed":1,"blur_count":3,"focus_ms":21000}`
 }
 
 func itoa(n int64) string { b, _ := json.Marshal(n); return string(b) }
@@ -44,6 +45,11 @@ func TestLineRefusesAnythingButTheKnownNumbers(t *testing.T) {
 		"an array":                  strings.Replace(good(t0), `"keys":120`, `"keys":[1,2]`, 1),
 		"a fraction for a count":    strings.Replace(good(t0), `"keys":120`, `"keys":1.5`, 1),
 		"a negative count":          strings.Replace(good(t0), `"keys":120`, `"keys":-1`, 1),
+		"a window state of 9":       strings.Replace(good(t0), `"win_state":2`, `"win_state":9`, 1),
+		"zen of 2":                  strings.Replace(good(t0), `"zen":0`, `"zen":2`, 1),
+		"a view of 3":               strings.Replace(good(t0), `"view":1`, `"view":3`, 1),
+		"a window position":         strings.Replace(good(t0), `"zen":0`, `"zen":0,"win_x":-1920,"win_y":40`, 1),
+		"focus time past a window":  strings.Replace(good(t0), `"focus_ms":21000`, `"focus_ms":9999999`, 1),
 		"a ratio above 1":           strings.Replace(good(t0), `"delete_ratio":0.08`, `"delete_ratio":1.5`, 1),
 		"a count above its range":   strings.Replace(good(t0), `"mean_dwell_ms":72`, `"mean_dwell_ms":999999`, 1),
 		"another version":           strings.Replace(good(t0), `"v":1`, `"v":2`, 1),
@@ -72,7 +78,7 @@ func TestSnapshotHasNumbersOnly(t *testing.T) {
 			t.Errorf("field %s is a %s: a snapshot is numbers only", typ.Field(i).Name, typ.Field(i).Type.Kind())
 		}
 	}
-	if typ.NumField() != 22 {
+	if typ.NumField() != 28 {
 		t.Errorf("the log format has %d fields; changing it is a decision (update the manual's list and this number)", typ.NumField())
 	}
 }

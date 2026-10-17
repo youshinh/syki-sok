@@ -26,6 +26,14 @@ assert.ok(/\n      applyTelemetry\(\);\n\n      \/\/ Check for app updates async
 assert.ok(/applyLanguage\(\);\n    \}\n    applyTelemetry\(\);\n/.test(app), 'and after the settings are saved');
 assert.ok(/config\.general\.telemetry = telemetrySaveCheckbox\.checked/.test(app) && /telemetryCheckbox\.checked = !!\(config\.general && config\.general\.telemetry === true\)/.test(app), 'the checkbox is read and written');
 
+// ---- the window's state, sampled when a window of the log ends (never from an input listener)
+assert.ok(/windowSample: telemetryWindowSample/.test(app), 'the log is given the sampler');
+const sampler = /function telemetryWindowSample\(\) \{[\s\S]*?\n  \}\n/.exec(app);
+assert.ok(sampler, 'the sampler exists');
+assert.ok(/is-fullscreen/.test(sampler[0]) && /zen-mode/.test(sampler[0]) && /isSplitMode \? 2 : \(isPreviewMode \? 1 : 0\)/.test(sampler[0]), 'full screen, Zen and the view');
+assert.ok(/state = 3/.test(sampler[0]) && /state = 1/.test(sampler[0]) && /state = 2/.test(sampler[0]), 'full screen, maximized, snapped to a side');
+assert.ok(!/return \{[^}]*(screenX|screenY|outerWidth|outerHeight|availWidth)/.test(sampler[0]), 'no position and no size leave the sampler: only small states');
+
 // ---- the settings page
 assert.ok(/<input type="checkbox" id="cfg-telemetry">/.test(html), 'the checkbox is not checked by default');
 assert.ok(!/id="cfg-telemetry"[^>]*checked/.test(html), 'and has no "checked"');

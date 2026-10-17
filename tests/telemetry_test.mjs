@@ -17,6 +17,8 @@ function makePage() {
   let clock = 1000;
   const document = {
     visibilityState: 'visible',
+    focused: true,
+    hasFocus() { return this.focused; },
     addEventListener: (type, fn) => listeners.push({ target: 'document', type, fn }),
     removeEventListener: (type, fn) => {
       const i = listeners.findIndex((l) => l.target === 'document' && l.type === type && l.fn === fn);
@@ -54,7 +56,8 @@ function makePage() {
 }
 
 const NAMES = ['v', 'ts', 'dur_ms', 'keys', 'mean_dwell_ms', 'iki_mean_ms', 'iki_cv', 'delete_ratio', 'nav_ratio', 'ime_ratio', 'ime_delete_ratio',
-  'stall_pauses', 'mouse_dist_px', 'mouse_turns', 'scroll_events', 'scroll_flips', 'scroll_px', 'cmd_count', 'last_cmd', 'cmd_latency_ms', 'voice_starts', 'voice_ms'];
+  'stall_pauses', 'mouse_dist_px', 'mouse_turns', 'scroll_events', 'scroll_flips', 'scroll_px', 'cmd_count', 'last_cmd', 'cmd_latency_ms', 'voice_starts', 'voice_ms',
+  'win_state', 'zen', 'view', 'win_changed', 'blur_count', 'focus_ms'];
 
 // ---- off: nothing exists
 {
@@ -68,10 +71,10 @@ const NAMES = ['v', 'ts', 'dur_ms', 'keys', 'mean_dwell_ms', 'iki_mean_ms', 'iki
   p.fire('keydown', p.key(1));
   assert.strictEqual(p.timers.size, 0);
   p.T.setEnabled(true);
-  assert.deepStrictEqual(p.listeners.map((l) => l.target + ':' + l.type).sort(), ['document:visibilitychange', 'window:keydown', 'window:keyup', 'window:mousemove', 'window:pagehide', 'window:wheel']);
+  assert.deepStrictEqual(p.listeners.map((l) => l.target + ':' + l.type).sort(), ['document:visibilitychange', 'window:blur', 'window:focus', 'window:keydown', 'window:keyup', 'window:mousemove', 'window:pagehide', 'window:wheel']);
   assert.ok(p.listeners.find((l) => l.type === 'keydown').capture, 'keydown is seen before the shortcuts consume it');
   p.T.setEnabled(true);
-  assert.strictEqual(p.listeners.length, 6, 'turning it on twice adds nothing');
+  assert.strictEqual(p.listeners.length, 8, 'turning it on twice adds nothing');
   p.press(10, 80);
   assert.strictEqual(p.timers.size, 1, 'the first input of a window arms one timer');
   p.T.setEnabled(false);
@@ -232,6 +235,85 @@ const NAMES = ['v', 'ts', 'dur_ms', 'keys', 'mean_dwell_ms', 'iki_mean_ms', 'iki
   assert.strictEqual(p.sent[2].cmd_latency_ms, 0);
 }
 
+// ---- the focus: how often another app was used, and for how long the window had it
+{
+  const p = makePage();
+  p.T.setEnabled(true);
+  p.press(1000, 50);                       // the window begins at 1000 (clock 1000), the focus is on
+  p.setClock(1000);
+  p.fire('blur', { type: 'blur', timeStamp: 11000 });   // 10 s later: another app
+  p.fire('blur', { type: 'blur', timeStamp: 11500 });   // a second blur while it is away is nothing
+  p.fire('focus', { type: 'focus', timeStamp: 21000 }); // 10 s away, back
+  p.fire('focus', { type: 'focus', timeStamp: 21100 }); // a second focus is nothing
+  p.fire('blur', { type: 'blur', timeStamp: 26000 });   // 5 s more with the focus, away again
+  p.setClock(31000);
+  p.runTimer();
+  const s = p.sent[0];
+  assert.strictEqual(s.blur_count, 2, 'how often the window lost the focus');
+  assert.strictEqual(s.focus_ms, 10000 + 5000, 'how long it had it: 1000-11000 and 21000-26000');
+  assert.strictEqual(s.dur_ms, 30000);
+  // only the window got and lost the focus: that is something to write down (another app was in use) even with no key and no mouse
+  const q = makePage();
+  q.T.setEnabled(true);
+  q.fire('blur', { type: 'blur', timeStamp: 5000 });
+  q.runTimer();
+  assert.strictEqual(q.sent.length, 1, 'a window with only a blur is written');
+  assert.strictEqual(q.sent[0].blur_count, 1);
+  assert.strictEqual(q.sent[0].keys, 0);
+  // the focus came back and nothing else happened for the whole window: the time with the focus is still a number worth having
+  const r = makePage();
+  r.T.setEnabled(true);
+  r.document.focused = false;
+  r.T.setEnabled(false);
+  r.T.setEnabled(true); // starts without the focus
+  r.fire('focus', { type: 'focus', timeStamp: 100 });
+  r.setClock(30100);
+  r.runTimer();
+  assert.strictEqual(r.sent.length, 1);
+  assert.strictEqual(r.sent[0].focus_ms, 30000, 'focus_ms never exceeds the window');
+  assert.ok(r.sent[0].focus_ms <= r.sent[0].dur_ms);
+  // one that has the focus the whole time and is typed in
+  const w = makePage();
+  w.T.setEnabled(true);
+  w.press(2000, 50);
+  w.setClock(32000);
+  w.runTimer();
+  assert.strictEqual(w.sent[0].blur_count, 0);
+  assert.strictEqual(w.sent[0].focus_ms, 30000, 'the whole window');
+}
+
+// ---- the window's state: Zen, maximized, snapped to a side; and whether it changed
+{
+  const p = makePage();
+  let now = { state: 0, zen: 0, view: 0 };
+  p.T.init({ send: (j) => p.sent.push(JSON.parse(j)), targets: [p.editor], now: () => 1000, windowSample: () => now });
+  p.T.setEnabled(true);
+  const windowOf = (over) => { now = Object.assign({ state: 0, zen: 0, view: 0 }, over); p.press(10, 50); p.runTimer(); return p.sent[p.sent.length - 1]; };
+  let s = windowOf({});
+  assert.deepStrictEqual([s.win_state, s.zen, s.view, s.win_changed], [0, 0, 0, 0], 'the first window has nothing to differ from');
+  s = windowOf({});
+  assert.strictEqual(s.win_changed, 0, 'the same again: not changed');
+  s = windowOf({ state: 2 });
+  assert.deepStrictEqual([s.win_state, s.win_changed], [2, 1], 'snapped to a side: a change');
+  s = windowOf({ state: 2, zen: 1, view: 2 });
+  assert.deepStrictEqual([s.win_state, s.zen, s.view, s.win_changed], [2, 1, 2, 1], 'Zen and a split view');
+  s = windowOf({ state: 3 });
+  assert.strictEqual(s.win_state, 3);
+  // junk from the sampler becomes 0, and a sampler that throws does not stop the window being written
+  s = windowOf({ state: 9, zen: 'yes', view: -4 });
+  assert.deepStrictEqual([s.win_state, s.zen, s.view], [0, 1, 0], 'out of range: 0 (zen is a flag)');
+  p.T.init({ send: (j) => p.sent.push(JSON.parse(j)), targets: [p.editor], now: () => 1000, windowSample: () => { throw new Error('x'); } });
+  p.press(10, 50);
+  p.runTimer();
+  assert.strictEqual(p.sent[p.sent.length - 1].win_state, 0);
+  // no sampler: zeros, never "changed"
+  const q = makePage();
+  q.T.setEnabled(true);
+  q.press(10, 50);
+  q.runTimer();
+  assert.deepStrictEqual([q.sent[0].win_state, q.sent[0].zen, q.sent[0].view, q.sent[0].win_changed], [0, 0, 0, 0]);
+}
+
 // ---- the window ends when the page is hidden, not when it comes back
 {
   const p = makePage();
@@ -281,7 +363,7 @@ const NAMES = ['v', 'ts', 'dur_ms', 'keys', 'mean_dwell_ms', 'iki_mean_ms', 'iki
     assert.ok(m, name + ' exists');
     return m[0];
   };
-  for (const name of ['onKeyDown', 'onKeyUp', 'onMouseMove', 'onWheel', 'touch', 'slotOf', 'isModifier', 'isNav', 'isTracked']) {
+  for (const name of ['onKeyDown', 'onKeyUp', 'onMouseMove', 'onWheel', 'onBlur', 'onFocus', 'touch', 'slotOf', 'isModifier', 'isNav', 'isTracked']) {
     const body = fnSrc(name);
     assert.ok(!/\bnew\s/.test(body), name + ': no new');
     assert.ok(!/\.(push|map|filter|slice|concat|splice|forEach|fill|join|split)\(/.test(body), name + ': no array or string work');

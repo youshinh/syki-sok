@@ -1,6 +1,8 @@
 // syki::sok operation-rhythm log (the page side). When the person turns it on (Settings > General > "Keep an operation-rhythm log"), this
 // counts HOW they work, in windows of 30 seconds: the rhythm of the key presses, how the pointer moves and the page scrolls, which command was
-// called and how soon after the last key, how often voice input was started and for how long. One line of numbers per window goes to the
+// called and how soon after the last key, how often voice input was started and for how long, and how the window was: Zen, maximized, snapped
+// to a side of the screen, and how often and for how long it had the focus (that is how it shows that other apps are used alongside).
+// One line of numbers per window goes to the
 // Go side (pkg/telemetry), which keeps it in a folder on this PC.
 //
 // What it never keeps: what was typed, which key it was, where the pointer was, the audio of the voice input or anything about it. The
@@ -32,7 +34,7 @@
   // accumulator slots (one Float64Array, reset at the end of each window)
   const KEYS = 0, DWELL_SUM = 1, DWELL_N = 2, IKI_N = 3, IKI_SUM = 4, IKI_SUM2 = 5, DEL = 6, NAV = 7, IME = 8, IME_DEL = 9, STALL = 10,
     MDIST = 11, MTURNS = 12, WHEELS = 13, FLIPS = 14, SCROLL_PX = 15, CMDS = 16, LAST_CMD = 17, CMD_LAT = 18, VOICES = 19, VOICE_MS = 20,
-    T_START = 21, SLOTS = 22;
+    BLURS = 21, FOCUS_MS = 22, T_START = 23, SLOTS = 24;
   const acc = new Float64Array(SLOTS);
   const down = new Float64Array(256); // when a key went down, by a hash of its code (0: not down)
 
@@ -44,6 +46,10 @@
   let lastMX = 0, lastMY = 0, lastMT = -1e9, prevDX = 0, prevDY = 0;
   let lastWheelDir = 0;
   let voiceT0 = 0;
+  let focused = true;    // the window has the focus
+  let focusT0 = 0;       // since when (inside the window being counted)
+  let lastWinPacked = -1; // win_state, zen and view of the window before, in one number
+  let sampleWindow = null; // () => { state, zen, view }: what the window looks like (called when a window ends, never from a listener)
   let targets = [];      // the text surfaces whose key presses count (the editors and the bars' inputs)
   let sendFn = null;
   let nowFn = () => (global.performance && global.performance.now ? global.performance.now() : Date.now());
@@ -77,6 +83,7 @@
     if (armed) return;
     armed = true;
     acc[T_START] = now;
+    if (focused) focusT0 = now;
     timer = setTimeout(onTimer, WINDOW_MS);
   }
 
@@ -159,6 +166,24 @@
     touch(e.timeStamp);
   }
 
+  // The window lost the focus (another app was used) or got it back: how often, and how long it had it.
+  function onBlur(e) {
+    const now = e.timeStamp;
+    touch(now);
+    if (!focused) return;
+    focused = false;
+    acc[BLURS]++;
+    acc[FOCUS_MS] += now - focusT0;
+  }
+
+  function onFocus(e) {
+    const now = e.timeStamp;
+    if (focused) return;
+    focused = true;
+    touch(now);
+    focusT0 = now;
+  }
+
   // ---------------------------------------------------------------------------------------------------------------------------------
   // what is called from the app (not input listeners)
 
@@ -193,7 +218,7 @@
 
   function r3(v) { return Math.round(v * 1000) / 1000; }
 
-  function summary(dur) {
+  function summary(dur, win) {
     const keys = acc[KEYS];
     const ikiN = acc[IKI_N];
     const ikiMean = ikiN > 0 ? acc[IKI_SUM] / ikiN : 0;
@@ -220,12 +245,37 @@
       last_cmd: acc[LAST_CMD],
       cmd_latency_ms: Math.round(acc[CMD_LAT]),
       voice_starts: acc[VOICES],
-      voice_ms: Math.round(Math.min(acc[VOICE_MS], 600000))
+      voice_ms: Math.round(Math.min(acc[VOICE_MS], 600000)),
+      win_state: win.state,
+      zen: win.zen,
+      view: win.view,
+      win_changed: win.changed,
+      blur_count: acc[BLURS],
+      focus_ms: Math.round(Math.min(acc[FOCUS_MS], dur, 600000))
     };
   }
 
+  // The window as it is when a window of counting ends: small whole numbers (win_state 0 floating, 1 maximized, 2 snapped to a side,
+  // 3 full screen; zen 0/1; view 0 editor, 1 preview, 2 split), and whether any of them differs from the window before.
+  function windowNow() {
+    let state = 0, zen = 0, view = 0;
+    if (typeof sampleWindow === 'function') {
+      try {
+        const w = sampleWindow() || {};
+        state = w.state >= 0 && w.state <= 3 ? w.state | 0 : 0;
+        zen = w.zen ? 1 : 0;
+        view = w.view >= 0 && w.view <= 2 ? w.view | 0 : 0;
+      } catch (err) { /* best effort */ }
+    }
+    const packed = state * 100 + zen * 10 + view;
+    const changed = lastWinPacked >= 0 && packed !== lastWinPacked ? 1 : 0;
+    lastWinPacked = packed;
+    return { state: state, zen: zen, view: view, changed: changed };
+  }
+
   function active() {
-    return acc[KEYS] > 0 || acc[MDIST] > 0 || acc[WHEELS] > 0 || acc[CMDS] > 0 || acc[VOICES] > 0 || acc[VOICE_MS] > 0;
+    return acc[KEYS] > 0 || acc[MDIST] > 0 || acc[WHEELS] > 0 || acc[CMDS] > 0 || acc[VOICES] > 0 || acc[VOICE_MS] > 0 || acc[BLURS] > 0 ||
+      acc[FOCUS_MS] >= 1000;
   }
 
   function resetWindow() {
@@ -236,9 +286,12 @@
   // Ends the window: sends its summary when anything happened in it, then starts clean. Returns the summary (or null).
   function flush() {
     if (timer) { clearTimeout(timer); timer = 0; }
-    if (!armed || !active()) { resetWindow(); return null; }
-    const snap = summary(nowFn() - acc[T_START]);
+    const end = nowFn();
+    if (armed && focused) acc[FOCUS_MS] += end - focusT0; // the time since the window began (or the focus came back), up to now
+    if (!armed || !active()) { resetWindow(); focusT0 = end; return null; }
+    const snap = summary(end - acc[T_START], windowNow());
     resetWindow();
+    focusT0 = end;
     if (typeof sendFn === 'function') {
       try {
         const r = sendFn(JSON.stringify(snap));
@@ -269,8 +322,12 @@
     global.addEventListener('keyup', onKeyUp, { capture: true, passive: true });
     global.addEventListener('mousemove', onMouseMove, { passive: true });
     global.addEventListener('wheel', onWheel, { passive: true });
+    global.addEventListener('blur', onBlur, { passive: true });
+    global.addEventListener('focus', onFocus, { passive: true });
     global.addEventListener('pagehide', onPageHide);
     if (global.document) global.document.addEventListener('visibilitychange', onVisibility);
+    focused = !global.document || typeof global.document.hasFocus !== 'function' || !!global.document.hasFocus();
+    focusT0 = nowFn();
   }
 
   function detach() {
@@ -278,6 +335,8 @@
     global.removeEventListener('keyup', onKeyUp, { capture: true });
     global.removeEventListener('mousemove', onMouseMove);
     global.removeEventListener('wheel', onWheel);
+    global.removeEventListener('blur', onBlur);
+    global.removeEventListener('focus', onFocus);
     global.removeEventListener('pagehide', onPageHide);
     if (global.document) global.document.removeEventListener('visibilitychange', onVisibility);
     if (timer) { clearTimeout(timer); timer = 0; }
@@ -290,14 +349,17 @@
     prevDY = 0;
     lastWheelDir = 0;
     voiceT0 = 0;
+    lastWinPacked = -1;
   }
 
-  // opts: send(json) hands a summary to the Go side; targets: the elements whose key presses count; now(): the clock (tests).
+  // opts: send(json) hands a summary to the Go side; targets: the elements whose key presses count;
+  // windowSample(): the window's state (see windowNow); now(): the clock (tests).
   function init(opts) {
     const o = opts || {};
     sendFn = typeof o.send === 'function' ? o.send : null;
     targets = Array.isArray(o.targets) ? o.targets.filter(Boolean) : [];
     if (typeof o.now === 'function') nowFn = o.now;
+    sampleWindow = typeof o.windowSample === 'function' ? o.windowSample : null;
   }
 
   // Turning it off drops what was counted but not yet written, and removes every listener and the timer.

@@ -35,7 +35,8 @@ func isolatedTelemetry(t *testing.T, configJSON string) (*App, string) {
 func telemetryLine() string {
 	return `{"v":1,"ts":` + strconv.FormatInt(time.Now().UnixMilli(), 10) + `,"dur_ms":30000,"keys":10,"mean_dwell_ms":70,"iki_mean_ms":150,"iki_cv":0.3,` +
 		`"delete_ratio":0,"nav_ratio":0,"ime_ratio":0,"ime_delete_ratio":0,"stall_pauses":0,"mouse_dist_px":10,"mouse_turns":1,"scroll_events":0,` +
-		`"scroll_flips":0,"scroll_px":0,"cmd_count":0,"last_cmd":0,"cmd_latency_ms":0,"voice_starts":0,"voice_ms":0}`
+		`"scroll_flips":0,"scroll_px":0,"cmd_count":0,"last_cmd":0,"cmd_latency_ms":0,"voice_starts":0,"voice_ms":0,` +
+		`"win_state":0,"zen":0,"view":0,"win_changed":0,"blur_count":0,"focus_ms":30000}`
 }
 
 func TestTelemetryIsOffUntilTheSettingSaysSo(t *testing.T) {
