@@ -3855,7 +3855,24 @@
           container.dataset.mermaidSrc = diagramCode; // printing draws a dark-tone diagram again in the light tone (print_preview.js)
           const id = 'mermaid-svg-' + idx + '-' + Date.now();
           try {
-            const { svg } = await window.mermaid.render(id, diagramCode);
+            let drawn = diagramCode;
+            let svg;
+            try {
+              svg = (await window.mermaid.render(id, drawn)).svg;
+            } catch (firstErr) {
+              // not drawn: the usual slips are put right by rule and it is drawn once more (the note itself is not changed)
+              removeMermaidLeftovers(id);
+              const fixed = window.MermaidRepair ? window.MermaidRepair.repair(diagramCode).code : diagramCode;
+              if (fixed === diagramCode) throw firstErr;
+              drawn = fixed;
+              try {
+                svg = (await window.mermaid.render(id + 'r', drawn)).svg;
+              } catch (secondErr) {
+                removeMermaidLeftovers(id + 'r');
+                throw firstErr; // the message of the diagram as it was written
+              }
+            }
+            container.dataset.mermaidSrc = drawn;
             container.innerHTML = svg;
             window.MermaidTone.decorate(container, tone, t('mermaidToneToggle'), flipMermaidTone, currentLook(), {
               copyTitle: t('mermaidCopyImage'),
@@ -5312,6 +5329,10 @@
       }
     } else if (reqId.startsWith('vision_') || reqId.startsWith('ocr_')) {
       cleanedResult = stripMarkdownCodeFences(cleanedResult);
+    } else if (reqId.startsWith('mermaid_') && !errorText) {
+      // the usual slips of the AI (fence tagged ```timeline, a label with parentheses, ...) are put right by rule (mermaid_repair.js)
+      cleanedResult = stripMarkdownCodeFences(cleanedResult, true);
+      if (window.MermaidRepair) cleanedResult = window.MermaidRepair.repairAnswer(cleanedResult).text;
     } else {
       cleanedResult = stripMarkdownCodeFences(cleanedResult, true);
     }
@@ -8853,6 +8874,9 @@ STRICT SYNTAX SAFETY RULES:
 6. Flowchart subgraphs MUST use: subgraph SG1["Title"] ... end.
 7. Return ONLY the diagram(s) described under OUTPUT FORMAT, with NO conversational filler, greetings or explanations.
 8. In erDiagram, entity names AND attribute names MUST be ASCII words (Customer, customerId). Put Japanese only in double-quoted text: the relationship label (Customer ||--o{ Order : "places") and the optional comment at the end of an attribute line (string customerId PK "顧客ID"). An attribute name in Japanese is a syntax error.
+9. The code fence language is exactly "mermaid" (\`\`\`mermaid), NEVER the diagram type (not \`\`\`timeline, not \`\`\`flowchart). The first line inside the fence is the diagram type line (flowchart TD, sequenceDiagram, timeline, mindmap ...).
+10. quadrantChart: put EVERY text in double quotes (x-axis "Low" --> "High", quadrant-1 "Do now", "Item A": [0.3, 0.8]); coordinates are between 0 and 1.
+11. stateDiagram-v2: a label is written state "Label" as ID (label first). mindmap: exactly ONE root, and no parentheses or brackets inside plain node text.
 
 HOW MANY DIAGRAMS (one is the default; split only when it makes the result clearer):
 - ONE diagram when the text is about a single subject or a single flow that fits on a screen (up to about 15 nodes). Do not split a cohesive text just to produce more diagrams.
