@@ -788,6 +788,7 @@
   const secondaryPreviewPane = document.getElementById('secondary-preview-pane');
   const paneResizer = document.getElementById('pane-resizer');
   const ctxOpenToSide = document.getElementById('ctx-open-to-side');
+  const ctxPreviewSide = document.getElementById('ctx-preview-side');
   const ctxSaveAs = document.getElementById('ctx-save-as');
 
   const statCursor = document.getElementById('stat-cursor');
@@ -13196,6 +13197,14 @@ OUTPUT FORMAT:
     contextMenu.classList.add('hidden');
     togglePreview();
   };
+  if (ctxPreviewSide) {
+    ctxPreviewSide.onclick = () => {
+      contextMenu.classList.add('hidden');
+      const previewTarget = contextMenuTargetTabId || activeTabId;
+      contextMenuTargetTabId = null; // the tab was named once
+      openPreviewToSide(previewTarget);
+    };
+  }
   if (ctxOpenToSide) {
     ctxOpenToSide.onclick = () => {
       contextMenu.classList.add('hidden');
@@ -13982,6 +13991,8 @@ OUTPUT FORMAT:
     setLabel('sc-ctx-save-txt', config.shortcuts.exportPlainText);
     setLabel('sc-ctx-insert-date', config.shortcuts.insertDate);
     setLabel('sc-ctx-toggle-preview', config.shortcuts.togglePreview);
+    const previewSideScEl = document.getElementById('sc-ctx-preview-side');
+    if (previewSideScEl) previewSideScEl.textContent = config.shortcuts.previewToSide ? formatShortcutForDisplay(config.shortcuts.previewToSide) : '';
     // Unlike setLabel, an unassigned voice-input shortcut must blank its label, not keep a stale one.
     const voiceScEl = document.getElementById('sc-ctx-voice-input');
     if (voiceScEl) voiceScEl.textContent = config.shortcuts.voiceInput ? formatShortcutForDisplay(config.shortcuts.voiceInput) : '';
