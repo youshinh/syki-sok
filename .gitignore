@@ -30,5 +30,7 @@ Thumbs.db
 *.zip
 *.tar.gz
 
-# Local user scraps
+# Local user scraps & AI memory
 scraps/
+.agents/
+
