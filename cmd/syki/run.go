@@ -69,9 +69,12 @@ func run(args []string, version string, e env) int {
 	}
 
 	port := e.fallbackPort
+	pid := 0
 	if session, _ := ipc.LoadSession(); session != nil && session.Port > 0 {
 		port = session.Port
+		pid = session.PID
 	}
+	ipc.AllowForeground(pid) // this process holds the user's attention: the running instance may put its window in front for the request
 	timeout := e.sendTimeout
 	if timeout == 0 {
 		timeout = sendTimeout

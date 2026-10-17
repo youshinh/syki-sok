@@ -253,6 +253,8 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWNORMAL)
 	_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_RESTORE)
 	_, _, _ = procSetForegroundWindow.Call(uintptr(hwnd))
+	// SetForegroundWindow is refused for a process the user is not working with; then the window would be shown but not active.
+	bringToForeground(uintptr(hwnd))
 }
 
 func hideWindowToTray(hwnd windows.Handle) {

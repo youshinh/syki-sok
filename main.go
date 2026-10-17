@@ -130,6 +130,13 @@ func main() {
 		if session != nil && session.Port > 0 {
 			targetPort = session.Port
 		}
+		// A double-clicked file started this process, so it holds the right to bring a window to the front; the running instance does
+		// not. Hand it over before the request, or its window comes up behind the others (see ipc.AllowForeground).
+		if session != nil {
+			ipc.AllowForeground(session.PID)
+		} else {
+			ipc.AllowForeground(0)
+		}
 		if err := ipc.Send(targetPort, ipcMsg, 300*time.Millisecond); err == nil {
 			// Successfully delivered to running instance! Exit CLI immediately (0ms feel)
 			return
