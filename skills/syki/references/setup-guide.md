@@ -142,7 +142,7 @@ Wire formats (from `pkg/llm/audio.go`, verified in source):
 | `general.barVoice` | bool | `true` | The microphone button in the Ask, Rewrite and Command (AI mode) bars (Settings -> AI Models -> Voice input). |
 | `general.autoSave` | bool | `true` | Save notes bound to a file 1.5 s after the last edit. Applies to RPC writes too. |
 | `general.pasteHtmlAsMarkdown` | bool | `true` | Ctrl+V converts clipboard HTML that has structure (table, heading, list, link, ...) to Markdown; code / logs / VS Code content stay plain, and Ctrl+Shift+V always pastes as it is (plain text; an image-only clipboard is saved to `assets/`). false = the old split: Ctrl+V plain, Ctrl+Shift+V converts. Settings -> General. |
-| `general.pasteImageOcr` | bool | `true` | Plain Ctrl+V on an image-only clipboard runs OCR. When it is false, or the vision model has no API setup (no `vision.apiKey` for Gemini / hosted services), the image is saved to `assets/` and linked instead, like Ctrl+Shift+V. |
+| `general.pasteImageOcr` | bool | `true` | Plain Ctrl+V on an image-only clipboard runs OCR (the prompt gets a rule to answer `NO_TEXT` for a picture with nothing to read; that answer puts the picture in as a file, like Ctrl+Shift+V, instead of a description). When it is false, or the vision model has no API setup (no `vision.apiKey` for Gemini / hosted services), the image is saved to `assets/` and linked instead, like Ctrl+Shift+V. |
 | `general.restoreSession` | bool | `true` | Restore tabs/unsaved buffers from `session.json`. |
 | `general.trayResident` | bool | `true` | Windows: close hides to the tray. Read by Go on every close (`isResidentConfigEnabled`). No effect on macOS. |
 | `general.splitViewOnStartup` | bool | `false` | Only honoured when `restoreSession` is false. |

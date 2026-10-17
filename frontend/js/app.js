@@ -4919,6 +4919,47 @@
   }
 
   // Vision / Image LLM Query (Gemini Flash Lite)
+  // A picture with nothing to read (scenery, a person) used to be answered with a description of it, and that description went into the note
+  // instead of the picture. The prompt now says what to answer when there is nothing to transcribe, and that answer puts the picture
+  // itself in, as Ctrl+Shift+V would. The words are added to whatever prompt is set (the setting itself is not changed).
+  const NO_TEXT_ANSWER = 'NO_TEXT';
+  const DEFAULT_VISION_PROMPT = 'Transcribe the content of this image (text, diagrams, tables, code, etc.) into structured, faithful Markdown format.';
+  const NO_TEXT_RULE = 'If the image has no text, diagram, table or code worth transcribing (for example a photo of scenery or people), answer with exactly ' +
+    NO_TEXT_ANSWER + ' and nothing else.';
+
+  function visionPromptWithNoText(prompt) {
+    return (String(prompt || '').trim() || DEFAULT_VISION_PROMPT) + '\n\n' + NO_TEXT_RULE;
+  }
+
+  // The whole answer is that word (a model may quote it, bold it, put it in a code block or add a full stop); an answer that only
+  // mentions it is a transcription.
+  function isNoTextAnswer(text) {
+    const s = String(text || '').replace(/[`*"'\u300c\u300d\s]/g, '').replace(/[.\u3002!]+$/, '');
+    return /^no[_-]?text$/i.test(s);
+  }
+
+  // The answer was NO_TEXT: the waiting text becomes the picture, kept as a file next to the note like a pasted picture is (the same
+  // folder, the same link). A failure puts the note back as it was and says so.
+  async function putImageInsteadOfText(reqId, info) {
+    const img = info.noTextImage;
+    const done = (status, error) => finishLlmTask(reqId, info, status, error);
+    try {
+      if (!(window.backend && window.backend.saveAsset)) throw new Error(t('fanchorImportUnavailable'));
+      const noteDir = await getNoteDir(getTab(info.tabId));
+      const res = await window.backend.saveAsset(noteDir, assetExtForMime(img.mimeType), img.base64);
+      const target = (res && (res.relPath || res.fileUrl)) || '';
+      if (!target) throw new Error('no path');
+      const safe = window.FileAnchor && window.FileAnchor.encodeLinkTarget ? window.FileAnchor.encodeLinkTarget(target) : target;
+      applyAnchorReplacement(info.tabId, info.anchorId, `![image](${safe})`, info.baseline);
+      done('completed');
+      showMessage(t('pasteImageNoText'), 4000);
+    } catch (err) {
+      applyAnchorReplacement(info.tabId, info.anchorId, '', info.baseline); // the waiting text goes, the note is as it was
+      done('failed', String((err && err.message) || err));
+      showMessage(t('pasteImageSaveFailed', { error: String((err && err.message) || err) }), 5000, { important: true });
+    }
+  }
+
   async function triggerClipboardImageOCR(imageFileOrBlob, targetEditor) {
     const editor = targetEditor || getActiveEditor();
     let imgData = null;
@@ -4956,6 +4997,8 @@
       anchorId: anchorId,
       persistedText: insertion,
       persistRestore: '',
+      // the picture, until the answer comes: a picture with nothing to read is put in as a picture (putImageInsteadOfText)
+      noTextImage: { base64: imgData.base64, mimeType: imgData.mimeType },
       listed: true // in the task panel (finishLlmTask settles it), where it can be cancelled
     });
 
@@ -4973,7 +5016,7 @@
     }
 
     if (window.backend && window.backend.queryVisionAsync) {
-      window.backend.queryVisionAsync(reqId, config.vision.prompt, imgData.base64, imgData.mimeType, JSON.stringify(config.vision));
+      window.backend.queryVisionAsync(reqId, visionPromptWithNoText(config.vision.prompt), imgData.base64, imgData.mimeType, JSON.stringify(config.vision));
     } else {
       setTimeout(() => {
         window.__onLLMResult(reqId, `### 画像解析マークダウン (Gemini Flash Lite)\n\n- 解析テキスト完了`, '');
@@ -5194,6 +5237,12 @@
       cleanedResult = cleanedResult.substring(0, cleanedResult.indexOf('<think>'));
     }
     cleanedResult = cleanedResult.trim();
+
+    // A picture with nothing to read: it goes into the note as a picture, not as a description of it.
+    if (reqInfo.noTextImage && !errorText && isNoTextAnswer(cleanedResult)) {
+      putImageInsteadOfText(reqId, reqInfo);
+      return;
+    }
 
     let isRollback = false;
     if (reqInfo.isCorrection) {
