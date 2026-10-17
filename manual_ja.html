@@ -3910,6 +3910,19 @@ syki ocr --json memo.png</code></pre>
           <li><strong>管理者向け:</strong> 設定は <code>config.json</code> の <code>general.telemetry</code>（true でオン。無い場合やそれ以外はオフ）。</li>
         </ul>
 
+        <p><strong>活動記録（初期設定はオフ・スイッチは2つ）</strong></p>
+        <p>操作リズムのログの隣に、設定 → 一般 →「更新とプライバシー」の中にスイッチがあと2つあります。どちらもオンにするまでは<strong>オフ</strong>です。<strong>ローカル</strong>のモデルが「午前中は何をしていたか」「どこまでやったか」を答えられるようにするためのもので、内容は PC の外に出ません。</p>
+        <ul>
+          <li><strong>ノートと依頼の記録を残す:</strong> どのノートで書いて、何文字増減したか（書いている30秒ごとに1行）、AI に聞くバー・書き換えバーに入力した依頼（入力した言葉、モデルがローカルかクラウドか、結果＝ノートに入った・失敗・取り消し）。ノートの文章（ノートはもともとディスクにあります）や、押したキーは記録しません。</li>
+          <li><strong>前面のアプリも記録する（Windows）:</strong> 2秒ごとに Windows へ前面のウィンドウを尋ね、変わったときにプログラム名とウィンドウのタイトルを書き留めます。パスワード管理アプリ（KeePass、1Password、Bitwarden、LastPass など）とプライベートブラウズのウィンドウは除外し、syki 自身のウィンドウはタイトルを残しません。<code>config.json</code> の <code>general.activityExclude</code> に語を足せます。</li>
+        </ul>
+        <p><strong>セキュリティソフトから見た動き:</strong> 前面のウィンドウは、ごく普通の呼び出し（<code>GetForegroundWindow</code>、ウィンドウのタイトル、プログラム名）だけで読みます。フックは一切使わず、キーやマウスの状態の取得も、生の入力デバイスの読み取りも、画面キャプチャも、クリップボードの監視もしません。他のプロセスには、名前を尋ねる以外は触りません。操作リズムのログも、ページ自身が受け取るイベントしか使いません。「このコードが呼んではならない関数」の一覧は、テストで固定しています。</p>
+        <ul>
+          <li><strong>保存先:</strong> <code>config.json</code> と同じ場所の <code>activity</code> フォルダに1日1ファイル（Windows: <code>%APPDATA%\syki-sok\activity\</code>）。ノートのフォルダには置かないので、git 同期の対象にはなりません。ネットワークには一切送信しません。30日より古いファイルは自動で削除し、<strong>活動記録を削除</strong>で即座に消せます。</li>
+          <li><strong>クラウドのモデル:</strong> 記録はローカルのモデルに渡します。クラウドのモデルには、送る内容を見せたうえで、あなたが許可した依頼にだけ渡します。</li>
+          <li><strong>管理者向け:</strong> <code>config.json</code> の <code>general.activityEdits</code> と <code>general.activityApps</code>（true でオン。それ以外はオフ）。</li>
+        </ul>
+
         <p><strong>意味検索・深掘り・教訓・印刷では、文章はどこへ行くか</strong></p>
         <ul>
           <li><strong><a href="#meaning-search" style="color: var(--accent);">意味検索</a>（試験的機能・既定はオフ）:</strong> オンにすると、ノートの文章を、設定した埋め込みモデルに送って、意味の索引を作ります（検索のときは、あなたが書いた質問も送ります）。設定例のように Ollama をこのパソコンで動かせば、文章はこのパソコンの外へ出ません。クラウドの埋め込みモデルには、そのホストを <code>config.json</code> の <code>semantic.privacy.cloudConsent</code> に書いて許可するまで、何も送りません。索引は、このパソコンの中（スクラップフォルダの外）にあり、Git では同期されません。</li>
@@ -4007,6 +4020,16 @@ syki ocr --json memo.png</code></pre>
                 <td>操作リズムのログを残す</td>
                 <td>無効 (OFF)</td>
                 <td>30秒ごとに、作業の仕方の数値（キー入力のリズム、マウスとスクロール、開いた AI バー、音声入力の開始回数と時間）をこの PC 上のファイルに書き留めます。入力した文章、押したキー、クリックの位置、音声は記録せず、30日間保管します。オフの間は何も監視しません。詳しくは<a href="#about-syki-sok" style="color: var(--accent);">操作リズムのログ</a>を参照してください。</td>
+              </tr>
+              <tr>
+                <td>ノートと依頼の記録を残す</td>
+                <td>無効 (OFF)</td>
+                <td>どのノートでどれだけ書いたか、AI に聞くバー・書き換えバーに入力した依頼とその結果を書き留めます。ノートの文章や押したキーは記録しません。ローカルのモデル用に、この PC に30日間保管します。詳しくは<a href="#about-syki-sok" style="color: var(--accent);">活動記録</a>を参照してください。</td>
+              </tr>
+              <tr>
+                <td>前面のアプリも記録する</td>
+                <td>無効 (OFF)・Windows</td>
+                <td>2秒ごとに、前面のウィンドウのプログラム名とタイトルを、変わったときに書き留めます。パスワード管理アプリとプライベートウィンドウは除外します。フック、キーやマウスの状態、画面、クリップボードは使いません。</td>
               </tr>
               <tr>
                 <td>許可したクラウド AI のホスト</td>

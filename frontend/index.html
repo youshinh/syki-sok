@@ -933,6 +933,24 @@
                 <button type="button" id="btn-telemetry-clear" class="btn-secondary" data-i18n="telemetryClear">Delete all logs</button>
               </div>
             </div>
+            <!-- The activity log (general.activityEdits, general.activityApps): notes written in, requests of the AI bars, and the front app; off until turned on; kept on this PC for a local model (js/activity_log.js) -->
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-activity-edits"> <span data-i18n="activityEditsLabel">Keep a log of notes and requests (off by default)</span>
+              </label>
+              <small data-i18n="activityEditsHint">Writes down which note you worked in and how much it grew or shrank, and the requests you typed in the Ask and Rewrite bars with what became of them (put in the note, failed, cancelled). Never the text of your notes, and never which keys you pressed. Kept on this PC for 30 days, so that a local model can tell you where you left off. Nothing is sent to a cloud model unless you approve that request.</small>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-activity-apps"> <span data-i18n="activityAppsLabel">Also keep which app is in front (Windows, off by default)</span>
+              </label>
+              <small data-i18n="activityAppsHint">Every 2 seconds syki::sok asks Windows which window is in front, and writes down the program's name and the window's title when it changes. Password managers and private browsing windows are left out (add more words in config.json: general.activityExclude). It does not watch keys, the mouse, the screen or the clipboard.</small>
+              <small id="cfg-activity-info" class="cfg-telemetry-info"></small>
+              <div class="cfg-telemetry-actions">
+                <button type="button" id="btn-activity-open" class="btn-secondary" data-i18n="telemetryOpenFolder">Open the folder</button>
+                <button type="button" id="btn-activity-clear" class="btn-secondary" data-i18n="activityClear">Delete the activity log</button>
+              </div>
+            </div>
             <div id="cfg-cloud-consent-row" class="cfg-consent-row hidden">
               <span data-i18n="cloudConsentLabel">Cloud AI hosts you have allowed:</span>
               <span id="cfg-cloud-consent-hosts" class="cfg-consent-hosts"></span>
@@ -2154,6 +2172,7 @@
   <script src="js/mermaid_tone.js?v=1.0.0"></script>
   <script src="js/mermaid_repair.js?v=1.0.0"></script>
   <script src="js/telemetry.js?v=1.0.0"></script>
+  <script src="js/activity_log.js?v=1.0.0"></script>
   <script src="js/scrap_quote.js?v=1.0.0"></script>
   <script src="js/scraps_filter.js?v=1.0.0"></script>
   <script src="js/note_title.js?v=1.0.0"></script>

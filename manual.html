@@ -3747,6 +3747,19 @@ Clipped from a web page.
           <li><strong>For administrators:</strong> the switch is <code>general.telemetry</code> in <code>config.json</code> (true = on; missing or anything else = off).</li>
         </ul>
 
+        <p><strong>The activity log (off by default, two switches)</strong></p>
+        <p>Next to the operation-rhythm log, Settings → General → "Updates &amp; Privacy" has two more switches. Both are <strong>off</strong> until you turn them on. They exist so that a <strong>local</strong> model can tell you where you left off ("what did I work on this morning?") without any of it leaving the PC.</p>
+        <ul>
+          <li><strong>Keep a log of notes and requests:</strong> which note you wrote in and how many characters it grew or shrank by (a line per 30 seconds of writing), and each request you typed in the Ask or Rewrite bar: the words you typed, whether the model is local or in the cloud, and what became of it (put in the note, failed, cancelled). Never the text of your notes (the note is on disk already) and never which keys you pressed.</li>
+          <li><strong>Also keep which app is in front (Windows):</strong> every 2 seconds syki::sok asks Windows for the window in front and writes down the program's name and the window's title when it changes. Password managers (KeePass, 1Password, Bitwarden, LastPass and similar) and private browsing windows are left out, and syki's own window has no title. Add more words in <code>config.json</code>: <code>general.activityExclude</code>.</li>
+        </ul>
+        <p><strong>How it looks to security software:</strong> the front window is read with plain calls (<code>GetForegroundWindow</code>, the window title, the program's name). There is no hook of any kind, no reading of key or mouse state, no raw input, no screen capture, no clipboard watching, and no other process is touched beyond asking its name. The same goes for the rhythm log, which only uses the events the page itself receives. A test keeps the list of calls this code may never make.</p>
+        <ul>
+          <li><strong>Where:</strong> a file per day in the <code>activity</code> folder next to <code>config.json</code> (Windows: <code>%APPDATA%\syki-sok\activity\</code>), never in your notes folder, so it is not synced with git. Nothing is sent over the network. Files older than 30 days are deleted; <strong>Delete the activity log</strong> removes them at once.</li>
+          <li><strong>Cloud models:</strong> the log is handed to a local model. It is given to a cloud model only for a request you approved, after being shown what would be sent.</li>
+          <li><strong>For administrators:</strong> <code>general.activityEdits</code> and <code>general.activityApps</code> in <code>config.json</code> (true = on; anything else = off).</li>
+        </ul>
+
         <p><strong>Meaning search, Deep search, Lessons and printing</strong></p>
         <p>These work as follows. See <a href="#meaning-search" style="color: var(--accent);">Meaning Search</a>, <a href="#deep-search" style="color: var(--accent);">Deep Search</a>, <a href="#lessons" style="color: var(--accent);">Lessons</a> and <a href="#print-pdf" style="color: var(--accent);">Print or Save as PDF</a>.</p>
         <ul>
@@ -3845,6 +3858,16 @@ Clipped from a web page.
                 <td>Keep an operation-rhythm log</td>
                 <td>Disabled</td>
                 <td>Every 30 seconds, writes numbers about how you work (key rhythm, mouse and scroll, which AI bars you opened, voice input started and for how long) to a file on this PC. Never what you type, which keys, where you click or any audio; kept 30 days. While off, nothing is watched. See <a href="#about-syki-sok" style="color: var(--accent);">the operation-rhythm log</a>.</td>
+              </tr>
+              <tr>
+                <td>Keep a log of notes and requests</td>
+                <td>Disabled</td>
+                <td>Writes down which note you wrote in and how much it changed, and the requests you typed in the Ask and Rewrite bars with what became of them. Never the text of your notes or the keys you pressed. Kept 30 days on this PC for a local model. See <a href="#about-syki-sok" style="color: var(--accent);">the activity log</a>.</td>
+              </tr>
+              <tr>
+                <td>Also keep which app is in front</td>
+                <td>Disabled (Windows)</td>
+                <td>Every 2 seconds, writes down the program's name and window title of the window in front when it changes. Password managers and private windows are left out. No hooks, no key or mouse state, no screen, no clipboard.</td>
               </tr>
               <tr>
                 <td>Cloud AI hosts you have allowed</td>

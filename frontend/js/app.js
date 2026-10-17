@@ -120,6 +120,8 @@
       trimWebViewWhenHidden: true, // Windows: the WebView2 processes give back unused memory while the window is hidden or minimized
       webViewInProcessGpu: false, // Windows: the GPU work runs in the browser process (one process less); read at start-up
       splitViewOnStartup: false,
+      activityApps: false, // the activity log, Windows: which app is in front, with its window title (js/activity_log.js, pkg/telemetry/activity.go)
+      activityEdits: false, // the activity log: which note was written in and by how much, the requests typed in the AI bars and what became of them
       telemetry: false, // the operation-rhythm log (js/telemetry.js): off until turned on; numbers only, kept on this PC (Settings > General)
       checkUpdates: true, // ask GitHub for the latest release ~2.5 s after start-up; false = no request at start-up (About > Check now still works)
       cloudConsent: {}, // cloud hosts the ask / rewrite bars may send text to: { "host": "date allowed" }; kept on this PC, never exported
@@ -575,7 +577,68 @@
     return { state: state, zen: cls.contains('zen-mode') ? 1 : 0, view: isSplitMode ? 2 : (isPreviewMode ? 1 : 0) };
   }
 
+  // The activity log (js/activity_log.js): the notes written in and the requests of the AI bars (general.activityEdits), and, on the Go side, the
+  // front app (general.activityApps). Both off until turned on. The editor being written in is the one with the focus.
+  function activityNoteContext() {
+    const secondary = isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary' && !!secondaryTabId;
+    const tab = secondary ? getTab(secondaryTabId) : getActiveTab();
+    return { tab: tab, editor: secondary ? editorSecondary : editorEl };
+  }
+
+  function activityAsk(reqId, mode, instruction) {
+    if (!window.Activity || !reqId) return;
+    const d = askDestination();
+    window.Activity.ask(reqId, mode, d ? d.kind : 'unknown', String(instruction || ''));
+  }
+
+  function activityAnswer(reqId, outcome, chars) {
+    if (window.Activity) window.Activity.answer(reqId, outcome, chars);
+  }
+
+  function applyActivity() {
+    const A = window.Activity;
+    if (A) {
+      A.init({
+        send: (json) => (window.backend && window.backend.recordActivity ? window.backend.recordActivity(json) : null),
+        targets: [editorEl, editorSecondary],
+        noteId: () => {
+          const c = activityNoteContext();
+          return c.tab ? c.tab.id : '';
+        },
+        noteLabel: () => {
+          const c = activityNoteContext();
+          return c.tab ? (c.tab.path || c.tab.title || '') : '';
+        },
+        noteLength: () => {
+          const c = activityNoteContext();
+          return c.editor && typeof c.editor.value === 'string' ? c.editor.value.length : 0;
+        }
+      });
+      A.setEnabled(!!(config.general && config.general.activityEdits === true));
+    }
+    // the Go side starts or stops looking at the front app to match general.activityApps
+    if (window.backend && window.backend.refreshActivity) Promise.resolve(window.backend.refreshActivity()).catch(() => {});
+  }
+
+  function renderActivityInfo() {
+    const el = document.getElementById('cfg-activity-info');
+    if (!el) return;
+    el.textContent = '';
+    if (!(window.backend && window.backend.getActivityInfo)) return;
+    Promise.resolve(window.backend.getActivityInfo()).then((info) => {
+      if (!info) return;
+      const kb = Math.max(info.bytes ? 1 : 0, Math.round((info.bytes || 0) / 1024));
+      el.textContent = t(info.files > 0 ? 'activityInfo' : 'activityInfoNone', { files: info.files, kb: kb, days: info.retainDays, dir: info.dir });
+      const apps = document.getElementById('cfg-activity-apps');
+      if (apps) {
+        apps.disabled = info.appsSupported === false;
+        if (info.appsSupported === false) apps.checked = false;
+      }
+    }).catch(() => {});
+  }
+
   function applyTelemetry() {
+    applyActivity();
     const T = window.Telemetry;
     if (!T) return;
     T.init({
@@ -2313,6 +2376,7 @@
       }
     }
 
+    if (window.Activity) window.Activity.flushEdit(); // the stretch of writing in the note that is leaving
     activeTabId = tabId;
     const tab = getTab(tabId);
     if (!tab) return;
@@ -2463,6 +2527,7 @@
 
   // The user's way to close a tab: a tab with unsaved changes asks first (Save / Don't save / Cancel).
   async function closeTab(tabId, e) {
+    if (window.Activity) window.Activity.flushEdit();
     if (e) e.stopPropagation();
     const tab = getTab(tabId);
     if (!tab) return;
@@ -4831,6 +4896,7 @@
     pendingLLMRequests.delete(reqId);
     clearPendingLLMTimer(reqId);
     updateLLMIndicator();
+    activityAnswer(reqId, 'cancel', 0);
 
     const text = getTabText(info.tabId);
     if (text !== null && text.indexOf(info.anchorId) !== -1) {
@@ -5301,6 +5367,7 @@
     const reqInfo = pendingLLMRequests.get(reqId);
     if (!reqInfo) return;
     errorText = redactLlmSecrets(errorText);
+    activityAnswer(reqId, errorText ? 'error' : 'ok', String(resultText || '').length);
 
     pendingLLMRequests.delete(reqId);
     clearPendingLLMTimer(reqId);
@@ -7755,6 +7822,7 @@
         : `Rewrite the following text according to the instruction below. Output ONLY the rewritten text, with no greetings, explanations, or conversational filler.\n\n[Instruction]:\n${effectiveInstruction}\n\n[Text]:\n${targetText}`;
 
       const reqId = genReqId('rewrite_');
+      activityAsk(reqId, 'rewrite', instruction);
       const anchorId = `[${uniqueAnchorLabel(curTab.id, t('aiCorrectingAnchor'))}]`;
       // Only the words are replaced: the indentation before them and the line break after them stay in the note.
       const span = trimmedSpan(editor.value, ctx.target.start, ctx.target.end);
@@ -7849,7 +7917,7 @@
     updateStatusBar();
     closeInlinePromptBar();
 
-    startLlmTask({
+    const askReqId = startLlmTask({
       tabId: curTab.id,
       prompt: finalPrompt,
       anchorText: anchorText,
@@ -7861,6 +7929,7 @@
       persistRestore: '',
       onFailure: (errorText) => showAskFailure({ tabId: curTab.id, mode: 'ask', target: ctx.target, instruction: instruction, errorText: errorText })
     });
+    if (askReqId) activityAsk(askReqId, 'ask', instruction);
   }
 
   // AI Typo, Mistake & Context Correction (Alt+C / Cmd+Shift+C)
@@ -7989,6 +8058,26 @@
   if (btnTelemetryOpen) {
     btnTelemetryOpen.onclick = () => {
       if (window.backend && window.backend.openTelemetryFolder) Promise.resolve(window.backend.openTelemetryFolder()).catch(() => {});
+    };
+  }
+  const btnActivityOpen = document.getElementById('btn-activity-open');
+  if (btnActivityOpen) {
+    btnActivityOpen.onclick = () => {
+      if (window.backend && window.backend.openActivityFolder) Promise.resolve(window.backend.openActivityFolder()).catch(() => {});
+    };
+  }
+  const btnActivityClear = document.getElementById('btn-activity-clear');
+  if (btnActivityClear) {
+    btnActivityClear.onclick = async () => {
+      if (!(window.backend && window.backend.clearActivity)) return;
+      if (!(await customConfirm(t('activityClearConfirm'), { okLabel: t('activityClear'), safeDefault: true }))) return;
+      try {
+        const n = await window.backend.clearActivity();
+        showMessage(t('activityCleared', { n: n || 0 }), 4000);
+      } catch (err) {
+        showMessage(String((err && err.message) || err), 5000, { important: true });
+      }
+      renderActivityInfo();
     };
   }
   const btnTelemetryClear = document.getElementById('btn-telemetry-clear');
@@ -14908,6 +14997,11 @@ OUTPUT FORMAT:
     const telemetryCheckbox = document.getElementById('cfg-telemetry');
     if (telemetryCheckbox) telemetryCheckbox.checked = !!(config.general && config.general.telemetry === true);
     renderTelemetryInfo();
+    const activityAppsCheckbox = document.getElementById('cfg-activity-apps');
+    if (activityAppsCheckbox) activityAppsCheckbox.checked = !!(config.general && config.general.activityApps === true);
+    const activityEditsCheckbox = document.getElementById('cfg-activity-edits');
+    if (activityEditsCheckbox) activityEditsCheckbox.checked = !!(config.general && config.general.activityEdits === true);
+    renderActivityInfo();
     renderCloudConsentRow();
 
     // Slot & Autonomous Agent Settings (v2.2.0)
@@ -15954,6 +16048,10 @@ OUTPUT FORMAT:
     if (checkUpdatesSaveCheckbox) config.general.checkUpdates = checkUpdatesSaveCheckbox.checked;
     const telemetrySaveCheckbox = document.getElementById('cfg-telemetry');
     if (telemetrySaveCheckbox) config.general.telemetry = telemetrySaveCheckbox.checked;
+    const activityAppsSaveCheckbox = document.getElementById('cfg-activity-apps');
+    if (activityAppsSaveCheckbox) config.general.activityApps = activityAppsSaveCheckbox.checked && !activityAppsSaveCheckbox.disabled;
+    const activityEditsSaveCheckbox = document.getElementById('cfg-activity-edits');
+    if (activityEditsSaveCheckbox) config.general.activityEdits = activityEditsSaveCheckbox.checked;
 
     // Save Slot & Autonomous Agent Settings
     const saveSlotTimeoutEl = document.getElementById('cfg-slot-timeout');

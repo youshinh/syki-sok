@@ -14,11 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"math"
-	"os"
-	"path/filepath"
-	"regexp"
 	"strings"
-	"sync"
 	"time"
 )
 
@@ -143,22 +139,19 @@ func Line(raw string, now time.Time) ([]byte, error) {
 	return buf.Bytes(), nil // Encode ends the line
 }
 
-// Store is the folder of daily files.
+// Store is the folder of daily files of the rhythm log.
 type Store struct {
 	Dir string
 	// Now is the clock (a test sets it).
 	Now func() time.Time
 
-	mu        sync.Mutex
-	recent    [maxPerMinute]time.Time
-	recentPos int
-	purgedDay string
+	log *dayLog
 }
 
 // NewStore is a store in dir (created when the first line is written).
-func NewStore(dir string) *Store { return &Store{Dir: dir, Now: time.Now} }
-
-var dayFile = regexp.MustCompile(`^(\d{4}-\d{2}-\d{2})\.jsonl$`)
+func NewStore(dir string) *Store {
+	return &Store{Dir: dir, Now: time.Now, log: newDayLog(MaxDayBytes, maxPerMinute)}
+}
 
 func (s *Store) now() time.Time {
 	if s.Now != nil {
@@ -174,116 +167,14 @@ func (s *Store) Append(raw string) error {
 	if err != nil {
 		return err
 	}
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	// at most maxPerMinute lines in any minute: the oldest of the last maxPerMinute must be a minute old
-	if old := s.recent[s.recentPos]; !old.IsZero() && now.Sub(old) < time.Minute {
-		return errors.New("telemetry: too many snapshots")
-	}
-	if err := os.MkdirAll(s.Dir, 0o700); err != nil {
-		return err
-	}
-	day := now.Format("2006-01-02")
-	if s.purgedDay != day {
-		s.purgedDay = day
-		_, _ = s.purgeLocked(now)
-	}
-	path := filepath.Join(s.Dir, day+".jsonl")
-	if fi, err := os.Stat(path); err == nil && fi.Size()+int64(len(line)) > MaxDayBytes {
-		return errors.New("telemetry: today's file is full")
-	}
-	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
-	if err != nil {
-		return err
-	}
-	_, werr := f.Write(line)
-	cerr := f.Close()
-	if werr != nil {
-		return werr
-	}
-	if cerr != nil {
-		return cerr
-	}
-	s.recent[s.recentPos] = now
-	s.recentPos = (s.recentPos + 1) % maxPerMinute
-	return nil
-}
-
-func (s *Store) purgeLocked(now time.Time) (int, error) {
-	entries, err := os.ReadDir(s.Dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	cutoff := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location()).AddDate(0, 0, -RetainDays)
-	removed := 0
-	for _, e := range entries {
-		m := dayFile.FindStringSubmatch(e.Name())
-		if m == nil || e.IsDir() {
-			continue
-		}
-		d, err := time.ParseInLocation("2006-01-02", m[1], now.Location())
-		if err != nil || !d.Before(cutoff) {
-			continue
-		}
-		if os.Remove(filepath.Join(s.Dir, e.Name())) == nil {
-			removed++
-		}
-	}
-	return removed, nil
+	return s.log.append(s.Dir, now, line)
 }
 
 // Purge deletes the daily files older than RetainDays and returns how many.
-func (s *Store) Purge() (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	return s.purgeLocked(s.now())
-}
+func (s *Store) Purge() (int, error) { return s.log.purge(s.Dir, s.now()) }
 
-// Info is what is on disk: the folder, how many daily files and how many bytes.
-func (s *Store) Info() (files int, bytes int64) {
-	entries, err := os.ReadDir(s.Dir)
-	if err != nil {
-		return 0, 0
-	}
-	for _, e := range entries {
-		if e.IsDir() || dayFile.FindStringSubmatch(e.Name()) == nil {
-			continue
-		}
-		if fi, err := e.Info(); err == nil {
-			files++
-			bytes += fi.Size()
-		}
-	}
-	return files, bytes
-}
+// Info is what is on disk: how many daily files and how many bytes.
+func (s *Store) Info() (files int, bytes int64) { return dirInfo(s.Dir) }
 
 // Clear deletes every daily file (only files of that name: anything else in the folder is left) and returns how many.
-func (s *Store) Clear() (int, error) {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	entries, err := os.ReadDir(s.Dir)
-	if err != nil {
-		if os.IsNotExist(err) {
-			return 0, nil
-		}
-		return 0, err
-	}
-	removed := 0
-	var firstErr error
-	for _, e := range entries {
-		if e.IsDir() || dayFile.FindStringSubmatch(e.Name()) == nil {
-			continue
-		}
-		if err := os.Remove(filepath.Join(s.Dir, e.Name())); err != nil {
-			if firstErr == nil {
-				firstErr = err
-			}
-			continue
-		}
-		removed++
-	}
-	return removed, firstErr
-}
+func (s *Store) Clear() (int, error) { return s.log.clear(s.Dir) }
