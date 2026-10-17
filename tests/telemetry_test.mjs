@@ -5,8 +5,9 @@ import fs from 'fs';
 import vm from 'vm';
 
 console.log('=== telemetry (page side) ===');
-const src = fs.readFileSync(new URL('../frontend/js/telemetry.js', import.meta.url), 'utf8');
-const goSrc = fs.readFileSync(new URL('../pkg/telemetry/telemetry.go', import.meta.url), 'utf8');
+// (read with the line ends made LF: a checkout on Windows may have CRLF, and the function bodies below are cut out by line)
+const src = fs.readFileSync(new URL('../frontend/js/telemetry.js', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
+const goSrc = fs.readFileSync(new URL('../pkg/telemetry/telemetry.go', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 
 // ---- a page: listeners and timers that can be driven by hand
 function makePage() {
