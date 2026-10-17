@@ -8842,7 +8842,20 @@ STRICT SYNTAX SAFETY RULES:
 4. NEVER use the reserved word 'end' as an ID, participant, or label. Use Finish, EndStep, etc.
 5. Replace inner double quotes with single quotes. Use fullwidth （ ） for parentheses in labels.
 6. Flowchart subgraphs MUST use: subgraph SG1["Title"] ... end.
-7. Return ONLY the markdown fenced mermaid code block (\`\`\`mermaid ... \`\`\`) with NO conversational filler or greetings.`;
+7. Return ONLY the diagram(s) described under OUTPUT FORMAT, with NO conversational filler, greetings or explanations.
+
+HOW MANY DIAGRAMS (one is the default; split only when it makes the result clearer):
+- ONE diagram when the text is about a single subject or a single flow that fits on a screen (up to about 15 nodes). Do not split a cohesive text just to produce more diagrams.
+- SEVERAL diagrams (2 to 4, never more) when the text clearly holds separate parts that would be muddled if forced into one picture:
+  a) different kinds of content, e.g. a business process AND a data model AND a schedule: use the best-fitting diagram type for EACH part (rule: diagram type routing above, applied per part);
+  b) several independent flows or scenarios (e.g. the normal case and the error case, or processes of different departments);
+  c) one flow that would exceed about 15 nodes: split it into stages that each read on their own, and say in the titles which stage is which.
+- Each diagram covers ONE meaningful unit of the text. Together they cover everything important in the text; none repeats another.
+- Every diagram is complete and valid on its own (IDs may repeat across diagrams).
+
+OUTPUT FORMAT:
+- ONE diagram: only the fenced code block (\`\`\`mermaid ... \`\`\`), nothing before or after it.
+- SEVERAL diagrams: for each one, a Markdown heading line "### Title" (a short title in the language of the text), then its fenced code block (\`\`\`mermaid ... \`\`\`). Blank line between the diagrams. No other text.`;
 
   function convertSelectionToMermaid() {
     clearGhostText();
@@ -8898,7 +8911,7 @@ STRICT SYNTAX SAFETY RULES:
 
     updateLLMIndicator();
 
-    const promptPayload = `以下の内容を理解し、最も分かりやすい構造のMermaid 11図コードを作成してください。\n\n【対象テキスト】:\n${targetText}`;
+    const promptPayload = `以下の内容を理解し、最も分かりやすい構造のMermaid 11図コードを作成してください。内容が1つのまとまりなら図は1つに、性質の違う内容や、独立した複数の流れが含まれるときは、意味のまとまりごとに（最大4つまで）複数の図に分けてください。\n\n【対象テキスト】:\n${targetText}`;
     const llmCfg = Object.assign({}, config.text, {
       systemPrompt: DEGRAM_MERMAID_SYSTEM_PROMPT
     });
