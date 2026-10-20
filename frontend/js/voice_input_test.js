@@ -1025,6 +1025,46 @@ function rescueAnchor(id) {
     console.log('PASS: the recording indicator lives in the status bar (shown, stop by click, hidden on stop/abort, meeting tag).');
   }
 
+  {
+    // Fallback editor when getActiveEditor returns null
+    let fallbackFocused = false;
+    const fallbackEditor = {
+      tagName: 'TEXTAREA',
+      id: 'editor',
+      value: 'existing text',
+      selectionStart: 0,
+      selectionEnd: 0,
+      focus: () => { fallbackFocused = true; }
+    };
+    const realGet = global.document.getElementById;
+    global.document.getElementById = (id) => (id === 'editor' ? fallbackEditor : realGet(id));
+    const origGetActive = global.SykiBridge.getActiveEditor;
+    global.SykiBridge.getActiveEditor = () => null;
+
+    global.backend = {
+      startMeetingRecording: () => Promise.resolve(JSON.stringify({ microphone: true, system: true })),
+      stopMeetingRecordingAsync: () => Promise.resolve(),
+      abortMeetingRecording: () => {}
+    };
+
+    await VI.start();
+    assert.strictEqual(fallbackFocused, true, 'fallback #editor is focused when getActiveEditor is null');
+    global.VoiceInput.abort();
+
+    // And if neither exists, it toasts voiceNeedsEditor instead of silently doing nothing
+    global.document.getElementById = () => null;
+    let toasted = null;
+    const origShow = global.SykiBridge.showMessage;
+    global.SykiBridge.showMessage = (msg) => { toasted = msg; };
+    await VI.start();
+    assert.strictEqual(toasted, 'T:voiceNeedsEditor', 'toasts voiceNeedsEditor when no editor can be found');
+
+    global.SykiBridge.showMessage = origShow;
+    global.SykiBridge.getActiveEditor = origGetActive;
+    global.document.getElementById = realGet;
+    console.log('PASS: getActiveEditor fallback to #editor and voiceNeedsEditor toast when no editor exists.');
+  }
+
   restore();
 })().then(() => {
   console.log('voice_input_test.js: all assertions passed');

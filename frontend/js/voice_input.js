@@ -681,8 +681,15 @@
       toast(bridge, 'voiceNeedsEditor', null, ERROR_TOAST_MS);
       return;
     }
-    const editor = bridge.getActiveEditor && bridge.getActiveEditor();
-    if (!editor) return;
+    let editor = bridge.getActiveEditor && bridge.getActiveEditor();
+    if (!editor && global.document) {
+      editor = global.document.getElementById('editor');
+      if (editor && typeof editor.focus === 'function') editor.focus();
+    }
+    if (!editor) {
+      toast(bridge, 'voiceNeedsEditor', null, ERROR_TOAST_MS);
+      return;
+    }
     const backend = global.backend;
     const id = genId();
     starting = true;
@@ -788,8 +795,15 @@
       toast(bridge, 'voiceNeedsEditor', null, ERROR_TOAST_MS);
       return;
     }
-    const editor = bridge.getActiveEditor && bridge.getActiveEditor();
-    if (!editor) return;
+    let editor = bridge.getActiveEditor && bridge.getActiveEditor();
+    if (!editor && global.document) {
+      editor = global.document.getElementById('editor');
+      if (editor && typeof editor.focus === 'function') editor.focus();
+    }
+    if (!editor) {
+      toast(bridge, 'voiceNeedsEditor', null, ERROR_TOAST_MS);
+      return;
+    }
 
     // With the second stage on, a selection is what the dictation edits (speak-to-edit), and the whole
     // of it goes to the model: refuse one that is too big before the microphone is even asked for.

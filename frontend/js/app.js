@@ -2604,6 +2604,14 @@
     return editorEl;
   }
 
+  window.refocusActiveEditor = function () {
+    const editor = getActiveEditor();
+    if (editor && typeof editor.focus === 'function') {
+      try { window.focus(); } catch (_) {}
+      editor.focus();
+    }
+  };
+
   // Get the tab corresponding to the currently active pane
   function getActiveTab() {
     if (isSplitMode && activePane === 'secondary' && secondaryTabId) {

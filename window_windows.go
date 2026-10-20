@@ -37,6 +37,7 @@ var (
 	procLoadImageW            = modUser32.NewProc("LoadImageW")
 	procShowWindow            = modUser32.NewProc("ShowWindow")
 	procSetForegroundWindow   = modUser32.NewProc("SetForegroundWindow")
+	procEnumChildWindows      = modUser32.NewProc("EnumChildWindows")
 	procFindWindowW           = modUser32.NewProc("FindWindowW")
 	procCallWindowProcW       = modUser32.NewProc("CallWindowProcW")
 	procCreatePopupMenu       = modUser32.NewProc("CreatePopupMenu")
@@ -255,6 +256,26 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	_, _, _ = procSetForegroundWindow.Call(uintptr(hwnd))
 	// SetForegroundWindow is refused for a process the user is not working with; then the window would be shown but not active.
 	bringToForeground(uintptr(hwnd))
+
+	// Ensure WebView2 child window receives Win32 focus
+	var childHwnd uintptr
+	if procEnumChildWindows.Find() == nil {
+		cb := windows.NewCallback(func(child uintptr, lParam uintptr) uintptr {
+			childHwnd = child
+			return 0
+		})
+		_, _, _ = procEnumChildWindows.Call(uintptr(hwnd), cb, 0)
+	}
+	if childHwnd != 0 && procSetFocus.Find() == nil {
+		_, _, _ = procSetFocus.Call(childHwnd)
+	}
+
+	// Refocus active editor on frontend to guarantee document.hasFocus() and immediate shortcut responsiveness
+	if globalApp != nil && globalApp.w != nil {
+		globalApp.w.Dispatch(func() {
+			globalApp.w.Eval("if (window.refocusActiveEditor) { window.refocusActiveEditor(); } else { var e = document.getElementById('editor'); if (e && typeof e.focus === 'function') e.focus(); }")
+		})
+	}
 }
 
 func hideWindowToTray(hwnd windows.Handle) {
