@@ -8,8 +8,8 @@ This directory contains package manager manifests and recipes to distribute **sy
 
 | Target | Manager | Type | Manifest File | Binary / Archive URL | SHA256 Hash |
 |---|---|---|---|---|---|
-| **Windows (x64)** | WinGet | Portable Zip (`.exe`, plus `syki-cli.exe`) | `packaging/winget/` (3 files) | `https://github.com/youshinh/syki-sok/releases/download/v2.0.14/syki-windows-x64.zip` | `136137B581BC740AEAD47E7588E65664888420BA314DD00C0F2157902F2A6496` |
-| **macOS (Intel/ARM)** | Homebrew | Cask (`.app`) | `packaging/homebrew/syki.rb` | `https://github.com/youshinh/syki-sok/releases/download/v2.0.14/syki-macos.zip` | `3357f6147c7eb288b9c426c5b62be4f3e7aaf64fbe6be231d358dabcb1092bfb` |
+| **Windows (x64)** | WinGet | Portable Zip (`.exe`, plus `syki-cli.exe`) | `packaging/winget/` (3 files) | `https://github.com/youshinh/syki-sok/releases/download/v0.1.6/syki-windows-x64.zip` | `92028270F01E95243E9E6F51AEB3700AEFC546B94C8A329A8F9FFFD8A7294557` |
+| **macOS (Intel/ARM)** | Homebrew | Cask (`.app`) | `packaging/homebrew/syki.rb` | `https://github.com/youshinh/syki-sok/releases/download/v0.1.6/syki-macos.zip` | `f63a9b824b90e2239bf42903575351e6af4d30d6a88ab7fa5912af07755681de` |
 
 > **Status (2026-10-07):** the Homebrew tap `youshinh/homebrew-tap` is live. The WinGet package is **submitted, not published yet**: [microsoft/winget-pkgs#438694](https://github.com/microsoft/winget-pkgs/pull/438694) is open; it needs the submitter's CLA comment and a moderator's approval (the README, the manuals and the landing page point Windows users at the release zip until it is merged). Once it is merged, `winget install youshinh.syki-sok` works and those pages can advertise it again.
 
@@ -112,7 +112,7 @@ brew uninstall --cask syki
 
 ## 🔄 Release Automation (GitHub Actions)
 
-When creating a new release (e.g., `v2.0.14`), update:
+When creating a new release (e.g., `v0.1.6`), update:
 1. Calculate SHA256 of new archives:
    ```powershell
    (Get-FileHash syki-windows-x64.zip -Algorithm SHA256).Hash
