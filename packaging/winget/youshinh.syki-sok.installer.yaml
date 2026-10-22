@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://aka.ms/winget-manifest.installer.1.12.0.schema.json
 
 PackageIdentifier: youshinh.syki-sok
-PackageVersion: 0.1.8
+PackageVersion: 0.2.0
 InstallerType: zip
 NestedInstallerType: portable
 NestedInstallerFiles:
@@ -15,10 +15,10 @@ Commands:
 Dependencies:
   PackageDependencies:
   - PackageIdentifier: Microsoft.EdgeWebView2Runtime
-ReleaseDate: 2026-10-22
+ReleaseDate: 2026-10-23
 Installers:
 - Architecture: x64
-  InstallerUrl: https://github.com/youshinh/syki-sok/releases/download/v0.1.8/syki-windows-x64.zip
+  InstallerUrl: https://github.com/youshinh/syki-sok/releases/download/v0.2.0/syki-windows-x64.zip
   InstallerSha256: C53749BF5DB66AD416DA6D83744084577F8ADF4FB256DEBB7AAC54596F798C1D
 ManifestType: installer
 ManifestVersion: 1.12.0
