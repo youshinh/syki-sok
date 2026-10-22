@@ -22,6 +22,9 @@ type dayLog struct {
 	recent    []time.Time
 	recentPos int
 	purgedDay string
+	lastDir   string
+	curDay    string
+	curBytes  int64
 }
 
 func newDayLog(maxDayBytes int64, maxPerMinute int) *dayLog {
@@ -35,23 +38,34 @@ func (l *dayLog) append(dir string, now time.Time, line []byte) error {
 	if old := l.recent[l.recentPos]; !old.IsZero() && now.Sub(old) < time.Minute {
 		return errors.New("telemetry: too many lines")
 	}
-	if err := os.MkdirAll(dir, 0o700); err != nil {
-		return err
+	if l.lastDir != dir {
+		if err := os.MkdirAll(dir, 0o700); err != nil {
+			return err
+		}
+		l.lastDir = dir
 	}
 	day := now.Format("2006-01-02")
+	path := filepath.Join(dir, day+".jsonl")
 	if l.purgedDay != day {
 		l.purgedDay = day
 		_, _ = purgeDir(dir, now)
 	}
-	path := filepath.Join(dir, day+".jsonl")
-	if fi, err := os.Stat(path); err == nil && fi.Size()+int64(len(line)) > l.maxDayBytes {
+	if l.curDay != day {
+		l.curDay = day
+		if fi, err := os.Stat(path); err == nil {
+			l.curBytes = fi.Size()
+		} else {
+			l.curBytes = 0
+		}
+	}
+	if l.curBytes+int64(len(line)) > l.maxDayBytes {
 		return errors.New("telemetry: today's file is full")
 	}
 	f, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o600)
 	if err != nil {
 		return err
 	}
-	_, werr := f.Write(line)
+	n, werr := f.Write(line)
 	cerr := f.Close()
 	if werr != nil {
 		return werr
@@ -59,6 +73,7 @@ func (l *dayLog) append(dir string, now time.Time, line []byte) error {
 	if cerr != nil {
 		return cerr
 	}
+	l.curBytes += int64(n)
 	l.recent[l.recentPos] = now
 	l.recentPos = (l.recentPos + 1) % l.maxPerMinute
 	return nil
@@ -116,6 +131,8 @@ func dirInfo(dir string) (files int, bytes int64) {
 func (l *dayLog) clear(dir string) (int, error) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
+	l.curBytes = 0
+	l.lastDir = ""
 	entries, err := os.ReadDir(dir)
 	if err != nil {
 		if os.IsNotExist(err) {

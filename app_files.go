@@ -372,7 +372,7 @@ func (a *App) ScanFolderFiles(rootPath string) ([]FolderEntry, error) {
 	cleanRootSlash := filepath.ToSlash(cleanRoot)
 	rootDepth := len(strings.Split(strings.Trim(cleanRootSlash, "/"), "/"))
 
-	_ = filepath.Walk(cleanRoot, func(path string, info os.FileInfo, err error) error {
+	_ = filepath.WalkDir(cleanRoot, func(path string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
@@ -386,14 +386,14 @@ func (a *App) ScanFolderFiles(rootPath string) ([]FolderEntry, error) {
 		currentSlash := filepath.ToSlash(path)
 		currentDepth := len(strings.Split(strings.Trim(currentSlash, "/"), "/")) - rootDepth
 		if currentDepth > maxDepth {
-			if info.IsDir() {
+			if d.IsDir() {
 				return filepath.SkipDir
 			}
 			return nil
 		}
 
-		if info.IsDir() {
-			name := strings.ToLower(info.Name())
+		if d.IsDir() {
+			name := strings.ToLower(d.Name())
 			if strings.HasPrefix(name, ".") && name != "." {
 				return filepath.SkipDir
 			}
@@ -412,7 +412,7 @@ func (a *App) ScanFolderFiles(rootPath string) ([]FolderEntry, error) {
 		}
 
 		rel, _ := filepath.Rel(cleanRoot, path)
-		title := info.Name()
+		title := d.Name()
 		snippet := ""
 
 		// Read up to 2KB to extract first heading or first non-empty line
@@ -433,7 +433,7 @@ func (a *App) ScanFolderFiles(rootPath string) ([]FolderEntry, error) {
 							snippet = trimmed
 						}
 					}
-					if snippet != "" && title != info.Name() {
+					if snippet != "" && title != d.Name() {
 						break
 					}
 				}
