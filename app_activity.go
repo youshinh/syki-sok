@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -46,17 +45,7 @@ type activitySettings struct {
 // activitySettingsNow is general.activityApps, general.activityEdits and general.activityExclude of config.json. Anything that is not
 // the value true is off.
 func (a *App) activitySettingsNow() activitySettings {
-	var cfg struct {
-		General struct {
-			Apps    bool     `json:"activityApps"`
-			Edits   bool     `json:"activityEdits"`
-			Exclude []string `json:"activityExclude"`
-		} `json:"general"`
-	}
-	if err := json.Unmarshal([]byte(a.readConfigCached()), &cfg); err != nil {
-		return activitySettings{}
-	}
-	return activitySettings{Apps: cfg.General.Apps, Edits: cfg.General.Edits, Exclude: cfg.General.Exclude}
+	return a.readGeneralConfigCached().activity
 }
 
 // Programs whose window is never recorded (only that "an excluded app" was in front): password managers. The person can add more with

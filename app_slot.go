@@ -95,7 +95,14 @@ var slotExecute = func(ctx context.Context, r *slotagent.Runner, reqID string, d
 var agentCommandFound = lookPathThenRefresh
 
 func lookPathThenRefresh(command string) bool {
-	return lookPathCached(command) || lookPathRefresh(command)
+	if strings.TrimSpace(command) == "" { return false }
+	lookPathCacheMu.Lock()
+	if e, ok := lookPathCache[command]; ok && e.found && time.Since(e.resolvedAt) < lookPathCacheTTL {
+		lookPathCacheMu.Unlock()
+		return true
+	}
+	lookPathCacheMu.Unlock()
+	return lookPathRefresh(command)
 }
 
 // slotRunProblem is why the run of target (nil: an approved gate resuming a recipe) cannot start, or nil: the agent it

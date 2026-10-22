@@ -130,7 +130,7 @@ func (e *Engine) IsGitRepo() bool {
 	}
 
 	gitDir := filepath.Join(dir, ".git")
-	if info, err := os.Stat(gitDir); err == nil && (info.IsDir() || !info.IsDir()) {
+	if _, err := os.Stat(gitDir); err == nil {
 		return true
 	}
 

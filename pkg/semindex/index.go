@@ -84,9 +84,6 @@ type ignoreRules struct{ patterns []string }
 func loadIgnore(root string) ignoreRules {
 	raw, err := os.ReadFile(filepath.Join(root, ".syki-ignore"))
 	if err != nil {
-		raw, err = os.ReadFile(filepath.Join(root, ".syki-ignore"))
-	}
-	if err != nil {
 		return ignoreRules{}
 	}
 	var r ignoreRules
@@ -518,7 +515,7 @@ type StatusInfo struct {
 // NeedsRebuild reports whether the index in indexDir was made with another model or chunking than emb and opts, so that Update would
 // refuse (ErrRebuildNeeded). A missing or empty index needs none.
 func NeedsRebuild(indexDir string, emb embed.Embedder, opts Options) (bool, error) {
-	store, err := OpenStore(indexDir)
+	store, err := openManifestStore(indexDir)
 	if err != nil {
 		return false, err
 	}
@@ -534,7 +531,7 @@ func (s StatusInfo) Pending() int { return s.NewFiles + s.ChangedFiles + s.Remov
 // Status looks at the index and the scrap folder; it reads no file's text and calls no model.
 func Status(scrapDir, indexDir string) (StatusInfo, error) {
 	var info StatusInfo
-	store, err := OpenStore(indexDir)
+	store, err := openManifestStore(indexDir)
 	if err != nil {
 		info.Corrupt = errors.Is(err, ErrCorrupt)
 		return info, err
@@ -575,7 +572,7 @@ func Status(scrapDir, indexDir string) (StatusInfo, error) {
 // PendingFiles lists the files (relative paths) whose chunks are not yet in the index: new or changed since the last Update. The
 // search falls back to the lexical search for them.
 func PendingFiles(scrapDir, indexDir string) (map[string]bool, error) {
-	store, err := OpenStore(indexDir)
+	store, err := openManifestStore(indexDir)
 	if err != nil {
 		return nil, err
 	}

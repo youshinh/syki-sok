@@ -46,7 +46,7 @@ type Config struct {
 // httpClient is the client a text request goes through: the shared one (two minutes) unless the config asks for another wait.
 func (c Config) httpClient() *http.Client {
 	if c.TimeoutSec > 0 {
-		return &http.Client{Timeout: time.Duration(c.TimeoutSec) * time.Second}
+		return &http.Client{Timeout: time.Duration(c.TimeoutSec) * time.Second, Transport: client.Transport}
 	}
 	return client
 }
@@ -447,14 +447,19 @@ func queryOpenAIAutocomplete(baseURL, model, prefix string, maxTokens int, apiKe
 		}
 		resRaw, errRaw := fastClient.Do(reqRaw)
 		if errRaw == nil {
-			defer resRaw.Body.Close()
+			if resRaw.StatusCode != http.StatusOK {
+				_, _ = io.Copy(io.Discard, io.LimitReader(resRaw.Body, 4096))
+				_ = resRaw.Body.Close()
+			}
 			if resRaw.StatusCode == http.StatusOK {
 				var compResult struct {
 					Choices []struct {
 						Text string `json:"text"`
 					} `json:"choices"`
 				}
-				if json.NewDecoder(resRaw.Body).Decode(&compResult) == nil && len(compResult.Choices) > 0 {
+				decErr := json.NewDecoder(resRaw.Body).Decode(&compResult)
+				_ = resRaw.Body.Close()
+				if decErr == nil && len(compResult.Choices) > 0 {
 					text := compResult.Choices[0].Text
 					cleaned := cleanSuggestion(text, prefix)
 					if cleaned != "" {

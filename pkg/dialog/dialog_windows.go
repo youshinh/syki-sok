@@ -224,7 +224,7 @@ func OpenFolderDialog(title string) (string, error) {
 	if hr != 0 || dialog == 0 {
 		return "", fmt.Errorf("IFileDialog creation failed: 0x%08x", uint32(hr))
 	}
-	vtbl := *(**iFileDialogVtbl)(unsafe.Pointer(dialog))
+	vtbl := *(**iFileDialogVtbl)(*(*unsafe.Pointer)(unsafe.Pointer(&dialog)))
 	defer syscall.SyscallN(vtbl.Release, dialog)
 
 	// Enable Pick Folders & File System Path enforcement
@@ -264,7 +264,7 @@ func OpenFolderDialog(title string) (string, error) {
 	if hr != 0 || shellItem == 0 {
 		return "", nil
 	}
-	itemVtbl := *(**iShellItemVtbl)(unsafe.Pointer(shellItem))
+	itemVtbl := *(**iShellItemVtbl)(*(*unsafe.Pointer)(unsafe.Pointer(&shellItem)))
 	defer syscall.SyscallN(itemVtbl.Release, shellItem)
 
 	// Get file system path

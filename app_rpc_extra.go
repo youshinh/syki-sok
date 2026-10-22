@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 	"time"
-	"unicode/utf16"
+
 	"unicode/utf8"
 
 	"syki-sok/pkg/cli"
@@ -605,7 +605,11 @@ func (a *App) rpcBufferReplaceAll(ctx context.Context, req *ipc.RPCRequest) *ipc
 func utf16Len(s string) int {
 	n := 0
 	for _, r := range s {
-		n += len(utf16.Encode([]rune{r}))
+		if r >= 0x10000 {
+			n += 2
+		} else {
+			n++
+		}
 	}
 	return n
 }

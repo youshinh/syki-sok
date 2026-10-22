@@ -182,7 +182,7 @@ func FindAgentConfigFile(scrapDir string) string {
 	candidates := make([]string, 0, 8)
 
 	if scrapDir != "" {
-		for _, dirName := range []string{".syki", ".syki-sok", ".syki"} {
+		for _, dirName := range []string{".syki", ".syki-sok"} {
 			memoDir := filepath.Join(scrapDir, dirName)
 			candidates = append(candidates,
 				filepath.Join(memoDir, "agents.yaml"),

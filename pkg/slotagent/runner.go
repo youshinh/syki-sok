@@ -8,7 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime/debug"
+
 	"strings"
 	"sync"
 	"time"
@@ -275,7 +275,7 @@ func (r *Runner) Execute(ctx context.Context, reqID string, agentDef AgentDef, f
 	canceled := ctx.Err() == context.Canceled
 
 	// Ensure OS memory is freed after external agent finishes
-	defer debug.FreeOSMemory()
+	// Child process memory is reclaimed by the OS on exit.
 
 	exitCode := 0
 	errMsg := ""

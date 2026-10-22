@@ -589,7 +589,7 @@ func quickCaptureWndProc(hwnd windows.Handle, msg uint32, wParam, lParam uintptr
 		return uintptr(quickCaptureBrushField)
 
 	case wmDrawItem:
-		if drawQuickCaptureButton((*drawItemStructT)(unsafe.Pointer(lParam))) {
+		if drawQuickCaptureButton((*drawItemStructT)(ptr(lParam))) {
 			return 1
 		}
 
@@ -771,6 +771,11 @@ func quickCaptureButtonWndProc(hwnd windows.Handle, msg uint32, wParam, lParam u
 	return ret
 }
 
+var (
+	quickCaptureBtnProcCB  = sync.OnceValue(func() uintptr { return windows.NewCallback(quickCaptureButtonWndProc) })
+	quickCaptureEditProcCB = sync.OnceValue(func() uintptr { return windows.NewCallback(quickCaptureEditWndProc) })
+)
+
 func createQuickCaptureControls(hwndParent windows.Handle) {
 	editClass, _ := windows.UTF16PtrFromString("EDIT")
 	buttonClass, _ := windows.UTF16PtrFromString("BUTTON")
@@ -836,7 +841,7 @@ func createQuickCaptureControls(hwndParent windows.Handle) {
 
 	// The buttons share one small subclass that tracks mouse hover, which an owner-drawn button
 	// does not report by itself.
-	btnProcCallback := windows.NewCallback(quickCaptureButtonWndProc)
+	btnProcCallback := quickCaptureBtnProcCB()
 	for _, h := range []windows.Handle{quickCaptureBtnSendHwnd, quickCaptureBtnFormatHwnd, quickCaptureBtnCaptureHwnd} {
 		if h == 0 {
 			continue
@@ -848,7 +853,7 @@ func createQuickCaptureControls(hwndParent windows.Handle) {
 	}
 
 	if quickCaptureEditHwnd != 0 {
-		editProcCallback := windows.NewCallback(quickCaptureEditWndProc)
+		editProcCallback := quickCaptureEditProcCB()
 		ret, _, _ := procSetWindowLongPtrW.Call(uintptr(quickCaptureEditHwnd), GWLP_WNDPROC, editProcCallback)
 		if ret != 0 {
 			origQuickCaptureEditWndProc = ret
@@ -949,13 +954,13 @@ func getClipboardText() string {
 	if hData == 0 {
 		return ""
 	}
-	ptr, _, _ := procGlobalLock.Call(hData)
-	if ptr == 0 {
+	lockPtr, _, _ := procGlobalLock.Call(hData)
+	if lockPtr == 0 {
 		return ""
 	}
 	defer procGlobalUnlock.Call(hData)
 
-	return windows.UTF16PtrToString((*uint16)(unsafe.Pointer(ptr)))
+	return windows.UTF16PtrToString((*uint16)(ptr(lockPtr)))
 }
 
 // resolveQuickCaptureText returns the edit box's text, falling back to the

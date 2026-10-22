@@ -10,6 +10,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 	"unsafe"
@@ -80,6 +81,8 @@ var (
 	procImmSetConversionStatus    = modImm32.NewProc("ImmSetConversionStatus")
 	procImmSetOpenStatus          = modImm32.NewProc("ImmSetOpenStatus")
 )
+
+var enumChildFocusCB = sync.OnceValue(func() uintptr { return windows.NewCallback(func(child uintptr, lParam uintptr) uintptr { if lParam != 0 { *(*uintptr)(ptr(lParam)) = child }; return 0 }) })
 
 const (
 	WH_CBT             = 5
@@ -260,11 +263,7 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	// Ensure WebView2 child window receives Win32 focus
 	var childHwnd uintptr
 	if procEnumChildWindows.Find() == nil {
-		cb := windows.NewCallback(func(child uintptr, lParam uintptr) uintptr {
-			childHwnd = child
-			return 0
-		})
-		_, _, _ = procEnumChildWindows.Call(uintptr(hwnd), cb, 0)
+		_, _, _ = procEnumChildWindows.Call(uintptr(hwnd), enumChildFocusCB(), uintptr(unsafe.Pointer(&childHwnd)))
 	}
 	if childHwnd != 0 && procSetFocus.Find() == nil {
 		_, _, _ = procSetFocus.Call(childHwnd)

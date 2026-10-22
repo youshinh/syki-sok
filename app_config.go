@@ -5,14 +5,16 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
+
 	"runtime"
 	"strings"
+	"sync"
 	"time"
 
 	"syki-sok/pkg/appdir"
 	"syki-sok/pkg/dialog"
 	"syki-sok/pkg/encoding"
+	"syki-sok/pkg/lazyre"
 	"syki-sok/pkg/slotagent"
 
 	"gopkg.in/yaml.v3"
@@ -21,17 +23,72 @@ import (
 func getConfigFilePath() string {
 	// The path itself is computed by pkg/appdir (the CLI's read-only commands share it); only
 	// the app creates the folder.
-	_ = os.MkdirAll(appdir.AppConfigDir(), 0755)
+	lastConfigDirMu.Lock()
+	if dir := appdir.AppConfigDir(); dir != lastConfigDir {
+		if _, err := os.Stat(dir); err != nil {
+			_ = os.MkdirAll(dir, 0755)
+		}
+		lastConfigDir = dir
+	} else if _, err := os.Stat(dir); err != nil {
+		_ = os.MkdirAll(dir, 0755)
+	}
+	lastConfigDirMu.Unlock()
 	return appdir.ConfigFilePath()
 }
 
 // configCacheEntry memoises one read of config.json, keyed by the file's (modtime,size) plus
 // whether it existed at all.
+var (
+	lastConfigDirMu    sync.Mutex
+	lastConfigDir      string
+	defaultAgentLineRE = lazyre.New(`(?m)^(\s*default_agent\s*:\s*)[^\r\n#]+`)
+	versionLineRE      = lazyre.New(`(?m)^(\s*version\s*:\s*[^\r\n]+)`)
+)
+
+type generalConfigSnapshot struct {
+	trayResident     bool
+	telemetryEnabled bool
+	activity         activitySettings
+	webView          webViewSettings
+}
+
+func parseGeneralConfigSnapshot(content string) generalConfigSnapshot {
+	snap := generalConfigSnapshot{
+		trayResident: true,
+		webView:      parseWebViewSettings(content),
+	}
+	if content == "" {
+		return snap
+	}
+	var c struct {
+		General struct {
+			TrayResident    *bool    `json:"trayResident"`
+			Telemetry       bool     `json:"telemetry"`
+			ActivityApps    bool     `json:"activityApps"`
+			ActivityEdits   bool     `json:"activityEdits"`
+			ActivityExclude []string `json:"activityExclude"`
+		} `json:"general"`
+	}
+	if json.Unmarshal([]byte(content), &c) == nil {
+		if c.General.TrayResident != nil {
+			snap.trayResident = *c.General.TrayResident
+		}
+		snap.telemetryEnabled = c.General.Telemetry
+		snap.activity = activitySettings{
+			Apps:    c.General.ActivityApps,
+			Edits:   c.General.ActivityEdits,
+			Exclude: c.General.ActivityExclude,
+		}
+	}
+	return snap
+}
+
 type configCacheEntry struct {
 	exists  bool
 	modTime time.Time
 	size    int64
 	content string
+	general generalConfigSnapshot
 }
 
 // readConfigCached returns the contents of config.json, re-reading from disk only when its
@@ -74,7 +131,7 @@ func (a *App) readConfigCached() string {
 	}
 
 	a.cfgCacheMu.Lock()
-	a.cfgCache = &configCacheEntry{exists: exists, modTime: modTime, size: size, content: content}
+	a.cfgCache = &configCacheEntry{exists: exists, modTime: modTime, size: size, content: content, general: parseGeneralConfigSnapshot(content)}
 	a.cfgCacheMu.Unlock()
 
 	return content
@@ -83,6 +140,16 @@ func (a *App) readConfigCached() string {
 // invalidateConfigCache drops the memoised config.json contents so the next read re-derives
 // them from disk, rather than relying on a stat comparison a fast successive write could in
 // principle race.
+func (a *App) readGeneralConfigCached() generalConfigSnapshot {
+	_ = a.readConfigCached()
+	a.cfgCacheMu.Lock()
+	defer a.cfgCacheMu.Unlock()
+	if a.cfgCache != nil {
+		return a.cfgCache.general
+	}
+	return generalConfigSnapshot{trayResident: true, webView: parseWebViewSettings("")}
+}
+
 func (a *App) invalidateConfigCache() {
 	a.cfgCacheMu.Lock()
 	a.cfgCache = nil
@@ -323,11 +390,11 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 	}
 
 	content := string(data)
-	re := regexp.MustCompile(`(?m)^(\s*default_agent\s*:\s*)[^\r\n#]+`)
+	re := defaultAgentLineRE
 	if re.MatchString(content) {
 		content = re.ReplaceAllString(content, fmt.Sprintf("${1}%s", agentName))
 	} else {
-		verRe := regexp.MustCompile(`(?m)^(\s*version\s*:\s*[^\r\n]+)`)
+		verRe := versionLineRE
 		if verRe.MatchString(content) {
 			content = verRe.ReplaceAllString(content, fmt.Sprintf("${1}\ndefault_agent: %s", agentName))
 		} else {
@@ -335,7 +402,11 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 		}
 	}
 
-	return os.WriteFile(foundPath, []byte(content), 0644)
+	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+		return err
+	}
+	a.invalidateSlotConfigCache()
+	return nil
 }
 
 // ExportAgentsConfigFile exports a commented agents config file (.yaml, .md, or .json) via SaveFileDialog.

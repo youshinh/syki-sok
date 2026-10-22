@@ -53,5 +53,5 @@ func webViewSettingsNow() webViewSettings {
 	if globalApp == nil {
 		return parseWebViewSettings("")
 	}
-	return parseWebViewSettings(globalApp.readConfigCached())
+	return globalApp.readGeneralConfigCached().webView
 }

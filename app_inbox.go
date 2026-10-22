@@ -34,15 +34,7 @@ func (a *App) parseInboxConfig(configJSON string) InboxSettings {
 }
 
 func inboxVisionVoiceConfigs(configJSON string) (llm.VisionConfig, llm.VoiceConfig) {
-	var raw struct {
-		Vision llm.VisionConfig `json:"vision"`
-		Voice  llm.VoiceConfig  `json:"voice"`
-	}
-	_ = json.Unmarshal([]byte(configJSON), &raw)
-	// The voice settings have no credentials of their own by default (the Settings screen says
-	// "uses the API key from the image OCR settings"), so fill them in from vision exactly as the
-	// Voice Input UI does; without this every dropped audio file failed with "API Key not set".
-	return raw.Vision, llm.ResolveVoiceConfigFor(raw.Voice, raw.Vision, llm.ProfileBatch)
+	return discordDropConfigs(configJSON)
 }
 
 // resolveInboxDir is inbox.ResolveDir (shared with the command line's `syki info`).

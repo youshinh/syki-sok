@@ -1494,6 +1494,16 @@
 
   function triggerMemoryTrimNow() {
     clearTimeout(memoryTrimTimer);
+    if (typeof htmlPreviewImgCache !== 'undefined' && htmlPreviewImgCache.clear) {
+      htmlPreviewImgCache.clear();
+    }
+    if (typeof charMirrors !== 'undefined') {
+      for (const ed of [editorEl, editorSecondary]) {
+        if (!ed) continue;
+        const entry = charMirrors.get(ed);
+        if (entry && entry.mirror) entry.mirror.textContent = '';
+      }
+    }
     if (window.backend && window.backend.trimMemory) {
       try {
         window.backend.trimMemory();
@@ -3800,7 +3810,10 @@
   // What a model returns when it is asked for a page: the whole page in one fence (```html ... ```). A note that is nothing but that is an
   // HTML note (it is shown as the page); the page itself is returned, or null when the text is not that.
   function unwrapFencedHtmlDocument(text) {
-    const m = /^\s*```[ \t]*(?:html|htm|xhtml)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*\s*$/i.exec(text || '');
+    if (!text) return null;
+    const firstNonSpace = text.search(/\S/);
+    if (firstNonSpace < 0 || text.charCodeAt(firstNonSpace) !== 96) return null;
+    const m = /^\s*```[ \t]*(?:html|htm|xhtml)?[ \t]*\r?\n([\s\S]*?)\r?\n[ \t]*```[ \t]*\s*$/i.exec(text);
     if (!m) return null;
     const inner = m[1].trim();
     return (/^<!DOCTYPE\s+html/i.test(inner) || /^<html[\s>]/i.test(inner)) ? m[1] : null;
@@ -3809,9 +3822,15 @@
   function isHtmlDocument(targetContent, targetPath) {
     const filename = targetPath || '';
     if (/\.(html|htm)$/i.test(filename)) return true;
-    const trimmed = (targetContent || '').trim();
-    if (/^<!DOCTYPE\s+html/i.test(trimmed) || /^<html[\s>]/i.test(trimmed)) return true;
-    return unwrapFencedHtmlDocument(trimmed) !== null;
+    if (!targetContent) return false;
+    const firstNonSpace = targetContent.search(/\S/);
+    if (firstNonSpace < 0) return false;
+    const ch = targetContent.charCodeAt(firstNonSpace);
+    if (ch !== 60 && ch !== 96) return false;
+    const head = targetContent.slice(firstNonSpace, firstNonSpace + 256);
+    if (/^<!DOCTYPE\s+html/i.test(head) || /^<html[\s>]/i.test(head)) return true;
+    if (ch === 96) return unwrapFencedHtmlDocument(targetContent) !== null;
+    return false;
   }
 
   // Pictures of an HTML page that are files on this PC. The page runs in a frame that has no address of its own, so <img src="assets/x.png">
@@ -4350,11 +4369,9 @@
       const ratio = editorEl.scrollTop / maxEditorScroll;
       const targetPane = secondaryPreviewPane;
       const activeTab = getActiveTab();
-      if (isHtmlDocument(editorEl.value, activeTab ? activeTab.path : '')) {
-        const frame = targetPane.querySelector('#html-preview-frame');
-        if (frame && frame.contentWindow) {
-          frame.contentWindow.postMessage({ type: 'scrollRatio', ratio: ratio }, '*');
-        }
+      const frame = targetPane.querySelector('#html-preview-frame');
+      if (frame && frame.contentWindow) {
+        frame.contentWindow.postMessage({ type: 'scrollRatio', ratio: ratio }, '*');
       } else {
         const maxPreviewScroll = targetPane.scrollHeight - targetPane.clientHeight;
         targetPane.scrollTop = ratio * maxPreviewScroll;
@@ -6044,7 +6061,12 @@
       try {
         const entries = await window.backend.scanFolderFiles(folderPath);
         if (entries && Array.isArray(entries)) {
-          workspaceNotes = entries;
+          workspaceNotes = entries.map(n => ({
+            ...n,
+            _lowerTitle: (n.title || '').toLowerCase(),
+            _lowerSnippet: (n.snippet || '').toLowerCase(),
+            _lowerRel: (n.relPath || '').toLowerCase()
+          }));
           if (!quiet) showMessage(t('folderLoaded', { count: entries.length }), 3000);
           triggerAmbientContextImmediate();
         }
@@ -6470,7 +6492,7 @@
     activePane = 'primary';
     updatePaneFocusClasses();
     clearGhostText();
-    updateStatusBar();
+    scheduleUpdateStatusBar();
     triggerCursorAuraDebounced();
   });
   // Voice rescue-anchor clicks (retry/save/discard) and file-anchor Ctrl/Cmd+Click (open) /
@@ -6497,7 +6519,7 @@
   editorEl.addEventListener('focus', () => {
     activePane = 'primary';
     updatePaneFocusClasses();
-    updateStatusBar();
+    scheduleUpdateStatusBar();
     triggerCursorAuraDebounced();
   });
   editorEl.addEventListener('blur', () => {
@@ -6520,7 +6542,7 @@
 
         // Zero-Taxonomy: If tab is unfiled/untitled, update tab title dynamically from 1st line
         if (secTab.isAutoTitle && !secTab.path) {
-          const newTitle = deriveTitleFromContent(editorSecondary.value);
+          const newTitle = deriveTitleFromContent(editorSecondary.value.slice(0, 512));
           if (newTitle && secTab.title !== `${newTitle}.md`) {
             secTab.title = `${newTitle}.md`;
             syncSecondaryTitle(secTab);
@@ -6533,8 +6555,8 @@
         mirrorEditorText(editorEl, editorSecondary);
         cachedLineCount = 0;
         scheduleUpdateLineNumbers();
-        if (isPreviewMode) {
-          renderPreview();
+        if (isSplitMode || isPreviewMode) {
+          debouncedLivePreview();
         }
       }
       scheduleUpdateSecondaryLineNumbers();
@@ -6545,6 +6567,7 @@
       armAutoSave(secTab);
 
       saveSessionDebounced();
+      scheduleMemoryTrim();
     });
 
     editorSecondary.addEventListener('scroll', () => {
@@ -6558,14 +6581,14 @@
     editorSecondary.addEventListener('focus', () => {
       activePane = 'secondary';
       updatePaneFocusClasses();
-      updateStatusBar();
+      scheduleUpdateStatusBar();
       triggerCursorAuraDebounced();
     });
 
     editorSecondary.addEventListener('click', () => {
       activePane = 'secondary';
       updatePaneFocusClasses();
-      updateStatusBar();
+      scheduleUpdateStatusBar();
       triggerCursorAuraDebounced();
     });
     editorSecondary.addEventListener('click', (e) => {
@@ -9558,18 +9581,19 @@ OUTPUT FORMAT:
     const curTab = getActiveTab();
     const currentPath = (curTab && curTab.path) || '';
 
+    const lowerKeywords = uniqueKeywords.map(k => k.toLowerCase());
+
     // Score notes based on BM25-style keyword occurrence in title and snippet
     const scored = [];
     for (const note of workspaceNotes) {
       if (note.path === currentPath) continue; // Skip active note itself
 
       let score = 0;
-      const lowerTitle = (note.title || '').toLowerCase();
-      const lowerSnippet = (note.snippet || '').toLowerCase();
-      const lowerRel = (note.relPath || '').toLowerCase();
+      const lowerTitle = note._lowerTitle || (note.title || '').toLowerCase();
+      const lowerSnippet = note._lowerSnippet || (note.snippet || '').toLowerCase();
+      const lowerRel = note._lowerRel || (note.relPath || '').toLowerCase();
 
-      for (const kw of uniqueKeywords) {
-        const lowerKw = kw.toLowerCase();
+      for (const lowerKw of lowerKeywords) {
         if (lowerTitle.includes(lowerKw)) score += 3;
         if (lowerSnippet.includes(lowerKw)) score += 1.5;
         if (lowerRel.includes(lowerKw)) score += 1;
@@ -10209,7 +10233,7 @@ OUTPUT FORMAT:
   function hideCursorAura(immediate) {
     clearTimeout(cursorAuraTimer);
     clearTimeout(cursorAuraFadeTimer);
-    if (!cursorAuraEl) return;
+    if (!cursorAuraEl || !cursorAuraEl.classList.contains('active')) return;
     if (immediate) {
       cursorAuraEl.style.transition = 'none';
       cursorAuraEl.style.animation = 'none';
@@ -12620,13 +12644,6 @@ OUTPUT FORMAT:
       if (window.backend && window.backend.minimizeWindow) {
         window.backend.minimizeWindow();
       }
-      return;
-    }
-
-    // AI Correction shortcut
-    if (matchShortcut(e, config.shortcuts && config.shortcuts.aiCorrection)) {
-      e.preventDefault();
-      triggerAICorrection();
       return;
     }
 

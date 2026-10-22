@@ -85,8 +85,8 @@ func newManifest() Manifest {
 	return Manifest{Version: storeVersion, Files: map[string]FileRec{}}
 }
 
-// OpenStore opens the index in dir; a folder with no manifest is an empty index. It reads the chunk lines (the text of every chunk).
-func OpenStore(dir string) (*Store, error) {
+// openManifestStore reads and validates manifest.json, populates s.m and s.dead, and checks chunks/vectors file sizes.
+func openManifestStore(dir string) (*Store, error) {
 	s := &Store{dir: dir, m: newManifest(), dead: map[int]bool{}, hv: map[string]int{}}
 	raw, err := os.ReadFile(filepath.Join(dir, manifestFile))
 	if errors.Is(err, os.ErrNotExist) {
@@ -106,6 +106,23 @@ func OpenStore(dir string) (*Store, error) {
 	}
 	for _, d := range s.m.Dead {
 		s.dead[d] = true
+	}
+	if s.m.Metas > 0 {
+		if fi, err := os.Stat(filepath.Join(dir, chunksFile)); err != nil || fi.Size() < s.m.MetasBytes {
+			return nil, fmt.Errorf("%w (chunks file shorter than manifest)", ErrCorrupt)
+		}
+		if fi, err := os.Stat(filepath.Join(dir, vectorsFile)); err != nil || fi.Size() < int64(vectorsHeader+s.m.Vecs*s.m.Dim*4) {
+			return nil, fmt.Errorf("%w (the vector file is shorter than the manifest says)", ErrCorrupt)
+		}
+	}
+	return s, nil
+}
+
+// OpenStore opens the index in dir; a folder with no manifest is an empty index. It reads the chunk lines (the text of every chunk).
+func OpenStore(dir string) (*Store, error) {
+	s, err := openManifestStore(dir)
+	if err != nil {
+		return nil, err
 	}
 	if err := s.loadMetas(); err != nil {
 		return nil, err
@@ -293,13 +310,19 @@ func (s *Store) LoadVectors() ([]float32, error) {
 	}
 	defer f.Close()
 	n := s.m.Vecs * s.m.Dim
-	raw := make([]byte, n*4)
-	if _, err := f.ReadAt(raw, vectorsHeader); err != nil {
-		return nil, fmt.Errorf("%w (%v)", ErrCorrupt, err)
-	}
 	out := make([]float32, n)
-	for i := range out {
-		out[i] = math.Float32frombits(binary.LittleEndian.Uint32(raw[i*4:]))
+	sr := io.NewSectionReader(f, vectorsHeader, int64(n)*4)
+	buf := make([]byte, min(n, 16384)*4)
+	off := 0
+	for rem := int64(n) * 4; rem > 0; rem -= int64(len(buf)) {
+		chunk := min(int(rem), len(buf))
+		if _, err := io.ReadFull(sr, buf[:chunk]); err != nil {
+			return nil, fmt.Errorf("%w (%v)", ErrCorrupt, err)
+		}
+		for i := 0; i < chunk; i += 4 {
+			out[off/4+i/4] = math.Float32frombits(binary.LittleEndian.Uint32(buf[i : i+4]))
+		}
+		off += chunk
 	}
 	return out, nil
 }

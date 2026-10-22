@@ -1,7 +1,6 @@
 package main
 
 import (
-	"encoding/json"
 	"errors"
 	"os"
 	"path/filepath"
@@ -30,15 +29,7 @@ func getTelemetryStore() *telemetry.Store {
 
 // telemetryEnabled is general.telemetry of config.json (false when it is missing or the file cannot be read).
 func (a *App) telemetryEnabled() bool {
-	var cfg struct {
-		General struct {
-			Telemetry bool `json:"telemetry"`
-		} `json:"general"`
-	}
-	if err := json.Unmarshal([]byte(a.readConfigCached()), &cfg); err != nil {
-		return false
-	}
-	return cfg.General.Telemetry
+	return a.readGeneralConfigCached().telemetryEnabled
 }
 
 // RecordTelemetry is bound as backend_recordTelemetry: one 30-second window of numbers (see telemetry.Snapshot). Anything else is refused.

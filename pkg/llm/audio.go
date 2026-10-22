@@ -215,7 +215,7 @@ func queryAudioProvider(prompt, audioBase64, mimeType string, cfg VoiceConfig) (
 
 	httpClient := client
 	if cfg.Timeout > 0 {
-		httpClient = &http.Client{Timeout: time.Duration(cfg.Timeout) * time.Second}
+		httpClient = &http.Client{Timeout: time.Duration(cfg.Timeout) * time.Second, Transport: client.Transport}
 	}
 
 	return voiceStyleFor(style)(voiceRequest{
@@ -281,7 +281,7 @@ func (r voiceRequest) postJSON(url string, header map[string]string, payload, ou
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return fmt.Errorf("Gemini APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 	return json.NewDecoder(res.Body).Decode(out)

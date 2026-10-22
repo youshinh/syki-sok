@@ -361,14 +361,7 @@ func resolveTargetPath(target, baseDir string) (string, error) {
 }
 
 func openCommandFor(goos, path string) (string, []string) {
-	switch goos {
-	case "windows":
-		return "rundll32", []string{"url.dll,FileProtocolHandler", path}
-	case "darwin":
-		return "open", []string{path}
-	default:
-		return "xdg-open", []string{path}
-	}
+	return externalOpenCommandFor(goos, path)
 }
 
 func revealCommandFor(goos, path string) (string, []string) {

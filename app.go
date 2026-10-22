@@ -103,7 +103,7 @@ type App struct {
 // a const, so that the release build can set it from the tag (-X main.AppVersion=..., and a sed of this line for macOS, which .github/workflows/release.yml
 // does): a number kept by hand here fell behind the releases (it said 0.0.8 at v0.0.16, so the update check offered the version the person already had).
 // The value below is the last release made by hand; keep it equal to the newest tag when you change this line.
-var AppVersion = "0.1.7"
+var AppVersion = "0.1.8"
 
 func (a *App) GetAppVersion() string {
 	return AppVersion
@@ -168,6 +168,7 @@ func scheduleWorkingSetTrim() {
 // so both are moved off it here. The frontend calls this from 'blur' and 'visibilitychange',
 // which fire together; the CAS coalesces that burst into a single trim.
 func (a *App) TrimMemory() error {
+	forgetPrintPDF()
 	if atomic.CompareAndSwapInt32(&freeOSMemoryPending, 0, 1) {
 		go func() {
 			defer atomic.StoreInt32(&freeOSMemoryPending, 0)

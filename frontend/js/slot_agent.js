@@ -234,16 +234,28 @@
     if (cursor <= 0 || !text) return false;
 
     // A. Check code block fences
-    const prefix = text.substring(0, cursor);
-    const codeFenceCount = (prefix.match(/```/g) || []).length;
+
+    // A. Check code block fences (zero-copy indexOf scan)
+    let codeFenceCount = 0;
+    let from = 0;
+    while (from + 3 <= cursor) {
+      const idx = text.indexOf('```', from);
+      if (idx === -1 || idx + 3 > cursor) break;
+      codeFenceCount++;
+      from = idx + 3;
+    }
     if (codeFenceCount % 2 !== 0) {
       return true; // Inside code block
     }
 
     // B. Check inline code
-    const lineStart = prefix.lastIndexOf('\n') + 1;
-    const currentLinePrefix = prefix.substring(lineStart);
-    const inlineTickCount = (currentLinePrefix.match(/`/g) || []).length;
+    const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+    let inlineTickCount = 0;
+    for (let i = lineStart; i < cursor; i++) {
+      if (text.charCodeAt(i) === 96) inlineTickCount++;
+    }
+
+
     if (inlineTickCount % 2 !== 0) {
       return true; // Inside inline code
     }
