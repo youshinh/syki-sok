@@ -55,6 +55,9 @@ var (
 	modShell32              = windows.NewLazySystemDLL("shell32.dll")
 	procShell_NotifyIconW    = modShell32.NewProc("Shell_NotifyIconW")
 	procIsZoomed             = modUser32.NewProc("IsZoomed")
+	procGetWindowPlacement   = modUser32.NewProc("GetWindowPlacement")
+	procSetWindowPlacement   = modUser32.NewProc("SetWindowPlacement")
+	procMonitorFromRect      = modUser32.NewProc("MonitorFromRect")
 	procGetWindowLongPtrW    = modUser32.NewProc("GetWindowLongPtrW")
 	procGetWindowRect        = modUser32.NewProc("GetWindowRect")
 	procSetWindowPos         = modUser32.NewProc("SetWindowPos")
@@ -107,17 +110,21 @@ const (
 	MOD_NOREPEAT = 0x4000
 	HOTKEY_ID    = 0x9001
 
-	SW_HIDE       = 0
-	SW_SHOWNORMAL = 1
-	SW_MAXIMIZE   = 3
-	SW_RESTORE    = 9
+	SW_HIDE          = 0
+	SW_SHOWNORMAL    = 1
+	SW_SHOWMINIMIZED = 2
+	SW_MAXIMIZE      = 3
+	SW_SHOWMAXIMIZED = 3
+	SW_SHOW          = 5
+	SW_RESTORE       = 9
 
-	GWLP_WNDPROC = ^uintptr(3) // -4 in 2's complement
+	GWLP_WNDPROC = ^uintptr(3)  // -4 in 2's complement
 	GWL_STYLE    = ^uintptr(15) // -16 in 2's complement
 
 	WS_CAPTION    = 0x00C00000
 	WS_THICKFRAME = 0x00040000
 
+	MONITOR_DEFAULTTONULL    = 0
 	MONITOR_DEFAULTTONEAREST = 2
 
 	SWP_NOSIZE       = 0x0001
@@ -170,6 +177,15 @@ type GUITHREADINFO struct {
 	HwndMoveSize  windows.Handle
 	HwndCaret     windows.Handle
 	RcCaret       windows.Rect
+}
+
+type WINDOWPLACEMENT struct {
+	Length           uint32
+	Flags            uint32
+	ShowCmd          uint32
+	PtMinPosition    POINT
+	PtMaxPosition    POINT
+	RcNormalPosition windows.Rect
 }
 
 type NOTIFYICONDATAW struct {
@@ -254,8 +270,31 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	// Record visibility first: a working-set trim scheduled by an earlier hide checks this
 	// flag before it fires, and must see the window as back on screen.
 	setWindowVisible(true)
-	_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWNORMAL)
-	_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_RESTORE)
+
+	// Preserve maximized, minimized, and snapped states. Never call SW_SHOWNORMAL unconditionally,
+	// which forcibly un-maximizes and cancels snapped/arranged windows back to the default rectangle.
+	if procIsIconic.Find() == nil {
+		if iconic, _, _ := procIsIconic.Call(uintptr(hwnd)); iconic != 0 {
+			_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_RESTORE)
+		} else if procIsZoomed.Find() == nil {
+			if zoomed, _, _ := procIsZoomed.Call(uintptr(hwnd)); zoomed != 0 {
+				_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWMAXIMIZED)
+			} else {
+				_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOW)
+			}
+		} else {
+			_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOW)
+		}
+	} else if procIsZoomed.Find() == nil {
+		if zoomed, _, _ := procIsZoomed.Call(uintptr(hwnd)); zoomed != 0 {
+			_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWMAXIMIZED)
+		} else {
+			_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOW)
+		}
+	} else {
+		_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOW)
+	}
+
 	_, _, _ = procSetForegroundWindow.Call(uintptr(hwnd))
 	// SetForegroundWindow is refused for a process the user is not working with; then the window would be shown but not active.
 	bringToForeground(uintptr(hwnd))
@@ -277,7 +316,116 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	}
 }
 
+func saveCurrentWindowPlacement(hwnd windows.Handle) {
+	if hwnd == 0 || procGetWindowPlacement.Find() != nil {
+		return
+	}
+
+	if fullscreenState.on {
+		w := fullscreenState.rect.Right - fullscreenState.rect.Left
+		h := fullscreenState.rect.Bottom - fullscreenState.rect.Top
+		if w > 0 && h > 0 {
+			_ = saveWindowState(&windowState{
+				X:         fullscreenState.rect.Left,
+				Y:         fullscreenState.rect.Top,
+				Width:     w,
+				Height:    h,
+				Maximized: fullscreenState.maximized,
+			})
+		}
+		return
+	}
+
+	var wp WINDOWPLACEMENT
+	wp.Length = uint32(unsafe.Sizeof(wp))
+	ret, _, _ := procGetWindowPlacement.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&wp)))
+	if ret == 0 {
+		return
+	}
+
+	w := wp.RcNormalPosition.Right - wp.RcNormalPosition.Left
+	h := wp.RcNormalPosition.Bottom - wp.RcNormalPosition.Top
+	if w <= 0 || h <= 0 {
+		return
+	}
+
+	maximized := false
+	if procIsZoomed.Find() == nil {
+		zoomed, _, _ := procIsZoomed.Call(uintptr(hwnd))
+		maximized = zoomed != 0 || wp.ShowCmd == SW_SHOWMAXIMIZED
+	} else {
+		maximized = wp.ShowCmd == SW_SHOWMAXIMIZED
+	}
+
+	_ = saveWindowState(&windowState{
+		X:         wp.RcNormalPosition.Left,
+		Y:         wp.RcNormalPosition.Top,
+		Width:     w,
+		Height:    h,
+		Maximized: maximized,
+	})
+}
+
+func restoreWindowPlacement(hwnd windows.Handle) bool {
+	if hwnd == 0 {
+		return false
+	}
+	state, err := loadWindowState()
+	if err != nil || state == nil || state.Width <= 0 || state.Height <= 0 {
+		return false
+	}
+
+	var rc windows.Rect
+	rc.Left = state.X
+	rc.Top = state.Y
+	rc.Right = state.X + state.Width
+	rc.Bottom = state.Y + state.Height
+
+	hMon := uintptr(0)
+	if procMonitorFromRect.Find() == nil {
+		hMon, _, _ = procMonitorFromRect.Call(uintptr(unsafe.Pointer(&rc)), MONITOR_DEFAULTTONULL)
+	}
+
+	if hMon == 0 {
+		// Window was on a disconnected or invalid monitor; position it centered on the nearest/primary monitor
+		if procMonitorFromWindow.Find() == nil && procGetMonitorInfoW.Find() == nil {
+			monitor, _, _ := procMonitorFromWindow.Call(uintptr(hwnd), MONITOR_DEFAULTTONEAREST)
+			var mi MONITORINFO
+			mi.CbSize = uint32(unsafe.Sizeof(mi))
+			if ok, _, _ := procGetMonitorInfoW.Call(monitor, uintptr(unsafe.Pointer(&mi))); ok != 0 {
+				workW := mi.RcWork.Right - mi.RcWork.Left
+				workH := mi.RcWork.Bottom - mi.RcWork.Top
+				if state.Width > workW {
+					state.Width = workW
+				}
+				if state.Height > workH {
+					state.Height = workH
+				}
+				state.X = mi.RcWork.Left + (workW-state.Width)/2
+				state.Y = mi.RcWork.Top + (workH-state.Height)/2
+			}
+		}
+	}
+
+	_, _, _ = procSetWindowPos.Call(
+		uintptr(hwnd),
+		0,
+		uintptr(state.X),
+		uintptr(state.Y),
+		uintptr(state.Width),
+		uintptr(state.Height),
+		SWP_NOZORDER|SWP_NOACTIVATE,
+	)
+
+	if state.Maximized {
+		_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWMAXIMIZED)
+	}
+
+	return true
+}
+
 func hideWindowToTray(hwnd windows.Handle) {
+	saveCurrentWindowPlacement(hwnd)
 	_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_HIDE)
 	setWindowVisible(false)
 	// This runs on the UI thread (WM_CLOSE / tray menu / the minimizeWindow bind), so the
@@ -360,6 +508,7 @@ func handleTrayMenu(hwnd windows.Handle) {
 			_ = globalApp.OpenInboxFolder()
 		}
 	case ID_TRAY_QUIT:
+		saveCurrentWindowPlacement(hwnd)
 		atomic.StoreInt32(&isForceQuit, 1)
 		removeTrayIcon(hwnd)
 		if globalApp != nil {
@@ -407,6 +556,7 @@ func trayWndProc(hwnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr
 		}
 
 	case WM_CLOSE:
+		saveCurrentWindowPlacement(hwnd)
 		if !closeWillQuit() {
 			// Minimize / Hide to system tray instead of destroying process
 			hideWindowToTray(hwnd)
@@ -416,6 +566,7 @@ func trayWndProc(hwnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr
 		removeTrayIcon(hwnd)
 
 	case WM_DESTROY:
+		saveCurrentWindowPlacement(hwnd)
 		_, _, _ = procUnregisterHotKey.Call(uintptr(hwnd), HOTKEY_ID)
 		_, _, _ = procUnregisterHotKey.Call(uintptr(hwnd), HOTKEY_ID_QUICKCAPTURE)
 		removeTrayIcon(hwnd)
@@ -560,6 +711,7 @@ func toggleWindowMaximize(hwnd windows.Handle) {
 	} else {
 		_, _, _ = procShowWindow.Call(uintptr(hwnd), uintptr(SW_MAXIMIZE))
 	}
+	saveCurrentWindowPlacement(hwnd)
 }
 
 // fullscreenState is only touched on the UI thread (the F11 accelerator and the bound function both run there).
@@ -773,14 +925,21 @@ func runPlatformWindow(app *App, serverURL string) {
 		hHook, _, _ = procSetWindowsHookExW.Call(WH_CBT, cbtCallback, 0, tid)
 	}
 
+	initialWidth := uint(1050)
+	initialHeight := uint(720)
+	if savedState, err := loadWindowState(); err == nil && savedState != nil && savedState.Width > 0 && savedState.Height > 0 {
+		initialWidth = uint(savedState.Width)
+		initialHeight = uint(savedState.Height)
+	}
+
 	w := webview2.NewWithOptions(webview2.WebViewOptions{
 		Debug:     false,
 		AutoFocus: true,
 		DataPath:  webViewDataPath,
 		WindowOptions: webview2.WindowOptions{
 			Title:  "syki",
-			Width:  1050,
-			Height: 720,
+			Width:  initialWidth,
+			Height: initialHeight,
 			IconId: 1,
 		},
 	})
@@ -834,7 +993,9 @@ func runPlatformWindow(app *App, serverURL string) {
 	// user-configurable one above; see quickcapture_windows.go).
 	registerQuickCaptureWindowsHotkey(hwnd)
 
-	w.SetSize(1050, 720, webview2.HintNone)
+	if !restoreWindowPlacement(hwnd) {
+		w.SetSize(1050, 720, webview2.HintNone)
+	}
 
 	// Bind Go RPC methods. bindCommonBackend (bind_common.go) covers every backend_X -> app.Y
 	// bind that is identical on Windows and macOS; only the Windows-specific and inline-closure
@@ -859,6 +1020,7 @@ func runPlatformWindow(app *App, serverURL string) {
 		return nil
 	})
 	_ = w.Bind("backend_forceQuit", func() error {
+		saveCurrentWindowPlacement(hwnd)
 		atomic.StoreInt32(&isForceQuit, 1)
 		removeTrayIcon(hwnd)
 		return app.CloseWindow()
