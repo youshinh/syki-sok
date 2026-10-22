@@ -380,18 +380,9 @@ type capturedImage struct {
 // uniqueCapturePath returns a path in dir for name that does not exist yet, adding -2, -3, ... before
 // the extension when it does (two captures inside the same second, or a re-run of the same name).
 func uniqueCapturePath(dir, name string) string {
-	p := filepath.Join(dir, name)
-	if _, err := os.Stat(p); err != nil {
-		return p
-	}
-	ext := filepath.Ext(name)
-	stem := strings.TrimSuffix(name, ext)
-	for n := 2; n < 1000; n++ {
-		p = filepath.Join(dir, fmt.Sprintf("%s-%d%s", stem, n, ext))
-		if _, err := os.Stat(p); err != nil {
-			return p
-		}
-	}
+	ext := strings.TrimPrefix(filepath.Ext(name), ".")
+	stem := strings.TrimSuffix(name, filepath.Ext(name))
+	p, _ := uniqueAssetPath(dir, stem, ext)
 	return p
 }
 

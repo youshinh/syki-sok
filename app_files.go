@@ -115,11 +115,7 @@ func (a *App) ShowInFileExplorer(filePath string) error {
 }
 
 func getSessionFilePath() string {
-	configDir, err := appdir.ConfigDir()
-	if err != nil {
-		configDir = "."
-	}
-	appDir := filepath.Join(configDir, "syki-sok")
+	appDir := appdir.AppConfigDir()
 	_ = os.MkdirAll(appDir, 0755)
 	return filepath.Join(appDir, "session.json")
 }
