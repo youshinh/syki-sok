@@ -129,16 +129,76 @@
     return res;
   }
 
+  // Surgically normalizes line-start Markdown triggers typed up to the cursor
+  function normalizeZenkakuMarkdownPrefix(prefix) {
+    if (!prefix) return prefix;
+
+    // 1. Code fence at line start: ^([ \t]*)｀｀｀$
+    let m = prefix.match(/^([ \t]*)｀｀｀$/);
+    if (m) return m[1] + '```';
+
+    // 2. Headings with full-width hash: ^([ \t]*)(＃+)([ \t　])$
+    m = prefix.match(/^([ \t]*)(＃+)([ \t　])$/);
+    if (m) return m[1] + '#'.repeat(m[2].length) + ' ';
+
+    // 3. Headings with full-width space: ^([ \t]*)(#{1,6})　$
+    m = prefix.match(/^([ \t]*)(#{1,6})　$/);
+    if (m) return m[1] + m[2] + ' ';
+
+    // 4. Bullets: ^([ \t]*)[・ー－―][ \t　]$
+    m = prefix.match(/^([ \t]*)[・ー－―][ \t　]$/);
+    if (m) return m[1] + '- ';
+
+    // 5. Bullets with full-width space: ^([ \t]*)([-*+])　$
+    m = prefix.match(/^([ \t]*)([-*+])　$/);
+    if (m) return m[1] + m[2] + ' ';
+
+    // 6. Ordered list: ^([ \t]*)([0-9０-９]+)[\.．][ \t　]?$ (space optional)
+    m = prefix.match(/^([ \t]*)([0-9０-９]+)[\.．][ \t　]?$/);
+    if (m) {
+      const asciiDigits = m[2].replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+      return m[1] + asciiDigits + '. ';
+    }
+    m = prefix.match(/^([ \t]*\d+\.)　$/);
+    if (m) return m[1] + ' ';
+
+    // 7. Blockquote: ^([ \t]*)＞[ \t　]?$ or ^([ \t]*)>　$
+    m = prefix.match(/^([ \t]*)＞[ \t　]?$/);
+    if (m) return m[1] + '> ';
+    m = prefix.match(/^([ \t]*)>　$/);
+    if (m) return m[1] + '> ';
+
+    // If prefix starts with full-width heading + rest of text: ^([ \t]*)(＃+)[ \t　](.*)$
+    m = prefix.match(/^([ \t]*)(＃+)[ \t　](.*)$/);
+    if (m) return m[1] + '#'.repeat(m[2].length) + ' ' + m[3];
+    m = prefix.match(/^([ \t]*)(#{1,6})　(.*)$/);
+    if (m) return m[1] + m[2] + ' ' + m[3];
+
+    return prefix;
+  }
+
+  // Half-widths a full-width ASCII alphanumeric run (used for code fence languages)
+  function zenkakuAlnumToAscii(chunk) {
+    return chunk.replace(/[０-９ａ-ｚＡ-Ｚ]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+  }
+
   // Normalizes full-width markdown syntax triggers (headers, lists, blockquotes, code fences, wikilinks)
   function normalizeZenkakuMarkdown(line) {
     if (!line) return line;
 
     // 1. Full-width backticks (``` and `)
+    // 1a. Code fence with full-width language identifier: ｀｀｀([ａ-ｚＡ-Ｚ0-9]+) -> ``` + asciiLang
+    line = line.replace(/｀｀｀([０-９ａ-ｚＡ-Ｚ]+)/g, (m, lang) => '```' + zenkakuAlnumToAscii(lang));
     line = line.replace(/｀｀｀/g, '```');
     line = line.replace(/｀/g, '`');
 
     // 2. Full-width wikilinks brackets
     line = line.replace(/［［/g, '[[').replace(/］］/g, ']]');
+
+    // 2b. Task checkboxes: - ［ ］ -> - [ ], - ［x］ -> - [x], - [　] -> - [ ]
+    line = line.replace(/^([ \t]*[-*+][ \t]+)［([xXｘＸ])］/, (m, pfx) => pfx + '[x]');
+    line = line.replace(/^([ \t]*[-*+][ \t]+)［([ \t　])］/, (m, pfx) => pfx + '[ ]');
+    line = line.replace(/^([ \t]*[-*+][ \t]+)\[([ \t　])\]/, (m, pfx) => pfx + '[ ]');
 
     // 3. Line-start Markdown triggers:
     // 3a. Headings:
@@ -430,4 +490,5 @@
   global.englishRetypeCandidate = englishRetypeCandidate;
   global.normalizeZenkakuCode = normalizeZenkakuCode;
   global.normalizeZenkakuMarkdown = normalizeZenkakuMarkdown;
+  global.normalizeZenkakuMarkdownPrefix = normalizeZenkakuMarkdownPrefix;
 })(typeof window !== 'undefined' ? window : this);

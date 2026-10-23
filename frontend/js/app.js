@@ -4647,15 +4647,17 @@
     const guardian = getImeGuardian();
     if (!guardian || !guardian.isInsideCodeBlock) return;
     const inCode = guardian.isInsideCodeBlock(ed.value, ed.selectionStart);
-    if (inCode !== lastInCodeBlock) {
-      lastInCodeBlock = inCode;
+    if (inCode && !lastInCodeBlock) {
+      lastInCodeBlock = true;
       try {
-        window.backend.setIMEMode(!inCode);
+        window.backend.setIMEMode(false);
       } catch (_) {}
+    } else if (!inCode && lastInCodeBlock) {
+      lastInCodeBlock = false;
     }
   }
 
-  function handleZenkakuGuardOnCompositionEnd(editor) {
+  function handleZenkakuGuardOnCompositionEnd(editor, committedData) {
     if (!config.general || config.general.imeGuardian === false) return;
     const ed = editor || getActiveEditor();
     if (!ed) return;
@@ -4663,34 +4665,54 @@
     if (pos <= 0 || ed.selectionEnd !== pos) return;
 
     const val = ed.value;
-    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
-    let lineEnd = val.indexOf('\n', pos);
-    if (lineEnd === -1) lineEnd = val.length;
-    const currentLine = val.substring(lineStart, lineEnd);
     const guardian = getImeGuardian();
 
-    // 1. Inside Code: normalize full-width code characters/symbols/spaces
+    // 1. Inside Code: surgically normalize only the newly committed snippet or the character at cursor
     if (guardian && guardian.isInsideCode && guardian.isInsideCode(val, pos)) {
       if (typeof normalizeZenkakuCode === 'function') {
-        const normCode = normalizeZenkakuCode(currentLine);
-        if (normCode !== currentLine) {
-          replaceRangeWithUndo(ed, lineStart, lineEnd, normCode);
-          const offset = Math.min(normCode.length, (pos - lineStart) + (normCode.length - currentLine.length));
-          ed.setSelectionRange(lineStart + offset, lineStart + offset);
-          onEditorInput(ed);
-          return;
+        const committed = committedData || '';
+        const len = committed.length;
+        if (len > 0 && pos >= len && val.substring(pos - len, pos) === committed) {
+          const norm = normalizeZenkakuCode(committed);
+          if (norm !== committed) {
+            replaceRangeWithUndo(ed, pos - len, pos, norm);
+            ed.setSelectionRange(pos - len + norm.length, pos - len + norm.length);
+            onEditorInput(ed);
+            return;
+          }
+        } else if (pos >= 1) {
+          const char = val.charAt(pos - 1);
+          const norm = normalizeZenkakuCode(char);
+          if (norm !== char) {
+            replaceRangeWithUndo(ed, pos - 1, pos, norm);
+            ed.setSelectionRange(pos, pos);
+            onEditorInput(ed);
+            return;
+          }
         }
       }
+      return;
     }
 
-    // 2. Outside Code: Markdown syntax triggers
-    if (typeof normalizeZenkakuMarkdown === 'function') {
-      const normMd = normalizeZenkakuMarkdown(currentLine);
-      if (normMd !== currentLine) {
-        replaceRangeWithUndo(ed, lineStart, lineEnd, normMd);
-        const offset = Math.min(normMd.length, (pos - lineStart) + (normMd.length - currentLine.length));
-        ed.setSelectionRange(lineStart + offset, lineStart + offset);
+    // 2. Outside Code:
+    // 2a. Inline backtick: ｀ right before caret becomes `
+    if (pos >= 1 && val.charAt(pos - 1) === '｀') {
+      replaceRangeWithUndo(ed, pos - 1, pos, '`');
+      ed.setSelectionRange(pos, pos);
+      onEditorInput(ed);
+      return;
+    }
+
+    // 2b. Line-Start Markdown triggers (headings, lists, blockquotes, code fences)
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    const linePrefix = val.substring(lineStart, pos);
+    if (typeof normalizeZenkakuMarkdownPrefix === 'function') {
+      const normPrefix = normalizeZenkakuMarkdownPrefix(linePrefix);
+      if (normPrefix !== linePrefix) {
+        replaceRangeWithUndo(ed, lineStart, pos, normPrefix);
+        ed.setSelectionRange(lineStart + normPrefix.length, lineStart + normPrefix.length);
         onEditorInput(ed);
+        return;
       }
     }
   }
@@ -6520,7 +6542,7 @@
   });
   editorEl.addEventListener('compositionend', (e) => {
     isComposing = false;
-    handleZenkakuGuardOnCompositionEnd(editorEl);
+    handleZenkakuGuardOnCompositionEnd(editorEl, e && e.data);
     offerEnglishRetype(e && e.data);
     triggerAutocompleteDebounced();
     syncCodeBlockIMEMode(editorEl);
@@ -6596,7 +6618,7 @@
   // Secondary Editor Event Listeners (Zero overhead when not in split mode)
   if (editorSecondary) {
     editorSecondary.addEventListener('compositionend', () => {
-      handleZenkakuGuardOnCompositionEnd(editorSecondary);
+      handleZenkakuGuardOnCompositionEnd(editorSecondary, e && e.data);
       syncCodeBlockIMEMode(editorSecondary);
     });
     editorSecondary.addEventListener('input', () => {
