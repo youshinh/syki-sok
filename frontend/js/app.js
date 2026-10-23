@@ -4669,6 +4669,15 @@
 
     // 1. Inside Code: surgically normalize only the newly committed snippet or the character at cursor
     if (guardian && guardian.isInsideCode && guardian.isInsideCode(val, pos)) {
+      const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+      const linePrefix = val.substring(lineStart, pos);
+      if (/^[ \t]*(・{3}|'{3}|"{3}|@{3}|…+|｀{3})[ \t]*$/.test(linePrefix)) {
+        const indent = linePrefix.match(/^[ \t]*/)[0];
+        replaceRangeWithUndo(ed, lineStart, pos, indent + '```');
+        ed.setSelectionRange(lineStart + indent.length + 3, lineStart + indent.length + 3);
+        onEditorInput(ed);
+        return;
+      }
       if (typeof normalizeZenkakuCode === 'function') {
         const committed = committedData || '';
         const len = committed.length;

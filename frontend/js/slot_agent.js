@@ -292,6 +292,19 @@
     if (!editor) return false;
     const pos = (cachedPos !== undefined) ? cachedPos : editor.selectionStart;
     const text = (cachedText !== undefined) ? cachedText : editor.value;
+    if (pos < 1) return false;
+
+    // Check closing parenthesis of Markdown links: [title](url） -> [title](url)
+    if (text.charAt(pos - 1) === '）') {
+      const lineStart = text.lastIndexOf('\n', pos - 1) + 1;
+      const linePrefix = text.substring(lineStart, pos);
+      if (/\[[^\]]*\]\([^)]*）$/.test(linePrefix)) {
+        replaceRangeWithUndo(editor, pos - 1, pos, ')');
+        editor.selectionStart = editor.selectionEnd = pos;
+        return true;
+      }
+    }
+
     if (pos < 2) return false;
 
     // Check last 3 fullwidth chars
@@ -334,6 +347,25 @@
       replaced = '[[';
     } else if (twoChars === '］］') {
       replaced = ']]';
+    } else if (twoChars === '〜〜' || twoChars === '～～') {
+      replaced = '~~';
+    } else if (twoChars === '＊＊') {
+      replaced = '**';
+    } else if (twoChars === '＿＿') {
+      replaced = '__';
+    } else if (twoChars === ']（' || twoChars === '］（' || twoChars === '］(') {
+      replaced = '](';
+      const lineStart = text.lastIndexOf('\n', pos - 2) + 1;
+      const openIdx = text.lastIndexOf('［', pos - 2);
+      if (openIdx >= lineStart && !text.substring(openIdx, pos - 2).includes(']') && !text.substring(openIdx, pos - 2).includes('］')) {
+        replaceRangeWithUndo(editor, openIdx, openIdx + 1, '[');
+      }
+    } else if (twoChars === '｛＠') {
+      replaced = '{@';
+    } else if (twoChars === '［＠') {
+      replaced = '[@';
+    } else if (twoChars === '【＠') {
+      replaced = '【@';
     }
 
     if (replaced) {

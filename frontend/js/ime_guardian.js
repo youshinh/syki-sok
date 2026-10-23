@@ -122,6 +122,10 @@
         res += '"';
       } else if (code === 0x2018 || code === 0x2019) {
         res += "'";
+      } else if (code === 0xFFE5 || code === 0x00A5) {
+        res += '\\';
+      } else if (code === 0x301C) {
+        res += '~';
       } else {
         res += input[i];
       }
@@ -129,13 +133,47 @@
     return res;
   }
 
-  // Surgically normalizes line-start Markdown triggers typed up to the cursor
   function normalizeZenkakuMarkdownPrefix(prefix) {
     if (!prefix) return prefix;
 
-    // 1. Code fence at line start: ^([ \t]*)｀｀｀$
-    let m = prefix.match(/^([ \t]*)｀｀｀$/);
+    // 1. Code fence variants at line start:
+    // 1a. Full-width backticks: ^([ \t]*)｀｀｀([0-9a-zA-Z０-９ａ-ｚＡ-Ｚ]*)$
+    let m = prefix.match(/^([ \t]*)｀｀｀([0-9a-zA-Z０-９ａ-ｚＡ-Ｚ]*)$/);
+    if (m) {
+      const lang = m[2].replace(/[０-９ａ-ｚＡ-Ｚ]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+      return m[1] + '```' + lang;
+    }
+    // 1b. Python-style triple quotes: ''' or """
+    m = prefix.match(/^([ \t]*)('{3}|"{3})([a-zA-Z0-9]*)$/);
+    if (m) return m[1] + '```' + m[3];
+    // 1c. JIS slash key 3 times with IME on: ・・・
+    m = prefix.match(/^([ \t]*)・{3}([0-9a-zA-Z０-９ａ-ｚＡ-Ｚ]*)$/);
+    if (m) {
+      const lang = m[2].replace(/[０-９ａ-ｚＡ-Ｚ]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+      return m[1] + '```' + lang;
+    }
+    // 1d. Ellipsis: … or ……
+    m = prefix.match(/^([ \t]*)…+$/);
     if (m) return m[1] + '```';
+    // 1e. JIS @ key missing Shift: @@@
+    m = prefix.match(/^([ \t]*)@{3}([a-zA-Z0-9]*)$/);
+    if (m) return m[1] + '```' + m[2];
+
+    // Table line with full-width pipe: ^([ \t]*)｜
+    if (/^[ \t]*｜/.test(prefix)) {
+      return prefix.replace(/｜/g, '|');
+    }
+
+    // Horizontal rules (3+ dashes, underscores, or asterisks with IME on):
+    m = prefix.match(/^([ \t]*)([ー－―*＊_＿]{3,})$/);
+    if (m) return m[1] + '---';
+
+    // Interactive Task Checkboxes: - ［ ］ -> - [ ], - ［x］ -> - [x], - [　] -> - [ ]
+    m = prefix.match(/^([ \t]*[-*+][ \t]+)(［([xXｘＸ 　])］|\[[ 　]\])[ \t　]?(.*)$/);
+    if (m) {
+      const isX = /[xXｘＸ]/.test(m[3] || '');
+      return m[1] + (isX ? '[x] ' : '[ ] ') + (m[4] || '');
+    }
 
     // 2. Headings with full-width hash: ^([ \t]*)(＃+)([ \t　])$
     m = prefix.match(/^([ \t]*)(＃+)([ \t　])$/);
@@ -146,7 +184,7 @@
     if (m) return m[1] + m[2] + ' ';
 
     // 4. Bullets: ^([ \t]*)[・ー－―][ \t　]$
-    m = prefix.match(/^([ \t]*)[・ー－―][ \t　]$/);
+    m = prefix.match(/^([ \t]*)[・ー－―＊＋][ \t　]$/);
     if (m) return m[1] + '- ';
 
     // 5. Bullets with full-width space: ^([ \t]*)([-*+])　$
@@ -177,7 +215,6 @@
     return prefix;
   }
 
-  // Half-widths a full-width ASCII alphanumeric run (used for code fence languages)
   function zenkakuAlnumToAscii(chunk) {
     return chunk.replace(/[０-９ａ-ｚＡ-Ｚ]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
   }
@@ -194,6 +231,7 @@
 
     // 2. Full-width wikilinks brackets
     line = line.replace(/［［/g, '[[').replace(/］］/g, ']]');
+    if (line.includes('｜')) line = line.replace(/｜/g, '|');
 
     // 2b. Task checkboxes: - ［ ］ -> - [ ], - ［x］ -> - [x], - [　] -> - [ ]
     line = line.replace(/^([ \t]*[-*+][ \t]+)［([xXｘＸ])］/, (m, pfx) => pfx + '[x]');
