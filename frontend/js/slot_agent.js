@@ -294,16 +294,46 @@
     const text = (cachedText !== undefined) ? cachedText : editor.value;
     if (pos < 2) return false;
 
+    // Check last 3 fullwidth chars
+    if (pos >= 3) {
+      const threeChars = text.substring(pos - 3, pos);
+      let rep3 = null;
+      if (threeChars === '［＞＞' || threeChars === '［>>') {
+        rep3 = '[>>';
+      } else if (threeChars === '＜＜］' || threeChars === '<<］') {
+        rep3 = '<<]';
+      }
+      if (rep3) {
+        replaceRangeWithUndo(editor, pos - 3, pos, rep3);
+        editor.selectionStart = editor.selectionEnd = pos;
+        return true;
+      }
+    }
+
     // Check last 2 fullwidth chars
     const twoChars = text.substring(pos - 2, pos);
     let replaced = null;
 
     if (twoChars === '｛｛') {
       replaced = '{{';
+    } else if (twoChars === '｝｝') {
+      replaced = '}}';
     } else if (twoChars === '［？') {
       replaced = '[?';
+    } else if (twoChars === '？］') {
+      replaced = '?]';
+    } else if (twoChars === '［！') {
+      replaced = '[!';
+    } else if (twoChars === '！］') {
+      replaced = '!]';
     } else if (twoChars === '【？') {
       replaced = '【?';
+    } else if (twoChars === '【！') {
+      replaced = '【!';
+    } else if (twoChars === '［［') {
+      replaced = '[[';
+    } else if (twoChars === '］］') {
+      replaced = ']]';
     }
 
     if (replaced) {
@@ -2616,6 +2646,7 @@
     // Internal helpers exposed only so the Node unit tests can exercise pure logic
     // directly; not part of the public API.
     _findEnclosingSlotSpan: findEnclosingSlotSpan,
+    _normalizeIMESlotTrigger: normalizeIMESlotTrigger,
     _insideResultBlock: insideResultBlock,
     _runningTaskCount: function () { return runningTasks.size; },
     _finalizeAgentConfig: finalizeAgentConfig,

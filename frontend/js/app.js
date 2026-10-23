@@ -4636,6 +4636,65 @@
     else resetImeKeyLog(log); // a key outside any composition: whatever was logged is over
   }, true);
 
+  // --- Zenkaku / Hankaku Guards & Code Block IME Mode Steering ---
+  let lastInCodeBlock = false;
+  function syncCodeBlockIMEMode(editor) {
+    if (!config.general || config.general.imeGuardian === false) return;
+    if (!window.backend || !window.backend.setIMEMode) return;
+    if (platformCapabilities.nativeImeSwitch === false) return;
+    const ed = editor || getActiveEditor();
+    if (!ed) return;
+    const guardian = getImeGuardian();
+    if (!guardian || !guardian.isInsideCodeBlock) return;
+    const inCode = guardian.isInsideCodeBlock(ed.value, ed.selectionStart);
+    if (inCode !== lastInCodeBlock) {
+      lastInCodeBlock = inCode;
+      try {
+        window.backend.setIMEMode(!inCode);
+      } catch (_) {}
+    }
+  }
+
+  function handleZenkakuGuardOnCompositionEnd(editor) {
+    if (!config.general || config.general.imeGuardian === false) return;
+    const ed = editor || getActiveEditor();
+    if (!ed) return;
+    const pos = ed.selectionStart;
+    if (pos <= 0 || ed.selectionEnd !== pos) return;
+
+    const val = ed.value;
+    const lineStart = val.lastIndexOf('\n', pos - 1) + 1;
+    let lineEnd = val.indexOf('\n', pos);
+    if (lineEnd === -1) lineEnd = val.length;
+    const currentLine = val.substring(lineStart, lineEnd);
+    const guardian = getImeGuardian();
+
+    // 1. Inside Code: normalize full-width code characters/symbols/spaces
+    if (guardian && guardian.isInsideCode && guardian.isInsideCode(val, pos)) {
+      if (typeof normalizeZenkakuCode === 'function') {
+        const normCode = normalizeZenkakuCode(currentLine);
+        if (normCode !== currentLine) {
+          replaceRangeWithUndo(ed, lineStart, lineEnd, normCode);
+          const offset = Math.min(normCode.length, (pos - lineStart) + (normCode.length - currentLine.length));
+          ed.setSelectionRange(lineStart + offset, lineStart + offset);
+          onEditorInput(ed);
+          return;
+        }
+      }
+    }
+
+    // 2. Outside Code: Markdown syntax triggers
+    if (typeof normalizeZenkakuMarkdown === 'function') {
+      const normMd = normalizeZenkakuMarkdown(currentLine);
+      if (normMd !== currentLine) {
+        replaceRangeWithUndo(ed, lineStart, lineEnd, normMd);
+        const offset = Math.min(normMd.length, (pos - lineStart) + (normMd.length - currentLine.length));
+        ed.setSelectionRange(lineStart + offset, lineStart + offset);
+        onEditorInput(ed);
+      }
+    }
+  }
+
   function offerEnglishRetype(committed) {
     const log = getImeKeyLog();
     if (!log) return;
@@ -6442,6 +6501,7 @@
     // Trigger local LLM autocomplete
     if (skipAutocomplete !== true) {
       triggerAutocompleteDebounced();
+    syncCodeBlockIMEMode(editor);
     }
 
     // Schedule background memory trimming when editing idles
@@ -6460,8 +6520,10 @@
   });
   editorEl.addEventListener('compositionend', (e) => {
     isComposing = false;
+    handleZenkakuGuardOnCompositionEnd(editorEl);
     offerEnglishRetype(e && e.data);
     triggerAutocompleteDebounced();
+    syncCodeBlockIMEMode(editorEl);
     triggerCursorAuraDebounced();
   });
 
@@ -6487,9 +6549,11 @@
     }
     if (ghostSuggestion) syncGhostScroll();
     triggerCursorAuraDebounced();
+    syncCodeBlockIMEMode(editorEl);
   });
   editorEl.addEventListener('click', () => {
     activePane = 'primary';
+    syncCodeBlockIMEMode(editorEl);
     updatePaneFocusClasses();
     clearGhostText();
     scheduleUpdateStatusBar();
@@ -6531,6 +6595,10 @@
 
   // Secondary Editor Event Listeners (Zero overhead when not in split mode)
   if (editorSecondary) {
+    editorSecondary.addEventListener('compositionend', () => {
+      handleZenkakuGuardOnCompositionEnd(editorSecondary);
+      syncCodeBlockIMEMode(editorSecondary);
+    });
     editorSecondary.addEventListener('input', () => {
       const secTab = getTab(secondaryTabId);
       if (secTab) {
@@ -6858,6 +6926,11 @@
   // Editor specific keydown (Tab key & Shift+Tab handling to keep focus inside editor)
   editorEl.addEventListener('keydown', (e) => {
     hideCursorAura(false);
+
+    if (e.key === 'Enter' && !e.isComposing && e.keyCode !== 229 && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      handleZenkakuGuardOnCompositionEnd(editorEl);
+      syncCodeBlockIMEMode(editorEl);
+    }
 
     if (e.key === 'Tab') {
       // Ctrl+Tab is the note-switch shortcut (and Quick Actions' "move highlight"): it

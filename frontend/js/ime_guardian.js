@@ -106,6 +106,81 @@
     return res;
   }
 
+  // --- Zenkaku / Hankaku Guards & Auto-Normalizers ---
+
+  // Normalizes full-width ASCII characters, spaces, and Japanese quotes to half-width inside code contexts
+  function normalizeZenkakuCode(input) {
+    if (!input) return input;
+    let res = '';
+    for (let i = 0; i < input.length; i++) {
+      const code = input.charCodeAt(i);
+      if (code >= 0xFF01 && code <= 0xFF5E) {
+        res += String.fromCharCode(code - 0xFEE0);
+      } else if (code === 0x3000) {
+        res += ' ';
+      } else if (code === 0x201C || code === 0x201D) {
+        res += '"';
+      } else if (code === 0x2018 || code === 0x2019) {
+        res += "'";
+      } else {
+        res += input[i];
+      }
+    }
+    return res;
+  }
+
+  // Normalizes full-width markdown syntax triggers (headers, lists, blockquotes, code fences, wikilinks)
+  function normalizeZenkakuMarkdown(line) {
+    if (!line) return line;
+
+    // 1. Full-width backticks (``` and `)
+    line = line.replace(/｀｀｀/g, '```');
+    line = line.replace(/｀/g, '`');
+
+    // 2. Full-width wikilinks brackets
+    line = line.replace(/［［/g, '[[').replace(/］］/g, ']]');
+
+    // 3. Line-start Markdown triggers:
+    // 3a. Headings:
+    // - Full-width hash: ＃見出し or ＃＃　見出し
+    line = line.replace(/^([ \t　]*)(＃+)([ \t　]+)/, (m, pfx, hashes) => {
+      return pfx.replace(/　/g, ' ') + '#'.repeat(hashes.length) + ' ';
+    });
+    // - Half-width hashes followed by full-width space: ###　見出し
+    line = line.replace(/^([ \t　]*)(#{1,6})[　]+/, (m, pfx, hashes) => {
+      return pfx.replace(/　/g, ' ') + hashes + ' ';
+    });
+
+    // 3b. Lists & bullets:
+    // - Katakana middle dot ・, prolonged sound ー, full-width hyphen －, dash ―
+    line = line.replace(/^([ \t　]*)[・ー－―][ \t　]+/, (m, pfx) => {
+      return pfx.replace(/　/g, ' ') + '- ';
+    });
+    // - Half-width bullet with full-width space: -　 or *　 or +　
+    line = line.replace(/^([ \t　]*)([-*+])[　]+/, (m, pfx, bullet) => {
+      return pfx.replace(/　/g, ' ') + bullet + ' ';
+    });
+    // - Ordered list: full-width digits e.g. １. or 1. with full-width space
+    line = line.replace(/^([ \t　]*)([０-９]+)[\.．][ \t　]+/, (m, pfx, digits) => {
+      const asciiDigits = digits.replace(/[０-９]/g, d => String.fromCharCode(d.charCodeAt(0) - 0xFEE0));
+      return pfx.replace(/　/g, ' ') + asciiDigits + '. ';
+    });
+    line = line.replace(/^([ \t　]*\d+\.)[　]+/, (m, numPfx) => {
+      return numPfx.replace(/　/g, ' ') + ' ';
+    });
+
+    // 3c. Blockquotes:
+    // - Full-width ＞ or > with full-width space
+    line = line.replace(/^([ \t　]*)＞[ \t　]*/, (m, pfx) => {
+      return pfx.replace(/　/g, ' ') + '> ';
+    });
+    line = line.replace(/^([ \t　]*)>[　]+/, (m, pfx) => {
+      return pfx.replace(/　/g, ' ') + '> ';
+    });
+
+    return line;
+  }
+
   const WHITESPACE_RE = /\s/;
 
   class IMEGuardian {
@@ -139,6 +214,30 @@
     // Layer 0: AST Lexical Shield (0 ns)
     // Same decisions as before, but without copying the whole prefix (and the
     // current line) into new strings on every call.
+    isInsideCodeBlock(text, cursor) {
+      if (cursor <= 0) return false;
+      let codeFenceCount = 0;
+      let from = 0;
+      while (from + 3 <= cursor) {
+        const idx = text.indexOf('```', from);
+        if (idx === -1 || idx + 3 > cursor) break;
+        codeFenceCount++;
+        from = idx + 3;
+      }
+      return codeFenceCount % 2 !== 0;
+    }
+
+    isInsideCode(text, cursor) {
+      if (cursor <= 0) return false;
+      if (this.isInsideCodeBlock(text, cursor)) return true;
+      const lineStart = text.lastIndexOf('\n', cursor - 1) + 1;
+      let backtickCount = 0;
+      for (let i = lineStart; i < cursor; i++) {
+        if (text.charCodeAt(i) === 96) backtickCount++;
+      }
+      return backtickCount % 2 !== 0;
+    }
+
     isInsideCodeOrUrl(text, cursor) {
       if (cursor <= 0) return false;
 
@@ -329,4 +428,6 @@
   global.resetImeKeyLog = resetImeKeyLog;
   global.imeKeyLogPush = imeKeyLogPush;
   global.englishRetypeCandidate = englishRetypeCandidate;
+  global.normalizeZenkakuCode = normalizeZenkakuCode;
+  global.normalizeZenkakuMarkdown = normalizeZenkakuMarkdown;
 })(typeof window !== 'undefined' ? window : this);
