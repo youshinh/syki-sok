@@ -18,13 +18,32 @@ import (
 	"syki-sok/pkg/textsig"
 )
 
+// GetDefaultNoteDir returns the directory configured for new notes (config.general.defaultNoteDir),
+// falling back to GetScrapDir() when empty or not configured.
+func (a *App) GetDefaultNoteDir() string {
+	cfgStr, _ := a.GetConfig()
+	if strings.TrimSpace(cfgStr) != "" {
+		var c struct {
+			General struct {
+				DefaultNoteDir string `json:"defaultNoteDir"`
+			} `json:"general"`
+		}
+		if json.Unmarshal([]byte(cfgStr), &c) == nil {
+			if dir := strings.TrimSpace(c.General.DefaultNoteDir); dir != "" {
+				return scrap.ResolveScrapDir(dir)
+			}
+		}
+	}
+	return a.GetScrapDir()
+}
+
 // CreateNoteInFolder writes a new note's text to a new file in dir (the folder set for new notes; "" means the scraps folder, the
 // app's default folder) and returns where it went. This is the automatic save of a note that has no file yet: it never asks, and it
 // never replaces anything: a name that is taken gets -2, -3 ... before the extension.
 func (a *App) CreateNoteInFolder(content, enc, name, dir string) (*SaveResult, error) {
 	dir = strings.TrimSpace(dir)
 	if dir == "" {
-		dir = a.GetScrapDir()
+		dir = a.GetDefaultNoteDir()
 	} else {
 		dir = scrap.ResolveScrapDir(dir) // expands ~ the same way the scraps folder does
 	}

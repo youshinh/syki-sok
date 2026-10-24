@@ -1736,6 +1736,36 @@
             </div>
             <small id="discord-test-result-hint" style="display: block; margin-top: 6px; color: var(--text-muted);"></small>
 
+            <!-- Mobile Bridge (Cloudflare) -->
+            <div class="settings-section-header" style="margin-top: 18px;">
+              <h4 data-i18n="sectionCFBridge">Mobile Quick Capture (Cloudflare)</h4>
+            </div>
+            <div class="form-group inline-group">
+              <label>
+                <input type="checkbox" id="cfg-cf-enabled"> <span data-i18n="cfBridgeEnabledLabel">Sync mobile notes via Cloudflare Worker relay</span>
+              </label>
+              <small data-i18n="cfBridgeEnabledHint">Captures memos and photos instantly from smartphone PWA. Stored ephemerally on Cloudflare D1 and wiped immediately once fetched by this PC.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-cf-endpoint" data-i18n="cfBridgeEndpointLabel">Worker Endpoint URL:</label>
+              <input type="text" id="cfg-cf-endpoint" placeholder="https://syki-mobile.yourname.workers.dev">
+              <small data-i18n="cfBridgeEndpointHint">e.g. https://syki-mobile.yourname.workers.dev</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-cf-token" data-i18n="cfBridgeTokenLabel">Bearer Token:</label>
+              <input type="password" id="cfg-cf-token" placeholder="Bearer secret token">
+              <small data-i18n="cfBridgeTokenHint">API Token configured in wrangler.toml or Worker environment secret.</small>
+            </div>
+            <div class="form-row" style="display: flex; gap: 12px; align-items: flex-end; margin-top: 10px;">
+              <div class="form-group" style="flex: 1;">
+                <label for="cfg-cf-poll-interval" data-i18n="cfBridgePollIntervalLabel">Check interval (seconds):</label>
+                <input type="number" id="cfg-cf-poll-interval" min="10" max="600" value="30" style="background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 13px; width: 100%;">
+              </div>
+              <button id="btn-cf-test" type="button" class="btn-secondary" data-i18n="btnCFBridgeTest" style="padding: 7px 12px; white-space: nowrap;">Test Connection</button>
+              <button id="btn-cf-qr" type="button" class="btn-secondary" data-i18n="btnCFBridgeQR" style="padding: 7px 12px; white-space: nowrap;">Pairing QR</button>
+            </div>
+            <small id="cf-test-result-hint" style="display: block; margin-top: 6px; color: var(--text-muted);"></small>
+
             <!-- Inbox (Hot Folder) -->
             <div class="settings-section-header" style="margin-top: 18px;">
               <h4 data-i18n="sectionInbox">Hot folder</h4>
@@ -1917,6 +1947,27 @@
         </div>
         <div class="modal-footer">
           <button id="btn-mobile-drop-cancel" class="btn-secondary" data-i18n="btnCancel">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mobile Quick Capture (Cloudflare) Pairing QR Modal -->
+    <div id="cf-bridge-qr-modal" class="modal-backdrop hidden">
+      <div class="modal-card modal-small">
+        <div class="modal-header">
+          <h3 data-i18n="cfBridgeQRTitle">Mobile Quick Capture Pairing</h3>
+          <button id="modal-cf-bridge-qr-close" class="btn-icon">✕</button>
+        </div>
+        <div class="modal-body" style="text-align: center; padding: 18px 20px;">
+          <img id="cf-bridge-qr-img" style="width: 220px; height: 220px; border-radius: 12px; margin: 0 auto; display: block; background: #fff; padding: 10px; box-sizing: border-box;" alt="Pairing QR">
+          <p id="cf-bridge-qr-url" style="font-family: ui-monospace, monospace; font-size: 11px; color: var(--text-muted); word-break: break-all; margin-top: 12px; user-select: text;"></p>
+          <small data-i18n="cfBridgeQRHint" style="display: block; margin-top: 8px; color: var(--text-muted);">Scan with your smartphone camera to open the PWA with your token prefilled.</small>
+        </div>
+        <div class="modal-footer" style="justify-content: flex-end;">
+          <button id="btn-cf-bridge-qr-close" class="btn-secondary" data-i18n="dialogClose">Close</button>
+        </div>
+      </div>
+    </div>
         </div>
       </div>
     </div>

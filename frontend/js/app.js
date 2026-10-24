@@ -158,6 +158,12 @@
       allowedUserId: '',
       pollIntervalSeconds: 45
     },
+    cfBridge: {
+      enabled: false,
+      endpoint: '',
+      token: '',
+      pollIntervalSeconds: 30
+    },
     inbox: {
       enabled: false,
       dir: ''
@@ -1519,6 +1525,11 @@
   });
   window.addEventListener('blur', () => {
     scheduleMemoryTrim(5000); // 5s after window loses focus
+  });
+  window.addEventListener('focus', () => {
+    if (window.backend && typeof window.backend.pollCFBridgeNow === 'function') {
+      window.backend.pollCFBridgeNow();
+    }
   });
 
   // Chromium drops the space that follows the insertion point when the inserted text itself
@@ -14805,6 +14816,7 @@ OUTPUT FORMAT:
   wireNumberInputClamp('cfg-action-delay', 0.5, 10.0, 1.5, true);
   wireNumberInputClamp('cfg-git-debounce', 5, 3600, 30);
   wireNumberInputClamp('cfg-discord-poll-interval', 15, 600, 45);
+  wireNumberInputClamp('cfg-cf-poll-interval', 10, 600, 30);
 
   // Quick Actions settings: "enabled" and "manual-only" are contradictory when
   // combined naively (manual-only implies auto-suggest is off, so its delay/API
@@ -14893,6 +14905,86 @@ OUTPUT FORMAT:
       }
     });
   }
+
+  // Mobile Bridge (Cloudflare): token/endpoint/interval/test button mean nothing while disabled.
+  function updateCFBridgeFieldStates() {
+    const enabledEl = document.getElementById('cfg-cf-enabled');
+    const enabled = enabledEl ? enabledEl.checked : false;
+    setFieldMuted(document.getElementById('cfg-cf-endpoint'), !enabled);
+    setFieldMuted(document.getElementById('cfg-cf-token'), !enabled);
+    setFieldMuted(document.getElementById('cfg-cf-poll-interval'), !enabled);
+    const testBtn = document.getElementById('btn-cf-test');
+    if (testBtn) testBtn.disabled = !enabled;
+    const qrBtn = document.getElementById('btn-cf-qr');
+    if (qrBtn) qrBtn.disabled = !enabled;
+  }
+  const cfEnabledToggleEl = document.getElementById('cfg-cf-enabled');
+  if (cfEnabledToggleEl) cfEnabledToggleEl.addEventListener('change', updateCFBridgeFieldStates);
+
+  const btnCFTest = document.getElementById('btn-cf-test');
+  if (btnCFTest) {
+    btnCFTest.addEventListener('click', async () => {
+      const hint = document.getElementById('cf-test-result-hint');
+      const endpointEl = document.getElementById('cfg-cf-endpoint');
+      const tokenEl = document.getElementById('cfg-cf-token');
+      const endpoint = endpointEl ? endpointEl.value.trim() : '';
+      const token = tokenEl ? tokenEl.value.trim() : '';
+      if (!window.backend || !window.backend.testCFBridgeConnection) return;
+      btnCFTest.disabled = true;
+      const prevLabel = btnCFTest.textContent;
+      btnCFTest.textContent = t('btnCFBridgeTesting');
+      if (hint) { hint.textContent = ''; hint.style.color = 'var(--text-muted)'; }
+      try {
+        await window.backend.testCFBridgeConnection(endpoint, token);
+        if (hint) {
+          hint.textContent = t('cfBridgeTestSuccess');
+          hint.style.color = 'var(--accent-color)';
+        }
+      } catch (e) {
+        if (hint) {
+          hint.textContent = t('cfBridgeTestFailed', { err: (e && e.message) || String(e) });
+          hint.style.color = 'var(--text-danger-hint)';
+        }
+      } finally {
+        btnCFTest.disabled = !(document.getElementById('cfg-cf-enabled') && document.getElementById('cfg-cf-enabled').checked);
+        btnCFTest.textContent = prevLabel;
+      }
+    });
+  }
+
+  const btnCFQR = document.getElementById('btn-cf-qr');
+  if (btnCFQR) {
+    btnCFQR.addEventListener('click', async () => {
+      const endpointEl = document.getElementById('cfg-cf-endpoint');
+      const tokenEl = document.getElementById('cfg-cf-token');
+      const endpoint = endpointEl ? endpointEl.value.trim() : '';
+      const token = tokenEl ? tokenEl.value.trim() : '';
+      if (!endpoint) {
+        alert(t('cfBridgeTestFailed', { err: 'Endpoint URLを入力してください' }));
+        return;
+      }
+      if (!window.backend || !window.backend.getCFBridgePairingQR) return;
+      try {
+        const qrDataUri = await window.backend.getCFBridgePairingQR(endpoint, token);
+        const modal = document.getElementById('cf-bridge-qr-modal');
+        const img = document.getElementById('cf-bridge-qr-img');
+        const urlEl = document.getElementById('cf-bridge-qr-url');
+        if (img) img.src = qrDataUri;
+        const targetUrl = endpoint.replace(/\/+$/, '') + (token ? '/?token=' + encodeURIComponent(token) : '');
+        if (urlEl) urlEl.textContent = targetUrl;
+        if (modal) modal.classList.remove('hidden');
+      } catch (e) {
+        alert((e && e.message) || String(e));
+      }
+    });
+  }
+
+  const btnCloseCFQR = document.getElementById('modal-cf-bridge-qr-close');
+  const btnCloseCFQR2 = document.getElementById('btn-cf-bridge-qr-close');
+  const modalCFQR = document.getElementById('cf-bridge-qr-modal');
+  if (btnCloseCFQR && modalCFQR) btnCloseCFQR.addEventListener('click', () => modalCFQR.classList.add('hidden'));
+  if (btnCloseCFQR2 && modalCFQR) btnCloseCFQR2.addEventListener('click', () => modalCFQR.classList.add('hidden'));
+  if (modalCFQR) modalCFQR.addEventListener('click', (e) => { if (e.target === modalCFQR) modalCFQR.classList.add('hidden'); });
 
   // Send To (Explorer right-click OCR): the section only exists where the native binding does
   // (Windows). On any other platform/preview, hide it instead of wiring buttons that would fail.
@@ -15023,14 +15115,106 @@ OUTPUT FORMAT:
   };
 
   window.onDiscordBridgeMessage = async function(data) {
-    if (!data) return;
-    // Same rule as onScrapAppended: the tab that shows this file's path, refreshed only when it holds no unsaved text.
-    const targetTab = data.filePath ? findTabByPath(data.filePath) : null;
-    if (targetTab && (await refreshTabFromDisk(targetTab, data.filePath)) === 'kept') {
-      showMessage(t('scrapKeptUnsavedEdits'), 4000);
-      return;
+    if (!data || !data.filePath) return;
+    let targetTab = findTabByPath(data.filePath);
+    if (targetTab) {
+      const refreshed = await refreshTabFromDisk(targetTab, data.filePath);
+      if (refreshed === 'kept') {
+        showMessage(t('scrapKeptUnsavedEdits'), 4000);
+        return;
+      }
+    } else {
+      let content = '';
+      if (window.backend && window.backend.readFileByPath) {
+        try {
+          const res = await window.backend.readFileByPath(data.filePath);
+          if (res && res.content !== undefined) {
+            content = res.content;
+          }
+        } catch (e) {
+          console.warn('Failed to read scrap file for discord bridge:', e);
+        }
+      }
+      targetTab = createTab(data.fileName || 'Daily Scrap', content, data.filePath);
+      targetTab.isAutoTitle = false;
+      targetTab.isScrap = true;
     }
+
+    const currentTab = getTab(activeTabId);
+    const hasUnsaved = currentTab && tabHasUnsavedText(currentTab);
+    const isEmptyUntitled = currentTab && !currentTab.path && !(currentTab.content || '').trim() && !hasUnsaved;
+
+    if (!hasUnsaved || (currentTab && currentTab.id === targetTab.id)) {
+      if (isEmptyUntitled && currentTab && currentTab.id !== targetTab.id) {
+        closeTab(currentTab.id);
+      }
+      selectTab(targetTab.id);
+      setTimeout(() => {
+        if (editorEl) editorEl.scrollTop = editorEl.scrollHeight;
+      }, 50);
+    }
+
     showMessage(t('discordBridgeMessageToast'), 2500);
+  };
+
+  // --- Mobile Bridge (Cloudflare): background status + arrival notification ---
+  window.onCFBridgeStatus = function(info) {
+    if (!info) return;
+    const hint = document.getElementById('cf-test-result-hint');
+    if (!hint) return;
+    if (info.status === 'connected') {
+      hint.textContent = t('cfBridgeStatusConnected');
+      hint.style.color = 'var(--accent-color)';
+    } else if (info.status === 'fetching') {
+      hint.textContent = t('cfBridgeStatusConnecting');
+      hint.style.color = 'var(--text-muted)';
+    } else if (info.status === 'error') {
+      hint.textContent = t('cfBridgeStatusError', { err: info.message || '' });
+      hint.style.color = 'var(--text-danger-hint)';
+    }
+  };
+
+  window.onCFBridgeMessage = async function(data) {
+    if (!data || !data.filePath) return;
+    let targetTab = findTabByPath(data.filePath);
+    if (targetTab) {
+      const refreshed = await refreshTabFromDisk(targetTab, data.filePath);
+      if (refreshed === 'kept') {
+        showMessage(t('scrapKeptUnsavedEdits'), 4000);
+        return;
+      }
+    } else {
+      let content = '';
+      if (window.backend && window.backend.readFileByPath) {
+        try {
+          const res = await window.backend.readFileByPath(data.filePath);
+          if (res && res.content !== undefined) {
+            content = res.content;
+          }
+        } catch (e) {
+          console.warn('Failed to read scrap file for mobile bridge:', e);
+        }
+      }
+      targetTab = createTab(data.fileName || 'Daily Scrap', content, data.filePath);
+      targetTab.isAutoTitle = false;
+      targetTab.isScrap = true;
+    }
+
+    const currentTab = getTab(activeTabId);
+    const hasUnsaved = currentTab && tabHasUnsavedText(currentTab);
+    const isEmptyUntitled = currentTab && !currentTab.path && !(currentTab.content || '').trim() && !hasUnsaved;
+
+    if (!hasUnsaved || (currentTab && currentTab.id === targetTab.id)) {
+      if (isEmptyUntitled && currentTab && currentTab.id !== targetTab.id) {
+        closeTab(currentTab.id);
+      }
+      selectTab(targetTab.id);
+      setTimeout(() => {
+        if (editorEl) editorEl.scrollTop = editorEl.scrollHeight;
+      }, 50);
+    }
+
+    showMessage(t('cfBridgeMessageToast'), 2500);
   };
 
   // Settings Dialog
@@ -15316,6 +15500,19 @@ OUTPUT FORMAT:
     const discordHintEl = document.getElementById('discord-test-result-hint');
     if (discordHintEl) discordHintEl.textContent = '';
     updateDiscordBridgeFieldStates();
+
+    // CF Mobile Bridge
+    const cfEnabledEl = document.getElementById('cfg-cf-enabled');
+    if (cfEnabledEl) cfEnabledEl.checked = !!(config.cfBridge && config.cfBridge.enabled);
+    const cfEndpointEl = document.getElementById('cfg-cf-endpoint');
+    if (cfEndpointEl) cfEndpointEl.value = (config.cfBridge && config.cfBridge.endpoint) || '';
+    const cfTokenEl = document.getElementById('cfg-cf-token');
+    if (cfTokenEl) cfTokenEl.value = (config.cfBridge && config.cfBridge.token) || '';
+    const cfIntervalEl = document.getElementById('cfg-cf-poll-interval');
+    if (cfIntervalEl) cfIntervalEl.value = (config.cfBridge && config.cfBridge.pollIntervalSeconds) || 30;
+    const cfHintEl = document.getElementById('cf-test-result-hint');
+    if (cfHintEl) cfHintEl.textContent = '';
+    updateCFBridgeFieldStates();
 
     // Inbox (Hot Folder)
     const inboxEnabledEl = document.getElementById('cfg-inbox-enabled');
@@ -16390,6 +16587,17 @@ OUTPUT FORMAT:
     const saveDiscordIntervalEl = document.getElementById('cfg-discord-poll-interval');
     if (saveDiscordIntervalEl) config.discordBridge.pollIntervalSeconds = clampNumber(saveDiscordIntervalEl.value, 15, 600, 45);
 
+    // Save CF Mobile Bridge settings
+    if (!config.cfBridge) config.cfBridge = {};
+    const saveCFEnabledEl = document.getElementById('cfg-cf-enabled');
+    if (saveCFEnabledEl) config.cfBridge.enabled = saveCFEnabledEl.checked;
+    const saveCFEndpointEl = document.getElementById('cfg-cf-endpoint');
+    if (saveCFEndpointEl) config.cfBridge.endpoint = saveCFEndpointEl.value.trim();
+    const saveCFTokenEl = document.getElementById('cfg-cf-token');
+    if (saveCFTokenEl) config.cfBridge.token = saveCFTokenEl.value.trim();
+    const saveCFIntervalEl = document.getElementById('cfg-cf-poll-interval');
+    if (saveCFIntervalEl) config.cfBridge.pollIntervalSeconds = clampNumber(saveCFIntervalEl.value, 10, 600, 30);
+
     // Save Inbox (Hot Folder) settings
     if (!config.inbox) config.inbox = {};
     const saveInboxEnabledEl = document.getElementById('cfg-inbox-enabled');
@@ -16675,6 +16883,10 @@ OUTPUT FORMAT:
           if (!config.discordBridge) config.discordBridge = {};
           Object.assign(config.discordBridge, parsed.discordBridge);
         }
+        if (parsed.cfBridge) {
+          if (!config.cfBridge) config.cfBridge = {};
+          Object.assign(config.cfBridge, parsed.cfBridge);
+        }
         if (parsed.inbox) {
           if (!config.inbox) config.inbox = {};
           Object.assign(config.inbox, parsed.inbox);
@@ -16755,6 +16967,10 @@ OUTPUT FORMAT:
           if (fileConfig.discordBridge) {
             if (!config.discordBridge) config.discordBridge = {};
             Object.assign(config.discordBridge, fileConfig.discordBridge);
+          }
+          if (fileConfig.cfBridge) {
+            if (!config.cfBridge) config.cfBridge = {};
+            Object.assign(config.cfBridge, fileConfig.cfBridge);
           }
           if (fileConfig.inbox) {
             if (!config.inbox) config.inbox = {};

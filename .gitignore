@@ -35,4 +35,12 @@ scraps/
 .agents/
 docs/
 
+# Cloudflare Workers & Wrangler
+node_modules/
+.wrangler/
+**/.wrangler/
+*.dev.vars
+**/.dev.vars
+tools/cf-bridge/wrangler.toml
+
 

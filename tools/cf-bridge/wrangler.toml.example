@@ -1,0 +1,10 @@
+name = "bridge"
+main = "src/index.ts"
+compatibility_date = "2024-10-01"
+workers_dev = true
+
+# D1 Database for metadata & text notes (Strong Consistency)
+[[d1_databases]]
+binding = "DB"
+database_name = "syki_memos_db"
+database_id = "YOUR_D1_DATABASE_ID_HERE"

@@ -8,6 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	"syki-sok/pkg/cfbridge"
 	"syki-sok/pkg/discordbridge"
 	"syki-sok/pkg/dropzone"
 	"syki-sok/pkg/gitsync"
@@ -55,6 +56,7 @@ type App struct {
 	lastScrapSettings   *ScrapSettings
 	lastJevSettings     *jevRelevantSettings
 	lastDiscordSettings *DiscordBridgeSettings
+	lastCFSettings      *CFBridgeSettings
 	lastInboxSettings   *InboxSettings
 
 	// slotCfgMu guards slotCfgCache, used by resolveActiveSlotConfig to avoid re-reading and
@@ -85,6 +87,10 @@ type App struct {
 	// one (or none, when disabled) takes its place.
 	discordMu     sync.Mutex
 	discordPoller *discordbridge.Poller
+
+	// cfMu guards cfPoller, the Cloudflare mobile bridge poller (see app_cfbridge.go).
+	cfMu     sync.Mutex
+	cfPoller *cfbridge.Poller
 
 	// inboxMu guards inboxWatcher, the single running hot-folder watcher (see app_inbox.go).
 	// Re-initializing swaps it out: the old one is stopped before a new one (or none, when

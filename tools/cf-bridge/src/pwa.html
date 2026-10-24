@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, interactive-widget=resizes-content">
+  <title>syki::sok</title>
+  <link rel="icon" type="image/png" href="/app.png">
+  <link rel="apple-touch-icon" href="/app.png">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#101113">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <style>
+    *, *::before, *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    :root {
+      --accent: #889b7d;
+      --accent-glow: rgba(136, 155, 125, 0.35);
+      --accent-light: #a9be9d;
+      --accent-btn: #889b7d;
+
+      /* Ink (墨: Dark) */
+      --screen-base: #101113;
+      --screen-aura-1: rgba(136, 155, 125, 0.22);
+      --screen-aura-2: rgba(45, 55, 40, 0.15);
+      --card-bg: rgba(25, 27, 25, 0.42);
+      --card-glass-specular: inset 0 1px 1px rgba(255, 255, 255, 0.14);
+      --card-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+      --text-main: #e8eaef;
+      --text-placeholder: #6a6c76;
+      --btn-icon-bg: rgba(255, 255, 255, 0.07);
+      --btn-icon-fg: #c2c3cd;
+      --btn-ghost-fg: #7e7f8a;
+      --btn-ghost-hover: #e8eaef;
+      --settings-bg: rgba(20, 22, 20, 0.92);
+      --settings-title: #eef0f5;
+      --settings-input-bg: rgba(255, 255, 255, 0.07);
+      --tray-chip-bg: rgba(255, 255, 255, 0.08);
+    }
+
+    /* Paper (紙: Light) */
+    .look-paper {
+      --screen-base: #eeebe3;
+      --screen-aura-1: rgba(136, 155, 125, 0.35);
+      --screen-aura-2: rgba(180, 195, 170, 0.25);
+      --card-bg: rgba(255, 255, 255, 0.48);
+      --card-glass-specular: inset 0 1px 1.5px rgba(255, 255, 255, 0.9);
+      --card-shadow: 0 14px 34px rgba(0, 0, 0, 0.08);
+      --text-main: #18191d;
+      --text-placeholder: #8c8d99;
+      --btn-icon-bg: rgba(255, 255, 255, 0.6);
+      --btn-icon-fg: #2c2d36;
+      --btn-ghost-fg: #70717a;
+      --btn-ghost-hover: #18191d;
+      --settings-bg: rgba(246, 244, 238, 0.94);
+      --settings-title: #18191d;
+      --settings-input-bg: rgba(0, 0, 0, 0.05);
+      --tray-chip-bg: rgba(255, 255, 255, 0.65);
+    }
+
+    html, body {
+      margin: 0;
+      padding: 0;
+      background-color: #101113;
+      width: 100%;
+      max-width: 100vw;
+      height: 100%;
+      height: var(--app-height, 100%);
+      max-height: var(--app-height, 100%);
+      overflow: hidden;
+      overflow-x: hidden;
+      overscroll-behavior: none;
+      touch-action: pan-y;
+      background: var(--screen-base, #101113);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .pixel-screen {
+      position: fixed;
+      inset: 0;
+      width: 100%;
+      max-width: 100vw;
+      height: 100%;
+      height: var(--app-height, 100%);
+      max-height: var(--app-height, 100%);
+      background: var(--screen-base, #101113);
+      overflow: hidden;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: background 0.3s ease;
+    }
+
+    /* Ambient Glow for Glass Translucency */
+    .pixel-screen::before {
+      content: "";
+      position: absolute;
+      top: -10%;
+      right: -10%;
+      width: 320px;
+      height: 320px;
+      border-radius: 50%;
+      background: radial-gradient(circle, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+      opacity: 0.8;
+      transition: background 0.3s ease;
+    }
+    .pixel-screen::after {
+      content: "";
+      position: absolute;
+      bottom: 5%;
+      left: -10%;
+      width: 280px;
+      height: 280px;
+      border-radius: 50%;
+      background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .app-workspace {
+      flex: 1;
+      width: 100%;
+      max-width: 540px;
+      margin: 0 auto;
+      height: 100%;
+      max-height: 100%;
+      display: flex;
+      flex-direction: column;
+      padding: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px));
+      box-sizing: border-box;
+      position: relative;
+      z-index: 10;
+      gap: 12px;
+      overflow: hidden;
+      overflow-x: hidden;
+    }
+
+    .frameless-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 6px 2px;
+      background: transparent;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 9px;
+    }
+
+    
+
+    .brand-title {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--text-main);
+      letter-spacing: -0.4px;
+    }
+    .brand-title .colon { color: var(--accent-light); }
+
+    .btn-header-ghost {
+      background: transparent;
+      border: none;
+      color: var(--btn-ghost-fg);
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.15s ease;
+    }
+    .btn-header-ghost:hover { color: var(--btn-ghost-hover); }
+    .btn-header-ghost svg { width: 17px; height: 17px; stroke: currentColor; }
+
+    /* True Frosted Glass Card */
+    .editor-card {
+      width: 100%;
+      box-sizing: border-box;
+      background: var(--card-bg);
+      -webkit-backdrop-filter: blur(28px) saturate(1.6);
+      backdrop-filter: blur(28px) saturate(1.6);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: var(--card-glass-specular), var(--card-shadow);
+      flex: 1;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      position: relative;
+      transition: background 0.25s ease, box-shadow 0.25s ease;
+    }
+
+    .glass-textarea {
+      flex: 1;
+      min-height: 0;
+      width: 100%;
+      font-size: 15.5px;
+      line-height: 1.65;
+      padding: 4px 2px;
+      background: transparent;
+      color: var(--text-main);
+      border: none;
+      resize: none;
+      outline: none;
+      font-family: inherit;
+      overflow-y: auto;
+    }
+    .glass-textarea::placeholder {
+      color: var(--text-placeholder);
+    }
+
+    /* Voice Recording Overlay */
+    .recording-card-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      padding: 24px 12px;
+      background: rgba(40, 16, 16, 0.45);
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      border-radius: 14px;
+      margin-bottom: 8px;
+    }
+    .recording-card-overlay.active {
+      display: flex;
+    }
+
+    .recording-timer {
+      font-family: ui-monospace, monospace;
+      font-size: 22px;
+      font-weight: 700;
+      color: #ff9d9d;
+      letter-spacing: 1px;
+    }
+
+    .wave-bars {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      height: 32px;
+    }
+    .wave-bar {
+      width: 3.5px;
+      background: #ff6b6b;
+      border-radius: 2px;
+      animation: wave 1.2s ease-in-out infinite alternate;
+    }
+    .wave-bar:nth-child(2) { animation-delay: 0.15s; height: 18px; }
+    .wave-bar:nth-child(3) { animation-delay: 0.3s; height: 28px; }
+    .wave-bar:nth-child(4) { animation-delay: 0.45s; height: 14px; }
+    .wave-bar:nth-child(5) { animation-delay: 0.2s; height: 24px; }
+    .wave-bar:nth-child(6) { animation-delay: 0.5s; height: 10px; }
+    @keyframes wave {
+      0% { height: 6px; opacity: 0.4; }
+      100% { height: 30px; opacity: 1; }
+    }
+
+    .tray-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .tray-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      background: var(--tray-chip-bg);
+      border-radius: 10px;
+      font-size: 12px;
+      color: var(--text-main);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+    }
+    .tray-chip svg { width: 13px; height: 13px; stroke: var(--accent-light); }
+    .chip-del {
+      background: transparent;
+      border: none;
+      color: var(--btn-ghost-fg);
+      cursor: pointer;
+      font-size: 11px;
+      margin-left: 2px;
+    }
+
+    .editor-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding-top: 10px;
+    }
+
+    .tool-group {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .btn-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: var(--btn-icon-bg);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: none;
+      color: var(--btn-icon-fg);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+      transition: all 0.15s ease;
+    }
+    .btn-icon:active {
+      transform: scale(0.94);
+    }
+    .btn-icon svg {
+      width: 22px;
+      height: 22px;
+      stroke: currentColor;
+    }
+
+    .btn-icon.recording {
+      background: rgba(185, 45, 45, 0.4);
+      color: #ff9d9d;
+      animation: pulse-mic 1.2s infinite;
+    }
+    @keyframes pulse-mic {
+      0%, 100% { box-shadow: 0 0 14px rgba(239, 68, 68, 0.45); }
+      50% { box-shadow: 0 0 2px rgba(239, 68, 68, 0.1); }
+    }
+
+    .btn-send {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      height: 48px;
+      padding: 0 22px;
+      font-size: 15px;
+      font-weight: 600;
+      border-radius: 14px;
+      background: var(--accent-btn);
+      -webkit-backdrop-filter: blur(12px);
+      backdrop-filter: blur(12px);
+      border: none;
+      color: #ffffff;
+      cursor: pointer;
+      box-shadow: 0 6px 18px var(--accent-glow);
+      transition: all 0.15s ease;
+    }
+    .btn-send:active {
+      transform: scale(0.96);
+      box-shadow: 0 2px 8px var(--accent-glow);
+    }
+    .btn-send svg {
+      width: 17px;
+      height: 17px;
+      stroke: currentColor;
+    }
+
+    /* Settings Slide-up Frosted Panel */
+    .settings-panel {
+      display: none;
+      position: absolute;
+      inset: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px)); overflow-y: auto;
+      background: var(--settings-bg);
+      -webkit-backdrop-filter: blur(32px) saturate(1.5);
+      backdrop-filter: blur(32px) saturate(1.5);
+      border-radius: 24px;
+      padding: 24px 20px;
+      z-index: 80;
+      flex-direction: column;
+      gap: 18px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+    .settings-panel.open {
+      display: flex;
+    }
+
+    .settings-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .settings-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--settings-title);
+    }
+    .btn-close-settings {
+      background: transparent;
+      border: none;
+      color: var(--btn-ghost-fg);
+      font-size: 16px;
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .settings-section {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .settings-label {
+      font-size: 11px;
+      font-family: ui-monospace, monospace;
+      color: var(--btn-ghost-fg);
+      text-transform: uppercase;
+    }
+
+    .look-segmented {
+      display: flex;
+      background: var(--settings-input-bg);
+      border-radius: 10px;
+      padding: 3px;
+      gap: 4px;
+    }
+    .look-btn {
+      flex: 1;
+      padding: 7px 12px;
+      border: none;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--btn-ghost-fg);
+      font-size: 12.5px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .look-btn.active {
+      background: var(--card-bg);
+      color: var(--text-main);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    }
+
+    .accent-swatches {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 4px 0;
+    }
+    .accent-swatch {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: none;
+      outline: none;
+      transition: transform 0.15s ease;
+      position: relative;
+    }
+    .accent-swatch:active { transform: scale(0.9); }
+    .accent-swatch[aria-pressed="true"] {
+      outline: 2px solid var(--text-main);
+      outline-offset: 3px;
+    }
+    .swatch-olive { background: #556b2f; }
+    .swatch-blue { background: #0074c2; }
+    .swatch-forest { background: #2e6656; }
+    .swatch-charcoal { background: #505050; }
+    .swatch-vermilion { background: #b8472c; }
+    .swatch-custom {
+      background: #889b7d;
+    }
+
+    .accent-custom-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-top: 4px;
+    }
+    .custom-color-box {
+      width: 36px;
+      height: 28px;
+      border-radius: 4px;
+      background: #889b7d;
+      border: 1px solid rgba(128, 128, 128, 0.2);
+      cursor: pointer;
+      position: relative;
+      overflow: hidden;
+    }
+    .custom-color-picker {
+      position: absolute;
+      inset: -8px;
+      opacity: 0;
+      cursor: pointer;
+    }
+    .custom-hex-input {
+      padding: 6px 10px;
+      background: var(--settings-input-bg);
+      border: none;
+      border-radius: 6px;
+      color: var(--text-main);
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 13px;
+      width: 90px;
+      outline: none;
+    }
+
+    .settings-input {
+      width: 100%;
+      padding: 10px 12px;
+      background: var(--settings-input-bg);
+      border: none;
+      border-radius: 10px;
+      color: var(--text-main);
+      font-family: ui-monospace, monospace;
+      font-size: 13px;
+      outline: none;
+    }
+
+    .glass-toast {
+      position: absolute;
+      top: calc(16px + env(safe-area-inset-top, 0px));
+      left: 50%;
+      transform: translateX(-50%) translateY(-8px);
+      background: var(--accent);
+      color: #ffffff;
+      -webkit-backdrop-filter: blur(20px);
+      backdrop-filter: blur(20px);
+      box-shadow: 0 10px 24px -4px var(--accent-glow), 0 4px 12px rgba(0, 0, 0, 0.35);
+      padding: 7px 16px;
+      border-radius: 9999px;
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: 0.2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      white-space: nowrap;
+    }
+    .glass-toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+      pointer-events: auto;
+    }
+
+    
+  </style>
+</head>
+<body>
+
+  <div class="pixel-screen" id="pixel-screen">
+    <div class="app-workspace">
+
+        <header class="frameless-header">
+          <div class="brand-wrap">
+            
+            <span class="brand-title">syki<span class="colon">::</span>sok</span>
+          </div>
+          <button class="btn-header-ghost" id="btn-toggle-settings" type="button" title="Settings">
+            <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+        </header>
+
+        <div class="glass-toast" id="toast">
+          <span>Sent to syki</span>
+        </div>
+
+        <div class="editor-card">
+          <div class="recording-card-overlay" id="rec-overlay">
+            <div class="recording-timer" id="rec-timer">00:07</div>
+            <div class="wave-bars">
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+              <div class="wave-bar"></div>
+            </div>
+          </div>
+
+          <textarea
+            class="glass-textarea"
+            id="note-input"
+            placeholder="Drop a note..."
+            autofocus
+          ></textarea>
+
+          <div class="tray-row" id="tray-row" style="display:none;"></div>
+
+          <div class="editor-toolbar">
+            <div class="tool-group">
+              <button class="btn-icon" id="btn-camera" type="button" title="Camera">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                  <circle cx="12" cy="13" r="4"></circle>
+                </svg>
+              </button>
+
+              <button class="btn-icon" id="btn-voice" type="button" title="Voice">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+                  <path d="M5 10a7 7 0 0 0 14 0"></path>
+                  <line x1="12" y1="19" x2="12" y2="22"></line>
+                </svg>
+              </button>
+
+              <button class="btn-icon" id="btn-file" type="button" title="File">
+                <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                  <polyline points="14 2 14 8 20 8"></polyline>
+                </svg>
+              </button>
+            </div>
+
+            <button class="btn-send" id="btn-send" type="button">
+              <span>Send</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="22" y1="2" x2="11" y2="13"></line>
+                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+              </svg>
+            </button>
+          </div>
+        </div>
+
+        <div class="settings-panel" id="settings-panel">
+          <div class="settings-head">
+            <span class="settings-title">Settings</span>
+            <button class="btn-close-settings" id="btn-close-settings">✕</button>
+          </div>
+
+          <div class="settings-section">
+            <span class="settings-label">Look</span>
+            <div class="look-segmented">
+              <button class="look-btn active" id="btn-look-ink" onclick="setLook('ink')">Ink (墨)</button>
+              <button class="look-btn" id="btn-look-paper" onclick="setLook('paper')">Paper (紙)</button>
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <span class="settings-label">Accent Color</span>
+            <div class="accent-swatches" id="accent-swatches">
+              <button type="button" class="accent-swatch swatch-olive" data-accent="olive" aria-pressed="false" onclick="applyPreset('#556b2f', this)"></button>
+              <button type="button" class="accent-swatch swatch-blue" data-accent="blue" aria-pressed="false" onclick="applyPreset('#0074c2', this)"></button>
+              <button type="button" class="accent-swatch swatch-forest" data-accent="forest" aria-pressed="false" onclick="applyPreset('#2e6656', this)"></button>
+              <button type="button" class="accent-swatch swatch-charcoal" data-accent="charcoal" aria-pressed="false" onclick="applyPreset('#505050', this)"></button>
+              <button type="button" class="accent-swatch swatch-vermilion" data-accent="vermilion" aria-pressed="false" onclick="applyPreset('#b8472c', this)"></button>
+              <button type="button" class="accent-swatch swatch-custom" id="swatch-custom" data-accent="custom" aria-pressed="true" onclick="applyCustom(this)"></button>
+            </div>
+            <div class="accent-custom-row">
+              <div class="custom-color-box" id="color-box">
+                <input type="color" class="custom-color-picker" id="color-picker" value="#889b7d" oninput="onColorChange(this.value)">
+              </div>
+              <input type="text" class="custom-hex-input" id="hex-input" value="#889b7d" maxlength="7" spellcheck="false" oninput="onHexChange(this.value)">
+            </div>
+          </div>
+
+          <div class="settings-section">
+            <span class="settings-label">Endpoint URL</span>
+            <input class="settings-input" id="settings-endpoint" type="text" placeholder="https://..." />
+          </div>
+
+          <div class="settings-section">
+            <span class="settings-label">Auth Token</span>
+            <input class="settings-input" id="settings-token" type="password" placeholder="Bearer secret token" />
+          </div>
+
+          <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" />
+          <input type="file" id="file-input" style="display:none" />
+        </div>
+
+    </div>
+  </div>
+
+  <script>
+    // Viewport & Horizontal Scroll Lock
+    function syncViewport() {
+      if (window.visualViewport) {
+        document.documentElement.style.setProperty('--app-height', ${window.visualViewport.height}px);
+      }
+      if (window.scrollX !== 0 || window.scrollY !== 0) {
+        window.scrollTo(0, 0);
+      }
+    }
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', syncViewport);
+      window.visualViewport.addEventListener('scroll', syncViewport);
+    }
+    window.addEventListener('resize', syncViewport);
+    window.addEventListener('scroll', () => {
+      if (window.scrollX !== 0) window.scrollTo(0, window.scrollY);
+    });
+    window.addEventListener('orientationchange', () => setTimeout(syncViewport, 150));
+    syncViewport();
+
+    const btnVoice = document.getElementById('btn-voice');
+    const recOverlay = document.getElementById('rec-overlay');
+    const btnCamera = document.getElementById('btn-camera');
+    const btnFile = document.getElementById('btn-file');
+    const fileCamera = document.getElementById('file-camera');
+    const fileInput = document.getElementById('file-input');
+    const btnSend = document.getElementById('btn-send');
+    const toast = document.getElementById('toast');
+    const noteInput = document.getElementById('note-input');
+    noteInput.addEventListener('focus', () => {
+      syncViewport();
+      setTimeout(syncViewport, 100);
+      setTimeout(syncViewport, 300);
+    });
+    const trayRow = document.getElementById('tray-row');
+    const btnToggleSettings = document.getElementById('btn-toggle-settings');
+    const btnCloseSettings = document.getElementById('btn-close-settings');
+    const settingsPanel = document.getElementById('settings-panel');
+    const settingsEndpoint = document.getElementById('settings-endpoint');
+    const settingsToken = document.getElementById('settings-token');
+    const hexInput = document.getElementById('hex-input');
+    const colorPicker = document.getElementById('color-picker');
+    const colorBox = document.getElementById('color-box');
+    const swatchCustom = document.getElementById('swatch-custom');
+    const pixelScreen = document.getElementById('pixel-screen');
+    const btnLookInk = document.getElementById('btn-look-ink');
+    const btnLookPaper = document.getElementById('btn-look-paper');
+
+    // Attachments staged for next send
+    let stagedAttachment = null; // { type, mime, filename, dataBase64 }
+
+    // Audio recording state
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let isRecording = false;
+
+    // Load Token & Endpoint from URL query or localStorage
+    const urlParams = new URLSearchParams(window.location.search);
+    const queryToken = urlParams.get('token');
+    const queryEndpoint = urlParams.get('endpoint');
+
+    if (queryToken) localStorage.setItem('syki_token', queryToken);
+    if (queryEndpoint) localStorage.setItem('syki_endpoint', queryEndpoint);
+
+    const savedToken = localStorage.getItem('syki_token') || 'syki-local-token-2026';
+    const savedEndpoint = localStorage.getItem('syki_endpoint') || window.location.origin;
+
+    settingsToken.value = savedToken;
+    settingsEndpoint.value = savedEndpoint;
+
+    settingsToken.addEventListener('input', () => localStorage.setItem('syki_token', settingsToken.value.trim()));
+    settingsEndpoint.addEventListener('input', () => localStorage.setItem('syki_endpoint', settingsEndpoint.value.trim()));
+
+    // Look toggle
+    const savedLook = localStorage.getItem('syki_look') || 'ink';
+    setLook(savedLook);
+
+    function setLook(look) {
+      localStorage.setItem('syki_look', look);
+      if (look === 'paper') {
+        pixelScreen.classList.add('look-paper');
+        btnLookPaper.classList.add('active');
+        btnLookInk.classList.remove('active');
+      } else {
+        pixelScreen.classList.remove('look-paper');
+        btnLookInk.classList.add('active');
+        btnLookPaper.classList.remove('active');
+      }
+    }
+
+    btnToggleSettings.addEventListener('click', () => settingsPanel.classList.add('open'));
+    btnCloseSettings.addEventListener('click', () => settingsPanel.classList.remove('open'));
+
+    // Accent colors
+    function applyPreset(color, btn) {
+      document.querySelectorAll('.accent-swatch').forEach(s => s.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      setThemeColor(color);
+      localStorage.setItem('syki_accent', color);
+    }
+
+    function applyCustom(btn) {
+      document.querySelectorAll('.accent-swatch').forEach(s => s.setAttribute('aria-pressed', 'false'));
+      btn.setAttribute('aria-pressed', 'true');
+      setThemeColor(hexInput.value);
+      localStorage.setItem('syki_accent', hexInput.value);
+    }
+
+    function onColorChange(val) {
+      hexInput.value = val;
+      colorBox.style.background = val;
+      swatchCustom.style.background = val;
+      applyCustom(swatchCustom);
+    }
+
+    function onHexChange(val) {
+      if (/^#[0-9a-f]{6}$/i.test(val)) {
+        colorPicker.value = val;
+        colorBox.style.background = val;
+        swatchCustom.style.background = val;
+        applyCustom(swatchCustom);
+      }
+    }
+
+    function setThemeColor(color) {
+      document.documentElement.style.setProperty('--accent', color);
+      document.documentElement.style.setProperty('--accent-glow', color + '55');
+      document.documentElement.style.setProperty('--accent-light', color);
+      document.documentElement.style.setProperty('--accent-btn', color);
+    }
+
+    const savedAccent = localStorage.getItem('syki_accent');
+    if (savedAccent) {
+      setThemeColor(savedAccent);
+      hexInput.value = savedAccent;
+      colorBox.style.background = savedAccent;
+      swatchCustom.style.background = savedAccent;
+    }
+
+    // Camera capture
+    btnCamera.addEventListener('click', () => fileCamera.click());
+    fileCamera.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const b64 = await readFileAsBase64(file);
+      stagedAttachment = {
+        type: 'image',
+        mime: file.type || 'image/jpeg',
+        filename: file.name || 'photo.jpg',
+        dataBase64: b64
+      };
+      setChip(file.name || 'photo.jpg');
+      fileCamera.value = '';
+    });
+
+    // File selection
+    btnFile.addEventListener('click', () => fileInput.click());
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const b64 = await readFileAsBase64(file);
+      const isImg = file.type.startsWith('image/');
+      const isAud = file.type.startsWith('audio/');
+      stagedAttachment = {
+        type: isImg ? 'image' : (isAud ? 'audio' : 'file'),
+        mime: file.type || 'application/octet-stream',
+        filename: file.name,
+        dataBase64: b64
+      };
+      setChip(file.name);
+      fileInput.value = '';
+    });
+
+    function readFileAsBase64(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const res = reader.result;
+          const comma = res.indexOf(',');
+          resolve(comma !== -1 ? res.slice(comma + 1) : res);
+        };
+        reader.onerror = reject;
+        reader.readAsDataURL(file);
+      });
+    }
+
+    function setChip(name) {
+      trayRow.innerHTML = '';
+      trayRow.style.display = 'flex';
+      const chip = document.createElement('div');
+      chip.className = 'tray-chip';
+      chip.innerHTML = `<span>📎 ${escapeHTML(name)}</span><button class="chip-del" id="btn-del-chip">✕</button>`;
+      chip.querySelector('#btn-del-chip').addEventListener('click', () => {
+        stagedAttachment = null;
+        trayRow.innerHTML = '';
+        trayRow.style.display = 'none';
+      });
+      trayRow.appendChild(chip);
+    }
+
+    function escapeHTML(str) {
+      return str.replace(/[&<>'"]/g, tag => ({
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        "'": '&#39;',
+        '"': '&quot;'
+      }[tag] || tag));
+    }
+
+    // Voice recording
+    btnVoice.addEventListener('click', async () => {
+      if (!isRecording) {
+        try {
+          const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+          mediaRecorder = new MediaRecorder(stream);
+          audioChunks = [];
+          mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+          mediaRecorder.onstop = async () => {
+            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            stream.getTracks().forEach(track => track.stop());
+            const b64 = await readFileAsBase64(blob);
+            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+            const filename = `voice_${Date.now()}.${ext}`;
+            stagedAttachment = {
+              type: 'audio',
+              mime: blob.type,
+              filename: filename,
+              dataBase64: b64
+            };
+            setChip(filename);
+          };
+          mediaRecorder.start();
+          isRecording = true;
+          btnVoice.classList.add('recording');
+          recOverlay.classList.add('active');
+        } catch (err) {
+          alert('Microphone access denied: ' + (err.message || err));
+        }
+      } else {
+        if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+          mediaRecorder.stop();
+        }
+        isRecording = false;
+        btnVoice.classList.remove('recording');
+        recOverlay.classList.remove('active');
+      }
+    });
+
+    // Send to Cloudflare Worker API
+    btnSend.addEventListener('click', async () => {
+      const text = noteInput.value.trim();
+      if (!text && !stagedAttachment) return;
+
+      const endpoint = (settingsEndpoint.value.trim() || window.location.origin).replace(/\/+$/, '');
+      const token = settingsToken.value.trim();
+
+      const payload = {
+        client_time: new Date().toISOString(),
+        device: navigator.userAgent.includes('Android') ? 'Android PWA' : (navigator.userAgent.includes('iPhone') ? 'iPhone PWA' : 'Mobile Web'),
+        type: stagedAttachment ? stagedAttachment.type : 'text',
+        text: text,
+        attachment: stagedAttachment
+      };
+
+      btnSend.style.opacity = '0.5';
+      btnSend.disabled = true;
+
+      try {
+        const res = await fetch(`${endpoint}/api/memo`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + token
+          },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errText = await res.text();
+          throw new Error(`(${res.status}) ${errText}`);
+        }
+
+        // Clear UI on success
+        noteInput.value = '';
+        stagedAttachment = null;
+        trayRow.innerHTML = '';
+        trayRow.style.display = 'none';
+
+        toast.textContent = 'Sent to syki';
+        toast.classList.add('show');
+        setTimeout(() => toast.classList.remove('show'), 2500);
+      } catch (err) {
+        alert('Send failed: ' + (err.message || err));
+      } finally {
+        btnSend.style.opacity = '1';
+        btnSend.disabled = false;
+      }
+    });
+  </script>
+
+</body>
+</html>

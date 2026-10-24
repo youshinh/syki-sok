@@ -170,7 +170,7 @@ func (a *App) handleDiscordMessageAt(m discordbridge.Message, visionCfg llm.Visi
 		}
 	}()
 
-	scrapDir := a.GetScrapDir()
+	scrapDir := a.GetDefaultNoteDir()
 
 	var sb strings.Builder
 	for _, p := range discordMessageToPayloads(m) {

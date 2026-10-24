@@ -219,6 +219,7 @@ func main() {
 	app.InitSlotEngine()
 	app.InitJevEngine()
 	app.InitDiscordBridge()
+	app.InitCFBridge()
 	app.InitInboxWatcher()
 
 	// A macOS .app launched from Finder, the Dock or Spotlight inherits launchd's PATH

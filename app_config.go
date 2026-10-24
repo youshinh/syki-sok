@@ -245,7 +245,7 @@ func parseJevRelevantSettings(configJSON string) jevRelevantSettings {
 // subsystem actually needs to be reinitialized. It performs no I/O beyond parsing the given
 // string, so it can be unit tested directly with an App{} zero value (parseScrapConfig /
 // parseDiscordBridgeConfig do not read receiver state).
-func diffConfigSettings(a *App, prevScrap *ScrapSettings, prevJev *jevRelevantSettings, prevDiscord *DiscordBridgeSettings, prevInbox *InboxSettings, configJSON string) (newScrap ScrapSettings, scrapChanged bool, newJev jevRelevantSettings, jevChanged bool, newDiscord DiscordBridgeSettings, discordChanged bool, newInbox InboxSettings, inboxChanged bool) {
+func diffConfigSettings(a *App, prevScrap *ScrapSettings, prevJev *jevRelevantSettings, prevDiscord *DiscordBridgeSettings, prevCF *CFBridgeSettings, prevInbox *InboxSettings, configJSON string) (newScrap ScrapSettings, scrapChanged bool, newJev jevRelevantSettings, jevChanged bool, newDiscord DiscordBridgeSettings, discordChanged bool, newCF CFBridgeSettings, cfChanged bool, newInbox InboxSettings, inboxChanged bool) {
 	newScrap = a.parseScrapConfig(configJSON)
 	scrapChanged = prevScrap == nil || *prevScrap != newScrap
 
@@ -254,11 +254,13 @@ func diffConfigSettings(a *App, prevScrap *ScrapSettings, prevJev *jevRelevantSe
 
 	newDiscord = a.parseDiscordBridgeConfig(configJSON)
 	discordChanged = prevDiscord == nil || *prevDiscord != newDiscord
+	newCF = a.parseCFBridgeConfig(configJSON)
+	cfChanged = prevCF == nil || *prevCF != newCF
 
 	newInbox = a.parseInboxConfig(configJSON)
 	inboxChanged = prevInbox == nil || *prevInbox != newInbox
 
-	return newScrap, scrapChanged, newJev, jevChanged, newDiscord, discordChanged, newInbox, inboxChanged
+	return newScrap, scrapChanged, newJev, jevChanged, newDiscord, discordChanged, newCF, cfChanged, newInbox, inboxChanged
 }
 
 // SaveConfig saves configuration to the persistent local JSON file in AppData / ~/.config.
@@ -279,10 +281,11 @@ func (a *App) SaveConfig(configJSON string) (bool, error) {
 	a.noteNativeLook(configJSON)
 
 	a.settingsMu.Lock()
-	newScrap, scrapChanged, newJev, jevChanged, newDiscord, discordChanged, newInbox, inboxChanged := diffConfigSettings(a, a.lastScrapSettings, a.lastJevSettings, a.lastDiscordSettings, a.lastInboxSettings, configJSON)
+	newScrap, scrapChanged, newJev, jevChanged, newDiscord, discordChanged, newCF, cfChanged, newInbox, inboxChanged := diffConfigSettings(a, a.lastScrapSettings, a.lastJevSettings, a.lastDiscordSettings, a.lastCFSettings, a.lastInboxSettings, configJSON)
 	a.lastScrapSettings = &newScrap
 	a.lastJevSettings = &newJev
 	a.lastDiscordSettings = &newDiscord
+	a.lastCFSettings = &newCF
 	a.lastInboxSettings = &newInbox
 	a.settingsMu.Unlock()
 
@@ -297,6 +300,9 @@ func (a *App) SaveConfig(configJSON string) (bool, error) {
 	}
 	if discordChanged {
 		a.InitDiscordBridge()
+	}
+	if cfChanged {
+		a.InitCFBridge()
 	}
 	if inboxChanged {
 		a.InitInboxWatcher()

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"strings"
 	"encoding/json"
 	"fmt"
 	"path/filepath"
@@ -38,6 +39,13 @@ func (a *App) parseScrapConfig(configJSON string) ScrapSettings {
 	var raw map[string]interface{}
 	if err := json.Unmarshal([]byte(configJSON), &raw); err != nil {
 		return cfg
+	}
+
+	// Check general.defaultNoteDir first if present
+	if genMap, ok := raw["general"].(map[string]interface{}); ok {
+		if v, ok := genMap["defaultNoteDir"].(string); ok && strings.TrimSpace(v) != "" {
+			cfg.ScrapDir = strings.TrimSpace(v)
+		}
 	}
 
 	// Check top-level fields
