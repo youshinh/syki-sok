@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"syki-sok/pkg/cfbridge"
-	"syki-sok/pkg/discordbridge"
 	"syki-sok/pkg/dropzone"
 	"syki-sok/pkg/gitsync"
 	"syki-sok/pkg/inbox"
@@ -55,7 +54,6 @@ type App struct {
 	settingsMu          sync.Mutex
 	lastScrapSettings   *ScrapSettings
 	lastJevSettings     *jevRelevantSettings
-	lastDiscordSettings *DiscordBridgeSettings
 	lastCFSettings      *CFBridgeSettings
 	lastInboxSettings   *InboxSettings
 
@@ -81,12 +79,6 @@ type App struct {
 	// app_mobiledrop.go). At most one session exists at a time.
 	dropzoneMu     sync.Mutex
 	dropzoneServer *dropzone.Server
-
-	// discordMu guards discordPoller, the single running Discord bridge poller (see
-	// app_discordbridge.go). Re-initializing swaps it out: the old one is stopped before a new
-	// one (or none, when disabled) takes its place.
-	discordMu     sync.Mutex
-	discordPoller *discordbridge.Poller
 
 	// cfMu guards cfPoller, the Cloudflare mobile bridge poller (see app_cfbridge.go).
 	cfMu     sync.Mutex

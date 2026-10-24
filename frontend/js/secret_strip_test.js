@@ -38,7 +38,7 @@ const settings = () => ({
   cli: { apiKey: 'sk-CLI-DDDD4444' },
   action: { apiKey: 'sk-ACTION-EEEE5555' },
   image: { apiKey: 'sk-IMAGE-FFFF6666' },
-  discordBridge: { enabled: true, botToken: 'MTIz.DISCORD-GGGG7777', allowedUserId: '42' },
+  cfBridge: { enabled: true, token: 'SECRET-TOKEN', endpoint: 'https://my.workers.dev' },
   scraps: { scrapDir: '~/scraps', gitRemote: 'https://user:GITPASS-HHHH8888@github.com/me/notes.git' },
   agents: [{ name: 'a', env: { OPENAI_API_KEY: 'sk-ENV-IIII9999', MODE: 'fast' } }],
   secrets: { list: ['ARR-JJJJ0000', ''], count: 3, on: true },
@@ -56,7 +56,7 @@ const settings = () => ({
     .forEach((frag) => assert.ok(!text.includes(frag), 'a secret survived: ' + frag));
 
   ['text', 'autocomplete', 'vision', 'voice', 'cli', 'action', 'image'].forEach((k) => assert.strictEqual(out[k].apiKey, '', k + '.apiKey'));
-  assert.strictEqual(out.discordBridge.botToken, '');
+  assert.strictEqual(out.cfBridge.token, '');
   assert.strictEqual(out.agents[0].env.OPENAI_API_KEY, '');
   assert.deepStrictEqual(out.secrets.list, ['', ''], 'strings below a secret-named key are all blanked, arrays included');
 
@@ -69,7 +69,7 @@ const settings = () => ({
   assert.deepStrictEqual(out.shortcuts, input.shortcuts);
   assert.strictEqual(out.text.baseUrl, 'https://api.example.com/v1');
   assert.strictEqual(out.text.model, 'm');
-  assert.strictEqual(out.discordBridge.allowedUserId, '42');
+  assert.strictEqual(out.cfBridge.endpoint, 'https://my.workers.dev');
   assert.strictEqual(out.agents[0].env.MODE, 'fast');
   assert.strictEqual(out.scraps.gitRemote, 'https://github.com/me/notes.git', 'credentials inside a URL are removed');
   assert.strictEqual(out.scraps.scrapDir, '~/scraps');
@@ -233,20 +233,20 @@ class FakeStorage {
 (function testLoaderOrderRestoresTheKeysFromTheFile() {
   // The same merge order as initApp: loadLocalConfigSync (the local copy), then syncBackendConfig (the
   // file, authoritative). Both use Object.assign per section.
-  const config = { text: { apiKey: '', model: 'default' }, discordBridge: { botToken: '' } };
+  const config = { text: { apiKey: '', model: 'default' }, cfBridge: { token: '' } };
   const s = new FakeStorage({});
-  SS.saveLocalCopy(s, { text: { apiKey: 'sk-REAL', model: 'from-local' }, discordBridge: { botToken: 'BOT-REAL' } });
+  SS.saveLocalCopy(s, { text: { apiKey: 'sk-REAL', model: 'from-local' }, cfBridge: { token: 'BOT-REAL' } });
   const local = JSON.parse(s.getItem('md_notepad_config_v3'));
   Object.assign(config.text, local.text);
-  Object.assign(config.discordBridge, local.discordBridge);
+  Object.assign(config.cfBridge, local.cfBridge);
   assert.strictEqual(config.text.apiKey, '', 'from the local copy alone there is no key');
   assert.strictEqual(config.text.model, 'from-local', 'but the other settings are there for the first paint');
 
-  const file = { text: { apiKey: 'sk-REAL', model: 'from-local' }, discordBridge: { botToken: 'BOT-REAL' } };
+  const file = { text: { apiKey: 'sk-REAL', model: 'from-local' }, cfBridge: { token: 'BOT-REAL' } };
   Object.assign(config.text, file.text);
-  Object.assign(config.discordBridge, file.discordBridge);
+  Object.assign(config.cfBridge, file.cfBridge);
   assert.strictEqual(config.text.apiKey, 'sk-REAL');
-  assert.strictEqual(config.discordBridge.botToken, 'BOT-REAL');
+  assert.strictEqual(config.cfBridge.token, 'BOT-REAL');
 })();
 
 // ---- wiring: index.html and app.js ------------------------------------------------------------------

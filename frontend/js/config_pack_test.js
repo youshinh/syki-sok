@@ -1092,12 +1092,12 @@ test('the dialog speaks Japanese when the host does', async () => {
 });
 
 // ================================ B19: destinations, safety switches and integrations ================================
-// One PC with a key for api.openai.com, agent confirmation on, and the Discord bridge and the hot folder off ...
+// One PC with a key for api.openai.com, agent confirmation on, and the mobile capture bridge and the hot folder off ...
 const localSetup = () => ({
   text: { baseUrl: 'https://api.openai.com/v1', model: 'gpt-4o-mini', apiKey: 'sk-LOCAL-SECRET' },
   vision: { baseUrl: 'https://generativelanguage.googleapis.com', model: 'g', apiKey: 'g-LOCAL' },
   autoSelector: { enabled: true, agentConfirm: true },
-  discordBridge: { enabled: false, botToken: 'LOCALBOT', allowedUserId: '111', pollIntervalSeconds: 45 },
+  cfBridge: { enabled: false, endpoint: 'https://local.workers.dev', token: 'LOCALTOKEN', pollIntervalSeconds: 30 },
   inbox: { enabled: false, dir: '' },
   general: { theme: 'olive', cloudConsent: { 'api.openai.com': '2026-09-01' } }
 });
@@ -1105,22 +1105,22 @@ const localSetup = () => ({
 const partnerPackage = () => ({
   text: { baseUrl: 'https://llm.partner-gateway.example/v1', model: 'partner-model', apiKey: '', systemPrompt: 'Be brief.' },
   autoSelector: { enabled: true, agentConfirm: false },
-  discordBridge: { enabled: true, botToken: '', allowedUserId: '999999', pollIntervalSeconds: 30 },
+  cfBridge: { enabled: true, endpoint: 'https://remote.workers.dev', token: '', pollIntervalSeconds: 30 },
   inbox: { enabled: true, dir: 'C:\\drop' },
   general: { theme: 'blue' }
 });
 const ALL_SECTIONS = ['general', 'models', 'integration', 'shortcuts', 'other'];
 
-test('B19: guardedChanges lists the server, agent confirmation, Discord and hot folder changes, with before and after', () => {
+test('B19: guardedChanges lists the server, agent confirmation, mobile capture bridge and hot folder changes, with before and after', () => {
   const changes = CP.guardedChanges(localSetup(), partnerPackage(), ALL_SECTIONS);
-  assert.deepStrictEqual(changes.map((c) => c.id), ['server:text', 'agentConfirm', 'discord', 'inbox']);
+  assert.deepStrictEqual(changes.map((c) => c.id), ['server:text', 'agentConfirm', 'cfBridge', 'inbox']);
   const byId = Object.fromEntries(changes.map((c) => [c.id, c]));
   assert.strictEqual(byId['server:text'].before, 'https://api.openai.com/v1');
   assert.strictEqual(byId['server:text'].after, 'https://llm.partner-gateway.example/v1');
   assert.strictEqual(byId['server:text'].clearsKey, true, 'a new host, a key saved for the old one');
   assert.deepStrictEqual([byId.agentConfirm.before, byId.agentConfirm.after], [true, false]);
-  assert.deepStrictEqual(byId.discord.before, { enabled: false, user: '111' });
-  assert.deepStrictEqual(byId.discord.after, { enabled: true, user: '999999' });
+  assert.deepStrictEqual(byId.cfBridge.before, { enabled: false, endpoint: 'https://local.workers.dev' });
+  assert.deepStrictEqual(byId.cfBridge.after, { enabled: true, endpoint: 'https://remote.workers.dev' });
   assert.deepStrictEqual(byId.inbox.after, { enabled: true, dir: 'C:\\drop' });
 });
 
@@ -1135,7 +1135,7 @@ test('B19: without a tick nothing that decides where text goes or what runs unas
   assert.strictEqual(out.text.systemPrompt, 'Be brief.', 'taste is imported as before');
   assert.strictEqual(out.general.theme, 'blue');
   assert.strictEqual(out.autoSelector.agentConfirm, true, 'agents still ask');
-  assert.deepStrictEqual(out.discordBridge, cur.discordBridge, 'no other person may talk to the bot');
+  assert.deepStrictEqual(out.cfBridge, cur.cfBridge, 'no other endpoint may be used');
   assert.deepStrictEqual(out.inbox, cur.inbox, 'the hot folder stays off');
   assert.strictEqual(JSON.stringify(imp), snapshot, 'the package object is not modified');
   assert.strictEqual(cur.text.baseUrl, 'https://api.openai.com/v1', 'nor is the live config');
@@ -1163,9 +1163,9 @@ test('B19: a ticked server takes the address and drops the key saved for the old
 });
 
 test('B19: everything ticked applies the whole package (a blank bot token still never wipes the saved one)', () => {
-  const out = CP.mergeImported(localSetup(), partnerPackage(), ALL_SECTIONS, { allow: ['server:text', 'agentConfirm', 'discord', 'inbox'] });
+  const out = CP.mergeImported(localSetup(), partnerPackage(), ALL_SECTIONS, { allow: ['server:text', 'agentConfirm', 'cfBridge', 'inbox'] });
   assert.strictEqual(out.autoSelector.agentConfirm, false);
-  assert.deepStrictEqual(out.discordBridge, { enabled: true, botToken: 'LOCALBOT', allowedUserId: '999999', pollIntervalSeconds: 30 });
+  assert.deepStrictEqual(out.cfBridge, { enabled: true, token: 'LOCALTOKEN', endpoint: 'https://remote.workers.dev', pollIntervalSeconds: 30 });
   assert.deepStrictEqual(out.inbox, { enabled: true, dir: 'C:\\drop' });
 });
 
@@ -1174,26 +1174,26 @@ test('B19: changes that need no question are not listed: same address, agents as
   const quiet = {
     text: { baseUrl: 'https://api.openai.com/v1/', model: 'x' },
     autoSelector: { agentConfirm: true },
-    discordBridge: { enabled: false, botToken: '', allowedUserId: '111' },
+    cfBridge: { enabled: false, token: '', endpoint: 'https://local.workers.dev' },
     inbox: { enabled: false, dir: '' }
   };
   assert.deepStrictEqual(CP.guardedChanges(cur, quiet, ALL_SECTIONS), [], 'a trailing slash is the same address');
   const cur2 = localSetup();
   cur2.autoSelector.agentConfirm = false;
-  cur2.discordBridge.enabled = true;
+  cur2.cfBridge.enabled = true;
   cur2.inbox.enabled = true;
-  const safer = { autoSelector: { agentConfirm: true }, discordBridge: { enabled: false }, inbox: { enabled: false } };
+  const safer = { autoSelector: { agentConfirm: true }, cfBridge: { enabled: false }, inbox: { enabled: false } };
   assert.deepStrictEqual(CP.guardedChanges(cur2, safer, ALL_SECTIONS), []);
   const out = CP.mergeImported(cur2, safer, ALL_SECTIONS);
   assert.strictEqual(out.autoSelector.agentConfirm, true, 'turning agent confirmation ON is applied');
-  assert.strictEqual(out.discordBridge.enabled, false);
+  assert.strictEqual(out.cfBridge.enabled, false);
   assert.strictEqual(out.inbox.enabled, false);
   // a section that was not chosen brings no question and no change
   assert.deepStrictEqual(CP.guardedChanges(cur, partnerPackage(), ['general']), []);
   assert.deepStrictEqual(CP.guardedChanges(cur, partnerPackage(), ['models']).map((c) => c.id), ['server:text']);
-  assert.deepStrictEqual(CP.guardedChanges(cur, partnerPackage(), ['other']).map((c) => c.id), ['discord', 'inbox']);
+  assert.deepStrictEqual(CP.guardedChanges(cur, partnerPackage(), ['other']).map((c) => c.id), ['cfBridge', 'inbox']);
   assert.deepStrictEqual(CP.guardedChanges(null, null, ALL_SECTIONS), []);
-  assert.deepStrictEqual(CP.guardedChanges(cur, { text: 'junk', discordBridge: [1] }, ALL_SECTIONS), []);
+  assert.deepStrictEqual(CP.guardedChanges(cur, { text: 'junk', cfBridge: [1] }, ALL_SECTIONS), []);
 });
 
 test('B19: every model server group is guarded, and a package cannot smuggle a change past it with __proto__', () => {
@@ -1204,12 +1204,12 @@ test('B19: every model server group is guarded, and a package cannot smuggle a c
   const out = CP.mergeImported({ text: { baseUrl: 'http://localhost:11434', apiKey: 'k' } }, imp, ['models', 'integration']);
   assert.strictEqual(out.text.baseUrl, 'http://localhost:11434');
   groups.slice(1).forEach((g) => assert.ok(!out[g] || !out[g].baseUrl, g + ' was not given the address'));
-  const evil = JSON.parse('{"text":{"__proto__":{"polluted":1},"baseUrl":"https://evil.example"},"discordBridge":{"__proto__":{"polluted":1},"enabled":true}}');
+  const evil = JSON.parse('{"text":{"__proto__":{"polluted":1},"baseUrl":"https://evil.example"},"cfBridge":{"__proto__":{"polluted":1},"enabled":true}}');
   const merged = CP.mergeImported({ text: { baseUrl: 'http://localhost:11434' } }, evil, ['models', 'other']);
   assert.strictEqual(({}).polluted, undefined);
   assert.strictEqual(merged.text.polluted, undefined);
   assert.strictEqual(merged.text.baseUrl, 'http://localhost:11434');
-  assert.strictEqual(merged.discordBridge, undefined);
+  assert.strictEqual(merged.cfBridge, undefined);
 });
 
 // ---- B24 (import side): an address whose key was left out of the export is "not included", not a new address ----
@@ -1279,11 +1279,11 @@ test('B19: after Import the person sees the changes that need an OK, unticked, w
   assert.strictEqual(h.applied.length, 0, 'nothing has been applied while the question is open');
   assert(notes(h).includes(EN.packGuardIntro));
   const server = EN.packGuardServer.replace('{name}', EN.packGuardNameText);
-  assert.deepStrictEqual(titlesOf(h), [server, EN.packGuardAgentConfirm, EN.sectionDiscordBridge, EN.sectionInbox]);
+  assert.deepStrictEqual(titlesOf(h), [server, EN.packGuardAgentConfirm, EN.sectionCFBridge, EN.sectionInbox]);
   titlesOf(h).forEach((t) => assert.strictEqual(inputOf(h, t).checked, false, t + ' starts unticked'));
   assert.strictEqual(subOf(h, server), 'https://api.openai.com/v1 \u2192 https://llm.partner-gateway.example/v1 \u00b7 gpt-4o-mini \u2192 partner-model');
   assert.strictEqual(subOf(h, EN.packGuardAgentConfirm), 'On \u2192 Off');
-  assert.strictEqual(subOf(h, EN.sectionDiscordBridge), 'Off \u00b7 user 111 \u2192 On \u00b7 user 999999');
+  assert.strictEqual(subOf(h, EN.sectionCFBridge), 'Off \u00b7 https://local.workers.dev \u2192 On \u00b7 https://remote.workers.dev');
   assert.strictEqual(subOf(h, EN.sectionInbox), 'Off \u2192 On \u00b7 C:\\drop');
   assert.deepStrictEqual(rowOf(h, server).findAll((n) => n.hasClass('pack-tag')).map((n) => n.textContent), [EN.packGuardKeyTag], 'the key that would be removed is said');
   assert.strictEqual(confirmBtn(h).textContent, EN.packGuardApply);
@@ -1313,11 +1313,11 @@ test('B19: "Keep mine" (and Esc, and the close button) applies the rest of the p
     assert.strictEqual(next.text.model, 'gpt-4o-mini', how);
     assert.strictEqual(next.text.systemPrompt, 'Be brief.', how);
     assert.strictEqual(next.autoSelector.agentConfirm, true, how);
-    assert.strictEqual(next.discordBridge.enabled, false, how);
+    assert.strictEqual(next.cfBridge.enabled, false, how);
     assert.strictEqual(next.inbox.enabled, false, how);
     const result = body(h).textContent;
     assert(result.includes(EN.packResultConfig.replace('{sections}', 'AI Models')), how + ': ' + result);
-    const kept = EN.packResultGuardKept.replace('{names}', [EN.packGuardServer.replace('{name}', EN.packGuardNameText), EN.packGuardAgentConfirm, EN.sectionDiscordBridge, EN.sectionInbox].join(', '));
+    const kept = EN.packResultGuardKept.replace('{names}', [EN.packGuardServer.replace('{name}', EN.packGuardNameText), EN.packGuardAgentConfirm, EN.sectionCFBridge, EN.sectionInbox].join(', '));
     assert(result.includes(kept), how + ': ' + result);
     assert.strictEqual(h.doc.getElementById('pack-title').textContent, EN.packResultTitleImport);
   }
@@ -1339,9 +1339,9 @@ test('B19: ticked rows are applied and only those; the result lists what was kep
   assert.strictEqual(next.text.apiKey, '', 'the key of the old host is gone');
   assert.deepStrictEqual(next.inbox, { enabled: true, dir: 'C:\\drop' });
   assert.strictEqual(next.autoSelector.agentConfirm, true);
-  assert.strictEqual(next.discordBridge.enabled, false);
+  assert.strictEqual(next.cfBridge.enabled, false);
   const result = body(h).textContent;
-  assert(result.includes(EN.packResultGuardKept.replace('{names}', EN.packGuardAgentConfirm + ', ' + EN.sectionDiscordBridge)), result);
+  assert(result.includes(EN.packResultGuardKept.replace('{names}', EN.packGuardAgentConfirm + ', ' + EN.sectionCFBridge)), result);
   assert(result.includes(EN.packResultRestart));
   assert.strictEqual(h.messages.length, 1, 'one toast, after the whole import');
 });
@@ -1352,7 +1352,7 @@ test('B19: the review shows addresses without credentials or query keys, and the
   const h = makeHarness({ config: cfg });
   const evil = partnerPackage();
   evil.text.baseUrl = 'https://bob:hunter2@new.example/v1?api_key=NEWSECRET#x';
-  evil.discordBridge.allowedUserId = '<b onmouseover=alert(1)>$&';
+  evil.cfBridge.endpoint = '<b onmouseover=alert(1)>$&';
   fullBackend(h, { inspect: partnerInspect(), importResult: { ok: true, configJSON: JSON.stringify(evil), applied: {}, skipped: [] } });
   await h.dialog.openImport();
   confirmBtn(h).click();

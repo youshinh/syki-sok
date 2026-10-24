@@ -34,7 +34,12 @@ func (a *App) parseInboxConfig(configJSON string) InboxSettings {
 }
 
 func inboxVisionVoiceConfigs(configJSON string) (llm.VisionConfig, llm.VoiceConfig) {
-	return discordDropConfigs(configJSON)
+	var raw struct {
+		Vision llm.VisionConfig `json:"vision"`
+		Voice  llm.VoiceConfig  `json:"voice"`
+	}
+	_ = json.Unmarshal([]byte(configJSON), &raw)
+	return raw.Vision, llm.ResolveVoiceConfigFor(raw.Voice, raw.Vision, llm.ProfileBatch)
 }
 
 // resolveInboxDir is inbox.ResolveDir (shared with the command line's `syki info`).

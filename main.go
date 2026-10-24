@@ -218,7 +218,6 @@ func main() {
 	app.InitScrapEngine()
 	app.InitSlotEngine()
 	app.InitJevEngine()
-	app.InitDiscordBridge()
 	app.InitCFBridge()
 	app.InitInboxWatcher()
 

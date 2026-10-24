@@ -213,7 +213,7 @@
       if (curAuto.agentConfirm !== false) out.push({ id: 'agentConfirm', kind: 'agentConfirm', key: 'autoSelector', before: true, after: false });
     }
 
-    [['discord', 'discordBridge', 'allowedUserId', 'botToken'], ['inbox', 'inbox', 'dir', null]].forEach((spec) => {
+    [['cfBridge', 'cfBridge', 'endpoint', 'token'], ['inbox', 'inbox', 'dir', null]].forEach((spec) => {
       const impObj = take(spec[1]);
       if (!isObj(impObj)) return;
       const curObj = isObj(own(cur, spec[1])) ? own(cur, spec[1]) : {};
@@ -221,7 +221,7 @@
       const turnedOn = next.enabled === true && curObj.enabled !== true;
       const moved = differs(curObj[spec[2]], next[spec[2]]) || (spec[3] ? differs(curObj[spec[3]], next[spec[3]]) : false);
       if (!turnedOn && !moved) return;
-      const view = (o) => { const v = { enabled: o.enabled === true }; v[spec[2] === 'dir' ? 'dir' : 'user'] = String(o[spec[2]] == null ? '' : o[spec[2]]); return v; };
+      const view = (o) => { const v = { enabled: o.enabled === true }; v[spec[2]] = String(o[spec[2]] == null ? '' : o[spec[2]]); return v; };
       out.push({ id: spec[0], kind: spec[0], key: spec[1], before: view(curObj), after: view(next) });
     });
     return out;
@@ -1191,9 +1191,9 @@
         return { title: tf('packGuardServer', { name: t(SERVER_NAME_KEYS[c.group] || 'packGuardNameText') }), sub };
       }
       if (c.kind === 'agentConfirm') return { title: t('packGuardAgentConfirm'), sub: state(true) + ' → ' + state(false) };
-      const detail = c.kind === 'discord' ? (v) => (v.user ? tf('packGuardUser', { id: v.user }) : '') : (v) => v.dir;
+      const detail = c.kind === 'cfBridge' ? (v) => (v.endpoint ? v.endpoint : '') : (v) => v.dir;
       const side = (v) => [state(v.enabled), detail(v)].filter(Boolean).join(' · ');
-      return { title: t(c.kind === 'discord' ? 'sectionDiscordBridge' : 'sectionInbox'), sub: side(c.before) + ' → ' + side(c.after) };
+      return { title: t(c.kind === 'cfBridge' ? 'sectionCFBridge' : 'sectionInbox'), sub: side(c.before) + ' → ' + side(c.after) };
     }
 
     function buildReview() {

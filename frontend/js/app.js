@@ -152,12 +152,6 @@
       gitRemoteUrl: '',
       maxPipeSizeMB: 10
     },
-    discordBridge: {
-      enabled: false,
-      botToken: '',
-      allowedUserId: '',
-      pollIntervalSeconds: 45
-    },
     cfBridge: {
       enabled: false,
       endpoint: '',
@@ -14815,7 +14809,6 @@ OUTPUT FORMAT:
   wireNumberInputClamp('cfg-slot-ghost-diff-ms', 1000, 10000, 4000);
   wireNumberInputClamp('cfg-action-delay', 0.5, 10.0, 1.5, true);
   wireNumberInputClamp('cfg-git-debounce', 5, 3600, 30);
-  wireNumberInputClamp('cfg-discord-poll-interval', 15, 600, 45);
   wireNumberInputClamp('cfg-cf-poll-interval', 10, 600, 30);
 
   // Quick Actions settings: "enabled" and "manual-only" are contradictory when
@@ -14861,50 +14854,6 @@ OUTPUT FORMAT:
 
   const autoSelEnabledToggleEl = document.getElementById('cfg-autosel-enabled');
   if (autoSelEnabledToggleEl) autoSelEnabledToggleEl.addEventListener('change', updateAutoSelectorFieldStates);
-
-  // Discord Bridge: the token/user-id/interval/test button mean nothing while the bridge itself is off.
-  function updateDiscordBridgeFieldStates() {
-    const enabledEl = document.getElementById('cfg-discord-enabled');
-    const enabled = enabledEl ? enabledEl.checked : false;
-    setFieldMuted(document.getElementById('cfg-discord-bot-token'), !enabled);
-    setFieldMuted(document.getElementById('cfg-discord-user-id'), !enabled);
-    setFieldMuted(document.getElementById('cfg-discord-poll-interval'), !enabled);
-    const testBtn = document.getElementById('btn-discord-test');
-    if (testBtn) testBtn.disabled = !enabled;
-  }
-  const discordEnabledToggleEl = document.getElementById('cfg-discord-enabled');
-  if (discordEnabledToggleEl) discordEnabledToggleEl.addEventListener('change', updateDiscordBridgeFieldStates);
-
-  const btnDiscordTest = document.getElementById('btn-discord-test');
-  if (btnDiscordTest) {
-    btnDiscordTest.addEventListener('click', async () => {
-      const hint = document.getElementById('discord-test-result-hint');
-      const tokenEl = document.getElementById('cfg-discord-bot-token');
-      const userIdEl = document.getElementById('cfg-discord-user-id');
-      const token = tokenEl ? tokenEl.value.trim() : '';
-      const userId = userIdEl ? userIdEl.value.trim() : '';
-      if (!window.backend || !window.backend.testDiscordBridgeConnection) return;
-      btnDiscordTest.disabled = true;
-      const prevLabel = btnDiscordTest.textContent;
-      btnDiscordTest.textContent = t('btnDiscordBridgeTesting');
-      if (hint) { hint.textContent = ''; hint.style.color = 'var(--text-muted)'; }
-      try {
-        const result = await window.backend.testDiscordBridgeConnection(token, userId);
-        if (hint) {
-          hint.textContent = t('discordBridgeTestSuccess', { bot: (result && result.botUsername) || '' });
-          hint.style.color = 'var(--accent-color)';
-        }
-      } catch (e) {
-        if (hint) {
-          hint.textContent = t('discordBridgeTestFailed', { err: (e && e.message) || String(e) });
-          hint.style.color = 'var(--text-danger-hint)';
-        }
-      } finally {
-        btnDiscordTest.disabled = !(document.getElementById('cfg-discord-enabled') && document.getElementById('cfg-discord-enabled').checked);
-        btnDiscordTest.textContent = prevLabel;
-      }
-    });
-  }
 
   // Mobile Bridge (Cloudflare): token/endpoint/interval/test button mean nothing while disabled.
   function updateCFBridgeFieldStates() {
@@ -15487,19 +15436,6 @@ OUTPUT FORMAT:
     if (maxPipeSizeEl) {
       maxPipeSizeEl.value = (config.scraps && config.scraps.maxPipeSizeMB) || config.max_pipe_size_mb || 10;
     }
-
-    // Discord Bridge
-    const discordEnabledEl = document.getElementById('cfg-discord-enabled');
-    if (discordEnabledEl) discordEnabledEl.checked = !!(config.discordBridge && config.discordBridge.enabled);
-    const discordTokenEl = document.getElementById('cfg-discord-bot-token');
-    if (discordTokenEl) discordTokenEl.value = (config.discordBridge && config.discordBridge.botToken) || '';
-    const discordUserIdEl = document.getElementById('cfg-discord-user-id');
-    if (discordUserIdEl) discordUserIdEl.value = (config.discordBridge && config.discordBridge.allowedUserId) || '';
-    const discordIntervalEl = document.getElementById('cfg-discord-poll-interval');
-    if (discordIntervalEl) discordIntervalEl.value = (config.discordBridge && config.discordBridge.pollIntervalSeconds) || 45;
-    const discordHintEl = document.getElementById('discord-test-result-hint');
-    if (discordHintEl) discordHintEl.textContent = '';
-    updateDiscordBridgeFieldStates();
 
     // CF Mobile Bridge
     const cfEnabledEl = document.getElementById('cfg-cf-enabled');
@@ -16576,17 +16512,6 @@ OUTPUT FORMAT:
       config.max_pipe_size_mb = config.scraps.maxPipeSizeMB;
     }
 
-    // Save Discord Bridge settings
-    if (!config.discordBridge) config.discordBridge = {};
-    const saveDiscordEnabledEl = document.getElementById('cfg-discord-enabled');
-    if (saveDiscordEnabledEl) config.discordBridge.enabled = saveDiscordEnabledEl.checked;
-    const saveDiscordTokenEl = document.getElementById('cfg-discord-bot-token');
-    if (saveDiscordTokenEl) config.discordBridge.botToken = saveDiscordTokenEl.value.trim();
-    const saveDiscordUserIdEl = document.getElementById('cfg-discord-user-id');
-    if (saveDiscordUserIdEl) config.discordBridge.allowedUserId = saveDiscordUserIdEl.value.trim();
-    const saveDiscordIntervalEl = document.getElementById('cfg-discord-poll-interval');
-    if (saveDiscordIntervalEl) config.discordBridge.pollIntervalSeconds = clampNumber(saveDiscordIntervalEl.value, 15, 600, 45);
-
     // Save CF Mobile Bridge settings
     if (!config.cfBridge) config.cfBridge = {};
     const saveCFEnabledEl = document.getElementById('cfg-cf-enabled');
@@ -16879,10 +16804,6 @@ OUTPUT FORMAT:
           if (!config.scraps) config.scraps = {};
           Object.assign(config.scraps, parsed.scraps);
         }
-        if (parsed.discordBridge) {
-          if (!config.discordBridge) config.discordBridge = {};
-          Object.assign(config.discordBridge, parsed.discordBridge);
-        }
         if (parsed.cfBridge) {
           if (!config.cfBridge) config.cfBridge = {};
           Object.assign(config.cfBridge, parsed.cfBridge);
@@ -16963,10 +16884,6 @@ OUTPUT FORMAT:
           if (fileConfig.scraps || Object.keys(flatScraps).length) {
             if (!config.scraps) config.scraps = {};
             Object.assign(config.scraps, fileConfig.scraps || {}, flatScraps);
-          }
-          if (fileConfig.discordBridge) {
-            if (!config.discordBridge) config.discordBridge = {};
-            Object.assign(config.discordBridge, fileConfig.discordBridge);
           }
           if (fileConfig.cfBridge) {
             if (!config.cfBridge) config.cfBridge = {};

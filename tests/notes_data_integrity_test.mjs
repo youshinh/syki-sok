@@ -3,7 +3,7 @@
 //   phase) and a mocked backend. Covered:
 //     B01  the Save / Don't save / Cancel dialog: one dialog, one outcome; no key listener is left behind; Ctrl / Alt / Cmd
 //          combinations, IME keys and held keys are not answers; Enter presses the focused button
-//     B02  the scrap-appended notifications (CLI pipe, Quick Capture, hot folder, Discord, scraps search): a tab is the tab of a
+//     B02  the scrap-appended notifications (CLI pipe, Quick Capture, hot folder, scraps search): a tab is the tab of a
 //          PATH (never of a file name), and a tab with unsaved text is never overwritten or marked saved
 //     B07  text typed while a save is in flight keeps the tab unsaved; saves of one note are written one at a time
 //     B08  a file that is open is not opened twice (Ctrl+O, RPC newTab / openTab, ...); Save As over an open file
@@ -906,32 +906,6 @@ check('B02: a note with the same NAME in another folder is another note (append 
   assert.equal(writes[0].content, 'project notes\nmy edit');
 });
 
-check('B02: the Discord bridge notification follows the same rules (path only; unsaved text kept; no tab switch)', async () => {
-  const OTHER = 'D:/projects/x/2026-09-30.md';
-  const env = await createEnv({ files: { [SCRAP]: 'disk after Discord\n' } });
-  env.config.general.autoSave = false;
-  const scrapTab = openNote(env, { title: '2026-09-30.md', path: SCRAP, content: 'before\n' });
-  const otherTab = openNote(env, { title: '2026-09-30.md', path: OTHER, content: 'project\n' });
-  assert.equal(env.active().id, otherTab);
-
-  // clean scrap tab: refreshed in the background, the active tab does not change
-  await env.window.onDiscordBridgeMessage({ filePath: SCRAP, fileName: '2026-09-30.md' });
-  await env.flush();
-  assert.equal(env.window.__sykiRPC.getBuffer(scrapTab).content, 'disk after Discord\n');
-  assert.equal(env.window.__sykiRPC.getBuffer(otherTab).content, 'project\n', 'the same-named note in another folder is not touched');
-  assert.equal(env.active().id, otherTab, 'no focus stealing');
-  assert.equal(env.lastMessage(), tr('en', 'discordBridgeMessageToast'));
-
-  // now the scrap tab has unsaved typing
-  env.rpc.switchTab(scrapTab);
-  env.type('disk after Discord\nmine');
-  env.files.set(SCRAP, 'disk after Discord\nsecond message\n');
-  await env.window.onDiscordBridgeMessage({ filePath: SCRAP, fileName: '2026-09-30.md' });
-  await env.flush();
-  assert.equal(env.editor.value, 'disk after Discord\nmine');
-  assert.equal(env.tab(scrapTab).isModified, true);
-  assert.equal(env.lastMessage(), tr('en', 'scrapKeptUnsavedEdits'));
-});
 
 check('B02: the scraps search jumps to the tab of the result\'s path, not to a note with the same name', async () => {
   const OTHER = 'D:/projects/x/2026-09-30.md';

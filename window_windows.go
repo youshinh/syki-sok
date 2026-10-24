@@ -1229,7 +1229,6 @@ func runPlatformWindow(app *App, serverURL string) {
 			setupGitRemote: (dir, remoteUrl, branch) => window.backend_setupGitRemote(dir || "", remoteUrl || "", branch || ""),
 			checkGitInstalled: () => window.backend_checkGitInstalled(),
 			testGitRemote: (remoteUrl) => window.backend_testGitRemote(remoteUrl || ""),
-			testDiscordBridgeConnection: (botToken, allowedUserId) => window.backend_testDiscordBridgeConnection(botToken || "", allowedUserId || ""),
 			testCFBridgeConnection: (endpoint, token) => window.backend_testCFBridgeConnection(endpoint || "", token || ""),
 			getCFBridgePairingQR: (endpoint, token) => window.backend_getCFBridgePairingQR(endpoint || "", token || ""),
 			pollCFBridgeNow: () => window.backend_pollCFBridgeNow(),

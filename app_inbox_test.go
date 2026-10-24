@@ -265,9 +265,9 @@ func TestInboxAndDiscordReadTheBatchProfile(t *testing.T) {
 	if v.Engine != "whisper-local" || v.Whisper.Model != "small-q5_1" || v.Model != "m1" {
 		t.Errorf("inbox, legacy config: %+v", v)
 	}
-	_, v = discordDropConfigs(legacy)
+	_, v = cfDropConfigs(legacy)
 	if v.Engine != "whisper-local" || v.Whisper.Model != "small-q5_1" || v.Model != "m1" {
-		t.Errorf("discord, legacy config: %+v", v)
+		t.Errorf("cfbridge, legacy config: %+v", v)
 	}
 
 	both := `{"voice":{"model":"old","realtime":{"engine":"gemini","model":"rt"},"batch":{"engine":"whisper-local","model":"bt","whisper":{"model":"base"}}}}`
@@ -275,8 +275,8 @@ func TestInboxAndDiscordReadTheBatchProfile(t *testing.T) {
 	if v.Engine != "whisper-local" || v.Model != "bt" || v.Whisper.Model != "base" || v.Realtime != nil || v.Batch != nil {
 		t.Errorf("inbox, profiles: %+v", v)
 	}
-	_, v = discordDropConfigs(both)
+	_, v = cfDropConfigs(both)
 	if v.Engine != "whisper-local" || v.Model != "bt" || v.Whisper.Model != "base" {
-		t.Errorf("discord, profiles: %+v", v)
+		t.Errorf("cfbridge, profiles: %+v", v)
 	}
 }

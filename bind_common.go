@@ -81,7 +81,6 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_setupGitRemote", app.SetupGitRemote)
 	_ = w.Bind("backend_checkGitInstalled", app.CheckGitInstalled)
 	_ = w.Bind("backend_testGitRemote", app.TestGitRemote)
-	_ = w.Bind("backend_testDiscordBridgeConnection", app.TestDiscordBridgeConnection)
 	_ = w.Bind("backend_testCFBridgeConnection", app.TestCFBridgeConnection)
 	_ = w.Bind("backend_getCFBridgePairingQR", app.GetCFBridgePairingQR)
 	_ = w.Bind("backend_pollCFBridgeNow", app.PollCFBridgeNow)
