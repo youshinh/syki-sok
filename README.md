@@ -33,8 +33,10 @@ Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/
 
 ```bash
 # macOS (Homebrew)
-brew install --cask youshinh/tap/syki
+brew install --cask --no-quarantine youshinh/tap/syki
 ```
+
+> 💡 **Tip (macOS)**: Passing `--no-quarantine` bypasses macOS Gatekeeper prompts on first launch and future updates, allowing seamless one-command upgrades via `brew upgrade --cask syki`.
 
 ---
 
