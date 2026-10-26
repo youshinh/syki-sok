@@ -73,25 +73,34 @@ export default {
   async fetch(req: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     const url = new URL(req.url);
 
+    // 0. Enforce HTTPS in production for Secure Context (Microphone & Camera API)
+    const proto = req.headers.get("x-forwarded-proto");
+    if (proto === "http") {
+      const httpsUrl = new URL(req.url);
+      httpsUrl.protocol = "https:";
+      return Response.redirect(httpsUrl.toString(), 301);
+    }
+
     // 1. CORS Preflight
     if (req.method === "OPTIONS") {
       return new Response(null, { headers: corsHeaders() });
     }
 
     // 2. Serve Web PWA Frontend
-    if (req.method === "GET" && (url.pathname === "/" || url.pathname === "/index.html")) {
-      return new Response(PWA_HTML, {
+    if ((req.method === "GET" || req.method === "HEAD") && (url.pathname === "/" || url.pathname === "/index.html")) {
+      return new Response(req.method === "HEAD" ? null : PWA_HTML, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
           "Cache-Control": "public, max-age=3600",
+          "Permissions-Policy": "camera=(self), microphone=(self)",
         },
       });
     }
 
     // 2.5 Serve App Icon & Favicon
-    if (req.method === "GET" && (url.pathname === "/app.png" || url.pathname === "/favicon.ico" || url.pathname === "/favicon.png")) {
+    if ((req.method === "GET" || req.method === "HEAD") && (url.pathname === "/app.png" || url.pathname === "/favicon.ico" || url.pathname === "/favicon.png")) {
       const buffer = base64ToArrayBuffer(APP_ICON_B64);
-      return new Response(buffer, {
+      return new Response(req.method === "HEAD" ? null : buffer, {
         headers: {
           "Content-Type": "image/png",
           "Cache-Control": "public, max-age=86400",

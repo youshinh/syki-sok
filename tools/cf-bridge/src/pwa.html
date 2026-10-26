@@ -584,7 +584,7 @@
 
         <div class="editor-card">
           <div class="recording-card-overlay" id="rec-overlay">
-            <div class="recording-timer" id="rec-timer">00:07</div>
+            <div class="recording-timer" id="rec-timer">00:00</div>
             <div class="wave-bars">
               <div class="wave-bar"></div>
               <div class="wave-bar"></div>
@@ -681,18 +681,25 @@
             <input class="settings-input" id="settings-token" type="password" placeholder="Bearer secret token" />
           </div>
 
-          <input type="file" id="file-camera" accept="image/*" capture="environment" style="display:none" />
-          <input type="file" id="file-input" style="display:none" />
         </div>
+
+        <!-- Off-screen file inputs for mobile Safari/Chrome compatibility -->
+        <input type="file" id="file-camera" accept="image/*" capture="environment" style="position:fixed; top:-9999px; left:-9999px; opacity:0; width:1px; height:1px; pointer-events:none;" />
+        <input type="file" id="file-input" style="position:fixed; top:-9999px; left:-9999px; opacity:0; width:1px; height:1px; pointer-events:none;" />
 
     </div>
   </div>
 
   <script>
+    // Force HTTPS in production
+    if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
+      window.location.href = window.location.href.replace(/^http:/, 'https:');
+    }
+
     // Viewport & Horizontal Scroll Lock
     function syncViewport() {
       if (window.visualViewport) {
-        document.documentElement.style.setProperty('--app-height', ${window.visualViewport.height}px);
+        document.documentElement.style.setProperty('--app-height', window.visualViewport.height + 'px');
       }
       if (window.scrollX !== 0 || window.scrollY !== 0) {
         window.scrollTo(0, 0);
@@ -828,38 +835,63 @@
       swatchCustom.style.background = savedAccent;
     }
 
+        function showToast(text, isError = false) {
+      toast.querySelector('span').textContent = text;
+      toast.style.background = isError ? '#b8472c' : 'var(--accent)';
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), isError ? 4000 : 2500);
+    }
+
     // Camera capture
-    btnCamera.addEventListener('click', () => fileCamera.click());
-    fileCamera.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const b64 = await readFileAsBase64(file);
-      stagedAttachment = {
-        type: 'image',
-        mime: file.type || 'image/jpeg',
-        filename: file.name || 'photo.jpg',
-        dataBase64: b64
-      };
-      setChip(file.name || 'photo.jpg');
+    btnCamera.addEventListener('click', (e) => {
+      e.preventDefault();
       fileCamera.value = '';
+      fileCamera.click();
+    });
+    fileCamera.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const b64 = await readFileAsBase64(file);
+        stagedAttachment = {
+          type: 'image',
+          mime: file.type || 'image/jpeg',
+          filename: file.name || 'photo.jpg',
+          dataBase64: b64
+        };
+        setChip(file.name || 'photo.jpg');
+      } catch (err) {
+        showToast('写真の読み込みに失敗しました: ' + (err.message || err), true);
+      } finally {
+        fileCamera.value = '';
+      }
     });
 
     // File selection
-    btnFile.addEventListener('click', () => fileInput.click());
-    fileInput.addEventListener('change', async (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const b64 = await readFileAsBase64(file);
-      const isImg = file.type.startsWith('image/');
-      const isAud = file.type.startsWith('audio/');
-      stagedAttachment = {
-        type: isImg ? 'image' : (isAud ? 'audio' : 'file'),
-        mime: file.type || 'application/octet-stream',
-        filename: file.name,
-        dataBase64: b64
-      };
-      setChip(file.name);
+    btnFile.addEventListener('click', (e) => {
+      e.preventDefault();
       fileInput.value = '';
+      fileInput.click();
+    });
+    fileInput.addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0];
+      if (!file) return;
+      try {
+        const b64 = await readFileAsBase64(file);
+        const isImg = file.type.startsWith('image/');
+        const isAud = file.type.startsWith('audio/');
+        stagedAttachment = {
+          type: isImg ? 'image' : (isAud ? 'audio' : 'file'),
+          mime: file.type || 'application/octet-stream',
+          filename: file.name,
+          dataBase64: b64
+        };
+        setChip(file.name);
+      } catch (err) {
+        showToast('ファイルの読み込みに失敗しました: ' + (err.message || err), true);
+      } finally {
+        fileInput.value = '';
+      }
     });
 
     function readFileAsBase64(file) {
@@ -899,39 +931,126 @@
       }[tag] || tag));
     }
 
+    // Audio MIME detection helper
+    function getSupportedAudioMimeType() {
+      if (typeof MediaRecorder === 'undefined' || !MediaRecorder.isTypeSupported) {
+        return '';
+      }
+      const candidates = [
+        'audio/webm;codecs=opus',
+        'audio/webm',
+        'audio/mp4',
+        'audio/aac',
+        'audio/ogg;codecs=opus',
+        'audio/ogg'
+      ];
+      for (const t of candidates) {
+        if (MediaRecorder.isTypeSupported(t)) {
+          return t;
+        }
+      }
+      return '';
+    }
+
+    let recTimerInterval = null;
+    let recStartTime = 0;
+
+    function updateRecTimer() {
+      const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
+      const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
+      const s = String(elapsed % 60).padStart(2, '0');
+      recTimer.textContent = `${m}:${s}`;
+    }
+
     // Voice recording
     btnVoice.addEventListener('click', async () => {
       if (!isRecording) {
+        // Environment checks
+        if (!window.isSecureContext) {
+          showToast('マイクにはHTTPSが必要です (URLを確認)', true);
+          alert('マイク録音にはHTTPS暗号化通信が必要です。https:// でアクセスしているかご確認ください。');
+          return;
+        }
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          showToast('マイク非対応ブラウザです', true);
+          alert('お使いのブラウザ（またはアプリ内ブラウザ）はマイク録音に対応していません。SafariまたはChromeで開いてください。');
+          return;
+        }
+        if (typeof MediaRecorder === 'undefined') {
+          showToast('録音API非対応です', true);
+          alert('お使いの環境はMediaRecorderに対応していません。');
+          return;
+        }
+
         try {
           const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-          mediaRecorder = new MediaRecorder(stream);
+          const chosenMime = getSupportedAudioMimeType();
+          const options = chosenMime ? { mimeType: chosenMime } : undefined;
+
+          try {
+            mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
+          } catch (e) {
+            console.warn('Fallback to default MediaRecorder without options:', e);
+            mediaRecorder = new MediaRecorder(stream);
+          }
+
           audioChunks = [];
-          mediaRecorder.ondataavailable = e => { if (e.data.size > 0) audioChunks.push(e.data); };
+          mediaRecorder.ondataavailable = e => {
+            if (e.data && e.data.size > 0) audioChunks.push(e.data);
+          };
+
           mediaRecorder.onstop = async () => {
-            const blob = new Blob(audioChunks, { type: mediaRecorder.mimeType || 'audio/webm' });
+            clearInterval(recTimerInterval);
+            recTimerInterval = null;
+
+            const actualMime = mediaRecorder.mimeType || chosenMime || 'audio/webm';
+            const blob = new Blob(audioChunks, { type: actualMime });
             stream.getTracks().forEach(track => track.stop());
+
             const b64 = await readFileAsBase64(blob);
-            const ext = blob.type.includes('ogg') ? 'ogg' : 'webm';
+            let ext = 'webm';
+            if (actualMime.includes('mp4') || actualMime.includes('aac') || actualMime.includes('m4a')) {
+              ext = 'm4a';
+            } else if (actualMime.includes('ogg')) {
+              ext = 'ogg';
+            } else if (actualMime.includes('wav')) {
+              ext = 'wav';
+            }
             const filename = `voice_${Date.now()}.${ext}`;
             stagedAttachment = {
               type: 'audio',
-              mime: blob.type,
+              mime: actualMime,
               filename: filename,
               dataBase64: b64
             };
             setChip(filename);
           };
-          mediaRecorder.start();
+
+          mediaRecorder.start(250);
           isRecording = true;
+          recStartTime = Date.now();
+          recTimer.textContent = '00:00';
+          recTimerInterval = setInterval(updateRecTimer, 500);
+
           btnVoice.classList.add('recording');
           recOverlay.classList.add('active');
         } catch (err) {
-          alert('Microphone access denied: ' + (err.message || err));
+          console.error('Microphone error:', err);
+          let msg = err.message || String(err);
+          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+            msg = 'マイクがブロックされています。ブラウザのサイト設定からマイク権限を「許可」にしてください。';
+          } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+            msg = 'マイク機器が見つかりませんでした。';
+          }
+          showToast(msg, true);
+          alert('マイクエラー: ' + msg);
         }
       } else {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {
           mediaRecorder.stop();
         }
+        clearInterval(recTimerInterval);
+        recTimerInterval = null;
         isRecording = false;
         btnVoice.classList.remove('recording');
         recOverlay.classList.remove('active');
@@ -978,9 +1097,7 @@
         trayRow.innerHTML = '';
         trayRow.style.display = 'none';
 
-        toast.textContent = 'Sent to syki';
-        toast.classList.add('show');
-        setTimeout(() => toast.classList.remove('show'), 2500);
+        showToast('Sent to syki');
       } catch (err) {
         alert('Send failed: ' + (err.message || err));
       } finally {
