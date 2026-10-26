@@ -91,7 +91,7 @@ export default {
       return new Response(req.method === "HEAD" ? null : PWA_HTML, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "public, max-age=3600",
+          "Cache-Control": "no-cache, must-revalidate",
           "Permissions-Policy": "camera=(self), microphone=(self)",
         },
       });
@@ -114,6 +114,7 @@ export default {
         name: "syki::sok Quick Capture",
         short_name: "syki::sok",
         start_url: "/",
+        scope: "/",
         display: "standalone",
         background_color: "#101113",
         theme_color: "#101113",
@@ -133,7 +134,10 @@ export default {
         ],
       };
       return new Response(JSON.stringify(manifest), {
-        headers: { "Content-Type": "application/manifest+json" },
+        headers: {
+          "Content-Type": "application/manifest+json",
+          "Cache-Control": "no-cache, must-revalidate",
+        },
       });
     }
 
