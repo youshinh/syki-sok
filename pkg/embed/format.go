@@ -29,7 +29,7 @@ var textFormats = []struct {
 }{
 	{[]string{"multilingual-e5", "e5-small", "e5-base", "e5-large"}, textFormat{"query: ", "passage: "}},
 	{[]string{"nomic-embed-text"}, textFormat{"search_query: ", "search_document: "}},
-	{[]string{"embeddinggemma"}, textFormat{"task: search result | query: ", "title: none | text: "}},
+	{[]string{"embeddinggemma", "embedding-gemma", "gemma-embed"}, textFormat{"task: search result | query: ", "title: none | text: "}},
 	{[]string{"qwen3-embedding"}, textFormat{"Instruct: Given a web search query, retrieve relevant passages that answer the query\nQuery:", ""}}, // no space after "Query:", as its card has it
 	{[]string{"mxbai-embed", "snowflake-arctic-embed"}, textFormat{"Represent this sentence for searching relevant passages: ", ""}},
 }
