@@ -568,7 +568,7 @@
         <header class="frameless-header">
           <div class="brand-wrap">
             
-            <span class="brand-title">syki<span class="colon">::</span>sok</span>
+            <span class="brand-title">syki<span class="colon">::</span>sok <span style="font-size: 11px; opacity: 0.5; font-weight: normal; margin-left: 2px;">v3</span></span>
           </div>
           <button class="btn-header-ghost" id="btn-toggle-settings" type="button" title="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -681,6 +681,13 @@
             <input class="settings-input" id="settings-token" type="password" placeholder="Bearer secret token" />
           </div>
 
+          <div class="settings-section">
+            <span class="settings-label">App Cache</span>
+            <button type="button" class="settings-input" id="btn-force-reload" style="cursor: pointer; text-align: center; background: rgba(255,255,255,0.12); color: var(--text-main);">
+              🔄 キャッシュをクリアして再読込
+            </button>
+          </div>
+
         </div>
 
         <!-- Off-screen file inputs for mobile Safari/Chrome compatibility -->
@@ -694,6 +701,20 @@
     // Force HTTPS in production
     if (window.location.protocol === 'http:' && window.location.hostname !== 'localhost' && window.location.hostname !== '127.0.0.1') {
       window.location.href = window.location.href.replace(/^http:/, 'https:');
+    }
+
+    // Force reload button in Settings
+    const btnForceReload = document.getElementById("btn-force-reload");
+    if (btnForceReload) {
+      btnForceReload.addEventListener("click", () => {
+        if ("caches" in window) {
+          caches.keys().then(names => Promise.all(names.map(name => caches.delete(name)))).finally(() => {
+            window.location.href = window.location.origin + "/?v=" + Date.now();
+          });
+        } else {
+          window.location.href = window.location.origin + "/?v=" + Date.now();
+        }
+      });
     }
 
     // Viewport & Horizontal Scroll Lock

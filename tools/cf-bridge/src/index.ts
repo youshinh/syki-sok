@@ -91,7 +91,9 @@ export default {
       return new Response(req.method === "HEAD" ? null : PWA_HTML, {
         headers: {
           "Content-Type": "text/html; charset=utf-8",
-          "Cache-Control": "no-cache, must-revalidate",
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
+          "Pragma": "no-cache",
+          "Expires": "0",
           "Permissions-Policy": "camera=(self), microphone=(self)",
         },
       });
@@ -113,7 +115,7 @@ export default {
       const manifest = {
         name: "syki::sok Quick Capture",
         short_name: "syki::sok",
-        start_url: "/",
+        start_url: "/?v=3",
         scope: "/",
         display: "standalone",
         background_color: "#101113",
