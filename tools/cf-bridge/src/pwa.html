@@ -568,7 +568,7 @@
         <header class="frameless-header">
           <div class="brand-wrap">
             
-            <span class="brand-title">syki<span class="colon">::</span>sok <span style="font-size: 11px; opacity: 0.5; font-weight: normal; margin-left: 2px;">v3</span></span>
+            <span class="brand-title">syki<span class="colon">::</span>sok</span>sok <span style="font-size: 11px; opacity: 0.5; font-weight: normal; margin-left: 2px;">v3</span></span>
           </div>
           <button class="btn-header-ghost" id="btn-toggle-settings" type="button" title="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -606,12 +606,12 @@
 
           <div class="editor-toolbar">
             <div class="tool-group">
-              <button class="btn-icon" id="btn-camera" type="button" title="Camera">
+              <label for="file-camera" class="btn-icon" id="btn-camera" title="Camera" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
                   <circle cx="12" cy="13" r="4"></circle>
                 </svg>
-              </button>
+              </label>
 
               <button class="btn-icon" id="btn-voice" type="button" title="Voice">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
@@ -621,12 +621,12 @@
                 </svg>
               </button>
 
-              <button class="btn-icon" id="btn-file" type="button" title="File">
+              <label for="file-input" class="btn-icon" id="btn-file" title="File" style="cursor: pointer; display: flex; align-items: center; justify-content: center;">
                 <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                   <polyline points="14 2 14 8 20 8"></polyline>
                 </svg>
-              </button>
+              </label>
             </div>
 
             <button class="btn-send" id="btn-send" type="button">
@@ -691,8 +691,8 @@
         </div>
 
         <!-- Off-screen file inputs for mobile Safari/Chrome compatibility -->
-        <input type="file" id="file-camera" accept="image/*" capture="environment" style="position:fixed; top:-9999px; left:-9999px; opacity:0; width:1px; height:1px; pointer-events:none;" />
-        <input type="file" id="file-input" style="position:fixed; top:-9999px; left:-9999px; opacity:0; width:1px; height:1px; pointer-events:none;" />
+        <input type="file" id="file-camera" accept="image/*" capture="environment" style="position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px;" />
+        <input type="file" id="file-input" style="position: absolute; left: -9999px; opacity: 0; width: 1px; height: 1px;" />
 
     </div>
   </div>
@@ -864,15 +864,11 @@
       setTimeout(() => toast.classList.remove('show'), isError ? 4000 : 2500);
     }
 
-    // Camera capture
-    btnCamera.addEventListener('click', (e) => {
-      e.preventDefault();
-      fileCamera.value = '';
-      fileCamera.click();
-    });
+    // Camera & File change handlers (triggered natively by <label>)
     fileCamera.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      showToast('写真を読み込み中...');
       try {
         const b64 = await readFileAsBase64(file);
         stagedAttachment = {
@@ -882,22 +878,18 @@
           dataBase64: b64
         };
         setChip(file.name || 'photo.jpg');
+        showToast('写真を添付しました');
       } catch (err) {
-        showToast('写真の読み込みに失敗しました: ' + (err.message || err), true);
+        showToast('写真の読み込み失敗: ' + (err.message || err), true);
       } finally {
         fileCamera.value = '';
       }
     });
 
-    // File selection
-    btnFile.addEventListener('click', (e) => {
-      e.preventDefault();
-      fileInput.value = '';
-      fileInput.click();
-    });
     fileInput.addEventListener('change', async (e) => {
       const file = e.target.files && e.target.files[0];
       if (!file) return;
+      showToast('ファイルを読み込み中...');
       try {
         const b64 = await readFileAsBase64(file);
         const isImg = file.type.startsWith('image/');
@@ -909,8 +901,9 @@
           dataBase64: b64
         };
         setChip(file.name);
+        showToast('ファイルを添付しました');
       } catch (err) {
-        showToast('ファイルの読み込みに失敗しました: ' + (err.message || err), true);
+        showToast('ファイル読み込み失敗: ' + (err.message || err), true);
       } finally {
         fileInput.value = '';
       }
@@ -934,7 +927,7 @@
       trayRow.style.display = 'flex';
       const chip = document.createElement('div');
       chip.className = 'tray-chip';
-      chip.innerHTML = `<span>📎 ${escapeHTML(name)}</span><button class="chip-del" id="btn-del-chip">✕</button>`;
+      chip.innerHTML = '<span>📎 ' + escapeHTML(name) + '</span><button class="chip-del" id="btn-del-chip">✕</button>';
       chip.querySelector('#btn-del-chip').addEventListener('click', () => {
         stagedAttachment = null;
         trayRow.innerHTML = '';
@@ -981,26 +974,33 @@
       const elapsed = Math.floor((Date.now() - recStartTime) / 1000);
       const m = String(Math.floor(elapsed / 60)).padStart(2, '0');
       const s = String(elapsed % 60).padStart(2, '0');
-      recTimer.textContent = `${m}:${s}`;
+      if (recTimer) recTimer.textContent = m + ':' + s;
     }
 
-    // Voice recording
-    btnVoice.addEventListener('click', async () => {
+    // Voice recording with active feedback
+    btnVoice.addEventListener('click', async (e) => {
+      e.preventDefault();
+      try { if (navigator.vibrate) navigator.vibrate(30); } catch (_) {}
+
       if (!isRecording) {
-        // Environment checks
+        showToast('マイク起動中...');
+
         if (!window.isSecureContext) {
-          showToast('マイクにはHTTPSが必要です (URLを確認)', true);
-          alert('マイク録音にはHTTPS暗号化通信が必要です。https:// でアクセスしているかご確認ください。');
+          const msg = 'マイクにはHTTPSが必要です。https:// で接続されているか確認してください。';
+          showToast(msg, true);
+          alert(msg);
           return;
         }
         if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-          showToast('マイク非対応ブラウザです', true);
-          alert('お使いのブラウザ（またはアプリ内ブラウザ）はマイク録音に対応していません。SafariまたはChromeで開いてください。');
+          const msg = 'この環境はマイクアクセス(getUserMedia)に対応していません。';
+          showToast(msg, true);
+          alert(msg);
           return;
         }
         if (typeof MediaRecorder === 'undefined') {
-          showToast('録音API非対応です', true);
-          alert('お使いの環境はMediaRecorderに対応していません。');
+          const msg = '録音機能(MediaRecorder)に対応していません。';
+          showToast(msg, true);
+          alert(msg);
           return;
         }
 
@@ -1012,13 +1012,13 @@
           try {
             mediaRecorder = options ? new MediaRecorder(stream, options) : new MediaRecorder(stream);
           } catch (e) {
-            console.warn('Fallback to default MediaRecorder without options:', e);
+            console.warn('Fallback to default MediaRecorder:', e);
             mediaRecorder = new MediaRecorder(stream);
           }
 
           audioChunks = [];
-          mediaRecorder.ondataavailable = e => {
-            if (e.data && e.data.size > 0) audioChunks.push(e.data);
+          mediaRecorder.ondataavailable = ev => {
+            if (ev.data && ev.data.size > 0) audioChunks.push(ev.data);
           };
 
           mediaRecorder.onstop = async () => {
@@ -1038,7 +1038,7 @@
             } else if (actualMime.includes('wav')) {
               ext = 'wav';
             }
-            const filename = `voice_${Date.now()}.${ext}`;
+            const filename = 'voice_' + Date.now() + '.' + ext;
             stagedAttachment = {
               type: 'audio',
               mime: actualMime,
@@ -1046,26 +1046,30 @@
               dataBase64: b64
             };
             setChip(filename);
+            showToast('音声録音を完了しました');
           };
 
           mediaRecorder.start(250);
           isRecording = true;
           recStartTime = Date.now();
-          recTimer.textContent = '00:00';
+          if (recTimer) recTimer.textContent = '00:00';
           recTimerInterval = setInterval(updateRecTimer, 500);
 
           btnVoice.classList.add('recording');
           recOverlay.classList.add('active');
+          showToast('録音中 (もう一度押すと停止)');
         } catch (err) {
           console.error('Microphone error:', err);
-          let msg = err.message || String(err);
-          if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
-            msg = 'マイクがブロックされています。ブラウザのサイト設定からマイク権限を「許可」にしてください。';
-          } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
-            msg = 'マイク機器が見つかりませんでした。';
+          const errName = err.name || '';
+          const errMsg = err.message || String(err);
+          let detail = errMsg;
+          if (errName === 'NotAllowedError' || errName === 'PermissionDeniedError') {
+            detail = 'マイクがブロックされています。Chromeの「設定」>「サイトの設定」>「マイク」で bridge.syki-sok.workers.dev を「許可」にしてください。';
+          } else if (errName === 'NotFoundError' || errName === 'DevicesNotFoundError') {
+            detail = 'マイク機器が見つかりませんでした。';
           }
-          showToast(msg, true);
-          alert('マイクエラー: ' + msg);
+          showToast(detail, true);
+          alert('【マイクエラー】\n' + detail + '\n(' + errName + ')');
         }
       } else {
         if (mediaRecorder && mediaRecorder.state !== 'inactive') {

@@ -115,7 +115,7 @@ export default {
       const manifest = {
         name: "syki::sok Quick Capture",
         short_name: "syki::sok",
-        start_url: "/?v=3",
+        start_url: "/",
         scope: "/",
         display: "standalone",
         background_color: "#101113",
