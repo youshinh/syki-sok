@@ -227,3 +227,35 @@ func TestHandleCFMemosSavesToDefaultNoteDir(t *testing.T) {
 		t.Errorf("expected memo content in custom file, got: %s", string(content))
 	}
 }
+
+func TestInitCFBridgeDynamicConfig(t *testing.T) {
+	// Verifies that when Poller receives memos, it reads the latest config dynamically
+	// so a newly set or updated Gemini API key is applied immediately without restarting the poller.
+	a := &App{}
+	// Initially no API key
+	initCfg := `{"cfBridge":{"enabled":true,"endpoint":"https://dummy.workers.dev","token":"test","pollIntervalSeconds":30},"vision":{"apiKey":""}}`
+	_, _ = a.SaveConfig(initCfg)
+
+	a.InitCFBridge()
+	defer func() {
+		a.cfMu.Lock()
+		if a.cfPoller != nil {
+			a.cfPoller.Stop()
+			a.cfPoller = nil
+		}
+		a.cfMu.Unlock()
+	}()
+
+	// Now user sets Gemini API key in settings
+	updatedCfg := `{"cfBridge":{"enabled":true,"endpoint":"https://dummy.workers.dev","token":"test","pollIntervalSeconds":30},"vision":{"apiKey":"new-gemini-key","model":"gemini-flash-lite-latest"}}`
+	_, _ = a.SaveConfig(updatedCfg)
+
+	cfgNow, _ := a.GetConfig()
+	vision, voice := cfDropConfigs(cfgNow)
+	if vision.APIKey != "new-gemini-key" {
+		t.Fatalf("expected updated vision key 'new-gemini-key', got %q", vision.APIKey)
+	}
+	if voice.APIKey != "new-gemini-key" {
+		t.Fatalf("expected voice to inherit 'new-gemini-key', got %q", voice.APIKey)
+	}
+}

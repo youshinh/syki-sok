@@ -80,17 +80,21 @@ func (a *App) InitCFBridge() {
 		return
 	}
 
-	visionCfg, voiceCfg := cfDropConfigs(cfgStr)
 	endpoint := s.Endpoint
 	if cfBridgeBaseURLOverride != "" {
 		endpoint = cfBridgeBaseURLOverride
 	}
 
+	// The vision/voice settings are read when each batch of memos is handled, not captured here,
+	// so a newly configured or changed API key applies immediately to the next memo without
+	// needing to restart the bridge poller (mirroring app_inbox.go).
 	poller := cfbridge.NewPoller(cfbridge.Config{
 		Endpoint:        endpoint,
 		Token:           s.Token,
 		IntervalSeconds: s.PollIntervalSeconds,
 		OnMemos: func(memos []cfbridge.Memo) error {
+			cfgNow, _ := a.GetConfig()
+			visionCfg, voiceCfg := cfDropConfigs(cfgNow)
 			return a.handleCFMemos(memos, visionCfg, voiceCfg)
 		},
 		OnStatus: func(status, message string) {
