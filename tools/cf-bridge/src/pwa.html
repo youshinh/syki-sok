@@ -564,7 +564,6 @@
       display: none;
       position: absolute;
       inset: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px));
-      overflow-y: auto;
       background: var(--settings-bg);
       -webkit-backdrop-filter: blur(32px) saturate(1.5);
       backdrop-filter: blur(32px) saturate(1.5);
@@ -579,31 +578,55 @@
       display: flex;
     }
 
-    .btn-clear-history {
-      background: transparent;
-      border: 1px solid rgba(255, 255, 255, 0.14);
-      color: var(--btn-ghost-fg);
-      font-size: 11.5px;
-      padding: 4px 10px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: all 0.15s ease;
-    }
-    .look-paper .btn-clear-history {
-      border: 1px solid rgba(0, 0, 0, 0.14);
-    }
-    .btn-clear-history:hover, .btn-clear-history:active {
-      color: #ff9d9d;
-      border-color: rgba(239, 68, 68, 0.35);
-    }
-
     .history-list {
       display: flex;
       flex-direction: column;
       gap: 10px;
       overflow-y: auto;
       flex: 1;
-      padding-bottom: 8px;
+      padding-bottom: 4px;
+    }
+
+    .history-footer {
+      padding-top: 10px;
+      border-top: 1px solid rgba(255, 255, 255, 0.08);
+      display: flex;
+      justify-content: center;
+    }
+    .look-paper .history-footer {
+      border-top: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .btn-clear-history {
+      width: 100%;
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: var(--btn-ghost-fg);
+      font-size: 13px;
+      font-weight: 500;
+      padding: 10px 16px;
+      border-radius: 12px;
+      cursor: pointer;
+      text-align: center;
+      transition: all 0.2s ease;
+    }
+    .look-paper .btn-clear-history {
+      border: 1px solid rgba(0, 0, 0, 0.12);
+    }
+    .btn-clear-history:hover, .btn-clear-history:active {
+      color: #ff9d9d;
+      border-color: rgba(239, 68, 68, 0.35);
+      background: rgba(239, 68, 68, 0.06);
+    }
+    .btn-clear-history.confirming {
+      color: #ffffff;
+      background: rgba(220, 38, 38, 0.85);
+      border-color: rgba(220, 38, 38, 0.9);
+      animation: pulse-danger 1s infinite alternate;
+    }
+    @keyframes pulse-danger {
+      from { box-shadow: 0 0 4px rgba(220, 38, 38, 0.3); }
+      to { box-shadow: 0 0 10px rgba(220, 38, 38, 0.6); }
     }
 
     .history-item {
@@ -642,6 +665,7 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
+      font-family: ui-monospace, SFMono-Regular, monospace;
     }
 
     .btn-del-history-item {
@@ -649,14 +673,15 @@
       border: none;
       color: var(--btn-ghost-fg);
       cursor: pointer;
-      font-size: 13px;
-      padding: 2px 4px;
-      line-height: 1;
-      border-radius: 4px;
-      transition: color 0.15s ease;
+      font-size: 11.5px;
+      padding: 2px 6px;
+      border-radius: 6px;
+      transition: all 0.15s ease;
+      letter-spacing: 0.2px;
     }
     .btn-del-history-item:hover, .btn-del-history-item:active {
       color: #ff6b6b;
+      background: rgba(239, 68, 68, 0.12);
     }
 
     .history-text {
@@ -814,7 +839,7 @@
           <div class="settings-section">
             <span class="settings-label">App Cache</span>
             <button type="button" class="settings-input" id="btn-force-reload" style="cursor: pointer; text-align: center; background: rgba(255,255,255,0.12); color: var(--text-main);">
-              🔄 キャッシュをクリアして再読込
+              キャッシュをクリアして再読込
             </button>
           </div>
 
@@ -822,12 +847,12 @@
         <div class="history-panel" id="history-panel">
           <div class="settings-head">
             <span class="settings-title">Sent History</span>
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <button class="btn-clear-history" id="btn-clear-history" type="button">すべて削除</button>
-              <button class="btn-close-settings" id="btn-close-history" type="button">✕</button>
-            </div>
+            <button class="btn-close-settings" id="btn-close-history" type="button">✕</button>
           </div>
           <div class="history-list" id="history-list"></div>
+          <div class="history-footer" id="history-footer" style="display: none;">
+            <button class="btn-clear-history" id="btn-clear-history" type="button">履歴をすべて消去</button>
+          </div>
         </div>
 
         <!-- Off-screen file inputs for mobile Safari/Chrome compatibility -->
@@ -1225,26 +1250,42 @@
 
 
     // Sent History Panel & Local Cache Logic
-    const btnToggleHistory = document.getElementById('btn-toggle-history');
-    const btnCloseHistory = document.getElementById('btn-close-history');
-    const historyPanel = document.getElementById('history-panel');
-    const historyList = document.getElementById('history-list');
-    const btnClearHistory = document.getElementById('btn-clear-history');
+    const btnToggleHistory = document.getElementById("btn-toggle-history");
+    const btnCloseHistory = document.getElementById("btn-close-history");
+    const historyPanel = document.getElementById("history-panel");
+    const historyList = document.getElementById("history-list");
+    const btnClearHistory = document.getElementById("btn-clear-history");
+    const historyFooter = document.getElementById("history-footer");
+
+    let clearConfirmTimer = null;
+
+    function resetClearHistoryButton() {
+      if (!btnClearHistory) return;
+      btnClearHistory.classList.remove("confirming");
+      btnClearHistory.textContent = "履歴をすべて消去";
+      if (clearConfirmTimer) {
+        clearTimeout(clearConfirmTimer);
+        clearConfirmTimer = null;
+      }
+    }
 
     if (btnToggleHistory) {
-      btnToggleHistory.addEventListener('click', () => {
-        renderHistory();
-        historyPanel.classList.add('open');
-        settingsPanel.classList.remove('open');
+      btnToggleHistory.addEventListener("click", () => {
+        resetClearHistoryButton();
+        historyPanel.classList.toggle("open");
+        if (historyPanel.classList.contains("open")) renderHistory();
       });
     }
     if (btnCloseHistory) {
-      btnCloseHistory.addEventListener('click', () => historyPanel.classList.remove('open'));
+      btnCloseHistory.addEventListener("click", () => {
+        resetClearHistoryButton();
+        historyPanel.classList.remove("open");
+      });
     }
 
     function getHistory() {
       try {
-        const raw = localStorage.getItem('syki_sent_history');
+        const raw = localStorage.getItem("syki_sent_history");
         return raw ? JSON.parse(raw) : [];
       } catch (e) {
         return [];
@@ -1256,11 +1297,11 @@
       history.unshift(item); // Newest first (Date desc)
       if (history.length > 100) history.length = 100;
       try {
-        localStorage.setItem('syki_sent_history', JSON.stringify(history));
+        localStorage.setItem("syki_sent_history", JSON.stringify(history));
       } catch (e) {
-        console.warn('Storage quota exceeded, trimming history:', e);
+        console.warn("Storage quota exceeded, trimming history:", e);
         history.splice(50);
-        try { localStorage.setItem('syki_sent_history', JSON.stringify(history)); } catch (_) {}
+        try { localStorage.setItem("syki_sent_history", JSON.stringify(history)); } catch (_) {}
       }
     }
 
@@ -1268,74 +1309,83 @@
       let history = getHistory();
       history = history.filter(item => item.id !== id);
       try {
-        localStorage.setItem('syki_sent_history', JSON.stringify(history));
+        localStorage.setItem("syki_sent_history", JSON.stringify(history));
       } catch (_) {}
       renderHistory();
     }
 
-    function clearAllHistory() {
-      if (confirm('送信履歴をすべて削除しますか？')) {
-        localStorage.removeItem('syki_sent_history');
-        renderHistory();
-      }
-    }
     if (btnClearHistory) {
-      btnClearHistory.addEventListener('click', clearAllHistory);
+      btnClearHistory.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (btnClearHistory.classList.contains("confirming")) {
+          resetClearHistoryButton();
+          localStorage.removeItem("syki_sent_history");
+          renderHistory();
+          showToast("送信履歴をすべて消去しました");
+        } else {
+          btnClearHistory.classList.add("confirming");
+          btnClearHistory.textContent = "本当に消去しますか？（タップで確定）";
+          clearConfirmTimer = setTimeout(() => {
+            resetClearHistoryButton();
+          }, 3500);
+        }
+      });
     }
 
     function formatHistoryTime(isoStr) {
       const d = new Date(isoStr);
       if (isNaN(d.getTime())) return isoStr;
-      const pad = n => String(n).padStart(2, '0');
+      const pad = n => String(n).padStart(2, "0");
       const m = pad(d.getMonth() + 1);
       const day = pad(d.getDate());
       const h = pad(d.getHours());
       const min = pad(d.getMinutes());
-      return m + '/' + day + ' ' + h + ':' + min;
+      return m + "/" + day + " " + h + ":" + min;
     }
 
     function renderHistory() {
       if (!historyList) return;
+      resetClearHistoryButton();
       const history = getHistory();
-      historyList.innerHTML = '';
+      historyList.innerHTML = "";
 
       if (history.length === 0) {
-        if (btnClearHistory) btnClearHistory.style.display = 'none';
-        historyList.innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" style="width:32px;height:32px;opacity:0.4;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span>送信履歴はありません</span></div>';
+        if (historyFooter) historyFooter.style.display = "none";
+        historyList.innerHTML = "<div class=\"history-empty\"><span>送信履歴はありません</span></div>";
         return;
       }
 
-      if (btnClearHistory) btnClearHistory.style.display = 'block';
+      if (historyFooter) historyFooter.style.display = "block";
 
       history.forEach(item => {
-        const div = document.createElement('div');
-        div.className = 'history-item';
+        const div = document.createElement("div");
+        div.className = "history-item";
 
-        const head = document.createElement('div');
-        head.className = 'history-item-head';
+        const head = document.createElement("div");
+        head.className = "history-item-head";
 
-        const timeSpan = document.createElement('span');
-        timeSpan.className = 'history-time';
+        const timeSpan = document.createElement("span");
+        timeSpan.className = "history-time";
         timeSpan.textContent = formatHistoryTime(item.time);
         head.appendChild(timeSpan);
 
-        const rightMeta = document.createElement('div');
-        rightMeta.className = 'history-meta-right';
+        const rightMeta = document.createElement("div");
+        rightMeta.className = "history-meta-right";
 
         if (item.attachment) {
-          const tag = document.createElement('span');
-          tag.className = 'history-tag';
-          const icon = item.attachment.type === 'image' ? '📷' : (item.attachment.type === 'audio' ? '🎙️' : '📎');
-          tag.textContent = icon + ' ' + (item.attachment.filename || item.attachment.type);
+          const tag = document.createElement("span");
+          tag.className = "history-tag";
+          const typeLabel = item.attachment.type === "image" ? "Image" : (item.attachment.type === "audio" ? "Voice" : "File");
+          tag.textContent = typeLabel + (item.attachment.filename ? ": " + item.attachment.filename : "");
           rightMeta.appendChild(tag);
         }
 
-        const delBtn = document.createElement('button');
-        delBtn.className = 'btn-del-history-item';
-        delBtn.textContent = '✕';
-        delBtn.title = '削除';
-        delBtn.type = 'button';
-        delBtn.addEventListener('click', (e) => {
+        const delBtn = document.createElement("button");
+        delBtn.className = "btn-del-history-item";
+        delBtn.textContent = "削除";
+        delBtn.title = "削除";
+        delBtn.type = "button";
+        delBtn.addEventListener("click", (e) => {
           e.stopPropagation();
           deleteHistoryItem(item.id);
         });
@@ -1345,15 +1395,16 @@
         div.appendChild(head);
 
         if (item.text) {
-          const body = document.createElement('div');
-          body.className = 'history-text';
+          const body = document.createElement("div");
+          body.className = "history-text";
           body.textContent = item.text;
-          body.title = 'タップして入力欄に転送';
-          body.addEventListener('click', () => {
+          body.title = "タップして入力欄に転送";
+          body.addEventListener("click", () => {
             noteInput.value = item.text;
-            historyPanel.classList.remove('open');
+            resetClearHistoryButton();
+            historyPanel.classList.remove("open");
             noteInput.focus();
-            showToast('メモを入力欄に転送しました');
+            showToast("メモを入力欄に転送しました");
           });
           div.appendChild(body);
         }
