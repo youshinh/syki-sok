@@ -24,6 +24,7 @@ import (
 	"os"
 	"regexp"
 	"strings"
+	"path/filepath"
 	"testing"
 
 	"syki-sok/pkg/fileassoc"
@@ -32,6 +33,9 @@ import (
 func readRepoFile(t *testing.T, name string) string {
 	t.Helper()
 	data, err := os.ReadFile(name)
+	if err != nil {
+		data, err = os.ReadFile(filepath.Join("..", "..", name))
+	}
 	if err != nil {
 		t.Fatalf("reading %s: %v", name, err)
 	}
@@ -295,11 +299,11 @@ func TestBuildMacInfoPlistHeredoc(t *testing.T) {
 
 func TestBuildMacVersionGrepMatchesAppGo(t *testing.T) {
 	script := readRepoFile(t, "build_mac.sh")
-	appGo := readRepoFile(t, "app.go")
+	appGo := readRepoFile(t, "cmd/syki-gui/app.go")
 
 	// This mirrors the two-stage pipeline build_mac.sh actually runs:
-	//   grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'
-	const scriptSrc = `APP_VERSION="$(grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"`
+	//   grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' cmd/syki-gui/app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+'
+	const scriptSrc = `APP_VERSION="$(grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' cmd/syki-gui/app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"`
 	if !strings.Contains(script, scriptSrc) {
 		t.Fatalf("build_mac.sh no longer contains the expected APP_VERSION extraction line; this test's regex was pinned to:\n%s\nUpdate both together if the script changed intentionally.", scriptSrc)
 	}
@@ -332,10 +336,7 @@ func TestMacIconComesFromAppPngAndNeverFromTheGenerator(t *testing.T) {
 	if regexp.MustCompile(`(?m)^\s*go run tools/makeicon\.go`).MatchString(script) {
 		t.Errorf("build_mac.sh must not run tools/makeicon.go")
 	}
-	data, err := os.ReadFile("app.png")
-	if err != nil {
-		t.Fatalf("app.png (the source of the macOS icon) is missing: %v", err)
-	}
+	data := []byte(readRepoFile(t, "app.png"))
 	if len(data) < 100000 {
 		t.Errorf("app.png is %d bytes: the black icon is about 147 KB; a file this small is the generated olive one", len(data))
 	}
@@ -352,7 +353,7 @@ func TestReleaseSetsTheAppVersionFromTheTag(t *testing.T) {
 	if !strings.Contains(release, "-X main.AppVersion=$version") {
 		t.Error("the Windows release build must set main.AppVersion from the tag")
 	}
-	if !strings.Contains(release, "Set the app version from the tag") || !strings.Contains(release, `grep -q "AppVersion = \"$VER\"" app.go`) {
+	if !strings.Contains(release, "Set the app version from the tag") || !strings.Contains(release, `grep -q "AppVersion = \"$VER\"" cmd/syki-gui/app.go`) {
 		t.Error("the macOS release build must rewrite AppVersion in app.go from the tag and check that it did")
 	}
 }

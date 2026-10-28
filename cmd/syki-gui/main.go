@@ -1,10 +1,8 @@
 package main
 
 import (
-	"embed"
 	"fmt"
 	"io"
-	"io/fs"
 	"log"
 	"net"
 	"net/http"
@@ -16,75 +14,12 @@ import (
 	"sync"
 	"time"
 
+	"syki-sok/frontend"
 	"syki-sok/pkg/cli"
 	"syki-sok/pkg/encoding"
 	"syki-sok/pkg/ipc"
 	"syki-sok/pkg/shellenv"
 )
-
-// note: selective assets embedded to exclude test files while shipping css/tokens.css (formerly //go:embed frontend/*)
-//go:embed frontend/index.html frontend/app.png
-//go:embed frontend/css/*
-//go:embed frontend/vendor/*
-//go:embed frontend/js/a11y.js
-//go:embed frontend/js/about_dialog.js
-//go:embed frontend/js/activity_log.js
-//go:embed frontend/js/agent_risk.js
-//go:embed frontend/js/app.js
-//go:embed frontend/js/appearance.js
-//go:embed frontend/js/auto_selector.js
-//go:embed frontend/js/bar_voice.js
-//go:embed frontend/js/builtin_ai.js
-//go:embed frontend/js/bulk_insert.js
-//go:embed frontend/js/chrome_layout.js
-//go:embed frontend/js/chrome_overlay.js
-//go:embed frontend/js/comment_toggle.js
-//go:embed frontend/js/config_pack.js
-//go:embed frontend/js/disk_sync.js
-//go:embed frontend/js/drop_zones.js
-//go:embed frontend/js/file_anchor.js
-//go:embed frontend/js/first_run.js
-//go:embed frontend/js/ghost_diff.js
-//go:embed frontend/js/go_text.js
-//go:embed frontend/js/html_comments.js
-//go:embed frontend/js/html_to_md.js
-//go:embed frontend/js/i18n.js
-//go:embed frontend/js/ime_guardian.js
-//go:embed frontend/js/immersive_exit.js
-//go:embed frontend/js/jev_action.js
-//go:embed frontend/js/lessons.js
-//go:embed frontend/js/line_gutter.js
-//go:embed frontend/js/llm_error.js
-//go:embed frontend/js/mermaid_repair.js
-//go:embed frontend/js/mermaid_tone.js
-//go:embed frontend/js/model_list.js
-//go:embed frontend/js/note_hash.js
-//go:embed frontend/js/note_title.js
-//go:embed frontend/js/panel_fade.js
-//go:embed frontend/js/platform.js
-//go:embed frontend/js/preview_images.js
-//go:embed frontend/js/print_panel.js
-//go:embed frontend/js/print_preview.js
-//go:embed frontend/js/result_blocks.js
-//go:embed frontend/js/scrap_quote.js
-//go:embed frontend/js/scraps_filter.js
-//go:embed frontend/js/secret_strip.js
-//go:embed frontend/js/semantic_settings.js
-//go:embed frontend/js/settings_compact.js
-//go:embed frontend/js/slot_agent.js
-//go:embed frontend/js/slot_snippets.js
-//go:embed frontend/js/speech_settings.js
-//go:embed frontend/js/status_ai.js
-//go:embed frontend/js/tab_dock.js
-//go:embed frontend/js/tab_overflow.js
-//go:embed frontend/js/tab_strip.js
-//go:embed frontend/js/tag_edit.js
-//go:embed frontend/js/task_manager.js
-//go:embed frontend/js/telemetry.js
-//go:embed frontend/js/view_layout.js
-//go:embed frontend/js/voice_input.js
-//go:embed frontend/js/voice_profiles.js
-var frontendFS embed.FS
 
 const maxPipeBytes = 10 * 1024 * 1024 // 10MB safety limit
 
@@ -257,11 +192,8 @@ func main() {
 		defer ipcServer.Close()
 	}
 
-	// Extract sub filesystem from embedded frontend
-	subFS, err := fs.Sub(frontendFS, "frontend")
-	if err != nil {
-		log.Fatalf("failed to load embedded frontend: %v", err)
-	}
+	// Use embedded frontend filesystem
+	subFS := frontend.FS
 
 	// Start local lightweight HTTP server
 	listener, err := net.Listen("tcp", "127.0.0.1:41739")

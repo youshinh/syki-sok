@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"regexp"
+	"path/filepath"
 	"testing"
 
 	"syki-sok/pkg/hotkey"
@@ -108,6 +109,9 @@ func TestExternalOpenCommandFor(t *testing.T) {
 // pinned means either file drifting from the other fails a test on its own platform's runner.
 func TestGlobalSummonShortcutMatchesFrontend(t *testing.T) {
 	data, err := os.ReadFile("frontend/js/app.js")
+	if err != nil {
+		data, err = os.ReadFile(filepath.Join("..", "..", "frontend/js/app.js"))
+	}
 	if err != nil {
 		t.Fatalf("reading frontend/js/app.js: %v", err)
 	}

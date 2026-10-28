@@ -5,6 +5,7 @@ import (
 	"regexp"
 	"sort"
 	"strings"
+	"path/filepath"
 	"testing"
 
 	"syki-sok/pkg/cli"
@@ -16,6 +17,9 @@ import (
 func TestSkillDocumentsEveryCommandAndFlag(t *testing.T) {
 	read := func(p string) string {
 		b, err := os.ReadFile(p)
+		if err != nil {
+			b, err = os.ReadFile(filepath.Join("..", "..", p))
+		}
 		if err != nil {
 			t.Fatalf("read %s: %v", p, err)
 		}

@@ -3,6 +3,7 @@ package main
 import (
 	"os"
 	"regexp"
+	"path/filepath"
 	"testing"
 )
 
@@ -11,6 +12,9 @@ import (
 func TestTheSendingProcessHandsOverTheRightToTheFront(t *testing.T) {
 	read := func(p string) string {
 		b, err := os.ReadFile(p)
+		if err != nil {
+			b, err = os.ReadFile(filepath.Join("..", "..", p))
+		}
 		if err != nil {
 			t.Fatal(err)
 		}

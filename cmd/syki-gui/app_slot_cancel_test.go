@@ -154,7 +154,11 @@ func TestRunSlotAgentAsync_RecipeCancel_MultiStepPipelinesReportCanceledAndTheOr
 // answer goes (replace / below). When it fails the backend's answer changed: update tests/fixtures/slot_cancel_answers.json
 // (the page's cancel tests then run against the new answer).
 func TestRunSlotAgentAsync_CancelAnswersMatchTheRecordedFixture(t *testing.T) {
-	raw, err := os.ReadFile(filepath.Join("tests", "fixtures", "slot_cancel_answers.json"))
+	pFix := filepath.Join("tests", "fixtures", "slot_cancel_answers.json")
+	raw, err := os.ReadFile(pFix)
+	if err != nil {
+		raw, err = os.ReadFile(filepath.Join("..", "..", pFix))
+	}
 	if err != nil {
 		t.Fatal(err)
 	}

@@ -249,6 +249,9 @@ func TestActivityCodeMakesNoSuspiciousCalls(t *testing.T) {
 	for _, f := range files {
 		data, err := os.ReadFile(f)
 		if err != nil {
+			data, err = os.ReadFile(filepath.Join("..", "..", f))
+		}
+		if err != nil {
 			t.Fatalf("%s: %v", f, err)
 		}
 		code := comment.ReplaceAllString(string(data), "")

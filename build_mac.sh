@@ -50,7 +50,7 @@ if [ -f "rsrc.syso" ] && [ ! -f "rsrc_windows_amd64.syso" ]; then
 fi
 
 # --- Resolve the app version from Go source (single source of truth) ------
-APP_VERSION="$(grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
+APP_VERSION="$(grep -oE 'AppVersion[[:space:]]*=[[:space:]]*"[0-9]+\.[0-9]+\.[0-9]+"' cmd/syki-gui/app.go | grep -oE '[0-9]+\.[0-9]+\.[0-9]+' | head -n1 || true)"
 if [ -z "$APP_VERSION" ]; then
     echo "ERROR: could not parse the AppVersion constant from app.go" >&2
     exit 1
@@ -80,7 +80,7 @@ esac
 
 echo "Building native slice ($NATIVE_GOARCH)..."
 CGO_CFLAGS="$NATIVE_CFLAGS" CGO_LDFLAGS="$NATIVE_CFLAGS" GOOS=darwin GOARCH="$NATIVE_GOARCH" \
-    go build -ldflags="-s -w" -trimpath -o "$APP_NAME-$NATIVE_GOARCH" .
+    go build -ldflags="-s -w" -trimpath -o "$APP_NAME-$NATIVE_GOARCH" ./cmd/syki-gui
 
 IS_UNIVERSAL=0
 if [ "${SYKI_NATIVE_ONLY:-0}" = "1" ]; then
@@ -89,7 +89,7 @@ if [ "${SYKI_NATIVE_ONLY:-0}" = "1" ]; then
 else
     echo "Building other slice ($OTHER_GOARCH) for a universal binary..."
     if CGO_CFLAGS="$OTHER_CFLAGS" CGO_LDFLAGS="$OTHER_CFLAGS" GOOS=darwin GOARCH="$OTHER_GOARCH" \
-        go build -ldflags="-s -w" -trimpath -o "$APP_NAME-$OTHER_GOARCH" . ; then
+        go build -ldflags="-s -w" -trimpath -o "$APP_NAME-$OTHER_GOARCH" ./cmd/syki-gui ; then
         echo "Combining slices into a universal binary with lipo..."
         lipo -create -output "$APP_NAME" "$APP_NAME-$NATIVE_GOARCH" "$APP_NAME-$OTHER_GOARCH"
         rm -f "$APP_NAME-$NATIVE_GOARCH" "$APP_NAME-$OTHER_GOARCH"

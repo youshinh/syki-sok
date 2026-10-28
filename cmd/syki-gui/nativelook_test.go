@@ -9,6 +9,8 @@ import (
 	"strings"
 	"sync"
 	"testing"
+
+	"syki-sok/frontend"
 )
 
 // TestParseAppearanceLook: "paper" only for the exact string at config.appearance.look; everything else, however odd, is ink (the rule
@@ -107,7 +109,7 @@ func singleMatch(t *testing.T, re *regexp.Regexp, src, what string) string {
 // look (:root.look-paper) in tokens.css, and the theme-color of index.html (ink). A page whose canvas is another colour than the window
 // behind it flashes the difference on every start.
 func TestNativeLookMatchesTokens(t *testing.T) {
-	tokens, err := frontendFS.ReadFile("frontend/css/tokens.css")
+	tokens, err := frontend.FS.ReadFile("css/tokens.css")
 	if err != nil {
 		t.Fatalf("tokens.css is not embedded: %v", err)
 	}
@@ -117,7 +119,7 @@ func TestNativeLookMatchesTokens(t *testing.T) {
 	if got, want := hexOf(nativePaper), singleMatch(t, canvasPaperRE, string(tokens), ":root.look-paper --canvas-bg"); got != want {
 		t.Errorf("nativePaper is #%s, tokens.css :root.look-paper --canvas-bg is #%s", got, want)
 	}
-	index, err := frontendFS.ReadFile("frontend/index.html")
+	index, err := frontend.FS.ReadFile("index.html")
 	if err != nil {
 		t.Fatalf("index.html is not embedded: %v", err)
 	}
