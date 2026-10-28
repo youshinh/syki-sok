@@ -1601,16 +1601,16 @@
             <small data-i18n="actionApiBlockHint">With both URL and API key blank, nothing leaves your machine — suggestions come from built-in local rules. If you fill them in, the text around your caret is sent to that API.</small>
             <div class="form-group" style="margin-top: 6px;">
               <label for="cfg-action-base-url" data-i18n="actionBaseUrlLabel">API Base URL / Endpoint:</label>
-              <input type="text" id="cfg-action-base-url" placeholder="https://api.typesafe.ai or https://openrouter.ai/api/v1">
+              <input type="text" id="cfg-action-base-url" placeholder="https://api.typesafe.ai or https://api.openai.com/v1">
             </div>
             <div class="form-group">
               <label for="cfg-action-model" data-i18n="actionModelLabel">Model Name:</label>
-              <input type="text" id="cfg-action-model" placeholder="jev-latest">
-              <small data-i18n="actionModelHint">Blank = jev-latest (the default prediction model).</small>
+              <input type="text" id="cfg-action-model" placeholder="jev-latest or gpt-6-luna">
+              <small data-i18n="actionModelHint">Blank = jev-latest. Decision models: jev-latest or gpt-6-luna (OpenAI Decisions API).</small>
             </div>
             <div class="form-group">
-              <label for="cfg-action-api-key" data-i18n="actionApiKeyLabel">API Key (OpenRouter / Cloud):</label>
-              <input type="password" id="cfg-action-api-key" placeholder="sk-or-v1-... or typesafe key">
+              <label for="cfg-action-api-key" data-i18n="actionApiKeyLabel">API Key (OpenAI / OpenRouter / TypeSafe):</label>
+              <input type="password" id="cfg-action-api-key" placeholder="sk-... / sk-or-v1-... / typesafe key">
             </div>
 
             <!-- Section 5: OS連携 (送る) -->

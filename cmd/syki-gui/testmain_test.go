@@ -45,7 +45,7 @@ func TestMain(m *testing.M) {
 
 	// A developer's exported credentials must not leak into the suite (and must not let a
 	// test reach the network).
-	for _, k := range []string{"JEV_API_URL", "JEV_API_KEY", "JEV_MODEL", "TYPESAFE_API_KEY", "OPENROUTER_API_KEY"} {
+	for _, k := range []string{"JEV_API_URL", "JEV_API_KEY", "JEV_MODEL", "TYPESAFE_API_KEY", "OPENROUTER_API_KEY", "OPENAI_API_KEY"} {
 		_ = os.Unsetenv(k)
 	}
 

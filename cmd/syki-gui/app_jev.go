@@ -36,6 +36,7 @@ func (a *App) initJevEngineLocked() {
 							clientCfg.APIKey = k
 							clientCfg.OpenRouterKey = k
 							clientCfg.TypeSafeKey = k
+							clientCfg.OpenAIKey = k
 						}
 						if m, ok := actMap["model"].(string); ok && m != "" {
 							clientCfg.Model = m

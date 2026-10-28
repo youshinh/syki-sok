@@ -24,6 +24,7 @@ type ClientConfig struct {
 	APIKey        string        `json:"api_key"`
 	TypeSafeKey   string        `json:"typesafe_key"`
 	OpenRouterKey string        `json:"openrouter_key"`
+	OpenAIKey     string        `json:"openai_key"`
 	Model         string        `json:"model"`
 	Timeout       time.Duration `json:"timeout"`
 
@@ -61,6 +62,9 @@ func NewClient(cfg ClientConfig) *Client {
 	}
 	if cfg.OpenRouterKey == "" && cfg.AllowGenericEnvKeys {
 		cfg.OpenRouterKey = os.Getenv("OPENROUTER_API_KEY")
+	}
+	if cfg.OpenAIKey == "" && cfg.AllowGenericEnvKeys {
+		cfg.OpenAIKey = os.Getenv("OPENAI_API_KEY")
 	}
 	if cfg.Model == "" {
 		cfg.Model = os.Getenv("JEV_MODEL")
@@ -121,7 +125,15 @@ func (c *Client) Predict(ctx context.Context, req JevPredictRequest) (*JevPredic
 		req.GrammarSchema = TaskActionEBNF
 	}
 
-	// 0. Jev on System One: TypeSafe's own API, or OpenRouter's System One API for a Jev model.
+	// 0. OpenAI Decisions API (e.g. gpt-6-luna) if configured.
+	if endpoint, key := c.openAIDecisionTarget(c.cfg.Model); endpoint != "" {
+		if resp, err := c.predictOpenAIDecision(ctx, endpoint, key, req); err == nil && len(resp.Candidates) > 0 {
+			return resp, nil
+		}
+		return c.predictLocal(req), nil
+	}
+
+	// 1. Jev on System One: TypeSafe's own API, or OpenRouter's System One API for a Jev model.
 	// Jev ranks the built-in candidates (see typesafe_predict.go). When this route applies, a failure
 	// ends in the built-in rules: the key is never tried on the engines below.
 	if endpoint, key := c.systemOneTarget(c.cfg.Model); endpoint != "" {
@@ -342,6 +354,14 @@ func (c *Client) predictLocal(req JevPredictRequest) *JevPredictResponse {
 func (c *Client) SystemOne(ctx context.Context, req SystemOneRequest) (*SystemOneResponse, error) {
 	if req.Model == "" {
 		req.Model = c.cfg.Model
+	}
+
+	// 0. OpenAI Decisions API if configured.
+	if endpoint, key := c.openAIDecisionTarget(req.Model); endpoint != "" {
+		if resp, err := c.callOpenAIDecisionAPI(ctx, endpoint, key, req); err == nil && resp != nil {
+			return resp, nil
+		}
+		return c.systemOneLocal(req), nil
 	}
 
 	// 1. Try the System One API if a key is present: TypeSafe's own, OpenRouter's for a Jev model,

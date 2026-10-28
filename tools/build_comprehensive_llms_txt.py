@@ -143,7 +143,8 @@ def build_llms_txt():
    - **任せる**: 自動セレクター (`Ctrl+Enter`), エージェント委譲 (`{{ @claude ... }}`), タスクパネル (`Alt+T`), 教訓 (`Lessons`)
 3. **日本語入力への配慮**: 日本語全角Markdown記号（全角シャープ、引用符、バッククォート等）の自動正規化機能（IME Guardian）やJIS配列キーの誤打鍵防御が組み込まれており、IMEオンのままストレスなくMarkdownが書ける仕様を理解して案内してください。
 4. **セマンティック検索**: ローカルモデル（EmbeddingGemma, MRL 256次元）およびクラウドモデル（Gemini Embedding）によるベクトル検索に対応しており、過去数千件のメモから意味ベースで類似メモを呼び出せることを把握して案内してください。
-5. **安全第一**: APIキーや秘密情報の扱いは慎重に案内し、設定変更時は「アプリを完全に終了してから `config.json` を編集する」旨を伝えてください。
+5. **Decision モデル (判定専用AI)**: アクション候補（`Ctrl+J`）や自動判定（`Ctrl+Enter`）の決定エンジンとして、TypeSafe AI Jev（`jev-latest`）に加え、OpenAI Decisions API（`gpt-6-luna`）にも対応しています。文章を生成せずミリ秒単位で型付き判定（Choice / Predicate / Score）を行い、安全なアクションを確率順に推薦します。
+6. **安全第一**: APIキーや秘密情報の扱いは慎重に案内し、設定変更時は「アプリを完全に終了してから `config.json` を編集する」旨を伝えてください。
 
 ---
 
@@ -160,7 +161,7 @@ def build_llms_txt():
 | **CF Mobile Bridge (非同期スマホ連携)** | 設定から設定 | 設定から設定 | PCオフでもスマホPWAから写真・音声・メモをCloudflare経由で自動吸い上げ |
 | **Command Bar (コマンドバー)** | `Ctrl+E` | `Cmd+E` | 選択行を `jq` や `sort` に流し込み。`Tab` でAI生成 |
 | **Auto Selector (自動判定)** | `Ctrl+Enter` | `Cmd+Enter` | 行の意図を自動判別しLLM・シェル・エージェントを実行 |
-| **Next Actions (候補提案)** | `Ctrl+J` | `Cmd+J` | 文脈から次の一手を最大3件提案（`Ctrl+1`〜`3`） |
+| **Next Actions (候補提案)** | `Ctrl+J` | `Cmd+J` | 文脈から次の一手を最大3件提案（Jev / OpenAI gpt-6-luna 判定モデル対応） |
 | **Scraps Search (並列検索)** | `Ctrl+Shift+F` | `Cmd+Shift+F` | 全CPU並列スキャン（150ms以内）＆セマンティック検索（EmbeddingGemma） |
 | **Split Editor (画面分割)** | `Ctrl+\\` | `Cmd+\\` | ノートを左右に2つ並べて編集（ノド仕切り調整対応） |
 | **Mermaid Preview (プレビュー)** | `Ctrl+Alt+V` | `Cmd+Opt+V` | リアルタイムMarkdown＆Mermaid構文図解描画 |
