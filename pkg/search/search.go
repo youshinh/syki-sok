@@ -247,7 +247,7 @@ func searchFileKeep(ctx context.Context, filePath string, queryLower []byte, fil
 
 		curLine = line
 		curNum = lineNum
-		curMatched = strings.Contains(strings.ToLower(line), query)
+		curMatched = containsLowerQuery(line, query)
 		if headings {
 			// The line counts for its own heading state: a match on a heading line belongs to it.
 			tracker.feed(line, lineNum)
@@ -266,4 +266,43 @@ func searchFileKeep(ctx context.Context, filePath string, queryLower []byte, fil
 	}
 
 	return matches
+}
+
+// containsLowerQuery reports whether strings.ToLower(line) contains queryLower (already lowercased)
+// while avoiding per-line strings.ToLower(line) allocations on the common path where line either
+// matches directly or contains no characters that change under Unicode lowercase folding.
+func containsLowerQuery(line, queryLower string) bool {
+	if len(queryLower) == 0 {
+		return true
+	}
+	if len(line) < len(queryLower) {
+		return false
+	}
+	if strings.Contains(line, queryLower) {
+		return true
+	}
+	hasFoldable := false
+	for i := 0; i < len(line); i++ {
+		b := line[i]
+		if b >= 'A' && b <= 'Z' {
+			hasFoldable = true
+			break
+		}
+		if b >= 0x80 && b < 0xE3 {
+			hasFoldable = true
+			break
+		}
+		if b == 0xEF && i+1 < len(line) && line[i+1] == 0xBC {
+			hasFoldable = true
+			break
+		}
+		if b >= 0xF0 {
+			hasFoldable = true
+			break
+		}
+	}
+	if !hasFoldable {
+		return false
+	}
+	return strings.Contains(strings.ToLower(line), queryLower)
 }

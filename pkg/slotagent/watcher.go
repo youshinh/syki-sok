@@ -17,6 +17,7 @@ type FileWatcher struct {
 	timer        *time.Timer
 	timerMu      sync.Mutex
 	stopCh       chan struct{}
+	stopOnce     sync.Once
 }
 
 // NewFileWatcher creates a new FileWatcher instance.
@@ -75,8 +76,18 @@ func (fw *FileWatcher) Unwatch() {
 
 // Close terminates the watcher loop.
 func (fw *FileWatcher) Close() error {
-	close(fw.stopCh)
-	return fw.watcher.Close()
+	var err error
+	fw.stopOnce.Do(func() {
+		close(fw.stopCh)
+		fw.timerMu.Lock()
+		if fw.timer != nil {
+			fw.timer.Stop()
+			fw.timer = nil
+		}
+		fw.timerMu.Unlock()
+		err = fw.watcher.Close()
+	})
+	return err
 }
 
 func (fw *FileWatcher) loop() {

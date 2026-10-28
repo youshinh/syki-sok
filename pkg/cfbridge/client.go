@@ -85,7 +85,7 @@ func (c *Client) FetchMemos(ctx context.Context) ([]Memo, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 		return nil, fmt.Errorf("fetch memos failed (%d): %s", resp.StatusCode, string(body))
 	}
 
@@ -121,7 +121,7 @@ func (c *Client) DeleteMemos(ctx context.Context, ids []string) (int, error) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		body, _ := io.ReadAll(resp.Body)
+		body, _ := io.ReadAll(io.LimitReader(resp.Body, 64*1024))
 		return 0, fmt.Errorf("delete memos failed (%d): %s", resp.StatusCode, string(body))
 	}
 

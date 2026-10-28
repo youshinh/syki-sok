@@ -371,5 +371,7 @@ func serveLocalImage(w http.ResponseWriter, r *http.Request, port int) {
 	}
 
 	w.Header().Set("X-Content-Type-Options", "nosniff")
+	w.Header().Set("Content-Security-Policy", "default-src 'none'; img-src data:; style-src 'unsafe-inline'; sandbox")
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
 	http.ServeFile(w, r, resolvedPath)
 }

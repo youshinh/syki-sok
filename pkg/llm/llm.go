@@ -282,7 +282,7 @@ func queryGeminiText(baseURL, model, prompt string, cfg Config) (string, error) 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Gemini APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -399,7 +399,7 @@ func queryGeminiAutocomplete(baseURL, model, prefix string, maxTokens int, apiKe
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Gemini APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -511,7 +511,7 @@ func queryOpenAIAutocomplete(baseURL, model, prefix string, maxTokens int, apiKe
 	defer resChat.Body.Close()
 
 	if resChat.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(resChat.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(resChat.Body, 64*1024))
 		return "", fmt.Errorf("APIエラー (%d): %s", resChat.StatusCode, string(respBody))
 	}
 
@@ -590,7 +590,7 @@ func queryOllamaAutocomplete(baseURL, model, prefix string, maxTokens int, apiKe
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Ollama APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -759,7 +759,7 @@ func queryGeminiVision(baseURL, model, prompt, imageBase64, mimeType string, cfg
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Gemini APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -849,7 +849,7 @@ func queryOpenAIVision(baseURL, model, prompt, imageBase64, mimeType string, cfg
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Vision APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -908,7 +908,7 @@ func queryOllama(baseURL, model, prompt string, cfg Config) (string, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("Ollama APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -964,7 +964,7 @@ func queryOpenAI(baseURL, model, prompt string, cfg Config) (string, error) {
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return "", fmt.Errorf("OpenAI APIエラー (%d): %s", res.StatusCode, string(respBody))
 	}
 
@@ -1134,7 +1134,7 @@ func generateGeminiImage(baseURL, model, prompt, aspectRatio, resolution, apiKey
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return nil, "", fmt.Errorf("Gemini Image APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 
@@ -1206,7 +1206,7 @@ func generateImagen(baseURL, model, prompt, apiKey string) ([]byte, string, erro
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return nil, "", fmt.Errorf("Imagen APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 
@@ -1350,7 +1350,7 @@ func generateInteractionsImage(baseURL, model, prompt, aspectRatio, resolution, 
 	defer res.Body.Close()
 
 	if res.StatusCode != http.StatusOK {
-		respBody, _ := io.ReadAll(res.Body)
+		respBody, _ := io.ReadAll(io.LimitReader(res.Body, 64*1024))
 		return nil, "", fmt.Errorf("Gemini Interactions APIエラー (%d) [モデル: %s]: %s", res.StatusCode, model, string(respBody))
 	}
 

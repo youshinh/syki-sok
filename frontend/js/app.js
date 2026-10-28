@@ -31,8 +31,17 @@
   const charMirrors = new WeakMap(); // editor -> { mirror, span, width, generation }
   let charMirrorGeneration = 0;
 
+  function clearCharPixelMirrorTexts() {
+    for (const ed of [typeof editorEl !== 'undefined' ? editorEl : null, typeof editorSecondary !== 'undefined' ? editorSecondary : null]) {
+      if (!ed) continue;
+      const entry = charMirrors.get(ed);
+      if (entry && entry.mirror) entry.mirror.textContent = '';
+    }
+  }
+
   function invalidateCharPixelMirrors() {
     charMirrorGeneration++;
+    clearCharPixelMirrorTexts();
   }
 
   let pendingLLMRequests = new Map();
@@ -1498,11 +1507,7 @@
       htmlPreviewImgCache.clear();
     }
     if (typeof charMirrors !== 'undefined') {
-      for (const ed of [editorEl, editorSecondary]) {
-        if (!ed) continue;
-        const entry = charMirrors.get(ed);
-        if (entry && entry.mirror) entry.mirror.textContent = '';
-      }
+      clearCharPixelMirrorTexts();
     }
     if (window.backend && window.backend.trimMemory) {
       try {
@@ -6574,7 +6579,27 @@
     hideCursorAura(false);
     triggerCursorAuraDebounced();
   });
+  function resetLayoutContainerScrolls() {
+    const appRoot = typeof document !== 'undefined' && document.getElementById ? document.getElementById('app') : null;
+    const containers = [
+      appRoot,
+      workspaceEl,
+      editorPane,
+      editorEl ? editorEl.parentElement : null,
+      secondaryPane,
+      secondaryEditorPane,
+      editorSecondary ? editorSecondary.parentElement : null
+    ];
+    for (let i = 0; i < containers.length; i++) {
+      const c = containers[i];
+      if (!c) continue;
+      if (c.scrollTop !== 0) c.scrollTop = 0;
+      if (c.scrollLeft !== 0) c.scrollLeft = 0;
+    }
+  }
+
   editorEl.addEventListener('keyup', () => {
+    resetLayoutContainerScrolls();
     scheduleUpdateStatusBar();
     if (activeImeSuggestion && editorEl.selectionStart !== activeImeSuggestion.endPos) {
       clearGhostText();
@@ -6607,10 +6632,12 @@
     triggerCursorAuraDebounced();
   });
   editorEl.addEventListener('select', () => {
+    resetLayoutContainerScrolls();
     scheduleUpdateStatusBar();
     triggerCursorAuraDebounced();
   });
   editorEl.addEventListener('scroll', () => {
+    resetLayoutContainerScrolls();
     lineNumbersEl.scrollTop = editorEl.scrollTop;
     if (ghostSuggestion) syncGhostScroll();
     hideCursorAura(true);
@@ -6675,6 +6702,7 @@
     });
 
     editorSecondary.addEventListener('scroll', () => {
+      resetLayoutContainerScrolls();
       if (secondaryLineNumbers) {
         secondaryLineNumbers.scrollTop = editorSecondary.scrollTop;
       }
@@ -6701,12 +6729,14 @@
     });
 
     editorSecondary.addEventListener('keyup', () => {
+      resetLayoutContainerScrolls();
       activePane = 'secondary';
       scheduleUpdateStatusBar();
       triggerCursorAuraDebounced();
     });
 
     editorSecondary.addEventListener('select', () => {
+      resetLayoutContainerScrolls();
       scheduleUpdateStatusBar();
       triggerCursorAuraDebounced();
     });
@@ -10403,11 +10433,16 @@ OUTPUT FORMAT:
     }
 
     const auraSize = Math.max(160, Math.min(260, Math.round(currentFontSize * 14)));
+    const halfAura = auraSize / 2;
+    const paneW = targetPane ? targetPane.clientWidth : editor.clientWidth;
+    const paneH = targetPane ? targetPane.clientHeight : editor.clientHeight;
+    const clampedX = paneW > auraSize ? Math.max(halfAura, Math.min(paneW - halfAura, x)) : Math.min(Math.max(0, x), paneW);
+    const clampedY = paneH > auraSize ? Math.max(halfAura, Math.min(paneH - halfAura, y)) : Math.min(Math.max(0, y), paneH);
     cursorAuraEl.style.width = `${auraSize}px`;
     cursorAuraEl.style.height = `${auraSize}px`;
     cursorAuraEl.style.background = 'var(--aura-gradient)';
-    cursorAuraEl.style.left = `${x}px`;
-    cursorAuraEl.style.top = `${y}px`;
+    cursorAuraEl.style.left = `${clampedX}px`;
+    cursorAuraEl.style.top = `${clampedY}px`;
 
     // Avoid flashing if already actively visible at the position
     if (cursorAuraEl.classList.contains('active')) {
