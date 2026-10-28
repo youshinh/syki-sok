@@ -558,6 +558,128 @@
     }
 
     
+
+    /* History Slide-up Frosted Panel */
+    .history-panel {
+      display: none;
+      position: absolute;
+      inset: calc(12px + env(safe-area-inset-top, 0px)) 16px calc(14px + env(safe-area-inset-bottom, 0px));
+      overflow-y: auto;
+      background: var(--settings-bg);
+      -webkit-backdrop-filter: blur(32px) saturate(1.5);
+      backdrop-filter: blur(32px) saturate(1.5);
+      border-radius: 24px;
+      padding: 24px 20px;
+      z-index: 80;
+      flex-direction: column;
+      gap: 16px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.3);
+    }
+    .history-panel.open {
+      display: flex;
+    }
+
+    .btn-clear-history {
+      background: transparent;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      color: var(--btn-ghost-fg);
+      font-size: 11.5px;
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .look-paper .btn-clear-history {
+      border: 1px solid rgba(0, 0, 0, 0.14);
+    }
+    .btn-clear-history:hover, .btn-clear-history:active {
+      color: #ff9d9d;
+      border-color: rgba(239, 68, 68, 0.35);
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      overflow-y: auto;
+      flex: 1;
+      padding-bottom: 8px;
+    }
+
+    .history-item {
+      background: var(--settings-input-bg);
+      border-radius: 14px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      position: relative;
+      transition: background 0.15s ease;
+    }
+
+    .history-item-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-time {
+      font-family: ui-monospace, SFMono-Regular, monospace;
+      font-size: 11px;
+      color: var(--btn-ghost-fg);
+      letter-spacing: 0.2px;
+    }
+
+    .history-meta-right {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .history-tag {
+      font-size: 11px;
+      color: var(--accent-light);
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .btn-del-history-item {
+      background: transparent;
+      border: none;
+      color: var(--btn-ghost-fg);
+      cursor: pointer;
+      font-size: 13px;
+      padding: 2px 4px;
+      line-height: 1;
+      border-radius: 4px;
+      transition: color 0.15s ease;
+    }
+    .btn-del-history-item:hover, .btn-del-history-item:active {
+      color: #ff6b6b;
+    }
+
+    .history-text {
+      font-size: 13.5px;
+      line-height: 1.5;
+      color: var(--text-main);
+      white-space: pre-wrap;
+      word-break: break-word;
+      cursor: pointer;
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
+    .history-empty {
+      padding: 40px 16px;
+      text-align: center;
+      color: var(--btn-ghost-fg);
+      font-size: 13px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
   </style>
 </head>
 <body>
@@ -570,12 +692,20 @@
             
             <span class="brand-title">syki<span class="colon">::</span>sok</span>
           </div>
-          <button class="btn-header-ghost" id="btn-toggle-settings" type="button" title="Settings">
+          <div style="display: flex; align-items: center; gap: 4px;">
+            <button class="btn-header-ghost" id="btn-toggle-history" type="button" title="History">
+              <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="12" cy="12" r="10"></circle>
+                <polyline points="12 6 12 12 16 14"></polyline>
+              </svg>
+            </button>
+            <button class="btn-header-ghost" id="btn-toggle-settings" type="button" title="Settings">
             <svg viewBox="0 0 24 24" fill="none" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <circle cx="12" cy="12" r="3"></circle>
               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
             </svg>
           </button>
+          </div>
         </header>
 
         <div class="glass-toast" id="toast">
@@ -688,6 +818,16 @@
             </button>
           </div>
 
+        </div>
+        <div class="history-panel" id="history-panel">
+          <div class="settings-head">
+            <span class="settings-title">Sent History</span>
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <button class="btn-clear-history" id="btn-clear-history" type="button">すべて削除</button>
+              <button class="btn-close-settings" id="btn-close-history" type="button">✕</button>
+            </div>
+          </div>
+          <div class="history-list" id="history-list"></div>
         </div>
 
         <!-- Off-screen file inputs for mobile Safari/Chrome compatibility -->
@@ -1083,6 +1223,145 @@
       }
     });
 
+
+    // Sent History Panel & Local Cache Logic
+    const btnToggleHistory = document.getElementById('btn-toggle-history');
+    const btnCloseHistory = document.getElementById('btn-close-history');
+    const historyPanel = document.getElementById('history-panel');
+    const historyList = document.getElementById('history-list');
+    const btnClearHistory = document.getElementById('btn-clear-history');
+
+    if (btnToggleHistory) {
+      btnToggleHistory.addEventListener('click', () => {
+        renderHistory();
+        historyPanel.classList.add('open');
+        settingsPanel.classList.remove('open');
+      });
+    }
+    if (btnCloseHistory) {
+      btnCloseHistory.addEventListener('click', () => historyPanel.classList.remove('open'));
+    }
+
+    function getHistory() {
+      try {
+        const raw = localStorage.getItem('syki_sent_history');
+        return raw ? JSON.parse(raw) : [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function saveHistoryItem(item) {
+      const history = getHistory();
+      history.unshift(item); // Newest first (Date desc)
+      if (history.length > 100) history.length = 100;
+      try {
+        localStorage.setItem('syki_sent_history', JSON.stringify(history));
+      } catch (e) {
+        console.warn('Storage quota exceeded, trimming history:', e);
+        history.splice(50);
+        try { localStorage.setItem('syki_sent_history', JSON.stringify(history)); } catch (_) {}
+      }
+    }
+
+    function deleteHistoryItem(id) {
+      let history = getHistory();
+      history = history.filter(item => item.id !== id);
+      try {
+        localStorage.setItem('syki_sent_history', JSON.stringify(history));
+      } catch (_) {}
+      renderHistory();
+    }
+
+    function clearAllHistory() {
+      if (confirm('送信履歴をすべて削除しますか？')) {
+        localStorage.removeItem('syki_sent_history');
+        renderHistory();
+      }
+    }
+    if (btnClearHistory) {
+      btnClearHistory.addEventListener('click', clearAllHistory);
+    }
+
+    function formatHistoryTime(isoStr) {
+      const d = new Date(isoStr);
+      if (isNaN(d.getTime())) return isoStr;
+      const pad = n => String(n).padStart(2, '0');
+      const m = pad(d.getMonth() + 1);
+      const day = pad(d.getDate());
+      const h = pad(d.getHours());
+      const min = pad(d.getMinutes());
+      return m + '/' + day + ' ' + h + ':' + min;
+    }
+
+    function renderHistory() {
+      if (!historyList) return;
+      const history = getHistory();
+      historyList.innerHTML = '';
+
+      if (history.length === 0) {
+        if (btnClearHistory) btnClearHistory.style.display = 'none';
+        historyList.innerHTML = '<div class="history-empty"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.5" stroke="currentColor" style="width:32px;height:32px;opacity:0.4;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><span>送信履歴はありません</span></div>';
+        return;
+      }
+
+      if (btnClearHistory) btnClearHistory.style.display = 'block';
+
+      history.forEach(item => {
+        const div = document.createElement('div');
+        div.className = 'history-item';
+
+        const head = document.createElement('div');
+        head.className = 'history-item-head';
+
+        const timeSpan = document.createElement('span');
+        timeSpan.className = 'history-time';
+        timeSpan.textContent = formatHistoryTime(item.time);
+        head.appendChild(timeSpan);
+
+        const rightMeta = document.createElement('div');
+        rightMeta.className = 'history-meta-right';
+
+        if (item.attachment) {
+          const tag = document.createElement('span');
+          tag.className = 'history-tag';
+          const icon = item.attachment.type === 'image' ? '📷' : (item.attachment.type === 'audio' ? '🎙️' : '📎');
+          tag.textContent = icon + ' ' + (item.attachment.filename || item.attachment.type);
+          rightMeta.appendChild(tag);
+        }
+
+        const delBtn = document.createElement('button');
+        delBtn.className = 'btn-del-history-item';
+        delBtn.textContent = '✕';
+        delBtn.title = '削除';
+        delBtn.type = 'button';
+        delBtn.addEventListener('click', (e) => {
+          e.stopPropagation();
+          deleteHistoryItem(item.id);
+        });
+        rightMeta.appendChild(delBtn);
+
+        head.appendChild(rightMeta);
+        div.appendChild(head);
+
+        if (item.text) {
+          const body = document.createElement('div');
+          body.className = 'history-text';
+          body.textContent = item.text;
+          body.title = 'タップして入力欄に転送';
+          body.addEventListener('click', () => {
+            noteInput.value = item.text;
+            historyPanel.classList.remove('open');
+            noteInput.focus();
+            showToast('メモを入力欄に転送しました');
+          });
+          div.appendChild(body);
+        }
+
+        historyList.appendChild(div);
+      });
+    }
+
     // Send to Cloudflare Worker API
     btnSend.addEventListener('click', async () => {
       const text = noteInput.value.trim();
@@ -1116,6 +1395,17 @@
           const errText = await res.text();
           throw new Error(`(${res.status}) ${errText}`);
         }
+
+        // Save to sent history (Local cache)
+        saveHistoryItem({
+          id: Date.now() + '-' + Math.random().toString(36).slice(2, 7),
+          time: payload.client_time || new Date().toISOString(),
+          text: text,
+          attachment: stagedAttachment ? {
+            type: stagedAttachment.type,
+            filename: stagedAttachment.filename
+          } : null
+        });
 
         // Clear UI on success
         noteInput.value = '';
