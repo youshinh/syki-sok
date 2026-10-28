@@ -962,7 +962,7 @@
           <li><a href="#tag-commands" class="sidebar-link" style="padding-left: 26px;">タグを付ける・外す</a></li>
           <li><a href="#meaning-search" class="sidebar-link">意味検索・深掘り (試験的)</a></li>
           <li><a href="#mobile-drop" class="sidebar-link">Mobile Drop｜スマホから送る (Ctrl+Shift+U)</a></li>
-          <li><a href="#discord-bridge" class="sidebar-link">Discord連携｜スマホから送る（閉じていてもOK）</a></li>
+          <li><a href="#cf-bridge" class="sidebar-link">Cloudflare Mobile Bridge｜スマホから送る（閉じていてもOK）</a></li>
           <li><a href="#command-palette" class="sidebar-link">コマンドパレット (Ctrl+Shift+P)</a></li>
           <li><a href="#about-syki-sok" class="sidebar-link">syki::sok について・更新・プライバシー</a></li>
         </ul>
@@ -1091,7 +1091,7 @@
             <li><strong>同じファイルを2つのタブで開くことはありません。</strong> すでにタブがあるファイルを開いたとき（<span class="kbd">Ctrl + O</span>、コマンドパレット、ドロップ、エクスプローラー / Finder でのダブルクリック、<code>syki file.md</code>）は、そのタブに切り替わり、ステータスバーにも表示されます。そのタブの文章は、未保存の変更も含めて、そのまま残ります。ほかのタブが開いているファイルへ「名前を付けて保存」すると、そのタブは、未保存の変更がなければ閉じます。あれば、ファイルを持たない別のメモとして、文章と未保存の点を残します。</li>
             <li><strong>保存の最中に打った文字。</strong> 保存を始めたあとに打った文字はまだファイルに入っていないので、タブは未保存のままになり、次に保存されます。1つのノートの保存は、1回ずつ順に書き込まれます。</li>
             <li><strong>未保存のノートを閉じるときの確認</strong>は、1回だけ表示されます。<span class="kbd">Enter</span> はフォーカスのあるボタン（最初は「保存」）、<span class="kbd">S</span> は保存、<span class="kbd">D</span> と <span class="kbd">N</span> は保存しない、<span class="kbd">Esc</span> はキャンセルです。Ctrl・Alt・Cmd を押した組み合わせ、押しっぱなしのキー、日本語入力のキーは答えになりません。表示中にもう一度 <span class="kbd">Ctrl + W</span> を押しても、何も起きません。</li>
-            <li><strong>外から今日のスクラップに追記された文章</strong>（パイプ、クイックキャプチャ、ホットフォルダ、Discord）は、そのタブに未保存の変更がなければ、タブに反映されます。そこで文字を打って保存していないときは、タブをそのままにして、ステータスバーに「スクラップのファイルが更新された」と出します。追記された文章はファイルに入っています。そのタブを保存すると、あなたの文章でファイルが上書きされます。反映の対象は、ファイルのパスが同じタブだけです。別のフォルダにある同じ名前のノート（<code>2026-09-30.md</code>）は、別のノートです。</li>
+            <li><strong>外から今日のスクラップに追記された文章</strong>（パイプ、クイックキャプチャ、ホットフォルダ、Cloudflare Mobile Bridge）は、そのタブに未保存の変更がなければ、タブに反映されます。そこで文字を打って保存していないときは、タブをそのままにして、ステータスバーに「スクラップのファイルが更新された」と出します。追記された文章はファイルに入っています。そのタブを保存すると、あなたの文章でファイルが上書きされます。反映の対象は、ファイルのパスが同じタブだけです。別のフォルダにある同じ名前のノート（<code>2026-09-30.md</code>）は、別のノートです。</li>
             <li><strong>起動時に渡されたファイル</strong>（ダブルクリック、「プログラムから開く」、<code>syki file.md</code>）は、前回のタブ・フォルダ・設定が戻ったあとに、タブをもう1つ足して開きます。読み込めないときは、どのファイルがなぜ読めなかったかをステータスバーに表示します。</li>
           </ul>
         </div></details>
@@ -1768,7 +1768,7 @@
             </tbody>
           </table>
         </div>
-        <p>文字起こしには 2 つの種類があり、設定 → AIモデル → 音声入力 で、それぞれにエンジンを選べます。<strong>リアルタイム</strong>は待っている短い録音で、この画面での音声入力（<span class="kbd">Ctrl + Shift + R</span>）と、ウィンドウにドロップした音声ファイルです。<strong>バッチ</strong>は長い録音や待たない録音で、会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、Discord 連携です。どちらも「Gemini(クラウド)」（既定）か、Windows (x64) では、このPC内で動く Whisper を選べます。</p>
+        <p>文字起こしには 2 つの種類があり、設定 → AIモデル → 音声入力 で、それぞれにエンジンを選べます。<strong>リアルタイム</strong>は待っている短い録音で、この画面での音声入力（<span class="kbd">Ctrl + Shift + R</span>）と、ウィンドウにドロップした音声ファイルです。<strong>バッチ</strong>は長い録音や待たない録音で、会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a> です。どちらも「Gemini(クラウド)」（既定）か、Windows (x64) では、このPC内で動く Whisper を選べます。</p>
 
         <details class="more"><summary>メッセージとエラー</summary><div class="more-body">
           <p>状況に応じたメッセージが、ステータスバーに6〜9秒ほど表示されます。</p>
@@ -1816,7 +1816,7 @@
 
         <details class="more"><summary>制限・詳しい仕様（モデル・プライバシー・必要なもの）</summary><div class="more-body">
           <ul>
-            <li><strong>モデル:</strong> 既定は <code>gemini-3.5-transcribe</code> です。この画面での音声入力は、Geminiモデル限定で、オフラインやGemini以外のモデルは選べません（オフラインの Whisper を選べるのは、ホットフォルダと Discord 連携の文字起こしだけです）。</li>
+            <li><strong>モデル:</strong> 既定は <code>gemini-3.5-transcribe</code> です。この画面での音声入力は、Geminiモデル限定で、オフラインやGemini以外のモデルは選べません（オフラインの Whisper を選べるのは、ホットフォルダと Cloudflare Mobile Bridge の文字起こしだけです）。</li>
             <li><strong>呼び出し方:</strong> Google の Gemini 3.5 Transcribe を Interactions API（<code>POST {base}/v1beta/interactions</code>、ヘッダー <code>x-goog-api-key</code>）で呼びます。<code>gemini-flash-lite-latest</code> などそれ以外の Gemini モデルは、プロンプト付きの generateContent 形式で動きます。</li>
             <li><strong>ライブ版は使えません:</strong> <code>gemini-3.5-transcribe-live</code> はストリーミング（Live API）版で、録音した音声には使えません（指定すると、その旨のエラーが出ます）。</li>
             <li><strong>プライバシー:</strong> syki::sokは常に <code>store: false</code> を送ります。Google側に録音や文字起こしは保存されません。</li>
@@ -3084,7 +3084,7 @@ recipes:
             </ul>
           </div>
         </div>
-        <p>このエンジンの選択が効くのは、ホットフォルダと <a href="#discord-bridge" style="color: var(--accent);">Discord連携</a> だけです。画面での音声入力（<a href="#voice-input" style="color: var(--accent);">音声入力</a>、<span class="kbd">Ctrl + Shift + R</span>）と <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> は、これまでどおり Gemini を使います。</p>
+        <p>このエンジンの選択が効くのは、ホットフォルダと <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a> だけです。画面での音声入力（<a href="#voice-input" style="color: var(--accent);">音声入力</a>、<span class="kbd">Ctrl + Shift + R</span>）と <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> は、これまでどおり Gemini を使います。</p>
 
         <p><strong>フォルダをすばやく開く</strong></p>
         <ul>
@@ -3436,7 +3436,7 @@ syki ocr --json memo.png</code></pre>
           </ol></figure>
 
         <ol class="steps">
-          <li><strong>モデルを用意する</strong><span>Ollama なら、<code>ollama pull bge-m3</code> を実行します。このPCのモデルが標準で、クラウドの埋め込みモデルも使えます（下の「制限と詳細」）</span></li>
+          <li><strong>モデルを用意する</strong><span>ローカル標準は <code>EmbeddingGemma</code>（<code>ollama pull embeddinggemma</code>）で、MRL 256次元により超軽量かつ高速に動作します。クラウド標準は <code>Gemini Embedding</code>（<code>gemini-embedding-2</code>）です。従来の <code>bge-m3</code> も選択可能です（下の「制限と詳細」）</span></li>
           <li><strong>設定でオンにする</strong><span>設定（<span class="kbd">Ctrl + ,</span>、macOS は <span class="kbd">Cmd + ,</span>）の「AIモデル」タブを開き、最後の「意味検索」を開いて（「詳細設定を表示」をオンにすると、すべての節が開きます）、スイッチをオンにします</span></li>
           <li><strong>「今すぐ更新」を押す</strong><span>ノートの文章を埋め込みモデルに送って、索引を作ります。進み具合が出て、「中止」で止められます（ここまでの分は残ります）。次からの更新は、新しいノートと変わったノートだけを読みます。「保存」の前でも動きます</span></li>
           <li><strong>「保存」を押す</strong><span>ノート検索に「完全一致 | 意味」の切り替えが出ます。再起動は要りません</span></li>
@@ -3717,92 +3717,57 @@ syki ocr --json memo.png</code></pre>
         </p>
       </section>
 
-      <!-- Discord連携 -->
-      <section class="doc-section" id="discord-bridge">
-        <h3>Discord連携｜スマホから送る（閉じていてもOK）</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 自分のDiscord BotへスマホからDMを送ると、次にsyki::sokを起動したときに今日のスクラップへ入ります。Mobile Dropと違い、送るときにsyki::sokが起動している必要はありません。中継サーバーやCloudflareアカウントは不要で、必要なのは自分で作る無料のBotだけです。</div></div>
+      <!-- Cloudflare Mobile Bridge -->
+      <section class="doc-section" id="cf-bridge">
+        <h3>Cloudflare Mobile Bridge｜スマホから送る（PCが閉じていてもOK）</h3>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> スマホのPWA（Webアプリ）からメモ・写真・音声を送ると、Cloudflare Workers + D1に一時保存され、次にsyki::sokを開いたときに今日のスクラップへ自動追記されます。Mobile Dropと違い同じWi-Fiにいる必要はなく、PCが閉じていても届きます。自前環境で完全セルフホスト可能で安全です。</div></div>
 
         <div class="flow">
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><b>スマホ</b><span>Discordアプリで自分のBotに個別DMを送る</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><b>スマホ (PWA)</b><span>ブラウザやホーム画面アプリからメモ・カメラ撮影・音声録音を送信</span></div>
           <div class="flow-arrow"></div>
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><b>Discord</b><span>メッセージをそのまま預かっている（syki::sokが閉じていても消えません）</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><b>Cloudflare Workers + D1</b><span>専用WorkerとDBがメッセージを暗号化保存（PCが消えていても保持）</span></div>
           <div class="flow-arrow"></div>
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><b>PC</b><span>起動中は既定45秒ごとに確認し、今日のスクラップへ追記</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><b>PC (syki::sok)</b><span>定期ポーリング（既定30秒）で自動取得、Geminiで文字起こし・OCRして今日のスクラップに追記</span></div>
         </div>
 
         <p><strong>初回セットアップ（1回だけ）</strong></p>
         <ol class="steps">
-          <li><strong>Botを作成する</strong><span><a href="https://discord.com/developers/applications" target="_blank" rel="noopener" style="color: var(--accent);">discord.com/developers/applications</a> を開き「New Application」で名前を付けて作成。「Bot」タブの「Reset Token」でトークンを取得します（表示されるのはこの1回だけなので、控えておいてください）</span></li>
-          <li><strong>Botを自分のサーバーに招待する</strong><span>「Installation」タブで<strong>「ギルドのインストール」</strong>にチェックを入れます（Botをサーバーに参加させるDMには必須です）。「OAuth2」タブに移り、スコープで <code>bot</code>、Botの権限で「メッセージを送る」にチェック。生成されたURLのすぐ上の「連携タイプ」を<strong>「ギルドのインストール」</strong>に切り替えてからURLを開き、自分のサーバー（この用途だけの非公開サーバーで十分です）を選んでAuthorizeします</span></li>
-          <li><strong>自分のユーザーIDを控える</strong><span>Discordの ユーザー設定 → 詳細設定 で「デベロッパーモード」を有効化し、自分の名前を右クリック →「ユーザーIDをコピー」。18桁前後の<strong>数字</strong>が控えられます（表示名やユーザー名ではありません）</span></li>
-          <li><strong>syki::sokに設定する</strong><span>設定 → 同期 → 「Discordからの入力」で、Botトークンと(3)のユーザーIDを貼り付け、チェックを入れて「接続テスト」。成功したら「保存」</span></li>
+          <li><strong>Cloudflare Worker をデプロイする</strong><span>リポジトリの <code>tools/cf-bridge</code> フォルダで <code>npm run deploy</code> を実行し、自分専用の Worker（<code>https://&lt;Worker名&gt;.workers.dev</code>）をデプロイします（無料枠で十分運用可能）</span></li>
+          <li><strong>syki::sok に設定する</strong><span>設定 &rarr; 同期 &rarr; 「Cloudflare Mobile Bridge」を開き、有効化にチェックを入れて、Worker の Endpoint URL と Auth Token を入力します</span></li>
+          <li><strong>スマホでペアリングする</strong><span>設定画面の「QRコードを表示」をクリックし、スマホのカメラでスキャンしてブラウザで開きます。ホーム画面に追加（PWA）するとネイティブアプリ同様に使えます</span></li>
         </ol>
-
-        <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/settings-discord.png" alt="設定画面の同期タブ、Discordからの入力セクション。有効化のチェックボックス、Botトークン欄、DiscordユーザーID欄、確認間隔、接続テストボタンが並んでいる" loading="lazy" width="1120" height="720"></div><figcaption>設定 → 同期 → 「Discordからの入力」（値はデモ用です）</figcaption>
-          <ol class="fig-legend">
-            <li><strong>有効化</strong> チェックを入れるまでは何も起きません</li>
-            <li><strong>Botトークン</strong> Developer Portal の「Bot」タブで取得したものを貼り付けます</li>
-            <li><strong>DiscordユーザーID</strong> 数字だけのID（デベロッパーモードで「ユーザーIDをコピー」）</li>
-            <li><strong>確認間隔</strong> 起動中にDiscordを確認する頻度（既定45秒、15〜600秒）</li>
-            <li><strong>接続テスト</strong> 保存前にBotトークンとユーザーIDが正しいかを確認します</li>
-          </ol></figure>
-
-        <div class="callout">
-          <div class="callout-title">
-            <svg class="callout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            よくある3つの失敗
-          </div>
-          <ul>
-            <li><strong>ユーザー名を貼ってしまう</strong> — 必要なのは画面に出ている名前ではなく、数字だけのユーザーID。接続テストで「"..." はユーザー名のようです」と出たら、これが原因です</li>
-            <li><strong>招待の「連携タイプ」が「ユーザーインストール」のまま</strong> — Botをサーバーに参加させて個別DMを許可するには「ギルドのインストール」が必要です。招待URLに <code>integration_type=1</code> が入っていると、認証時に「提供されているスコープが無効です」と出て失敗します</li>
-            <li><strong>サーバーのチャンネルでBotに<code>@メンション</code>している</strong> — syki::sokが確認しているのはBotとの<strong>個別DM</strong>だけです。Botのプロフィールから「メッセージを送る」を選び、専用のDM画面が開いたことを確認してから送ってください</li>
-          </ul>
-        </div>
 
         <p><strong>使い方</strong></p>
         <ol class="steps">
-          <li><strong>Botとの個別DMを開く</strong><span>サーバーのメンバー一覧やメンションからBotの名前をクリックし、プロフィールカードの「メッセージを送る」を選びます</span></li>
-          <li><strong>テキスト・写真・音声メモなどを送る</strong><span>Discordアプリの通常の送信方法（キーボード入力、カメラロール添付、音声メッセージ）がそのまま使えます</span></li>
-          <li><strong>syki::sok側で反映を待つ</strong><span>起動していれば確認間隔以内（既定45秒）、閉じていた場合は次に開いたときに、送った時点からの分がまとめて届きます</span></li>
+          <li><strong>スマホでPWAを開く</strong><span>ホーム画面に追加したアイコンから起動します。オフライン時でも過去の送信履歴の確認が可能です</span></li>
+          <li><strong>テキスト入力・写真撮影・音声録音</strong><span>カメラアイコンで即座に撮影、マイクアイコンでワンタップ音声録音が可能です。送信履歴パネルからは個別削除や一括消去（2ステップセーフティロック付き）も行えます</span></li>
+          <li><strong>syki::sok側で反映を待つ</strong><span>PCが起動していれば確認間隔以内（既定30秒）、閉じていた場合は次回起動時にまとめて自動取得され、<code>scraps/YYYY-MM-DD.md</code> に <code>## Mobile [14:20:05]</code> の見出しで自動追記されます</span></li>
         </ol>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
               <tr>
-                <th>Discordで送ったもの</th>
+                <th>スマホから送ったもの</th>
                 <th>スクラップに入る内容</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>写真</td>
-                <td>Mobile Dropの写真と同じビジョンモデルでMarkdownに文字起こしされます。OCRが未設定・失敗のときは、<code>assets/</code> に保存されリンクが入ります。</td>
+                <td>写真・画像</td>
+                <td>Gemini ビジョンモデルで自動OCRされMarkdownテキストに書き起こされます。未設定・失敗時は <code>assets/</code> に保存され画像リンクが入ります。</td>
               </tr>
               <tr>
-                <td>音声メッセージ・音声ファイル</td>
-                <td>設定 → AIモデル → 音声入力 の「バッチ」で選んだ方法で文字起こしされます（既定は <a href="#voice-input" style="color: var(--accent);">音声入力</a>と同じ Gemini です。Windows (x64) では、このPC内で動く Whisper も選べます。<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照）。失敗したときは音声ファイルとして <code>assets/</code> に保存されます。</td>
+                <td>音声メモ・録音</td>
+                <td>Gemini 音声モデル（<code>gemini-3.5-transcribe</code>）により句読点を含む自然な日本語テキストに自動文字起こしされます。</td>
               </tr>
               <tr>
                 <td>テキスト・URL</td>
-                <td>そのまま追記されます。URLだけの場合はMarkdownリンクになります。</td>
+                <td>そのままの文章として追記されます。URLは自動でリンク形式になります。</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p style="color: var(--text-tertiary); font-size: 13.5px;">
-          それぞれ、その日のスクラップ（<code>scraps/YYYY-MM-DD.md</code>）の末尾に <code>## Discord [14:20:05]</code> の見出しで追記されます。写真と文章を同時に送ると、2つの見出しに分かれます。
-        </p>
-
-        <details class="more"><summary>詳しい仕様（許可される送信者・確認の仕組み・失敗したとき）</summary><div class="more-body">
-          <ul>
-            <li><strong>送信者は1人だけ</strong> 設定した「あなたのDiscordユーザーID」と一致するメッセージだけを取り込みます。それ以外のアカウントからBotにメッセージが届いても、無視されます。</li>
-            <li><strong>初めて有効化したとき</strong> 過去のDM履歴は取り込まれません（その時点を基準に、以降のメッセージだけを見ます）。</li>
-            <li><strong>閉じている間に送った分</strong> Discord側にメッセージが残っているので、次にsyki::sokを起動したときに、基準時点からの分をまとめて取り込みます。失われません。</li>
-            <li><strong>ネットワーク断・Botトークンの入れ替え</strong> 接続に失敗しても自動で再試行を続けます（少しずつ間隔を空けながら）。設定でトークンを直して保存すれば、その場で新しい設定が使われます。</li>
-            <li><strong>Git同期との関係</strong> スクラップフォルダでGit同期が有効なら、Discordからの追記も自動でコミット・プッシュされます。処理できず <code>assets/</code> に保存された写真・音声ファイルも同じフォルダに入るため、一緒に同期されます。</li>
-          </ul>
-        </div></details>
       </section>
 
       <!-- コマンドパレット -->
@@ -3956,7 +3921,7 @@ syki ocr --json memo.png</code></pre>
             <li><strong>エディタと入力</strong> 自動保存、IME Guardian、AI校正、カーソルの発光。ツールバーと右クリックメニューは、このタブのさらに下で設定します（下の手順を参照）</li>
           </ol></figure>
 
-        <p><strong>基本表示と詳細表示:</strong> ほとんどの人が使わない項目（ゴーストテキスト、画像OCR、音声入力、画像生成、コマンド、自動セレクター、アクション候補、Discord、ホットフォルダ）は、最初は折りたたまれています。セクション名をクリックすると開きます。ダイアログ右上の <strong>詳細設定を表示</strong> にチェックを入れると、すべて開きます（選択は記憶されます）。項目の説明文は、項目の横にある小さな <strong>?</strong> ボタンを押すと表示されます。何も削除していません。折りたたまれたセクションの値も、そのまま保存されます。</p><h3>1. 一般タブ (General)</h3>
+        <p><strong>基本表示と詳細表示:</strong> ほとんどの人が使わない項目（ゴーストテキスト、画像OCR、音声入力、画像生成、コマンド、自動セレクター、アクション候補、Cloudflare Mobile Bridge、ホットフォルダ）は、最初は折りたたまれています。セクション名をクリックすると開きます。ダイアログ右上の <strong>詳細設定を表示</strong> にチェックを入れると、すべて開きます（選択は記憶されます）。項目の説明文は、項目の横にある小さな <strong>?</strong> ボタンを押すと表示されます。何も削除していません。折りたたまれたセクションの値も、そのまま保存されます。</p><h3>1. 一般タブ (General)</h3>
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
@@ -4141,7 +4106,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>画像解析 (OCR):</strong> Gemini Flash Lite や Qwen 2.5 VL などの画像モデルとキーを指定します。「画像ペースト(Ctrl+V)時に自動で画像マークダウン化 (Vision OCR) を実行」のスイッチもここにあります（既定でオン）。スイッチがオフのとき、またはAPIキーが未設定のときは、貼り付けた画像を assets に保存してリンクで貼ります（Ctrl+Shift+V と同じ）。</li>
           <li><strong>画像生成:</strong> 図を画像として書き出すときに使うモデル・アスペクト比・解像度を指定します。Gemini API Key の欄が空のときは、Vision のキー、次にテキストのキーの順に引き継がれます。</li>
           <li><strong>音声入力 (Voice input):</strong> 画像解析 (OCR)の設定のすぐ下にあります。使い方は <a href="#voice-input" style="color: var(--accent);">音声入力</a> を参照してください。設定項目は次の表のとおりです。</li>
-          <li><strong>リアルタイムとバッチ(音声入力のグループ):</strong> それぞれのブロックに「エンジン:」があり、「Gemini(クラウド)」（既定）か「Whisper(このPC内・オフライン)」を選びます。Gemini のモデルと API の種類、Whisper のモデルも、ブロックごとに選べます。リアルタイムは音声入力とドロップした音声ファイル、バッチは会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#discord-bridge" style="color: var(--accent);">Discord連携</a> です。Whisper 本体とオプションは、「Whisper(このPC内)」にあります。Whisper は <strong>Windows (x64) のみ</strong> で、macOS では「このPC内 Whisper は、現在 Windows (x64) のみ対応しています。」と表示されます。ダウンロードの手順とモデルの一覧は、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>の Whisper の項目にあります。</li>
+          <li><strong>リアルタイムとバッチ(音声入力のグループ):</strong> それぞれのブロックに「エンジン:」があり、「Gemini(クラウド)」（既定）か「Whisper(このPC内・オフライン)」を選びます。Gemini のモデルと API の種類、Whisper のモデルも、ブロックごとに選べます。リアルタイムは音声入力とドロップした音声ファイル、バッチは会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a> です。Whisper 本体とオプションは、「Whisper(このPC内)」にあります。Whisper は <strong>Windows (x64) のみ</strong> で、macOS では「このPC内 Whisper は、現在 Windows (x64) のみ対応しています。」と表示されます。ダウンロードの手順とモデルの一覧は、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>の Whisper の項目にあります。</li>
         </ul>
 
         <p><strong>音声入力 (Voice input) の設定項目</strong></p>
@@ -4224,7 +4189,7 @@ syki ocr --json memo.png</code></pre>
                 <td>エンジン</td>
                 <td><code>voice.realtime.engine</code>、<code>voice.batch.engine</code></td>
                 <td>Gemini(クラウド) (<code>gemini</code>)</td>
-                <td>Gemini(クラウド) / Whisper(このPC内・オフライン) (<code>whisper-local</code>)。リアルタイム（音声入力、ドロップした音声）とバッチ（会議メモ、Mobile Drop、ホットフォルダ、Discord 連携）で、別々に選べます。リアルタイムを Whisper にすると、「整え」の段階はオフになり、選択して話す書き換えは使えません。Whisper は Windows (x64) のみです。</td>
+                <td>Gemini(クラウド) / Whisper(このPC内・オフライン) (<code>whisper-local</code>)。リアルタイム（音声入力、ドロップした音声）とバッチ（会議メモ、Mobile Drop、ホットフォルダ、Cloudflare Mobile Bridge）で、別々に選べます。リアルタイムを Whisper にすると、「整え」の段階はオフになり、選択して話す書き換えは使えません。Whisper は Windows (x64) のみです。</td>
               </tr>
               <tr>
                 <td>モデル</td>
@@ -4339,7 +4304,7 @@ syki ocr --json memo.png</code></pre>
       <!-- 同期設定 -->
       <section class="doc-section" id="cfg-sync">
         <h3>4. 同期 タブ (Sync: Scraps &amp; Git)</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 日報スクラップの保存先フォルダと、GitHubへのバックグラウンド自動同期を設定します。同じタブの下のほうに、Discord からの取り込みと、ホットフォルダ（画像のOCR・音声の文字起こし）の設定もあります。</div></div>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> 日報スクラップの保存先フォルダと、GitHubへのバックグラウンド自動同期を設定します。同じタブの下のほうに、Cloudflare Mobile Bridge（スマホ連携）と、ホットフォルダ（画像のOCR・音声の文字起こし）の設定もあります。</div></div>
 
         <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/settings-sync.png" alt="設定画面の同期タブ。スクラップフォルダとGitの設定が並んでいる" loading="lazy" width="1120" height="720"></div><figcaption>設定：同期タブ（スクラップフォルダとGit）</figcaption>
           <ol class="fig-legend">
@@ -4356,8 +4321,8 @@ syki ocr --json memo.png</code></pre>
           <li><strong>Git自動プッシュ待機時間 (秒):</strong> 最後の編集からプッシュするまでの待ち時間です（既定30秒、5〜3600）。</li>
           <li><strong>リモートブランチ:</strong> 同期先のブランチ名です（既定は <code>main</code>）。</li>
           <li><strong>Git リモートURL・「接続テスト」・「連携 / 初期化」:</strong> 空のGitHubリポジトリURL（<code>https://github.com/user/scraps.git</code>）を入力して「接続テスト」で疎通を確認し、「連携 / 初期化」を押すだけで、必要なら <code>git init</code>、<code>origin</code> の設定、最初のコミット、<code>push -u</code> までを自動で行います。</li>
-          <li><strong>Discordからの入力:</strong> 同じタブの下の方にあります。Botトークン、DiscordユーザーID、確認間隔、接続テストを設定します。詳しい手順は<a href="#discord-bridge" style="color: var(--accent);">Discord連携</a>を参照してください。</li>
-          <li><strong>ホットフォルダ:</strong> Discord の設定のさらに下にあります。使い方は<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照してください。
+          <li><strong>Cloudflare Mobile Bridge:</strong> 同じタブの下の方にあります。自前の Cloudflare Worker Endpoint URL と Auth Token を設定し、QRコードをスマホでスキャンするだけで即時ペアリングできます。</li>
+          <li><strong>ホットフォルダ:</strong> Cloudflare Mobile Bridge の設定のさらに下にあります。使い方は<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>を参照してください。
             <ul>
               <li><strong>フォルダを監視し、画像はOCR・音声は文字起こしして今日のスクラップに追記する:</strong> オン / オフです。最初はオフです。</li>
               <li><strong>監視するフォルダのパス:</strong> 既定は <code>~/Documents/syki-sok/inbox</code> です。「参照...」で選べます。処理したファイルは、スクラップフォルダの <code>assets</code> に移されます（削除はされません）。</li>
@@ -4615,7 +4580,7 @@ syki ocr --json memo.png</code></pre>
             <li><strong>バックアップの案内</strong> 上書きされるエージェント定義とスキルは、先にバックアップされます</li>
             <li><strong>読み込む</strong> チェックを付けたものだけを反映します</li>
           </ol></figure>
-        <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/pack-import-review.png" alt="読み込みダイアログの2番目の画面「確認が必要な設定」。テキストモデルの新しいサーバーのアドレス、エージェントの実行前確認、Discord 連携、ホットフォルダが、変更前と変更後つきで、チェックなしで並んでいる" loading="lazy" width="1120" height="720"></div><figcaption>「読み込む」を押したあと、パッケージが文章の送り先や、確認なしで動くものも変えるとき</figcaption>
+        <figure class="fig"><div class="fig-frame"><img src="./img/manual/ja/pack-import-review.png" alt="読み込みダイアログの2番目の画面「確認が必要な設定」。テキストモデルの新しいサーバーのアドレス、エージェントの実行前確認、Cloudflare Mobile Bridge 連携、ホットフォルダが、変更前と変更後つきで、チェックなしで並んでいる" loading="lazy" width="1120" height="720"></div><figcaption>「読み込む」を押したあと、パッケージが文章の送り先や、確認なしで動くものも変えるとき</figcaption>
           <ol class="fig-legend">
             <li><strong>お知らせ</strong> この一覧のものは、チェックを付けないかぎり反映されません</li>
             <li><strong>設定の1つ1つ</strong> 変更前 → 変更後で表示され、チェックは外れています。ここでは、テキストモデルの新しいサーバーのアドレス（とモデル名）です</li>
@@ -4627,7 +4592,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>中身を確かめる</strong><span>「上書きされます」の印が付いた項目は、いまあるものを置き換えます。パッケージの API キー欄が空のときは、いまのキーは消えません</span></li>
           <li><strong>読み込むものにチェックを付ける</strong><span>信頼できない相手のエージェント定義とスキルは、チェックを外します</span></li>
           <li><strong>「読み込む」を押す</strong><span>設定はすぐ反映されます（一部は再起動後）。エージェント定義とスキルは、次のエージェント実行から使われます</span></li>
-          <li><strong>「確認が必要な設定」が出たら選ぶ</strong><span>モデルのサーバーのアドレス、エージェントの実行前確認（パッケージがオフにするとき）、Discord 連携、ホットフォルダは、黙って反映されません。受け入れるものにチェックを付けて「チェックしたものを適用」を押すか、「今のままにする」を押します</span></li>
+          <li><strong>「確認が必要な設定」が出たら選ぶ</strong><span>モデルのサーバーのアドレス、エージェントの実行前確認（パッケージがオフにするとき）、Cloudflare Mobile Bridge 連携、ホットフォルダは、黙って反映されません。受け入れるものにチェックを付けて「チェックしたものを適用」を押すか、「今のままにする」を押します</span></li>
         </ol>
 
         <div class="compare">
@@ -4659,7 +4624,7 @@ syki ocr --json memo.png</code></pre>
           <p><strong>読み込んだあとの動き</strong></p>
           <ul>
             <li>設定は、動いているアプリに統合されて、その場で保存されます。テーマ・言語・ツールバー・ショートカットもすぐ切り替わります。チェックを付けなかった区分は変わりません。</li>
-            <li>文章の送り先や、確認なしで動くものを決める設定は、あなたの確認を待ちます（上の「確認が必要な設定」）。モデルのサーバーのアドレス（モデル名も一緒です）、オフにされるエージェントの実行前確認、オンにされる、または別のユーザーやトークンが指定される Discord 連携、オンにされる、または別のフォルダを指されるホットフォルダが対象です。チェックを付けなかったものは今の値のままで、読み込み後の画面に一覧が出ます。新しいサーバーを受け入れると、前のサーバー用に保存したキーは、パッケージにキーが入っていないかぎり削除されます。ほかのキーは残ります。</li>
+            <li>文章の送り先や、確認なしで動くものを決める設定は、あなたの確認を待ちます（上の「確認が必要な設定」）。モデルのサーバーのアドレス（モデル名も一緒です）、オフにされるエージェントの実行前確認、オンにされる、または別のURLやトークンが指定される Cloudflare Mobile Bridge 連携、オンにされる、または別のフォルダを指されるホットフォルダが対象です。チェックを付けなかったものは今の値のままで、読み込み後の画面に一覧が出ます。新しいサーバーを受け入れると、前のサーバー用に保存したキーは、パッケージにキーが入っていないかぎり削除されます。ほかのキーは残ります。</li>
             <li>パッケージには、どの OS で作ったかの記録がありません。ショートカットに Command キーが使われている（Mac で作った）パッケージは、Windows では反映されません。このパソコンのショートカットはそのままで、読み込み後の画面にそう出ます。</li>
             <li><code>config.json</code> に書き込めないときは、読み込み後の画面とステータスバーに出ます。その設定は、終了するまでしか使われません。</li>
             <li>エージェント定義とスキルは、syki::sok 自身が書き込みます。<code>config.json</code> を直接書き換えて取り込むことはできません（起動中のアプリが、設定ファイルを持っているためです）。</li>

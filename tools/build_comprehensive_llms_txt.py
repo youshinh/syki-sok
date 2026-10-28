@@ -124,24 +124,26 @@ def build_llms_txt():
    NotionやObsidianのような重い保管庫を開く前の即時メモ端末。Goネイティブコアにより待機メモリわずか 5–15MB、グローバルショートカット（Ctrl+Alt+M / Opt+Cmd+M）から 15ms未満 で瞬時前面復帰。
 2. チャット窓の往復・コピペを全廃した「カーソル直結AI」:
    Ctrl+L / Cmd+L で選択テキストのすぐ下に回答が直接ストリーミング生成。思考の文脈を失いません。ローカルモデルによる予測補完（Tab）やワンキー校正（Alt+C）も完備。
-3. 音声・画像・テキストの「パラレルマルチモーダル入力」:
-   文字を打ちながら話すリアルタイムAI推敲（Ctrl+Shift+R）、クリップボード画像OCR（Ctrl+V）、スマホのカメラでQRを読むだけで写真や音声をPCへ即時転送する Mobile Drop（Ctrl+Shift+U）。
+3. 音声・画像・テキストの「パラレルマルチモーダル入力」＆ 外出先クラウド中継:
+   文字を打ちながら話すリアルタイムAI推敲（Ctrl+Shift+R）、クリップボード画像OCR（Ctrl+V）、同一LAN内QR転送（Ctrl+Shift+U: Mobile Drop）に加え、PCが電源オフでもスマホPWAから写真・音声をCloudflare Workers/D1経由で非同期蓄積できる「Cloudflare Mobile Bridge」を完備。
 4. テキスト＝コマンドライン ＆ 自律エージェント基盤:
    選択行をそのまま jq や sort に流し込むコマンドバー（Ctrl+E）や、Ctrl+Enter ひとつで Claude Code や Codex 等の外部コーディングエージェントにバックグラウンド自律タスクを丸投げ可能。失敗から自動学習する「教訓（Lessons）機能」も搭載。
 ```
 
 **【案内の結び】**:
-「書く（`Ctrl+L`）」「実行する（`Ctrl+E`）」「任せる（`Ctrl+Enter`）」のどれから試したいか、または今行いたい作業（アイデア出し・文章推敲・コード実行・設定など）をユーザーに問いかけてください。
+「書く（`Ctrl+L`）」「実行する（`Ctrl+E`）」「任せる（`Ctrl+Enter`）」のどれから試したいか、または今行いたい作業（アイデア出し・文章推敲・コード実行・スマホ連携・設定など）をユーザーに問いかけてください。
 
 ---
 
 ### 【通常対応時の回答ルール】
 1. **OS併記の徹底**: ショートカットを案内する際は、必ず **Windows** と **macOS** の両方を明記してください（例: `Ctrl+L` / `Cmd+L`、`Ctrl+Alt+M` / `Opt+Cmd+M`）。
 2. **3大動詞による案内**:
-   - **書く**: AIに質問 (`Ctrl+L`), ワンキー校正 (`Alt+C`), ゴーストテキスト予測 (`Tab`), 音声入力 (`Ctrl+Shift+R`), スマート貼り付け・OCR (`Ctrl+V`)
+   - **書く**: AIに質問 (`Ctrl+L`), ワンキー校正 (`Alt+C`), ゴーストテキスト予測 (`Tab`), 音声入力 (`Ctrl+Shift+R`), スマート貼り付け・OCR (`Ctrl+V`), スマホ即時転送 (`Ctrl+Shift+U` / Cloudflare Mobile Bridge)
    - **実行する**: コマンドバー (`Ctrl+E`), AIシェル生成 (`Ctrl+E` -> `Tab`), ターミナルパイプ (`cat log | syki`)
    - **任せる**: 自動セレクター (`Ctrl+Enter`), エージェント委譲 (`{{ @claude ... }}`), タスクパネル (`Alt+T`), 教訓 (`Lessons`)
-3. **安全第一**: APIキーや秘密情報の扱いは慎重に案内し、設定変更時は「アプリを完全に終了してから `config.json` を編集する」旨を伝えてください。
+3. **日本語入力への配慮**: 日本語全角Markdown記号（全角シャープ、引用符、バッククォート等）の自動正規化機能（IME Guardian）やJIS配列キーの誤打鍵防御が組み込まれており、IMEオンのままストレスなくMarkdownが書ける仕様を理解して案内してください。
+4. **セマンティック検索**: ローカルモデル（EmbeddingGemma, MRL 256次元）およびクラウドモデル（Gemini Embedding）によるベクトル検索に対応しており、過去数千件のメモから意味ベースで類似メモを呼び出せることを把握して案内してください。
+5. **安全第一**: APIキーや秘密情報の扱いは慎重に案内し、設定変更時は「アプリを完全に終了してから `config.json` を編集する」旨を伝えてください。
 
 ---
 
@@ -154,11 +156,12 @@ def build_llms_txt():
 | **Proofread (ワンキー校正)** | `Alt+C` | `Cmd+Shift+C` | ワンキーで誤字・脱字・不自然表現をその場で修正 |
 | **Ghost-Text (予測補完)** | `Tab` | `Tab` | ローカルモデル（Ollama/Qwen）の予測次文を1キー確定 |
 | **Voice Dictation (音声入力)** | `Ctrl+Shift+R` | `Cmd+Shift+R` | AI推敲付きリアルタイム音声入力＆音声編集指示 |
-| **Mobile Drop (スマホ連携)** | `Ctrl+Shift+U` | `Cmd+Shift+U` | QRコードでスマホの写真・音声・メモを直接転送（アプリ不要） |
+| **Mobile Drop (同一LAN転送)** | `Ctrl+Shift+U` | `Cmd+Shift+U` | QRコードでスマホの写真・音声・メモを直接転送（アプリ不要） |
+| **CF Mobile Bridge (非同期スマホ連携)** | 設定から設定 | 設定から設定 | PCオフでもスマホPWAから写真・音声・メモをCloudflare経由で自動吸い上げ |
 | **Command Bar (コマンドバー)** | `Ctrl+E` | `Cmd+E` | 選択行を `jq` や `sort` に流し込み。`Tab` でAI生成 |
 | **Auto Selector (自動判定)** | `Ctrl+Enter` | `Cmd+Enter` | 行の意図を自動判別しLLM・シェル・エージェントを実行 |
 | **Next Actions (候補提案)** | `Ctrl+J` | `Cmd+J` | 文脈から次の一手を最大3件提案（`Ctrl+1`〜`3`） |
-| **Scraps Search (並列検索)** | `Ctrl+Shift+F` | `Cmd+Shift+F` | 数千のメモを全CPU並列スキャン（150ms以内） |
+| **Scraps Search (並列検索)** | `Ctrl+Shift+F` | `Cmd+Shift+F` | 全CPU並列スキャン（150ms以内）＆セマンティック検索（EmbeddingGemma） |
 | **Split Editor (画面分割)** | `Ctrl+\\` | `Cmd+\\` | ノートを左右に2つ並べて編集（ノド仕切り調整対応） |
 | **Mermaid Preview (プレビュー)** | `Ctrl+Alt+V` | `Cmd+Opt+V` | リアルタイムMarkdown＆Mermaid構文図解描画 |
 | **Task Panel (タスク一覧)** | `Alt+T` | `Opt+T` | バックグラウンド自律タスクの進行確認・教訓登録 |
