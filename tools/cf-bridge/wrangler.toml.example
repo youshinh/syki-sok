@@ -8,3 +8,7 @@ workers_dev = true
 binding = "DB"
 database_name = "syki_memos_db"
 database_id = "YOUR_D1_DATABASE_ID_HERE"
+
+# Workers AI binding (Free GPU inference: Whisper, Llama, etc.)
+[ai]
+binding = "AI"

@@ -4,6 +4,7 @@ import { APP_ICON_B64 } from "./app_icon";
 export interface Env {
   DB: D1Database;
   BUCKET?: R2Bucket;
+  AI?: any;
   AUTH_TOKEN: string;
 }
 
@@ -144,7 +145,7 @@ export default {
     }
 
     // 4. API Endpoints (Auth Required)
-    if (url.pathname.startsWith("/api/")) {
+    if (url.pathname.startsWith("/api/") || url.pathname.startsWith("/v1/")) {
       const isAuthorized = await verifyAuth(req, env.AUTH_TOKEN);
       if (!isAuthorized) {
         return new Response(JSON.stringify({ error: "Unauthorized" }), {
@@ -163,7 +164,7 @@ export default {
           const clientTime = body.client_time || serverTime;
           const device = body.device || "Mobile";
           const contentType = body.type || (body.attachment ? body.attachment.type : "text");
-          const textContent = body.text || "";
+          let textContent = body.text || "";
 
           // Geo from Cloudflare Edge
           const cf = req.cf as any;
@@ -186,6 +187,20 @@ export default {
               });
             } else {
               fileData = bytes;
+            }
+          }
+
+          // Automatic Edge Speech-to-Text via Cloudflare Workers AI (Whisper)
+          if (contentType === "audio" && fileData && env.AI && !textContent.trim()) {
+            try {
+              const aiRes: any = await env.AI.run("@cf/openai/whisper", {
+                audio: [...fileData]
+              });
+              if (aiRes && aiRes.text) {
+                textContent = aiRes.text.trim();
+              }
+            } catch (aiErr: any) {
+              console.error("Workers AI Whisper transcription error:", aiErr);
             }
           }
 
@@ -215,6 +230,57 @@ export default {
           });
         } catch (err: any) {
           return new Response(JSON.stringify({ error: err.message || "Failed to save memo" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders() },
+          });
+        }
+      }
+
+      // POST /api/transcribe or /v1/audio/transcriptions : Standalone Whisper STT
+      if (req.method === "POST" && (url.pathname === "/api/transcribe" || url.pathname === "/v1/audio/transcriptions")) {
+        if (!env.AI) {
+          return new Response(JSON.stringify({ error: "Workers AI is not configured" }), {
+            status: 500,
+            headers: { "Content-Type": "application/json", ...corsHeaders() },
+          });
+        }
+        try {
+          let audioBytes: Uint8Array;
+          const reqContentType = req.headers.get("content-type") || "";
+          if (reqContentType.includes("multipart/form-data")) {
+            const formData = await req.formData();
+            const file = formData.get("file") as File;
+            if (!file) {
+              return new Response(JSON.stringify({ error: "Missing 'file' field in multipart body" }), {
+                status: 400,
+                headers: { "Content-Type": "application/json", ...corsHeaders() },
+              });
+            }
+            audioBytes = new Uint8Array(await file.arrayBuffer());
+          } else {
+            audioBytes = new Uint8Array(await req.arrayBuffer());
+          }
+
+          if (audioBytes.length === 0) {
+            return new Response(JSON.stringify({ error: "Audio payload is empty" }), {
+              status: 400,
+              headers: { "Content-Type": "application/json", ...corsHeaders() },
+            });
+          }
+
+          const aiRes: any = await env.AI.run("@cf/openai/whisper", {
+            audio: [...audioBytes],
+          });
+
+          return new Response(JSON.stringify({
+            text: (aiRes.text || "").trim(),
+            vtt: aiRes.vtt,
+            words: aiRes.words,
+          }), {
+            headers: { "Content-Type": "application/json", ...corsHeaders() },
+          });
+        } catch (err: any) {
+          return new Response(JSON.stringify({ error: err.message || "Whisper transcription failed" }), {
             status: 500,
             headers: { "Content-Type": "application/json", ...corsHeaders() },
           });
