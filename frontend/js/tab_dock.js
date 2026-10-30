@@ -152,7 +152,7 @@
 
     function frame(ts) {
       raf = 0;
-      let busy = false;
+      let anyBusy = false;
       const k = strengthOf(opts.strength ? opts.strength() : 100) / 100;
       const instant = !!(opts.instant && opts.instant());
       const open = Math.max(hit, openW);
@@ -160,6 +160,7 @@
       const extraH = EXTRA_H * k;
       states.forEach((st) => {
         if (!st.live) return;
+        let stBusy = false;
         const dt = st.prevTs ? ts - st.prevTs : 16.7;
         st.prevTs = ts;
         const easeAll = instant ? 1 : easeShare(dt, TAU_ALL);
@@ -171,13 +172,13 @@
           ? toUnmagnified(st.centres, rows.map((r) => extraH * (st.m.get(r) || 0)), st.y)
           : 0;
         st.h += (hTarget - st.h) * easeAll;
-        if (Math.abs(hTarget - st.h) < 0.002) st.h = hTarget; else busy = true;
+        if (Math.abs(hTarget - st.h) < 0.002) st.h = hTarget; else stBusy = true;
         rows.forEach((r, i) => {
           const target = st.hover ? bell(st.centres[i], pointer) : 0;
           let m = st.m.get(r) || 0;
           if (m === target && st.h === hTarget && st.written.has(r)) return; // this row has settled: nothing to compute or write
           m += (target - m) * easeRow;
-          if (Math.abs(target - m) < 0.002) m = target; else busy = true;
+          if (Math.abs(target - m) < 0.002) m = target; else stBusy = true;
           st.m.set(r, m);
           const w = rowWidth(hit, BASE_W, full, st.h, m);
           put(r, st, '--rw', w.toFixed(1) + 'px');
@@ -186,9 +187,10 @@
           put(r, st, '--rx', (extraH * m).toFixed(1) + 'px');
           st.styled.add(r);
         });
-        if (!st.hover && st.h === 0 && !busy) clear(st);
+        if (!st.hover && st.h === 0 && !stBusy) clear(st);
+        if (stBusy) anyBusy = true;
       });
-      if (busy) raf = win.requestAnimationFrame(frame);
+      if (anyBusy) raf = win.requestAnimationFrame(frame);
     }
 
     function kick() { if (!raf) raf = win.requestAnimationFrame(frame); }
@@ -213,6 +215,32 @@
       const scroller = st.s.scrollEl || st.s.listEl.parentNode;
       if (scroller) on(scroller, 'scroll', () => { st.centres = null; kick(); }, { passive: true });
     });
+
+    // Window-level safety net: if a pointer moves outside the strip without triggering pointerleave
+    // (e.g. fast swipe across the screen edge or window boundary), collapse cleanly.
+    on(win, 'pointermove', (e) => {
+      if (e.pointerType === 'touch') return;
+      states.forEach((st) => {
+        if (!st.hover || !st.live) return;
+        const rect = st.s.el.getBoundingClientRect();
+        const pad = 8;
+        if (e.clientX < rect.left - pad || e.clientX > rect.right + pad ||
+            e.clientY < rect.top - pad || e.clientY > rect.bottom + pad) {
+          st.hover = false;
+          kick();
+        }
+      });
+    }, { passive: true });
+
+    on(win, 'blur', () => {
+      states.forEach((st) => { if (st.hover) { st.hover = false; kick(); } });
+    });
+    if (win.document) {
+      on(win.document, 'mouseleave', () => {
+        states.forEach((st) => { if (st.hover) { st.hover = false; kick(); } });
+      });
+    }
+
     on(win, 'resize', () => { states.forEach((st) => { st.centres = null; }); });
 
     return {

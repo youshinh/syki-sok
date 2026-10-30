@@ -119,6 +119,8 @@
       language: (typeof navigator !== 'undefined' && navigator.language && navigator.language.startsWith('ja')) ? 'ja' : 'en',
       theme: 'olive',
       mermaidTone: 'auto', // diagram colors in the preview: auto (follows the look) | dark | light | neutral | forest (mermaid_tone.js)
+      diagramDetail: 'balanced', // simplified (<=7 nodes) | balanced (<=12 nodes) | faithful (<=20 nodes)
+      diagramStyle: 'material', // material | sketchy | editorial | terminal | ink
       autoSave: true,
       defaultNoteDir: '', // where a note with no file yet is saved (empty: the daily scraps folder)
       barVoice: true, // the microphone button of the ask / rewrite / command bars (js/bar_voice.js)
@@ -9339,6 +9341,12 @@ HOW MANY DIAGRAMS (one is the default; split only when it makes the result clear
 - Each diagram covers ONE meaningful unit of the text. Together they cover everything important in the text; none repeats another.
 - Every diagram is complete and valid on its own (IDs may repeat across diagrams).
 
+DIAGRAM TASTE & REFINEMENT RULES (inspired by diagram-design):
+- REMOVE & MERGE TEST: Every node represents a distinct idea. If two consecutive steps always occur together, merge them into ONE node.
+- CONNECTION ECONOMY: If a relationship is obvious from spatial layout, remove unnecessary cross-cutting arrows.
+- CONCISE LABELS: Use 1-4 word main labels. Put technical details (ports, methods, types) on a second line via <br/>.
+- The diagram is complete not when everything is added, but when nothing necessary can be removed.
+
 OUTPUT FORMAT:
 - ONE diagram: only the fenced code block (\`\`\`mermaid ... \`\`\`), nothing before or after it.
 - SEVERAL diagrams: for each one, a Markdown heading line "### Title" (a short title in the language of the text), then its fenced code block (\`\`\`mermaid ... \`\`\`). Blank line between the diagrams. No other text.`;
@@ -9397,7 +9405,16 @@ OUTPUT FORMAT:
 
     updateLLMIndicator();
 
-    const promptPayload = `以下の内容を理解し、最も分かりやすい構造のMermaid 11図コードを作成してください。内容が1つのまとまりなら図は1つに、性質の違う内容や、独立した複数の流れが含まれるときは、意味のまとまりごとに（最大4つまで）複数の図に分けてください。\n\n【対象テキスト】:\n${targetText}`;
+    const detail = (config.general && config.general.diagramDetail) || 'balanced';
+    let detailInstruction = '';
+    if (detail === 'simplified') {
+      detailInstruction = '\n【詳細度: シンプル】骨子・要約のみ。1図あたり最大7ノード程度に絞り、枝葉の細かい注釈は省いて最重要の流れを際立たせてください。';
+    } else if (detail === 'faithful') {
+      detailInstruction = '\n【詳細度: 詳細】網羅的。テキスト内の全ステップや条件分岐を忠実に漏れなく表現してください。1つの図が約15〜20ノードを超える場合は論理的なステージごとに複数の図に分割してください。';
+    } else {
+      detailInstruction = '\n【詳細度: 標準】バランス型。主要な分岐を含め8〜12ノード程度で分かりやすくまとめ、15ノードを超える場合は複数の図に分割してください。';
+    }
+    const promptPayload = `以下の内容を理解し、最も分かりやすい構造のMermaid 11図コードを作成してください。内容が1つのまとまりなら図は1つに、性質の違う内容や、独立した複数の流れが含まれるときは、意味のまとまりごとに（最大4つまで）複数の図に分けてください。${detailInstruction}\n\n【対象テキスト】:\n${targetText}`;
     const llmCfg = Object.assign({}, config.text, {
       systemPrompt: DEGRAM_MERMAID_SYSTEM_PROMPT
     });
@@ -9445,17 +9462,55 @@ OUTPUT FORMAT:
     return null;
   }
 
-  // --- Clean Material Design 3 Infographic Image Prompt Generator ---
-  const CLEAN_INFOGRAPHIC_STYLE = 
-    "Material Design 3 infographic design system. " +
-    "Flat solid colors only — absolutely NO gradients anywhere. " +
-    "Page canvas is a slightly blue-tinted light grey (#f0f4f9); content sits on pure white cards with a 28px corner radius, a 1px light grey border (#c4c7c5) and NO drop shadow. " +
-    "Primary accent is Action Blue #0b57d0, used sparingly; supporting elements use a soft tonal blue container tint (#d3e3fd). " +
-    "Action-like elements are full pill shapes; inputs 4px radius. " +
-    "Typography is a clean geometric sans (Rubik / Roboto / Noto Sans JP): headings are LARGE but at normal-to-medium weight, never heavy bold. Japanese text is set in Noto Sans JP. " +
-    "Icons are Google Material Symbols Outlined line icons, 24px, monochrome. " +
-    "Strict 8px spacing grid, generous structural spacing, left-aligned layout, content width feels like a 1440px max-width document. " +
-    "Calm, restrained, corporate-internal-tool aesthetic — solid color, type and line icons instead of illustration or photography.";
+  // --- Visual Diagram & Infographic Style Engine (5 Styles with diagram-design taste) ---
+  function getInfographicStylePrompt(styleName) {
+    const s = styleName || 'material';
+    switch (s) {
+      case 'sketchy':
+        return "Hand-drawn whiteboard and marker sketch infographic design system. " +
+          "Whiteboard surface background (#f8fafc), marker pen line art with subtle organic hand-drawn wobble, friendly casual brainstorming aesthetic. " +
+          "Content containers resemble light pastel sticky-notes with gentle 8px rounded corners (pale yellow #fef08a, soft mint #bbf7d0, light sky #bae6fd, pure white). " +
+          "Focal accent is a single bright marker highlight (Coral Red #e11d48) on 1 or 2 key nodes only; secondary elements use neutral dark slate pen strokes (#334155). " +
+          "Connectors are clean orthogonal or gentle hand-drawn right-angle elbow arrows, never chaotic crossed lines. " +
+          "Typography is friendly, highly legible Japanese hand-lettering or clean rounded sans (Noto Sans JP / Casual Sans). " +
+          "Strictly NO 3D effects, NO drop shadows, NO photorealism, NO glossy gradients.";
+      case 'editorial':
+        return "Minimal editorial architectural design system (Swiss style publication aesthetic). " +
+          "Warm off-white paper canvas (#f9f8f6), crisp jet-black hairline borders (1px #1c1917), and generous architectural whitespace. " +
+          "Focal accent is exactly ONE vibrant Tangerine / Coral accent (#e0533c) reserved strictly for the 1 or 2 hero nodes; everything else is quiet ink (#1c1917) and muted gray (#78716c). " +
+          "Connectors MUST be strictly orthogonal right-angle elbows (r=8px rounded corners); absolutely NO diagonal lines or crossed lines. " +
+          "Typography uses an elegant editorial serif title with crisp geometric sans-serif node names (Noto Sans JP). " +
+          "Strictly flat 2D, NO shadows, NO gradients, NO illustrations.";
+      case 'terminal':
+        return "Developer terminal and modern dark CLI window infographic design system. " +
+          "Deep charcoal/black console background (#0d1117), crisp 1px borders (#30363d), with a subtle top macOS-style window header bar with small colored dots (red, yellow, green). " +
+          "Node containers are dark elevated blocks (#161b22) with 6px rounded corners. " +
+          "Focal accent uses vibrant Emerald Green (#2ea043) or Cyan (#58a6ff) on 1 or 2 critical nodes/links only. " +
+          "Connectors are sharp orthogonal terminal routing lines with crisp arrowheads. " +
+          "Typography uses monospace styling for endpoints, commands, and sublabels, with clean Noto Sans JP for primary labels. " +
+          "Strictly clean developer UI, NO photorealism, NO 3D, NO muddy neon glows.";
+      case 'ink':
+        return "Japanese Wa-Modern sumi-ink minimalist infographic design system. " +
+          "Textured pale washi paper background (#f6f5f0), deep sumi-ink black clean lines and typography (#222222), serene spatial harmony and generous breathing space (Ma). " +
+          "Focal accent is a single traditional Japanese vermilion seal mark / cinnabar red accent (#c23a2b) on 1 key focal point; all other elements remain pure monochrome ink. " +
+          "Connectors are precise, serene orthogonal right-angle lines with subtle brush-stroke termination. " +
+          "Typography is refined, balanced Japanese Noto Sans JP / Mincho hybrid. " +
+          "Calm, dignified, contemplative 2D technical aesthetic. NO glossy gradients, NO shadows.";
+      case 'material':
+      default:
+        return "Material Design 3 infographic design system. " +
+          "Flat solid colors only — absolutely NO gradients anywhere. " +
+          "Page canvas is a slightly blue-tinted light grey (#f0f4f9); content sits on pure white cards with a 28px corner radius, a 1px light grey border (#c4c7c5) and NO drop shadow. " +
+          "Primary accent is Action Blue #0b57d0, used sparingly on ONLY the 1 or 2 most important hero nodes; supporting elements use neutral white or soft tonal container tint (#d3e3fd). " +
+          "Connectors MUST be strictly orthogonal right-angle elbows with rounded corners; NO diagonal lines. " +
+          "Action-like elements are full pill shapes; inputs 4px radius. " +
+          "Typography is a clean geometric sans (Noto Sans JP / Roboto): headings are LARGE at normal-to-medium weight. " +
+          "Icons are Google Material Symbols Outlined line icons, 24px, monochrome. " +
+          "Strict 8px spacing grid, generous structural spacing, left-aligned layout, calm corporate aesthetic.";
+    }
+  }
+
+  const CLEAN_INFOGRAPHIC_STYLE = getInfographicStylePrompt('material');
 
   const CLEAN_INFOGRAPHIC_NEGATIVES = 
     "No gradients of any kind. No drop shadows on cards. No heavy bold headings. " +
@@ -9512,12 +9567,14 @@ OUTPUT FORMAT:
     return 'プロセス構造図';
   }
 
-  function buildInfographicImagePrompt(mermaidCode, noteContent) {
+  function buildInfographicImagePrompt(mermaidCode, noteContent, forcedStyle) {
     const dirText = extractFlowDirectionText(mermaidCode);
     const title = deriveDiagramTitle(mermaidCode, noteContent);
+    const styleName = forcedStyle || (config.general && config.general.diagramStyle) || 'material';
+    const stylePrompt = getInfographicStylePrompt(styleName);
 
     return [
-      `A high-quality ${CLEAN_INFOGRAPHIC_STYLE}`,
+      `A high-quality ${stylePrompt}`,
       `REFERENCE (Mermaid code for understanding only; do NOT render this text verbatim): """\n${mermaidCode}\n"""`,
       `DIAGRAM FIDELITY (highest priority): The Mermaid code is the blueprint. Render a clean diagram/infographic that matches the Mermaid structure exactly: include every node and every edge; preserve branches/merges; preserve subgraph groupings as separate containers with titles; follow the declared direction (${dirText}).`,
       `TEXT FIDELITY: Copy node labels, decision labels, and subgraph titles from the Mermaid code VERBATIM. Do not translate, do not paraphrase, do not summarize Mermaid labels. Do not invent any new labels that are not present in the Mermaid code.`,
@@ -15369,6 +15426,14 @@ OUTPUT FORMAT:
     if (mermaidToneSelect) {
       mermaidToneSelect.value = window.MermaidTone.normalizeTone(config.general.mermaidTone);
     }
+    const diagramDetailSelect = document.getElementById('cfg-diagram-detail');
+    if (diagramDetailSelect) {
+      diagramDetailSelect.value = config.general.diagramDetail || 'balanced';
+    }
+    const diagramStyleSelect = document.getElementById('cfg-diagram-style');
+    if (diagramStyleSelect) {
+      diagramStyleSelect.value = config.general.diagramStyle || 'material';
+    }
     document.getElementById('cfg-language').value = config.general.language || 'en';
     document.getElementById('cfg-restore-session').checked = config.general.restoreSession !== false;
     document.getElementById('cfg-autosave').checked = config.general.autoSave;
@@ -16423,6 +16488,14 @@ OUTPUT FORMAT:
       const lookBefore = window.Appearance ? window.Appearance.normalize(openedConfigSnapshot && openedConfigSnapshot.appearance, snapGeneral.theme).look : 'ink';
       const lookAfter = window.Appearance && config.appearance ? config.appearance.look : lookBefore;
       config.general.mermaidTone = window.MermaidTone.toneToSave(mermaidToneSelect.value, snapGeneral.mermaidTone === undefined ? 'auto' : window.MermaidTone.normalizeTone(snapGeneral.mermaidTone), lookBefore, lookAfter);
+    }
+    const saveDiagramDetailSelect = document.getElementById('cfg-diagram-detail');
+    if (saveDiagramDetailSelect) {
+      config.general.diagramDetail = saveDiagramDetailSelect.value || 'balanced';
+    }
+    const saveDiagramStyleSelect = document.getElementById('cfg-diagram-style');
+    if (saveDiagramStyleSelect) {
+      config.general.diagramStyle = saveDiagramStyleSelect.value || 'material';
     }
     config.general.language = document.getElementById('cfg-language').value || 'en';
     config.general.restoreSession = document.getElementById('cfg-restore-session').checked;

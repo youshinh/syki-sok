@@ -793,6 +793,26 @@
               </select>
               <small data-i18n="mermaidToneHint">If a diagram is hard to read, choose a light tone. The button on each diagram in the preview switches between dark and light.</small>
             </div>
+            <div class="form-group">
+              <label for="cfg-diagram-detail" data-i18n="diagramDetailLabel">Diagram detail level:</label>
+              <select id="cfg-diagram-detail" class="form-select">
+                <option value="simplified" data-i18n="diagramDetailSimplified">Simplified (summary, up to 7 nodes)</option>
+                <option value="balanced" data-i18n="diagramDetailBalanced" selected>Balanced (standard, up to 12 nodes, default)</option>
+                <option value="faithful" data-i18n="diagramDetailFaithful">Faithful (comprehensive, up to 20 nodes)</option>
+              </select>
+              <small data-i18n="diagramDetailHint">Controls how much detail the AI includes when converting text to diagrams.</small>
+            </div>
+            <div class="form-group">
+              <label for="cfg-diagram-style" data-i18n="diagramStyleLabel">Diagram visual style:</label>
+              <select id="cfg-diagram-style" class="form-select">
+                <option value="material" data-i18n="diagramStyleMaterial" selected>Material (default)</option>
+                <option value="sketchy" data-i18n="diagramStyleSketchy">Whiteboard</option>
+                <option value="editorial" data-i18n="diagramStyleEditorial">Editorial</option>
+                <option value="terminal" data-i18n="diagramStyleTerminal">Terminal</option>
+                <option value="ink" data-i18n="diagramStyleInk">Ink</option>
+              </select>
+              <small data-i18n="diagramStyleHint">The aesthetic theme used when generating infographic diagrams or AI image prompts.</small>
+            </div>
             <div class="settings-subhead" data-i18n="subheadCursor">Cursor</div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
