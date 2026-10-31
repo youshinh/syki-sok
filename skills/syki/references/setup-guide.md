@@ -561,6 +561,36 @@ An agent MUST NOT:
 
 ---
 
+## (i) Multi-PC Cloud Sync (Google Drive offline) & Knowledge Compiler (Absorb)
+
+Users who work across multiple PCs can point `scraps.scrapDir` (with syki::sok closed, or via Settings -> General -> Scraps Folder) to a folder inside **Google Drive for Desktop** configured as **Available offline** (オフラインで使用可能). The semantic index (`<cfg>/index/<id>`) lives in the local OS config folder, never inside `scrapDir`, so binary vector files never collide over cloud sync.
+
+### Directory layout inside `scrapDir`
+```text
+<scrapDir>/
+├── AGENTS.md                  # Knowledge Compiler rules (CLAUDE.md loads @AGENTS.md)
+├── CLAUDE.md                  # Entry point for Claude Code
+├── INDEX.md                   # 1-line summary map of all wiki/ notes (<= 150 lines)
+├── .syki-ignore               # Excludes AGENTS.md, CLAUDE.md, INDEX.md, archive/
+├── YYYY-MM-DD.md              # Daily raw scrap (cleared in-place after Absorb)
+├── wiki/
+│   └── YYYY-MM-DD-slug.md     # Permanent topic notes (hyphenated YYYY-MM-DD- prefix required for DayOfName date filtering)
+└── archive/
+    └── YYYY-MM/               # Cold storage of absorbed raw scraps (automatically excluded by pkg/search and pkg/semindex)
+```
+
+### Running the Absorb pipeline
+- **Windows**: `powershell -NoProfile -File tools/absorb-scraps.ps1 [-ScrapDir <dir>] [-Engine auto|claude|codex|agy|ollama|openai-compat] [-Model <name>] [-ApiUrl <url>] [-StaleDays 3] [-DryRun]`
+- **macOS**: `./tools/absorb-scraps.sh [--scrap-dir <dir>] [--engine auto|claude|codex|agy|ollama|openai-compat] [--model <name>] [--api-url <url>] [--stale-days 3] [--dry-run]`
+- On first run, the script automatically bootstraps `wiki/`, `archive/`, `AGENTS.md`, `CLAUDE.md`, `INDEX.md`, and `.syki-ignore` from `tools/knowledge-compiler/`.
+
+### Mandatory invariants for agents performing Absorb
+1. **Pre-archive backup first**: Always copy every candidate `YYYY-MM-DD.md` (and Google Drive offline conflict copies `YYYY-MM-DD (1).md`) into `archive/YYYY-MM/<stem>_<HHmmss>.md` before modifying or deleting anything.
+2. **In-Place Clear for today's Scrap (never delete today's file)**: `SaveFileChecked` recreates a missing file from an open tab's memory. If PC-B deletes today's `YYYY-MM-DD.md`, PC-A with that tab open will resurrect the old unabsorbed file on its next autosave. Overwriting today's `YYYY-MM-DD.md` in-place with `<!-- syki:absorbed YYYY-MM-DDTHH:mm:ss -->` propagates a file write (`fsnotify.Write`), causing `FileWatcher` / `reconcileWithDisk` on all synced PCs to hot-reload the tab cleanly (and if the local GUI is running, update its open tab via `syki-cli buffer get --tab <id> --json` + `syki-cli buffer set --tab <id> --expected-hash <hash>`).
+3. **Past-day Scraps & Google Drive conflict copies (`YYYY-MM-DD (1).md`)**: Deduplicate and merge their content into `wiki/YYYY-MM-DD-slug.md` (with `<!-- tags: ... -->` and relative links `[Title](./YYYY-MM-DD-slug.md)`), update `INDEX.md` (<= 150 lines), and delete the past-day or conflict files from the root after archiving. Absorbed-only daily marker files older than `StaleDays` (default 3 days) are garbage-collected automatically.
+
+---
+
 ## Source of truth
 
 - `frontend/js/app.js` (`config` defaults, `DEFAULT_SHORTCUTS_*`, `syncBackendConfig`, `loadLocalConfigSync`, `savePersistentConfig`, `btn-save-settings` handler, `generateImageFromMermaid`, reserved shortcut lists), `frontend/js/{slot_agent,auto_selector,slot_snippets,voice_input,jev_action,chrome_layout,config_pack}.js`, `frontend/index.html`

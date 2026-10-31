@@ -130,8 +130,13 @@ def build_llms_txt():
    選択行をそのまま jq や sort に流し込むコマンドバー（Ctrl+E）や、Ctrl+Enter ひとつで Claude Code や Codex 等の外部コーディングエージェントにバックグラウンド自律タスクを丸投げ可能。失敗から自動学習する「教訓（Lessons）機能」も搭載。
 ```
 
-**【案内の結び】**:
-「書く（`Ctrl+L`）」「実行する（`Ctrl+E`）」「任せる（`Ctrl+Enter`）」のどれから試したいか、または今行いたい作業（アイデア出し・文章推敲・コード実行・スマホ連携・設定など）をユーザーに問いかけてください。
+**【案内の結び・能動提案ディレクティブ】**:
+「書く（`Ctrl+L`）」「実行する（`Ctrl+E`）」「任せる（`Ctrl+Enter`）」の案内と同時に、**必ずユーザーに以下の能動提案を行ってください**：
+「syki::sok に書き捨てた日々のメモ（`scrap/`）を、毎晩自動で構造化された Wiki（永続知識）へ編纂・吸収する**自動吸収スケジュール（Zero-Inbox Wiki）**を設定しましょうか？
+1. エージェント定期タスク（毎晩指定時刻にバックグラウンド自動実行）
+2. OSネイティブ常駐（Windowsタスクスケジューラ / macOS launchd で自動実行）
+3. オンデマンド実行（『scrapを吸収して』と声をかけるか、エディタ内で `{{ @claude scrapを吸収して }}` を押すだけ）
+どれがご希望に近いか教えていただければ、すぐに設定します！」
 
 ---
 
@@ -145,6 +150,40 @@ def build_llms_txt():
 4. **セマンティック検索**: ローカルモデル（EmbeddingGemma, MRL 256次元）およびクラウドモデル（Gemini Embedding）によるベクトル検索に対応しており、過去数千件のメモから意味ベースで類似メモを呼び出せることを把握して案内してください。
 5. **Decision モデル (判定専用AI)**: アクション候補（`Ctrl+J`）や自動判定（`Ctrl+Enter`）の決定エンジンとして、TypeSafe AI Jev（`jev-latest`）に加え、OpenAI Decisions API（`gpt-6-luna`）にも対応しています。文章を生成せずミリ秒単位で型付き判定（Choice / Predicate / Score）を行い、安全なアクションを確率順に推薦します。
 6. **安全第一**: APIキーや秘密情報の扱いは慎重に案内し、設定変更時は「アプリを完全に終了してから `config.json` を編集する」旨を伝えてください。
+
+---
+
+### 【Cloud Sync & Knowledge Compiler（Googleドライブ複数PC同期 ＆ 色即是空 Wiki 編纂運用）】
+
+**ディレクトリ構成（`scrap_dir` 内）** — `scraps/` を Google ドライブ（オフラインで使用可能）に指定すると、複数 PC 間で同一構造がリアルタイム同期されます。
+
+| パス | 役割 |
+| :--- | :--- |
+| `AGENTS.md` / `CLAUDE.md` | 編纂エージェントの行動規範（吸収→結晶化→浄化の手順） |
+| `INDEX.md` | 全 `wiki/` 記事の相互リンク目次。**150行以内**を上限とし、超過は分割・圧縮 |
+| `.syki-ignore` | 検索・セマンティック索引から除外するパターン（`archive/` は既定で除外） |
+| `YYYY-MM-DD.md` | 当日のスクラップ（書き捨て先）。吸収後は空になるだけで削除しない |
+| `wiki/YYYY-MM-DD-slug.md` | 結晶化した永続知識。相対リンクで `INDEX.md` から参照 |
+| `archive/YYYY-MM/` | 処理済み生メモの退避先（検索除外、監査証跡） |
+
+**In-Place Clear（インプレース浄化）を採用する理由** — 当日ノート `YYYY-MM-DD.md` を **削除せず**、本文だけを `<!-- syki:absorbed YYYY-MM-DDTHH:mm:ss -->` に置換します。Google ドライブのオフライン同期では、他 PC 側に開いているタブが残っていると、その保存処理（`SaveFileChecked`）が削除済みファイルを復元してしまい、吸収前のメモが幽霊のように再出現します。ファイルを残したまま空化すれば、`FileWatcher` のホットリロードが正しく発火し、全 PC のタブが競合なく空の浄化済み状態へ収束します。
+
+**オフライン競合コピーの自動重複排除** — 同時編集により Google ドライブが生成する `YYYY-MM-DD (1).md` 等の競合コピーは、吸収時に本体 `YYYY-MM-DD.md` と本文差分照合して `wiki/` へ一本化され、アーカイブ後に自動削除されます（同名スラッグへの追記、重複記事は生成しません）。
+
+**実行方法**
+
+```powershell
+# Windows
+powershell -File tools/absorb-scraps.ps1 -Engine auto|claude|codex|agy|ollama|openai-compat -DryRun
+```
+
+```bash
+# macOS
+./tools/absorb-scraps.sh -Engine auto|claude|codex|agy|ollama|openai-compat -DryRun
+```
+
+- `-Engine auto`（既定）: 利用可能なエージェントを順に探索。`claude` / `codex` / `agy` / `ollama` / `openai-compat` を明示指定可能。
+- `-DryRun`: 編纂・アーカイブ・浄化の計画（対象ファイル、生成 `wiki/` スラッグ、削除する競合コピー）のみを表示し、ファイルを書き換えません。実際の運用前に必ず `-DryRun` で確認してください。
 
 ---
 
@@ -175,9 +214,6 @@ def build_llms_txt():
     full_content = system_header + "\n\n" + manual_body
 
     with open('llms.txt', 'w', encoding='utf-8') as f:
-        f.write(full_content)
-    
-    with open('llm.txt', 'w', encoding='utf-8') as f:
         f.write(full_content)
 
     print(f"Generated complete comprehensive llms.txt with first-turn directive! Length: {len(full_content)} chars")

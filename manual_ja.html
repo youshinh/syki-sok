@@ -4317,7 +4317,7 @@ syki ocr --json memo.png</code></pre>
           </ol></figure>
 
         <ul>
-          <li><strong>デイリースクラップ保存先フォルダ:</strong> スクラップファイルが保存されるディレクトリ。「参照...」ボタンで選べます。ObsidianのVaultフォルダやDropboxフォルダに直接指定することも可能です。</li>
+          <li><strong>デイリースクラップ保存先フォルダ:</strong> スクラップファイルが保存されるディレクトリ。「参照...」ボタンで選べます。パソコン版 Google ドライブ（仮想ドライブ <code>G:\マイドライブ\...</code>）や Dropbox フォルダを指定して複数PC間で同期することも可能です。Google ドライブを使う場合は、対象フォルダを右クリックして「オフラインで使用可能にする」に設定しておくと、オフライン時でも快適に読み書きでき、オンライン復帰時に自動同期されます。また、蓄積されたスクラップ（<code>scraps/</code>）は、リポジトリ同梱の <code>tools/absorb-scraps.ps1</code> / <code>.sh</code> やエージェントスキル（<code>skills/syki</code>）によって定期的にトピック別Wiki（<code>wiki/</code>）と海図（<code>INDEX.md</code>）へ自動編纂され、元ログは <code>archive/</code> へ退避されます（Zero-Inbox 運用）。</li>
           <li><strong>バックグラウンド Git 同期を有効にする:</strong> 起動時に <code>git pull --rebase</code> を行い、編集後に入力が止まると自動で <code>git add/commit/push</code> をバックグラウンド実行します。スクラップフォルダがGitリポジトリのときに動作します。リモートは必須ではありませんが、リモートがないとpushは失敗します。</li>
           <li><strong>Git自動プッシュ待機時間 (秒):</strong> 最後の編集からプッシュするまでの待ち時間です（既定30秒、5〜3600）。</li>
           <li><strong>リモートブランチ:</strong> 同期先のブランチ名です（既定は <code>main</code>）。</li>

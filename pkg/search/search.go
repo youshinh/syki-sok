@@ -6,6 +6,7 @@ import (
 	"context"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"runtime"
 	"sort"
@@ -143,24 +144,87 @@ func SearchScrapsContext(ctx context.Context, scrapDir string, query string, max
 	return results, nil
 }
 
+// ignoreRules are the lines of the .syki-ignore file in the scrap folder (it is synced by Git, so two PCs agree): "name" or
+// "*.glob" matches a file or folder of that name anywhere, "dir/" a folder and what is in it, "a/b.md" a path. "#" starts a comment.
+// This is the same file and the same rules the semantic index uses (pkg/semindex).
+type ignoreRules struct{ patterns []string }
+
+func loadIgnore(root string) ignoreRules {
+	raw, err := os.ReadFile(filepath.Join(root, ".syki-ignore"))
+	if err != nil {
+		return ignoreRules{}
+	}
+	var r ignoreRules
+	for _, line := range strings.Split(strings.ReplaceAll(string(raw), "\r\n", "\n"), "\n") {
+		line = strings.TrimSpace(line)
+		if line == "" || strings.HasPrefix(line, "#") {
+			continue
+		}
+		r.patterns = append(r.patterns, filepath.ToSlash(line))
+	}
+	return r
+}
+
+// matches reports whether rel (a "/" path inside the scrap folder) is left out.
+func (r ignoreRules) matches(rel string) bool {
+	parts := strings.Split(rel, "/")
+	for _, p := range r.patterns {
+		if strings.HasSuffix(p, "/") { // a folder
+			dir := strings.TrimSuffix(strings.TrimPrefix(p, "/"), "/")
+			if rel == dir || strings.HasPrefix(rel, dir+"/") {
+				return true
+			}
+			for i := range parts[:len(parts)-1] {
+				if ok, _ := path.Match(dir, parts[i]); ok && !strings.Contains(dir, "/") {
+					return true
+				}
+			}
+			continue
+		}
+		if strings.Contains(p, "/") {
+			if ok, _ := path.Match(strings.TrimPrefix(p, "/"), rel); ok {
+				return true
+			}
+			continue
+		}
+		for _, part := range parts { // a bare name or glob matches any component
+			if ok, _ := path.Match(p, part); ok {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // collectMarkdownFiles lists every .md file under cleanDir, skipping folders whose name starts
-// with a dot (.git and the like). The order is the walk's, not sorted.
+// with a dot (.git and the like), the assets and archive folders, and what .syki-ignore names; the
+// "(sync conflict …)" copies Git sync makes are skipped too. The order is the walk's, not sorted.
 func collectMarkdownFiles(cleanDir string) []string {
+	ign := loadIgnore(cleanDir)
 	var files []string
-	_ = filepath.WalkDir(cleanDir, func(path string, d fs.DirEntry, err error) error {
+	_ = filepath.WalkDir(cleanDir, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
 			return nil
 		}
+		rel, rerr := filepath.Rel(cleanDir, p)
+		if rerr != nil || rel == "." {
+			return nil
+		}
+		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
 			name := strings.ToLower(d.Name())
 			if strings.HasPrefix(name, ".") && name != "." {
 				return filepath.SkipDir
 			}
+			if name == "assets" || name == "archive" || ign.matches(rel+"/") || ign.matches(rel) {
+				return filepath.SkipDir
+			}
 			return nil
 		}
-		if strings.HasSuffix(strings.ToLower(d.Name()), ".md") {
-			files = append(files, path)
+		if !strings.HasSuffix(strings.ToLower(d.Name()), ".md") || strings.Contains(d.Name(), " (sync conflict ") || ign.matches(rel) {
+			return nil
 		}
+		files = append(files, p)
 		return nil
 	})
 	return files

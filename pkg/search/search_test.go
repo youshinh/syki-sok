@@ -80,6 +80,51 @@ Stack: at runTest (test.js:10)
 	}
 }
 
+// The GUI search must look at the same files the semantic index does: the archive folder, the assets
+// folder, folders starting with ".", the "(sync conflict …)" copies Git sync makes, and what
+// .syki-ignore names are all left out.
+func TestSearchScrapsExcludesArchiveAndIgnore(t *testing.T) {
+	dir := t.TempDir()
+	needle := "needlephrase\n"
+	for _, name := range []string{
+		"wiki/2026-10-31-topic.md",
+		"archive/2026-10/old.md",
+		"Archive/z.md",
+		"assets/keep.md",
+		".hidden/x.md",
+		"2026-09-16 (sync conflict 1).md",
+		"private/secret.md",
+		"deep/private/inner.md",
+		"drafts/wip.md",
+		"scratch.tmp.md",
+		"exact/one.md",
+	} {
+		writeMD(t, dir, name, needle)
+	}
+	writeMD(t, dir, ".syki-ignore", "# comment\n\nprivate/\ndrafts\n*.tmp.md\nexact/one.md\r\n")
+
+	results, err := SearchScraps(dir, "needlephrase", 10)
+	if err != nil {
+		t.Fatalf("SearchScraps failed: %v", err)
+	}
+	if len(results) != 1 {
+		var got []string
+		for _, r := range results {
+			got = append(got, r.FileName)
+		}
+		t.Fatalf("expected only the wiki note, got %v", got)
+	}
+	if results[0].FileName != "2026-10-31-topic.md" {
+		t.Errorf("expected wiki/2026-10-31-topic.md, got %s", results[0].FileName)
+	}
+
+	// the same files collectMarkdownFiles keeps are those semindex-style rules let through
+	files := collectMarkdownFiles(dir)
+	if len(files) != 1 || filepath.Base(files[0]) != "2026-10-31-topic.md" {
+		t.Errorf("collected %v, want only wiki/2026-10-31-topic.md", files)
+	}
+}
+
 func BenchmarkSearchScraps(b *testing.B) {
 	tempDir := b.TempDir()
 	// 50ファイル作成

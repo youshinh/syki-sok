@@ -962,7 +962,7 @@
           <li><a href="#tag-commands" class="sidebar-link" style="padding-left: 26px;">Add &amp; Remove Tags</a></li>
           <li><a href="#meaning-search" class="sidebar-link" style="padding-left: 26px;">Meaning &amp; Deep Search</a></li>
           <li><a href="#mobile-drop" class="sidebar-link">Mobile Drop · Send from Phone (Ctrl+Shift+U)</a></li>
-          <li><a href="#discord-bridge" class="sidebar-link">Discord Bridge · Send from Phone (works while closed)</a></li>
+          <li><a href="#cf-bridge" class="sidebar-link">Cloudflare Mobile Bridge · Send from Phone (works while closed)</a></li>
           <li><a href="#command-palette" class="sidebar-link">Command Palette (Ctrl+Shift+P)</a></li>
           <li><a href="#about-syki-sok" class="sidebar-link">About syki::sok · Updates · Privacy</a></li>
         </ul>
@@ -1091,7 +1091,7 @@
             <li><strong>A file is never open twice.</strong> Opening a file that already has a tab (<span class="kbd">Ctrl + O</span>, the Command Palette, a drop, double-clicking it in Explorer / Finder, or <code>syki file.md</code>) switches to that tab and says so in the status bar. The text in that tab is left alone, unsaved changes included. <strong>Save As</strong> onto a file another tab has open closes the other tab when it has no unsaved changes; otherwise it stays as a note of its own, with no file, your text and its unsaved dot.</li>
             <li><strong>Typing while a save is being written.</strong> Anything typed after a save started is not in the file yet, so the tab stays marked unsaved and is saved next. The saves of one note are written one at a time.</li>
             <li><strong>The question when you close a note with unsaved changes</strong> appears once. <span class="kbd">Enter</span> presses the button that has the focus (Save to begin with), <span class="kbd">S</span> saves, <span class="kbd">D</span> or <span class="kbd">N</span> does not save, and <span class="kbd">Esc</span> cancels. Keys with Ctrl, Alt or Cmd, a key held down and the keys of an input method are never an answer, and pressing <span class="kbd">Ctrl + W</span> again while the question is up does nothing.</li>
-            <li><strong>Text added to a scrap from outside</strong> (a piped command, Quick Capture, the hot folder, Discord) shows up in the scrap's tab when that tab has no unsaved changes. If you have typed there without saving, the tab is left exactly as it is and the status bar says the scrap changed on disk. The added text is in the file, and saving that tab writes your text over it. Only a tab with the same file path counts: a note in another folder that has the same name (<code>2026-09-30.md</code>) is another note.</li>
+            <li><strong>Text added to a scrap from outside</strong> (a piped command, Quick Capture, the hot folder, Cloudflare Mobile Bridge) shows up in the scrap's tab when that tab has no unsaved changes. If you have typed there without saving, the tab is left exactly as it is and the status bar says the scrap changed on disk. The added text is in the file, and saving that tab writes your text over it. Only a tab with the same file path counts: a note in another folder that has the same name (<code>2026-09-30.md</code>) is another note.</li>
             <li><strong>A file given at start</strong> (double-click, Open with, <code>syki file.md</code>) opens as one more tab after your previous tabs, folder and settings are back. If it cannot be read, the status bar says which file and why.</li>
           </ul>
         </div></details>
@@ -1687,7 +1687,7 @@
         <p>When the reason is <code>話し声が検出されませんでした</code> (no speech was detected), the API works and the recording simply holds almost no speech: check the microphone choice and level (Windows Settings -&gt; System -&gt; Sound).</p>
         <p>When no answer comes back at all, the marker turns into the <code>[Retry]</code> form once the wait (30 s by default, plus 20 s) is over, and an old &ldquo;transcribing&rdquo; marker left by an answer that was lost while the app was closed is cleaned up when you click in the note.</p>
 
-        <p><strong>A note on the speech engine:</strong> Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. <strong>Realtime</strong> is what you wait for: voice input on this page and an audio file dropped on the window. <strong>Batch</strong> is long or unattended: the meeting recording, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a>, the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and the Discord Bridge. Each is "Gemini (cloud)" (the default) or, on Windows x64, the on-device Whisper.</p>
+        <p><strong>A note on the speech engine:</strong> Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. <strong>Realtime</strong> is what you wait for: voice input on this page and an audio file dropped on the window. <strong>Batch</strong> is long or unattended: the meeting recording, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a>, the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>. Each is "Gemini (cloud)" (the default) or, on Windows x64, the on-device Whisper.</p>
 
         <p><strong>Settings</strong> (Settings → AI Models, "Voice input" group, right below the Image analysis (OCR) settings)</p>
         <div class="doc-table-wrap">
@@ -2935,7 +2935,7 @@ recipes:
         <p><strong>Which engine transcribes the audio</strong></p>
         <ul>
           <li><strong>The choice:</strong> Settings → AI Models tab, the group "Voice input": the blocks <strong>Realtime</strong> and <strong>Batch</strong> each have an <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only, described next).</li>
-          <li><strong>Where it applies:</strong> <strong>Batch</strong>: the hot folder, the <a href="#discord-bridge" style="color: var(--accent);">Discord Bridge</a>, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> and the meeting recording. <strong>Realtime</strong>: live <a href="#voice-input" style="color: var(--accent);">Voice Input</a> (<span class="kbd">Ctrl + Shift + R</span>) and an audio file dropped on the window. A configuration saved before the two kinds existed keeps its engine for Batch, and Realtime stays Gemini.</li>
+          <li><strong>Where it applies:</strong> <strong>Batch</strong>: the hot folder, <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a> and the meeting recording. <strong>Realtime</strong>: live <a href="#voice-input" style="color: var(--accent);">Voice Input</a> (<span class="kbd">Ctrl + Shift + R</span>) and an audio file dropped on the window. A configuration saved before the two kinds existed keeps its engine for Batch, and Realtime stays Gemini.</li>
           <li><strong>Keys:</strong> The voice settings reuse the API key of Image analysis (OCR) when they have none of their own.</li>
         </ul>
 
@@ -3552,92 +3552,57 @@ Clipped from a web page.
         </p>
       </section>
 
-      <!-- Discord Bridge -->
-      <section class="doc-section" id="discord-bridge">
-        <h3>Discord Bridge — Send From Your Phone (works even while closed)</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In short:</strong> DM your own Discord bot from your phone and it lands in today's scrap the next time syki::sok runs. Unlike Mobile Drop, syki::sok does not need to be open when you send it. No relay server or Cloudflare account needed — just a free bot you create yourself.</div></div>
+            <!-- Cloudflare Mobile Bridge -->
+      <section class="doc-section" id="cf-bridge">
+        <h3>Cloudflare Mobile Bridge — Send From Your Phone (works even while closed)</h3>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In short:</strong> Send notes, photos, and voice memos from a mobile PWA (Web App) to your self-hosted Cloudflare Workers + D1 backend, and syki::sok automatically appends them to today's scrap the next time it opens. Unlike Mobile Drop, you do not need to be on the same Wi-Fi, and your PC does not need to be on. Completely private and self-hosted on Cloudflare's free tier.</div></div>
 
         <div class="flow">
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><b>Phone</b><span>DM your own bot in the Discord app</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg><b>Phone (PWA)</b><span>Send notes, photos, or voice recordings from browser or home-screen app</span></div>
           <div class="flow-arrow"></div>
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg><b>Discord</b><span>holds the message (it doesn't vanish while syki::sok is closed)</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"/></svg><b>Cloudflare Workers + D1</b><span>Dedicated Worker and DB store encrypted messages even when PC is off</span></div>
           <div class="flow-arrow"></div>
-          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><b>PC</b><span>checks every 45s while running, appends to today's scrap</span></div>
+          <div class="flow-node"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg><b>PC (syki::sok)</b><span>Polls periodically (default 30s), transcribes via Gemini/OCR, appends to today's scrap</span></div>
         </div>
 
         <p><strong>One-time setup</strong></p>
         <ol class="steps">
-          <li><strong>Create the bot</strong><span>Open <a href="https://discord.com/developers/applications" target="_blank" rel="noopener" style="color: var(--accent);">discord.com/developers/applications</a> → New Application, name it, then on the Bot tab press Reset Token and copy it (shown only this once)</span></li>
-          <li><strong>Invite the bot to a server you own</strong><span>On the Installation tab, check <strong>Guild Install</strong> (needed for a bot to join a server and DM you). On the OAuth2 tab, check the <code>bot</code> scope and the <strong>Send Messages</strong> bot permission, switch the Integration Type dropdown above the generated URL to <strong>Guild Install</strong>, then open that URL and authorize it into any server you own (a private one made just for this is fine)</span></li>
-          <li><strong>Find your numeric user id</strong><span>Discord → User Settings → Advanced → turn on Developer Mode, then right-click your own name → Copy User ID. This gives an ~18-digit <strong>number</strong> — not your visible username</span></li>
-          <li><strong>Configure syki::sok</strong><span>Settings → Sync → "Input from Discord": paste the bot token and the id from step 3, tick enabled, press Test Connection, then Save once it succeeds</span></li>
+          <li><strong>Deploy the Cloudflare Worker</strong><span>In the <code>tools/cf-bridge</code> folder of the repository, run <code>npm run deploy</code> to deploy your personal Worker (<code>https://&lt;worker-name&gt;.workers.dev</code>) — completely free on Cloudflare's free tier</span></li>
+          <li><strong>Configure syki::sok</strong><span>Open Settings &rarr; Sync &rarr; "Cloudflare Mobile Bridge", check Enable, and enter the Worker Endpoint URL and Auth Token</span></li>
+          <li><strong>Pair with your phone</strong><span>Click "Show QR Code" in the settings dialog, scan it with your phone camera, and open the link. Add it to your home screen (PWA) to use it like a native app</span></li>
         </ol>
-
-        <figure class="fig"><div class="fig-frame"><img src="./img/manual/en/settings-discord.png" alt="Settings dialog, Sync tab, Input from Discord section: an enable checkbox, bot token field, Discord user id field, poll interval, and a Test Connection button" loading="lazy" width="1120" height="720"></div><figcaption>Settings → Sync → "Input from Discord" (values shown are demo data)</figcaption>
-          <ol class="fig-legend">
-            <li><strong>Enable</strong> nothing happens until this is checked</li>
-            <li><strong>Bot Token</strong> from the Bot tab of the Developer Portal</li>
-            <li><strong>Discord User ID</strong> the numeric id (Copy User ID in Developer Mode)</li>
-            <li><strong>Check interval</strong> how often syki::sok checks Discord while running (default 45s, 15-600)</li>
-            <li><strong>Test Connection</strong> confirms the token and id before you save</li>
-          </ol></figure>
-
-        <div class="callout">
-          <div class="callout-title">
-            <svg class="callout-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-            Three common mistakes
-          </div>
-          <ul>
-            <li><strong>Pasting the username instead of the numeric id</strong> — the field needs the numeric snowflake, not the name shown on screen. If Test Connection says `"..." looks like a username`, this is why.</li>
-            <li><strong>The invite's Integration Type is still "User Install"</strong> — a bot needs "Guild Install" to join a server and be allowed to DM you. A URL containing <code>integration_type=1</code> fails authorization with "the scope provided for User Installation is invalid".</li>
-            <li><strong>Sending an <code>@mention</code> in a server channel</strong> — syki::sok only reads the bot's private DM with you. Click the bot's name/avatar and choose "Message" to open the actual DM conversation, then send it there.</li>
-          </ul>
-        </div>
 
         <p><strong>Using it</strong></p>
         <ol class="steps">
-          <li><strong>Open your DM with the bot</strong><span>Click the bot's name in a member list or a mention, then choose "Message" on its profile card</span></li>
-          <li><strong>Send text, a photo, or a voice message</strong><span>Ordinary Discord sending — typed text, a camera-roll attachment, or a voice message — works as-is</span></li>
-          <li><strong>Wait for it to land</strong><span>Within the check interval (default 45s) while syki::sok is running, or all at once the next time you open it if it was closed</span></li>
+          <li><strong>Open the PWA on your phone</strong><span>Launch it from the home screen icon. Even offline, you can review recent submission history</span></li>
+          <li><strong>Enter text, capture photo, or record voice</strong><span>Tap the camera icon for instant capture, or the mic icon for 1-tap voice recording. The history panel lets you delete items or purge with a 2-step safety lock</span></li>
+          <li><strong>Wait for it to land in syki::sok</strong><span>If the PC is running, it arrives within the poll interval (default 30s); if closed, everything is fetched and transcribed on next launch under <code>## Mobile [14:20:05]</code> in <code>scraps/YYYY-MM-DD.md</code></span></li>
         </ol>
 
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
               <tr>
-                <th>Sent on Discord</th>
+                <th>Sent from Phone</th>
                 <th>What lands in the scrap</th>
               </tr>
             </thead>
             <tbody>
               <tr>
-                <td>Photo</td>
-                <td>Transcribed to Markdown by the same vision model Mobile Drop's photos use. If OCR is unset or fails, it is saved under <code>assets/</code> and linked instead.</td>
+                <td>Photo / Image</td>
+                <td>Transcribed into Markdown text by the Gemini vision model. If unset or failed, saved under <code>assets/</code> and linked.</td>
               </tr>
               <tr>
-                <td>Voice message / audio file</td>
-                <td>Transcribed the same way as <a href="#voice-input" style="color: var(--accent);">Voice Input</a> (by Gemini), or on your PC if you chose the Whisper engine (see the <a href="#hot-folder" style="color: var(--accent);">hot folder</a>). On failure it is saved as an audio file under <code>assets/</code>.</td>
+                <td>Voice memo / recording</td>
+                <td>Automatically transcribed into natural text by Gemini audio model (<code>gemini-3.5-transcribe</code>).</td>
               </tr>
               <tr>
                 <td>Text / URL</td>
-                <td>Appended as-is; a bare URL becomes a Markdown link.</td>
+                <td>Appended as plain text; bare URLs become Markdown links automatically.</td>
               </tr>
             </tbody>
           </table>
         </div>
-        <p style="color: var(--text-tertiary); font-size: 13.5px;">
-          Each lands at the end of that day's scrap (<code>scraps/YYYY-MM-DD.md</code>) under its own <code>## Discord [14:20:05]</code> heading. A caption sent together with a photo becomes two separate headings.
-        </p>
-
-        <details class="more"><summary>The fine print (who is allowed to send, how catch-up works, failures)</summary><div class="more-body">
-          <ul>
-            <li><strong>Only one sender</strong> Only messages whose author matches the configured Discord user id are picked up; anything else that reaches the bot is silently ignored.</li>
-            <li><strong>First time it's enabled</strong> No DM history is replayed — only messages sent from that moment on are captured.</li>
-            <li><strong>Sent while syki::sok was closed</strong> Nothing is lost: the message is still sitting in Discord, and the next launch's first check catches up on everything since the last one.</li>
-            <li><strong>Network trouble / a token you just changed</strong> A failed connection keeps retrying on its own with a growing delay; fixing the token in Settings and saving takes effect immediately.</li>
-            <li><strong>Interaction with Git sync</strong> If Git sync is enabled for the scraps folder, Discord's additions are committed and pushed automatically too — including any photo/audio file that fell back to <code>assets/</code>, since it lives in the same folder.</li>
-          </ul>
-        </div></details>
       </section>
 
       <!-- Command Palette -->
@@ -3793,7 +3758,7 @@ Clipped from a web page.
             <li><strong>Editor and typing</strong> Autosave, IME Guardian, AI proofreading, cursor light. The toolbar and right-click menu are set further down this tab (see the steps below)</li>
           </ol></figure>
 
-        <p><strong>Basic and advanced view:</strong> the sections most people never need (Ghost Text, image OCR, voice input, image generation, commands, the Auto selector, Quick Actions, Discord and the hot folder) start folded. Click a section title to open it, or tick <strong>Show advanced</strong> at the top right of the dialog to open them all (the choice is remembered). The explanation under a field sits behind the small <strong>?</strong> button next to it. Nothing is removed: a folded section still saves its values.</p><h3>1. General Tab</h3>
+        <p><strong>Basic and advanced view:</strong> the sections most people never need (Ghost Text, image OCR, voice input, image generation, commands, the Auto selector, Quick Actions, Cloudflare Mobile Bridge and the hot folder) start folded. Click a section title to open it, or tick <strong>Show advanced</strong> at the top right of the dialog to open them all (the choice is remembered). The explanation under a field sits behind the small <strong>?</strong> button next to it. Nothing is removed: a folded section still saves its values.</p><h3>1. General Tab</h3>
         <div class="doc-table-wrap">
           <table class="doc-table">
             <thead>
@@ -3978,7 +3943,7 @@ Clipped from a web page.
           <li><strong>Image analysis (OCR):</strong> the vision model and key, such as Gemini Flash Lite or Qwen 2.5 VL, plus a toggle "Automatically transcribe pasted images (Ctrl+V) using Gemini OCR" (on by default). When the toggle is off, or there is no API key, a pasted image is saved to assets and linked instead (like Ctrl+Shift+V). Pictures from the <a href="#hot-folder" style="color: var(--accent);">hot folder</a>, <a href="#screen-capture" style="color: var(--accent);">Screen Capture</a> and Send To are read with these settings too.</li>
           <li><strong>Image generation:</strong> the model, aspect ratio, and resolution used by "Render Image...". If its Gemini API key is blank, it inherits the Vision key and then the Text key, in that order.</li>
           <li><strong>Voice input:</strong> Right below the Image analysis (OCR) settings. For how to use it, see <a href="#voice-input" style="color: var(--accent);">Voice Input</a>. The settings are listed in the table below.</li>
-          <li><strong>Realtime and Batch (Voice input group):</strong> each block has an <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only), its own Gemini model and API style, and its own Whisper model. Realtime is voice input and dropped audio files; Batch is the meeting recording, Mobile Drop, the hot folder and the Discord Bridge. The Whisper program and options are in the group "Whisper (on this PC)". The settings are in the second table below, and the download steps are under <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a>.</li>
+          <li><strong>Realtime and Batch (Voice input group):</strong> each block has an <strong>Engine</strong>: "Gemini (cloud)" (the default) or "Whisper (on this PC, offline)" (Windows x64 only), its own Gemini model and API style, and its own Whisper model. Realtime is voice input and dropped audio files; Batch is the meeting recording, Mobile Drop, the hot folder and <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>. The Whisper program and options are in the group "Whisper (on this PC)". The settings are in the second table below, and the download steps are under <a href="#whisper-local" style="color: var(--accent);">On-device Whisper</a>.</li>
         </ul>
 
         <p><strong>Voice input settings</strong></p>
@@ -4061,7 +4026,7 @@ Clipped from a web page.
                 <td>Engine</td>
                 <td><code>voice.realtime.engine</code>, <code>voice.batch.engine</code></td>
                 <td>Gemini (cloud) (<code>gemini</code>)</td>
-                <td>"Gemini (cloud)" or "Whisper (on this PC, offline)" (<code>whisper-local</code>). One for each kind: Realtime (voice input, dropped audio files) and Batch (meeting recording, Mobile Drop, hot folder, Discord Bridge). With Whisper as the Realtime engine the tidy-up second stage is off and speaking over a selection is refused. Whisper is for Windows x64 only; on macOS the settings say so.</td>
+                <td>"Gemini (cloud)" or "Whisper (on this PC, offline)" (<code>whisper-local</code>). One for each kind: Realtime (voice input, dropped audio files) and Batch (meeting recording, Mobile Drop, hot folder, Cloudflare Mobile Bridge). With Whisper as the Realtime engine the tidy-up second stage is off and speaking over a selection is refused. Whisper is for Windows x64 only; on macOS the settings say so.</td>
               </tr>
               <tr>
                 <td>Whisper program, Model</td>
@@ -4185,12 +4150,12 @@ Clipped from a web page.
           </ol></figure>
 
         <ul>
-          <li><strong>Daily Scraps Folder:</strong> Path where <code>cat file | syki</code> and daily notes reside. Use <strong>Browse...</strong> to pick it. Can point directly to an Obsidian vault or a Dropbox folder.</li>
+          <li><strong>Daily Scraps Folder:</strong> Path where <code>cat file | syki</code> and daily notes reside. Use <strong>Browse...</strong> to pick it. You can point it directly to Google Drive for desktop (e.g. <code>G:\My Drive\...</code>) or Dropbox to synchronize scraps across multiple PCs. When using Google Drive, right-click the folder and choose "Available offline" so notes remain instantly readable and writable without an internet connection, automatically syncing upon reconnecting. Furthermore, historical scraps (<code>scraps/</code>) can be automatically distilled into structured topic notes (<code>wiki/</code>) and an index (<code>INDEX.md</code>) via the included <code>tools/absorb-scraps.ps1</code> / <code>.sh</code> scripts or the agent skill (<code>skills/syki</code>), moving processed logs to <code>archive/</code> for a Zero-Inbox knowledge compilation workflow.</li>
           <li><strong>Enable background Git sync:</strong> Runs <code>git pull --rebase</code> on launch, then runs <code>git add/commit/push</code> in the background once you stop editing. It works when the scraps folder is a Git repository. A remote is not required, but without one the push fails.</li>
           <li><strong>Git Auto-Push Debounce (seconds):</strong> How long to wait after the last edit before pushing (default 30, range 5–3600).</li>
           <li><strong>Remote Branch:</strong> The branch to sync with (default <code>main</code>).</li>
           <li><strong>Git Remote URL, Test Connection, and Link / Init:</strong> Enter the URL of an empty GitHub repository (<code>https://github.com/user/scraps.git</code>), click <strong>Test Connection</strong> to check access, then click <strong>Link / Init</strong>. It runs <code>git init</code> if needed, sets <code>origin</code>, makes an initial commit, and pushes with <code>push -u</code>.</li>
-          <li><strong>Input from Discord:</strong> further down the same tab. Bot token, Discord user id, check interval, and Test Connection. See <a href="#discord-bridge" style="color: var(--accent);">Discord Bridge</a> for the full walkthrough.</li>
+          <li><strong>Cloudflare Mobile Bridge:</strong> further down the same tab. Configure your self-hosted Cloudflare Worker Endpoint URL and Auth Token, and scan the QR code to pair with your phone immediately. See <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>.</li>
           <li><strong>Hot folder:</strong> the last section of this tab. Tick "Watch a folder: images are OCR'd, audio is transcribed, both appended to today's scrap" (off by default; config key <code>inbox.enabled</code>) and set "Watched Folder Path:" with <strong>Browse...</strong> (default <code>~/Documents/syki-sok/inbox</code>; <code>inbox.dir</code>). Processed files are moved into the <code>assets</code> folder next to your scraps and never deleted. See <a href="#hot-folder" style="color: var(--accent);">Hot Folder</a>.</li>
           <li><strong>Keep images on this PC: read them with the on-device OCR only (less accurate):</strong> in the same section, off by default (config key <code>vision.ocrMode</code>: empty, or <code>"on-device"</code>). When on, images are never sent to the vision model. It applies to the hot folder, <a href="#screen-capture" style="color: var(--accent);">Screen Capture</a>, the Send To entry and the <code>ocr</code> command, but not to pasting with <span class="kbd">Ctrl + V</span>. Windows only: the checkbox is hidden on macOS, which has no on-device OCR engine.</li>
         </ul>
@@ -4456,7 +4421,7 @@ Clipped from a web page.
           <li><strong>Check the contents</strong><span>Items marked "will overwrite" replace what you have; if the package's API key fields are empty, your current keys are kept</span></li>
           <li><strong>Tick what to import</strong><span>Untick agent definitions and skills from anyone you do not trust</span></li>
           <li><strong>Click "Import"</strong><span>Settings apply at once (some need a restart); agent definitions and skills are used from the next agent run</span></li>
-          <li><strong>If "Needs your OK" appears, choose</strong><span>A model server address, the switch that asks before an agent runs a command (when the package turns it off), the Discord bridge and the hot folder are never applied silently. Tick what you accept and click "Apply ticked", or click "Keep mine"</span></li>
+          <li><strong>If "Needs your OK" appears, choose</strong><span>A model server address, the switch that asks before an agent runs a command (when the package turns it off), Cloudflare Mobile Bridge and the hot folder are never applied silently. Tick what you accept and click "Apply ticked", or click "Keep mine"</span></li>
         </ol>
 
         <div class="compare">
@@ -4488,7 +4453,7 @@ Clipped from a web page.
           <p><strong>After you import</strong></p>
           <ul>
             <li>Settings are merged into the running app and saved on the spot; theme, language, toolbar and shortcuts switch at once. Sections you did not tick stay as they are.</li>
-            <li>Settings that decide where your text goes or what may run unasked wait for your OK (see "Needs your OK" above): a model server address (its model name goes with it), the agent confirmation turned off, the Discord bridge turned on or given another user or token, the hot folder turned on or pointed at another folder. What you do not tick keeps its current value, and the result screen lists it. If you take a new server, the key saved for the old server is removed unless the package brings one; your other keys stay.</li>
+            <li>Settings that decide where your text goes or what may run unasked wait for your OK (see "Needs your OK" above): a model server address (its model name goes with it), the agent confirmation turned off, Cloudflare Mobile Bridge turned on or given another URL or token, the hot folder turned on or pointed at another folder. What you do not tick keeps its current value, and the result screen lists it. If you take a new server, the key saved for the old server is removed unless the package brings one; your other keys stay.</li>
             <li>A package does not record which system wrote it. If its shortcuts use the Command key (a package from a Mac), they are not applied on Windows: this PC keeps its own shortcuts and the result screen says so.</li>
             <li>If <code>config.json</code> cannot be written, the result screen and the status bar say so; the settings then apply only until you quit.</li>
             <li>Agent definitions and skills are written by syki::sok itself. A package cannot be imported by editing <code>config.json</code> by hand, because the running app owns that file.</li>

@@ -138,7 +138,7 @@ func Excluded(scrapDir string) func(rel string) bool {
 		parts := strings.Split(rel, "/")
 		for _, p := range parts[:len(parts)-1] {
 			low := strings.ToLower(p)
-			if strings.HasPrefix(low, ".") || low == "assets" {
+			if strings.HasPrefix(low, ".") || low == "assets" || low == "archive" {
 				return true
 			}
 		}
@@ -170,7 +170,7 @@ func listFiles(scrapDir string) ([]fileInfo, error) {
 		rel = filepath.ToSlash(rel)
 		if d.IsDir() {
 			name := strings.ToLower(d.Name())
-			if strings.HasPrefix(name, ".") || name == "assets" || ign.matches(rel+"/") || ign.matches(rel) {
+			if strings.HasPrefix(name, ".") || name == "assets" || name == "archive" || ign.matches(rel+"/") || ign.matches(rel) {
 				return filepath.SkipDir
 			}
 			return nil

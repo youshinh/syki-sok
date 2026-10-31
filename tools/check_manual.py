@@ -142,7 +142,7 @@ def check(name):
 
 def rpc_methods():
     # every JSON-RPC method the app answers (the cases of DispatchRPCOperation)
-    src = open(os.path.join(ROOT, 'app_rpc.go'), encoding='utf-8').read()
+    src = open(os.path.join(ROOT, 'cmd', 'syki-gui', 'app_rpc.go'), encoding='utf-8').read()
     return sorted(set(re.findall(r'case "([a-z_]+\.[a-z_]+)":', src)))
 
 

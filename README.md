@@ -40,6 +40,16 @@ brew install --cask --no-quarantine youshinh/tap/syki
 
 ---
 
+### Cloud Sync & Knowledge Compiler (Zero-Inbox Wiki)
+
+Point `scraps/` to **Google Drive for Desktop (Available offline)** to sync across multiple PCs and compile raw captures into a permanent Wiki without heavy vault apps:
+
+1. **Capture (`scraps/YYYY-MM-DD.md`)**: Dump thoughts, terminal pipes, voice notes, and OCR into `syki::sok` with zero organizational friction.
+2. **Absorb**: Run `powershell -File tools/absorb-scraps.ps1` (macOS: `./tools/absorb-scraps.sh`) or tell your agent (`claude`, `codex`, `agy`, `ollama`, or local OpenAI-compatible LLM) to absorb `scraps/`.
+3. **Crystallize & Clear (`wiki/` & `archive/`)**: Following `AGENTS.md` and `INDEX.md`, the agent synthesizes insights into `wiki/YYYY-MM-DD-slug.md` with relative links, archives raw files into `archive/YYYY-MM/` (excluded from search), and clears today's scrap in-place (`<!-- syki:absorbed ... -->`) so open tabs across synced PCs hot-reload cleanly without resurrecting deleted files.
+
+---
+
 ### Docs for AI
 
 Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, Ollama) to ask anything.

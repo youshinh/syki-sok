@@ -40,6 +40,16 @@ brew install --cask --no-quarantine youshinh/tap/syki
 
 ---
 
+### Cloud Sync & Knowledge Compiler（色即是空ワークフロー）
+
+`scraps/` フォルダを **Google ドライブ（オフラインで使用可能）** 等に指定するだけで、複数 PC 間でゼロ摩擦のメモ同期と AI 知識編纂（Zero-Inbox Wiki）が完結します。
+
+1. **書き捨てる (`scraps/YYYY-MM-DD.md`)**: 日常の着想・ログ・音声・OCR を無思考で `syki::sok` に書き捨てる。
+2. **吸収させる (`Absorb`)**: `powershell -File tools/absorb-scraps.ps1`（macOS: `./tools/absorb-scraps.sh`）またはエージェントから `scraps/` を吸収。
+3. **結晶化と浄化 (`wiki/` & `archive/`)**: エージェントが `AGENTS.md` と `INDEX.md` に従い、永続知識を `wiki/YYYY-MM-DD-slug.md` へ統合・相互リンク。処理済みメモは `archive/YYYY-MM/`（検索除外）へ退避され、当日ノートは他 PC の開いているタブと競合しないようインプレースで空（`<!-- syki:absorbed ... -->`）に浄化されます。
+
+---
+
 ### Docs for AI
 
 詳細や設定は、**[`llms.txt`](llms.txt)** をそのままお使いの AI（Claude, ChatGPT, Gemini等）に渡して質問してください。同梱のskillを使ってagentから各種設定ができます。

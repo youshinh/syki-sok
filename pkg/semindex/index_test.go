@@ -554,6 +554,7 @@ func TestListFilesRules(t *testing.T) {
 	for _, rel := range []string{
 		"2026-09-01.md", "keep/a.md", "UPPER.MD",
 		".git/x.md", ".hidden/x.md", "assets/y.md", "Assets/z.md",
+		"archive/2026-10/old.md", "Archive/z.md",
 		"2026-09-01 (sync conflict 2026-09-02).md", "notes.txt",
 		"private/secret.md", "deep/private/inner.md", "drafts/wip.md", "tmp-1.md", "x/tmp-2.md", "exact/one.md", "exact/two.md",
 	} {
@@ -663,6 +664,7 @@ func TestExcludedIsWhatTheIndexLeavesOut(t *testing.T) {
 	for rel, want := range map[string]bool{
 		"2026-09-01.md": false, "keep/a.md": false, "UPPER.MD": false, "exact/two.md": false,
 		".git/x.md": true, ".hidden/deep/x.md": true, "assets/y.md": true, "Assets/z.md": true, "a/assets/y.md": true,
+		"archive/2026-10/old.md": true, "Archive/z.md": true,
 		"2026-09-01 (sync conflict 2026-09-02).md": true,
 		"private/secret.md":                        true, "deep/private/inner.md": true, "drafts/wip.md": true, "x.tmp": true, "exact/one.md": true,
 		"/leading/slash.md": false,
