@@ -26,27 +26,33 @@ An instant, featherweight Markdown scratchpad with AI right at your cursor.
 
 ### Install
 
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
-# Windows (PowerShell)
 Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile syki.zip; Expand-Archive syki.zip syki; syki\syki.exe
 ```
 
+</details>
+
+<details>
+<summary>macOS (Homebrew)</summary>
+
 ```bash
-# macOS (Homebrew)
 brew install --cask --no-quarantine youshinh/tap/syki
 ```
 
-> 💡 **Tip (macOS)**: Passing `--no-quarantine` bypasses macOS Gatekeeper prompts on first launch and future updates, allowing seamless one-command upgrades via `brew upgrade --cask syki`.
+> 💡 **Tip**: `--no-quarantine` allows seamless one-command upgrades via `brew upgrade --cask syki` without Gatekeeper prompts.
+
+</details>
 
 ---
 
-### Cloud Sync & Knowledge Compiler (Zero-Inbox Wiki)
+### Cloud Sync & Knowledge Compiler
 
-Point `scraps/` to **Google Drive for Desktop (Available offline)** to sync across multiple PCs and compile raw captures into a permanent Wiki without heavy vault apps:
-
-1. **Capture (`scraps/YYYY-MM-DD.md`)**: Dump thoughts, terminal pipes, voice notes, and OCR into `syki::sok` with zero organizational friction.
-2. **Absorb**: Run `powershell -File tools/absorb-scraps.ps1` (macOS: `./tools/absorb-scraps.sh`) or tell your agent (`claude`, `codex`, `agy`, `ollama`, or local OpenAI-compatible LLM) to absorb `scraps/`.
-3. **Crystallize & Clear (`wiki/` & `archive/`)**: Following `AGENTS.md` and `INDEX.md`, the agent synthesizes insights into `wiki/YYYY-MM-DD-slug.md` with relative links, archives raw files into `archive/YYYY-MM/` (excluded from search), and clears today's scrap in-place (`<!-- syki:absorbed ... -->`) so open tabs across synced PCs hot-reload cleanly without resurrecting deleted files.
+Sync `scraps/` via Google Drive or cloud folders across PCs:
+- **Capture**: Dump thoughts, terminal pipes, voice, and OCR into `scraps/YYYY-MM-DD.md`.
+- **Compile**: Run `tools/absorb-scraps.ps1` (or `.sh`) to let an AI compile scraps into `wiki/` and archive old notes.
 
 ---
 
@@ -66,4 +72,4 @@ Feed **[`llms.txt`](llms.txt)** directly into your AI (Claude, ChatGPT, Gemini, 
 
 ### License & Trademarks
 
-The source code is distributed under the [MIT License](LICENSE). The MIT License does not cover the names and logos: **syki::sok™** and **ku::sok™** are unregistered trademarks of youshinh. If you distribute a fork or a modified build, give it another name and logo. See the [Trademark Policy](TRADEMARKS.md).
+The source code is distributed under the [MIT License](LICENSE). The MIT License does not cover the names and logos: **syki::sok™** and **ku::sok™** are trademarks. If you distribute a fork or a modified build, give it another name and logo. See the [Trademark Policy](TRADEMARKS.md).

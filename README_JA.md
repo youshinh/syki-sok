@@ -26,27 +26,33 @@
 
 ### インストール
 
+<details>
+<summary>Windows (PowerShell)</summary>
+
 ```powershell
-# Windows (PowerShell)
 Invoke-WebRequest https://github.com/youshinh/syki-sok/releases/latest/download/syki-windows-x64.zip -OutFile syki.zip; Expand-Archive syki.zip syki; syki\syki.exe
 ```
 
+</details>
+
+<details>
+<summary>macOS (Homebrew)</summary>
+
 ```bash
-# macOS (Homebrew)
 brew install --cask --no-quarantine youshinh/tap/syki
 ```
 
-> 💡 **Tip (macOS)**: `--no-quarantine` を付けてインストールすると、初回起動時やアップデート時のセキュリティ警告（Gatekeeper / システム設定での「このまま開く」）を自動回避でき、`brew upgrade --cask syki` によるワンコマンド更新が可能になります。
+> 💡 **Tip**: `--no-quarantine` を付けると Gatekeeper の警告を回避し、`brew upgrade --cask syki` でワンコマンド更新できます。
+
+</details>
 
 ---
 
-### Cloud Sync & Knowledge Compiler（色即是空ワークフロー）
+### Cloud Sync & Knowledge Compiler
 
-`scraps/` フォルダを **Google ドライブ（オフラインで使用可能）** 等に指定するだけで、複数 PC 間でゼロ摩擦のメモ同期と AI 知識編纂（Zero-Inbox Wiki）が完結します。
-
-1. **書き捨てる (`scraps/YYYY-MM-DD.md`)**: 日常の着想・ログ・音声・OCR を無思考で `syki::sok` に書き捨てる。
-2. **吸収させる (`Absorb`)**: `powershell -File tools/absorb-scraps.ps1`（macOS: `./tools/absorb-scraps.sh`）またはエージェントから `scraps/` を吸収。
-3. **結晶化と浄化 (`wiki/` & `archive/`)**: エージェントが `AGENTS.md` と `INDEX.md` に従い、永続知識を `wiki/YYYY-MM-DD-slug.md` へ統合・相互リンク。処理済みメモは `archive/YYYY-MM/`（検索除外）へ退避され、当日ノートは他 PC の開いているタブと競合しないようインプレースで空（`<!-- syki:absorbed ... -->`）に浄化されます。
+`scraps/` を Google ドライブ等の同期フォルダに置くだけで複数PC間で同期できます：
+- **書き捨て**: 着想・ログ・音声・OCR を `scraps/YYYY-MM-DD.md` へ無思考に記録。
+- **Wiki編纂**: `tools/absorb-scraps.ps1`（または `.sh`）を実行すると、AI がスクラップを `wiki/` へ結晶化し、過去メモをアーカイブ。
 
 ---
 
@@ -66,4 +72,4 @@ brew install --cask --no-quarantine youshinh/tap/syki
 
 ### ライセンスと商標
 
-ソースコードは [MIT License](LICENSE) で配布しています。名称とロゴは MIT License の対象外で、**syki::sok™** と **ku::sok™** は youshinh の未登録商標です。フォークや改変版を配布する場合は、別の名称とロゴを使ってください。詳しくは[商標ポリシー](TRADEMARKS.md)をご覧ください。
+ソースコードは [MIT License](LICENSE) で配布しています。名称とロゴは MIT License の対象外で、**syki::sok™** と **ku::sok™** は商標です。フォークや改変版を配布する場合は、別の名称とロゴを使ってください。詳しくは[商標ポリシー](TRADEMARKS.md)をご覧ください。
