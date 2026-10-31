@@ -117,12 +117,12 @@ check('the print panel: modules, the markup (settings on the right), the PDF ser
   assert.match(panel, /headerFooter: o\.headerFooter === true/, 'only a real true switches the header and footer on');
   assert.match(panel, /s\.pages = '';/, 'a page range is not carried to the next note');
   assert.ok(!/(?:src|href)\s*=\s*['"]https?:/.test(panel), 'nothing in the panel reaches outside');
-  for (const f of ['bind_common.go']) {
+  for (const f of ['cmd/syki-gui/bind_common.go']) {
     const src = read(f);
     for (const name of ['backend_printPreviewAsync', 'backend_printPickPdfPath', 'backend_printSavePdfAsync', 'backend_printPreviewClose']) assert.ok(src.includes('"' + name + '"'), f + ' binds ' + name);
   }
   // the Mac: the system's print dialog for the page (WKWebView's print operation, macOS 11+), a sheet of the window, 20 mm margins
-  const mac = read('window_darwin.go');
+  const mac = read('cmd/syki-gui/window_darwin.go');
   assert.match(mac, /_ = w\.Bind\("backend_printSystemAsync", func\(reqID, title string\) error \{/, 'the Mac binds the native print dialog');
   assert.match(mac, /printSystem: \(title\) => window\.__sykiAsync\('printSystem_', \d+, \(reqID\) => window\.backend_printSystemAsync\(reqID, title \|\| ''\)\)/, 'and the page reaches it as backend.printSystem');
   assert.match(mac, /printOperationWithPrintInfo:info/);
@@ -130,12 +130,12 @@ check('the print panel: modules, the markup (settings on the right), the PDF ser
   assert.match(mac, /CGFloat margin = 20\.0 \* 72\.0 \/ 25\.4;/, '20 mm');
   assert.match(mac, /runOperationModalForWindow:gWindow/);
   assert.match(mac, /\[panel setOptions:\(\[panel options\] \| NSPrintPanelShowsPaperSize \| NSPrintPanelShowsOrientation \| NSPrintPanelShowsScaling\)\];/, 'the panel offers the paper, the orientation and the scale (it shows only copies, pages and the preview unless asked)');
-  for (const f of ['window_windows.go', 'window_darwin.go']) {
+  for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
     const src = read(f);
     assert.match(src, /window\.__onPrintPdfResult = function \(reqID, result, errMsg\) \{\s*window\.__sykiSettle\(reqID, result, errMsg\);/, f + ': the answers settle the promises');
     for (const fn of ['printPreview', 'printPickPdfPath', 'printSavePdf', 'printPreviewClose']) assert.ok(src.includes(fn + ':'), f + ' has window.backend.' + fn);
   }
-  assert.match(read('main.go'), /r\.URL\.Path == "\/api\/print\/preview\.pdf"/, 'the app\'s own server serves the preview PDF');
+  assert.match(read('cmd/syki-gui/main.go'), /r\.URL\.Path == "\/api\/print\/preview\.pdf"/, 'the app\'s own server serves the preview PDF');
 });
 
 check('the words exist in English and Japanese with the same placeholders, and the English has no Japanese', () => {

@@ -139,7 +139,7 @@ check('Go wire names: AgentDef.enabled, SlotConfig.disabled_agents, RunProblem, 
   assert.match(goEnabled, /`json:"kind"`/);
   const safety = read('pkg/slotagent/safety.go');
   assert.match(safety, /IssueDefaultDisabled = "default-disabled"/);
-  const app = read('app_slot.go');
+  const app = read('cmd/syki-gui/app_slot.go');
   assert.match(app, /RunProblem\s+\*slotagent\.RunProblem\s+`json:"runProblem,omitempty"`/);
   assert.match(app, /Problem\s+\*slotagent\.RunProblem\s+`json:"problem,omitempty"`/);
 });

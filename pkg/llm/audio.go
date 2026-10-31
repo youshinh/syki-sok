@@ -67,6 +67,7 @@ const (
 	VoiceStyleAuto            = "auto"
 	VoiceStyleInteractions    = "interactions"
 	VoiceStyleGenerateContent = "generateContent"
+	VoiceStyleOpenAI          = "openai"
 )
 
 // maxCustomVocabulary is the API's cap on transcription_config.custom_vocabulary.
@@ -138,6 +139,8 @@ func voiceStyleFor(style string) voiceStyleFunc {
 		return queryVoiceInteractions
 	case VoiceStyleGenerateContent:
 		return queryVoiceGenerateContent
+	case VoiceStyleOpenAI:
+		return queryVoiceOpenAI
 	}
 	return nil
 }
@@ -155,8 +158,10 @@ func resolveVoiceStyle(apiStyle, model string) (string, error) {
 		return VoiceStyleInteractions, nil
 	case strings.ToLower(VoiceStyleGenerateContent):
 		return VoiceStyleGenerateContent, nil
+	case VoiceStyleOpenAI:
+		return VoiceStyleOpenAI, nil
 	}
-	return "", errNotConfigured(fmt.Sprintf("不明な音声API形式です: %q (指定できるのは auto / interactions / generateContent)", apiStyle))
+	return "", errNotConfigured(fmt.Sprintf("不明な音声API形式です: %q (指定できるのは auto / interactions / generateContent / openai)", apiStyle))
 }
 
 // isLiveVoiceModel reports whether model is a Live API (streaming) model, which cannot take a
@@ -189,18 +194,27 @@ func queryAudioProvider(prompt, audioBase64, mimeType string, cfg VoiceConfig) (
 	if model == "" {
 		model = DefaultVoiceModel
 	}
-	if DetectProvider(baseURL, model, cfg.APIKey) != ProviderGemini {
-		return "", errNotConfigured("voice transcription needs a Gemini model")
-	}
-	if cfg.APIKey == "" {
-		return "", errNotConfigured("Gemini API Keyが設定されていません")
-	}
-	style, err := resolveVoiceStyle(cfg.APIStyle, model)
-	if err != nil {
-		return "", err
-	}
-	if isLiveVoiceModel(model) {
-		return "", errNotConfigured(fmt.Sprintf("%s はLive API(ストリーミング)用のモデルで、録音済みの音声は文字起こしできません。モデルに %s を指定してください", model, DefaultVoiceModel))
+	provider := DetectProvider(baseURL, model, cfg.APIKey)
+	isOpenAIVoice := strings.EqualFold(strings.TrimSpace(cfg.APIStyle), VoiceStyleOpenAI)
+
+	var style string
+	if isOpenAIVoice {
+		style = VoiceStyleOpenAI
+	} else {
+		if provider != ProviderGemini {
+			return "", errNotConfigured("voice transcription needs a Gemini model")
+		}
+		if cfg.APIKey == "" {
+			return "", errNotConfigured("Gemini API Keyが設定されていません")
+		}
+		var err error
+		style, err = resolveVoiceStyle(cfg.APIStyle, model)
+		if err != nil {
+			return "", err
+		}
+		if isLiveVoiceModel(model) {
+			return "", errNotConfigured(fmt.Sprintf("%s はLive API(ストリーミング)用のモデルで、録音済みの音声は文字起こしできません。モデルに %s を指定してください", model, DefaultVoiceModel))
+		}
 	}
 
 	if idx := strings.Index(audioBase64, ","); idx != -1 {
@@ -218,8 +232,13 @@ func queryAudioProvider(prompt, audioBase64, mimeType string, cfg VoiceConfig) (
 		httpClient = &http.Client{Timeout: time.Duration(cfg.Timeout) * time.Second, Transport: client.Transport}
 	}
 
+	reqBase := baseURL
+	if style != VoiceStyleOpenAI {
+		reqBase = geminiAPIBase(baseURL)
+	}
+
 	return voiceStyleFor(style)(voiceRequest{
-		baseURL:     geminiAPIBase(baseURL),
+		baseURL:     reqBase,
 		model:       model,
 		prompt:      prompt,
 		audioBase64: audioBase64,
@@ -489,4 +508,81 @@ func queryVoiceInteractions(r voiceRequest) (string, error) {
 // there was no speech in the clip. Saying so points at the microphone instead of at the API.
 func errNoSpeech() error {
 	return fmt.Errorf("話し声が検出されませんでした(録音にほとんど音声が入っていません。マイクの選択と音量を確認してください)")
+}
+
+// openAIAudioFormat maps a MIME type onto the short format identifier OpenAI-compatible input_audio expects.
+func openAIAudioFormat(mimeType string) string {
+	m := strings.ToLower(stripMIMEParams(mimeType))
+	switch m {
+	case "audio/mp3", "audio/mpeg":
+		return "mp3"
+	case "audio/ogg", "application/ogg":
+		return "ogg"
+	case "audio/flac", "audio/x-flac":
+		return "flac"
+	case "audio/m4a", "audio/mp4", "audio/x-m4a":
+		return "m4a"
+	case "audio/webm", "video/webm":
+		return "webm"
+	default:
+		return "wav"
+	}
+}
+
+// queryVoiceOpenAI sends recorded audio to a local or OpenAI-compatible multimodal server (/v1/chat/completions with input_audio).
+func queryVoiceOpenAI(r voiceRequest) (string, error) {
+	if r.cfg.APIKey == "" && openAIHostNeedsKey(r.baseURL) {
+		return "", errNotConfigured("Voice API Keyが設定されていません")
+	}
+	prompt := r.prompt
+	if prompt == "" {
+		prompt = r.cfg.Prompt
+	}
+	if prompt == "" {
+		prompt = DefaultVoicePrompt
+	}
+
+	url := buildOpenAIURL(r.baseURL, "chat/completions")
+	payload := map[string]interface{}{
+		"model": r.model,
+		"messages": []map[string]interface{}{
+			{
+				"role": "user",
+				"content": []map[string]interface{}{
+					{"type": "text", "text": prompt},
+					{
+						"type": "input_audio",
+						"input_audio": map[string]string{
+							"data":   r.audioBase64,
+							"format": openAIAudioFormat(r.mimeType),
+						},
+					},
+				},
+			},
+		},
+	}
+
+	headers := map[string]string{}
+	if r.cfg.APIKey != "" {
+		headers["Authorization"] = "Bearer " + r.cfg.APIKey
+	}
+
+	var result struct {
+		Choices []struct {
+			Message struct {
+				Content string `json:"content"`
+			} `json:"message"`
+		} `json:"choices"`
+	}
+	if err := r.postJSON(url, headers, payload, &result); err != nil {
+		return "", err
+	}
+	if len(result.Choices) == 0 {
+		return "", fmt.Errorf("音声APIから空のレスポンスが返されました")
+	}
+	text := stripThinkingProcess(result.Choices[0].Message.Content)
+	if text == "" {
+		return "", errNoSpeech()
+	}
+	return text, nil
 }

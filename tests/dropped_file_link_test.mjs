@@ -13,7 +13,7 @@ const drop = app.slice(app.indexOf("window.addEventListener('drop'"));
 assert.ok(/const linked = await resolveDroppedFilePath\(file\);/.test(drop), 'the drop asks for the path first');
 assert.ok(/readFileByPath\(linked\)/.test(drop) && /createTab\(res\.title \|\| file\.name, res\.content, res\.path \|\| linked, res\.encoding\)/.test(drop), 'a found file opens with its path and its own encoding');
 assert.ok(/createTab\(file\.name, text, file\.path \|\| ''\)/.test(drop), 'a file that is not found still opens as a note');
-for (const [f, re] of [['bind_common.go', /backend_resolveDroppedFile", app\.ResolveDroppedFile/], ['window_windows.go', /resolveDroppedFile: \(name, size, modifiedMs, hintDirs\)/], ['window_darwin.go', /resolveDroppedFile: \(name, size, modifiedMs, hintDirs\)/]]) {
+for (const [f, re] of [['cmd/syki-gui/bind_common.go', /backend_resolveDroppedFile", app\.ResolveDroppedFile/], ['cmd/syki-gui/window_windows.go', /resolveDroppedFile: \(name, size, modifiedMs, hintDirs\)/], ['cmd/syki-gui/window_darwin.go', /resolveDroppedFile: \(name, size, modifiedMs, hintDirs\)/]]) {
   assert.ok(re.test(read(f)), f + ' exposes it');
 }
 console.log('dropped file link tests passed');

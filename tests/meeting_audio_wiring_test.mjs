@@ -9,9 +9,9 @@ const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 const html = read('frontend/index.html');
 const app = read('frontend/js/app.js');
 const I18N = new Function(read('frontend/js/i18n.js') + '\nreturn I18N;')();
-const bind = read('bind_common.go');
-const winGo = read('window_windows.go');
-const macGo = read('window_darwin.go');
+const bind = read('cmd/syki-gui/bind_common.go');
+const winGo = read('cmd/syki-gui/window_windows.go');
+const macGo = read('cmd/syki-gui/window_darwin.go');
 
 // 1. the switch is in Settings, hidden until the backend says it can do it, and it does not use a "?"-folded consent line
 assert.ok(/class="form-group inline-group hidden" id="cfg-voice-system-audio-group"/.test(html), 'the group starts hidden');

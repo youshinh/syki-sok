@@ -46,10 +46,8 @@ var (
 )
 
 type generalConfigSnapshot struct {
-	trayResident     bool
-	telemetryEnabled bool
-	activity         activitySettings
-	webView          webViewSettings
+	trayResident bool
+	webView      webViewSettings
 }
 
 func parseGeneralConfigSnapshot(content string) generalConfigSnapshot {
@@ -62,22 +60,12 @@ func parseGeneralConfigSnapshot(content string) generalConfigSnapshot {
 	}
 	var c struct {
 		General struct {
-			TrayResident    *bool    `json:"trayResident"`
-			Telemetry       bool     `json:"telemetry"`
-			ActivityApps    bool     `json:"activityApps"`
-			ActivityEdits   bool     `json:"activityEdits"`
-			ActivityExclude []string `json:"activityExclude"`
+			TrayResident *bool `json:"trayResident"`
 		} `json:"general"`
 	}
 	if json.Unmarshal([]byte(content), &c) == nil {
 		if c.General.TrayResident != nil {
 			snap.trayResident = *c.General.TrayResident
-		}
-		snap.telemetryEnabled = c.General.Telemetry
-		snap.activity = activitySettings{
-			Apps:    c.General.ActivityApps,
-			Edits:   c.General.ActivityEdits,
-			Exclude: c.General.ActivityExclude,
 		}
 	}
 	return snap

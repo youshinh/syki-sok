@@ -44,7 +44,7 @@ const plan = (...a) => { const r = ctx.planImeRetypeFallback(...a); return r && 
   assert.ok(/window\.__onImeRetypeResult = function \(reqID, errMsg\)/.test(app), 'the Go side can report that the keys were not sent');
   assert.ok(/IME_RETYPE_WAIT_MS = 900/.test(app), 'the wait for a composition is bounded');
   // The key sequence (IME-On key, then the letters) is the one that was run on a real Windows IME and worked: do not change it blindly.
-  const goRetype = read('ime_retype_windows.go');
+  const goRetype = read('cmd/syki-gui/ime_retype_windows.go');
   assert.ok(/imeRetypeKey\(imeRetypeVkImeOn\)[^]*imeRetypeKey\(vk\)/.test(goRetype), 'IME-On key, then the letters');
   assert.ok(/showMessage\(t\('imeRetypeFellBack'\)/.test(app) && /finishImeRetype\(pending, 'timeout'\)/.test(app) && /finishImeRetype\(pendingImeRetype, errMsg\)/.test(app), 'a fall-back says why: the timeout, or what the Go side reported');
   const I18Nm = new Function(read('frontend/js/i18n.js') + '\nreturn I18N;')();
@@ -54,11 +54,11 @@ const plan = (...a) => { const r = ctx.planImeRetypeFallback(...a); return r && 
 
 // 3. The bind: Windows only on the page side, and the setting and its strings exist.
 {
-  const bind = read('bind_common.go');
+  const bind = read('cmd/syki-gui/bind_common.go');
   assert.ok(/backend_retypeWithImeAsync", app\.RetypeWithImeAsync/.test(bind), 'the bound method is registered');
-  assert.ok(/retypeWithImeAsync: \(reqID, romaji\)/.test(read('window_windows.go')), 'the Windows page backend offers it');
-  assert.ok(!/retypeWithIme/.test(read('window_darwin.go')), 'macOS has no such backend function, so the page never offers the setting there');
-  const win = read('ime_retype_windows.go');
+  assert.ok(/retypeWithImeAsync: \(reqID, romaji\)/.test(read('cmd/syki-gui/window_windows.go')), 'the Windows page backend offers it');
+  assert.ok(!/retypeWithIme/.test(read('cmd/syki-gui/window_darwin.go')), 'macOS has no such backend function, so the page never offers the setting there');
+  const win = read('cmd/syki-gui/ime_retype_windows.go');
   assert.ok(/ownsForeground\(\)/.test(win) && win.indexOf('ownsForeground()', win.indexOf('func platformImeRetype')) < win.indexOf('imeRetypeKey(imeRetypeVkImeOn)'),
     'keys go only to our own window: the foreground is checked before anything is sent');
   const html = read('frontend/index.html');
@@ -121,7 +121,7 @@ const plan = (...a) => { const r = ctx.planImeRetypeFallback(...a); return r && 
   assert.ok(/offerEnglishRetype\(e && e\.data\)/.test(app), 'the offer is made when the composition ends');
   assert.ok(/if \(keepReverse\) return true;/.test(app), 'checkImeSuggestion keeps the offer alive: its caller clears the ghost whenever it returns false');
   assert.ok(/setIMEMode\(false\)/.test(app), 'accepting switches input to half-width');
-  assert.ok(/VK_IME_OFF = 0x1A/.test(read('window_windows.go')), 'Windows really sends the IME-Off key (ImmSetOpenStatus cannot reach WebView2)');
+  assert.ok(/VK_IME_OFF = 0x1A/.test(read('cmd/syki-gui/window_windows.go')), 'Windows really sends the IME-Off key (ImmSetOpenStatus cannot reach WebView2)');
   const html = read('frontend/index.html');
   assert.ok(/<div id="ime-reverse-group" class="form-group inline-group hidden"/.test(html) && /<input type="checkbox" id="cfg-ime-reverse">/.test(html), 'the switch is in the dialog');
   const I18N = new Function(read('frontend/js/i18n.js') + '\nreturn I18N;')();

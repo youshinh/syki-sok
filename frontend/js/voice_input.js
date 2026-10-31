@@ -946,7 +946,7 @@
 
   // The operation-rhythm log is told only that a recording started and stopped (js/telemetry.js): never the audio, never what was said.
   function logVoice(on) {
-    try { if (global.Telemetry) global.Telemetry.voice(on); } catch (e) { /* best effort */ }
+    
   }
 
   function onRecorderStop() {

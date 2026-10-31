@@ -8,11 +8,11 @@ console.log('=== Input Interface Rev 3 wiring tests ===');
 
 const appJs = fs.readFileSync('frontend/js/app.js', 'utf8').replace(/\r\n/g, '\n');
 const indexHtml = fs.readFileSync('frontend/index.html', 'utf8').replace(/\r\n/g, '\n');
-const winGo = fs.readFileSync('window_windows.go', 'utf8').replace(/\r\n/g, '\n');
-const macGo = fs.readFileSync('window_darwin.go', 'utf8').replace(/\r\n/g, '\n');
+const winGo = fs.readFileSync('cmd/syki-gui/window_windows.go', 'utf8').replace(/\r\n/g, '\n');
+const macGo = fs.readFileSync('cmd/syki-gui/window_darwin.go', 'utf8').replace(/\r\n/g, '\n');
 // Binds identical on both platforms live in bind_common.go (see bindCommonBackend), called from
 // both window_windows.go and window_darwin.go; a bind found there counts as bound on each.
-const commonGo = fs.readFileSync('bind_common.go', 'utf8').replace(/\r\n/g, '\n');
+const commonGo = fs.readFileSync('cmd/syki-gui/bind_common.go', 'utf8').replace(/\r\n/g, '\n');
 const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
 
 // ---- 1. Script tags: the three new modules load before app.js, same ?v= pattern ------------

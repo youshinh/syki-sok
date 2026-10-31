@@ -51,14 +51,6 @@ func TestGeminiErrorsNeverCarryTheAPIKey(t *testing.T) {
 	_, err = QueryAudio("transcribe", "AAAA", "audio/webm", VoiceConfig{BaseURL: base, Model: "gemini-flash-lite-latest", APIKey: testGeminiKey})
 	check("QueryAudio", err)
 
-	_, _, err = GenerateImage("a cat", ImageGenConfig{BaseURL: base, Model: "gemini-3.1-flash-lite-image", APIKey: testGeminiKey})
-	check("GenerateImage (Gemini)", err)
-
-	_, _, err = GenerateImage("a cat", ImageGenConfig{BaseURL: base, Model: "gemini-nano-banana-2.1", APIKey: testGeminiKey})
-	check("GenerateImage (Nano Banana)", err)
-
-	_, _, err = GenerateImage("a cat", ImageGenConfig{BaseURL: base, Model: "imagen-4.0-generate-001", APIKey: testGeminiKey})
-	check("GenerateImage (Imagen)", err)
 }
 
 func TestGeminiErrorBodyThatEchoesTheKeyIsRedacted(t *testing.T) {

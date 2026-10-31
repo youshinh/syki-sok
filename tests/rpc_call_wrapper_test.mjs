@@ -9,8 +9,8 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const read = (p) => fs.readFileSync(path.resolve(p), 'utf-8').replace(/\r\n/g, '\n');
-const rpcGo = read('app_rpc.go');
-const writeGo = read('app_rpc_write.go');
+const rpcGo = read('cmd/syki-gui/app_rpc.go');
+const writeGo = read('cmd/syki-gui/app_rpc_write.go');
 
 const templateMatch = /template := `([\s\S]*?)`\n/.exec(rpcGo);
 assert.ok(templateMatch, 'the wrapper template is in app_rpc.go');

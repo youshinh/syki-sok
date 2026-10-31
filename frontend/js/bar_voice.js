@@ -161,7 +161,7 @@
 
     // The operation-rhythm log is told only that the microphone went on and off (js/telemetry.js): never the audio, never what was said.
     function logVoice(on) {
-      try { if (win.Telemetry) win.Telemetry.voice(on); } catch (e) { /* best effort */ }
+      
     }
 
     function releaseMic(a) {

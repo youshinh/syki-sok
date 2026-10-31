@@ -545,121 +545,6 @@
     if (off && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
   }
 
-  // The ids of the commands in the log (last_cmd): the AI bars and Quick Actions, by what they are, wherever the shortcut is rebound to.
-  // (Voice input has its own fields, voice_starts and voice_ms; 4 and 5 are not used.)
-  const TELEMETRY_CMD = { quickActions: 1, ask: 2, commandBar: 3, rewrite: 6, other: 99 };
-  function telemetryCommand(id) {
-    if (window.Telemetry) window.Telemetry.command(id);
-  }
-
-  function renderTelemetryInfo() {
-    const el = document.getElementById('cfg-telemetry-info');
-    if (!el) return;
-    el.textContent = '';
-    if (!(window.backend && window.backend.getTelemetryInfo)) return;
-    Promise.resolve(window.backend.getTelemetryInfo()).then((info) => {
-      if (!info) return;
-      const kb = Math.max(info.bytes ? 1 : 0, Math.round((info.bytes || 0) / 1024));
-      el.textContent = t(info.files > 0 ? 'telemetryInfo' : 'telemetryInfoNone', { files: info.files, kb: kb, days: info.retainDays, dir: info.dir });
-    }).catch(() => {});
-  }
-
-  // The operation-rhythm log (js/telemetry.js, pkg/telemetry): on only when the person turned it on (general.telemetry === true). Off means
-  // no listener and no timer at all. What it keeps is numbers about how they work, never what they typed (see the manual).
-  // The window as it is when a 30-second window of the log ends (called from the log's timer only): small whole numbers, no position and no
-  // size. state: 0 floating, 1 maximized, 2 snapped to a side of the screen (about half the width, the full height, against the left or
-  // right edge: Win+Left / Win+Right), 3 full screen. A gap of 24 px covers the invisible borders of a Windows window.
-  function telemetryWindowSample() {
-    const cls = document.body.classList;
-    let state = 0;
-    try {
-      const scr = window.screen || {};
-      const aw = scr.availWidth || 0;
-      const ah = scr.availHeight || 0;
-      const ow = window.outerWidth || 0;
-      const oh = window.outerHeight || 0;
-      const left = (scr.availLeft || 0);
-      const gap = 24;
-      if (cls.contains('is-fullscreen')) state = 3;
-      else if (aw > 0 && ow >= aw - gap && oh >= ah - gap) state = 1;
-      else if (aw > 0 && oh >= ah * 0.85 && ow >= aw * 0.2 && ow <= aw * 0.7 &&
-        (window.screenX <= left + gap || window.screenX + ow >= left + aw - gap)) state = 2;
-    } catch (e) { /* best effort */ }
-    return { state: state, zen: cls.contains('zen-mode') ? 1 : 0, view: isSplitMode ? 2 : (isPreviewMode ? 1 : 0) };
-  }
-
-  // The activity log (js/activity_log.js): the notes written in and the requests of the AI bars (general.activityEdits), and, on the Go side, the
-  // front app (general.activityApps). Both off until turned on. The editor being written in is the one with the focus.
-  function activityNoteContext() {
-    const secondary = isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary' && !!secondaryTabId;
-    const tab = secondary ? getTab(secondaryTabId) : getActiveTab();
-    return { tab: tab, editor: secondary ? editorSecondary : editorEl };
-  }
-
-  function activityAsk(reqId, mode, instruction) {
-    if (!window.Activity || !reqId) return;
-    const d = askDestination();
-    window.Activity.ask(reqId, mode, d ? d.kind : 'unknown', String(instruction || ''));
-  }
-
-  function activityAnswer(reqId, outcome, chars) {
-    if (window.Activity) window.Activity.answer(reqId, outcome, chars);
-  }
-
-  function applyActivity() {
-    const A = window.Activity;
-    if (A) {
-      A.init({
-        send: (json) => (window.backend && window.backend.recordActivity ? window.backend.recordActivity(json) : null),
-        targets: [editorEl, editorSecondary],
-        noteId: () => {
-          const c = activityNoteContext();
-          return c.tab ? c.tab.id : '';
-        },
-        noteLabel: () => {
-          const c = activityNoteContext();
-          return c.tab ? (c.tab.path || c.tab.title || '') : '';
-        },
-        noteLength: () => {
-          const c = activityNoteContext();
-          return c.editor && typeof c.editor.value === 'string' ? c.editor.value.length : 0;
-        }
-      });
-      A.setEnabled(!!(config.general && config.general.activityEdits === true));
-    }
-    // the Go side starts or stops looking at the front app to match general.activityApps
-    if (window.backend && window.backend.refreshActivity) Promise.resolve(window.backend.refreshActivity()).catch(() => {});
-  }
-
-  function renderActivityInfo() {
-    const el = document.getElementById('cfg-activity-info');
-    if (!el) return;
-    el.textContent = '';
-    if (!(window.backend && window.backend.getActivityInfo)) return;
-    Promise.resolve(window.backend.getActivityInfo()).then((info) => {
-      if (!info) return;
-      const kb = Math.max(info.bytes ? 1 : 0, Math.round((info.bytes || 0) / 1024));
-      el.textContent = t(info.files > 0 ? 'activityInfo' : 'activityInfoNone', { files: info.files, kb: kb, days: info.retainDays, dir: info.dir });
-      const apps = document.getElementById('cfg-activity-apps');
-      if (apps) {
-        apps.disabled = info.appsSupported === false;
-        if (info.appsSupported === false) apps.checked = false;
-      }
-    }).catch(() => {});
-  }
-
-  function applyTelemetry() {
-    applyActivity();
-    const T = window.Telemetry;
-    if (!T) return;
-    T.init({
-      send: (json) => (window.backend && window.backend.recordTelemetry ? window.backend.recordTelemetry(json) : null),
-      targets: [editorEl, editorSecondary, inlinePromptInput, cliFilterInput],
-      windowSample: telemetryWindowSample
-    });
-    T.setEnabled(!!(config.general && config.general.telemetry === true));
-  }
-
   function applyTheme() {
     appearancePreviewing = false;
     applyTabDock();
@@ -2550,7 +2435,6 @@
 
   // The user's way to close a tab: a tab with unsaved changes asks first (Save / Don't save / Cancel).
   async function closeTab(tabId, e) {
-    if (window.Activity) window.Activity.flushEdit();
     if (e) e.stopPropagation();
     const tab = getTab(tabId);
     if (!tab) return;
@@ -5133,7 +5017,6 @@
     pendingLLMRequests.delete(reqId);
     clearPendingLLMTimer(reqId);
     updateLLMIndicator();
-    activityAnswer(reqId, 'cancel', 0);
 
     const text = getTabText(info.tabId);
     if (text !== null && text.indexOf(info.anchorId) !== -1) {
@@ -5604,7 +5487,6 @@
     const reqInfo = pendingLLMRequests.get(reqId);
     if (!reqInfo) return;
     errorText = redactLlmSecrets(errorText);
-    activityAnswer(reqId, errorText ? 'error' : 'ok', String(resultText || '').length);
 
     pendingLLMRequests.delete(reqId);
     clearPendingLLMTimer(reqId);
@@ -8112,7 +7994,6 @@
         : `Rewrite the following text according to the instruction below. Output ONLY the rewritten text, with no greetings, explanations, or conversational filler.\n\n[Instruction]:\n${effectiveInstruction}\n\n[Text]:\n${targetText}`;
 
       const reqId = genReqId('rewrite_');
-      activityAsk(reqId, 'rewrite', instruction);
       const anchorId = `[${uniqueAnchorLabel(curTab.id, t('aiCorrectingAnchor'))}]`;
       // Only the words are replaced: the indentation before them and the line break after them stay in the note.
       const span = trimmedSpan(editor.value, ctx.target.start, ctx.target.end);
@@ -8219,7 +8100,6 @@
       persistRestore: '',
       onFailure: (errorText) => showAskFailure({ tabId: curTab.id, mode: 'ask', target: ctx.target, instruction: instruction, errorText: errorText })
     });
-    if (askReqId) activityAsk(askReqId, 'ask', instruction);
   }
 
   // AI Typo, Mistake & Context Correction (Alt+C / Cmd+Shift+C)
@@ -8344,46 +8224,6 @@
     btnInlinePromptConsentAllow.addEventListener('keydown', (e) => { if (e.repeat) e.preventDefault(); });
   }
   if (btnInlinePromptConsentCancel) btnInlinePromptConsentCancel.onclick = declineCloudConsent;
-  const btnTelemetryOpen = document.getElementById('btn-telemetry-open');
-  if (btnTelemetryOpen) {
-    btnTelemetryOpen.onclick = () => {
-      if (window.backend && window.backend.openTelemetryFolder) Promise.resolve(window.backend.openTelemetryFolder()).catch(() => {});
-    };
-  }
-  const btnActivityOpen = document.getElementById('btn-activity-open');
-  if (btnActivityOpen) {
-    btnActivityOpen.onclick = () => {
-      if (window.backend && window.backend.openActivityFolder) Promise.resolve(window.backend.openActivityFolder()).catch(() => {});
-    };
-  }
-  const btnActivityClear = document.getElementById('btn-activity-clear');
-  if (btnActivityClear) {
-    btnActivityClear.onclick = async () => {
-      if (!(window.backend && window.backend.clearActivity)) return;
-      if (!(await customConfirm(t('activityClearConfirm'), { okLabel: t('activityClear'), safeDefault: true }))) return;
-      try {
-        const n = await window.backend.clearActivity();
-        showMessage(t('activityCleared', { n: n || 0 }), 4000);
-      } catch (err) {
-        showMessage(String((err && err.message) || err), 5000, { important: true });
-      }
-      renderActivityInfo();
-    };
-  }
-  const btnTelemetryClear = document.getElementById('btn-telemetry-clear');
-  if (btnTelemetryClear) {
-    btnTelemetryClear.onclick = async () => {
-      if (!(window.backend && window.backend.clearTelemetry)) return;
-      if (!(await customConfirm(t('telemetryClearConfirm'), { okLabel: t('telemetryClear'), safeDefault: true }))) return;
-      try {
-        const n = await window.backend.clearTelemetry();
-        showMessage(t('telemetryCleared', { n: n || 0 }), 4000);
-      } catch (err) {
-        showMessage(String((err && err.message) || err), 5000, { important: true });
-      }
-      renderTelemetryInfo();
-    };
-  }
   if (btnForgetCloudConsent) {
     btnForgetCloudConsent.onclick = () => {
       if (!config.general) return;
@@ -9462,280 +9302,6 @@ OUTPUT FORMAT:
     return null;
   }
 
-  // --- Visual Diagram & Infographic Style Engine (5 Styles with diagram-design taste) ---
-  function getInfographicStylePrompt(styleName) {
-    const s = styleName || 'material';
-    switch (s) {
-      case 'sketchy':
-        return "Hand-drawn whiteboard and marker sketch infographic design system. " +
-          "Whiteboard surface background (#f8fafc), marker pen line art with subtle organic hand-drawn wobble, friendly casual brainstorming aesthetic. " +
-          "Content containers resemble light pastel sticky-notes with gentle 8px rounded corners (pale yellow #fef08a, soft mint #bbf7d0, light sky #bae6fd, pure white). " +
-          "Focal accent is a single bright marker highlight (Coral Red #e11d48) on 1 or 2 key nodes only; secondary elements use neutral dark slate pen strokes (#334155). " +
-          "Connectors are clean orthogonal or gentle hand-drawn right-angle elbow arrows, never chaotic crossed lines. " +
-          "Typography is friendly, highly legible Japanese hand-lettering or clean rounded sans (Noto Sans JP / Casual Sans). " +
-          "Strictly NO 3D effects, NO drop shadows, NO photorealism, NO glossy gradients.";
-      case 'editorial':
-        return "Minimal editorial architectural design system (Swiss style publication aesthetic). " +
-          "Warm off-white paper canvas (#f9f8f6), crisp jet-black hairline borders (1px #1c1917), and generous architectural whitespace. " +
-          "Focal accent is exactly ONE vibrant Tangerine / Coral accent (#e0533c) reserved strictly for the 1 or 2 hero nodes; everything else is quiet ink (#1c1917) and muted gray (#78716c). " +
-          "Connectors MUST be strictly orthogonal right-angle elbows (r=8px rounded corners); absolutely NO diagonal lines or crossed lines. " +
-          "Typography uses an elegant editorial serif title with crisp geometric sans-serif node names (Noto Sans JP). " +
-          "Strictly flat 2D, NO shadows, NO gradients, NO illustrations.";
-      case 'terminal':
-        return "Developer terminal and modern dark CLI window infographic design system. " +
-          "Deep charcoal/black console background (#0d1117), crisp 1px borders (#30363d), with a subtle top macOS-style window header bar with small colored dots (red, yellow, green). " +
-          "Node containers are dark elevated blocks (#161b22) with 6px rounded corners. " +
-          "Focal accent uses vibrant Emerald Green (#2ea043) or Cyan (#58a6ff) on 1 or 2 critical nodes/links only. " +
-          "Connectors are sharp orthogonal terminal routing lines with crisp arrowheads. " +
-          "Typography uses monospace styling for endpoints, commands, and sublabels, with clean Noto Sans JP for primary labels. " +
-          "Strictly clean developer UI, NO photorealism, NO 3D, NO muddy neon glows.";
-      case 'ink':
-        return "Japanese Wa-Modern sumi-ink minimalist infographic design system. " +
-          "Textured pale washi paper background (#f6f5f0), deep sumi-ink black clean lines and typography (#222222), serene spatial harmony and generous breathing space (Ma). " +
-          "Focal accent is a single traditional Japanese vermilion seal mark / cinnabar red accent (#c23a2b) on 1 key focal point; all other elements remain pure monochrome ink. " +
-          "Connectors are precise, serene orthogonal right-angle lines with subtle brush-stroke termination. " +
-          "Typography is refined, balanced Japanese Noto Sans JP / Mincho hybrid. " +
-          "Calm, dignified, contemplative 2D technical aesthetic. NO glossy gradients, NO shadows.";
-      case 'material':
-      default:
-        return "Material Design 3 infographic design system. " +
-          "Flat solid colors only — absolutely NO gradients anywhere. " +
-          "Page canvas is a slightly blue-tinted light grey (#f0f4f9); content sits on pure white cards with a 28px corner radius, a 1px light grey border (#c4c7c5) and NO drop shadow. " +
-          "Primary accent is Action Blue #0b57d0, used sparingly on ONLY the 1 or 2 most important hero nodes; supporting elements use neutral white or soft tonal container tint (#d3e3fd). " +
-          "Connectors MUST be strictly orthogonal right-angle elbows with rounded corners; NO diagonal lines. " +
-          "Action-like elements are full pill shapes; inputs 4px radius. " +
-          "Typography is a clean geometric sans (Noto Sans JP / Roboto): headings are LARGE at normal-to-medium weight. " +
-          "Icons are Google Material Symbols Outlined line icons, 24px, monochrome. " +
-          "Strict 8px spacing grid, generous structural spacing, left-aligned layout, calm corporate aesthetic.";
-    }
-  }
-
-  const CLEAN_INFOGRAPHIC_STYLE = getInfographicStylePrompt('material');
-
-  const CLEAN_INFOGRAPHIC_NEGATIVES = 
-    "No gradients of any kind. No drop shadows on cards. No heavy bold headings. " +
-    "No emoji, no Unicode-symbol icons, no filled/colored icon badges. " +
-    "No photography, no photorealism, no 3D, no glossy or glassy effects. " +
-    "No hand-drawn or sketchy style. No neon, no dark cyberpunk. No decorative illustration. " +
-    "No gibberish text. No random placeholder words. No blurry text. No tiny unreadable text. " +
-    "Do NOT render any prompt meta labels such as: REFERENCE, DIAGRAM FIDELITY, TEXT FIDELITY, NEGATIVE CONSTRAINTS. " +
-    "Do NOT render the instruction text of this prompt. Render only content derived from the Mermaid diagram.";
-
-  function extractFlowDirectionText(code) {
-    const src = String(code == null ? '' : code).replace(/\r/g, '');
-    const first = src.split('\n').map(x => x.trim()).filter(Boolean)[0] || '';
-    const flow = /^(?:flowchart|graph)\s+([A-Za-z]{2})\b/i.exec(first);
-    if (flow && flow[1]) {
-      const dir = flow[1].toUpperCase();
-      switch (dir) {
-        case 'LR': return 'from left to right';
-        case 'RL': return 'from right to left';
-        case 'TB':
-        case 'TD': return 'from top to bottom';
-        case 'BT': return 'from bottom to top';
-      }
-    }
-    const stateDir = /(?:^|\n)\s*direction\s+([A-Za-z]{2})\b/i.exec(src);
-    if (stateDir && stateDir[1]) {
-      const dir = stateDir[1].toUpperCase();
-      switch (dir) {
-        case 'LR': return 'from left to right';
-        case 'RL': return 'from right to left';
-        case 'TB':
-        case 'TD': return 'from top to bottom';
-        case 'BT': return 'from bottom to top';
-      }
-    }
-    return 'with a clear directional flow';
-  }
-
-  function deriveDiagramTitle(mermaidCode, noteContent) {
-    const src = String(mermaidCode == null ? '' : mermaidCode).replace(/\r/g, '');
-    const m = /^\s*(?:%%\s*)?title\s*[:\s]\s*["']?(.+?)["']?\s*$/im.exec(src);
-    if (m && m[1]) return m[1].trim();
-
-    // Try finding title from note content near mermaid
-    if (noteContent) {
-      const lines = noteContent.split('\n');
-      for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        if (line.startsWith('#') && !line.includes('```')) {
-          return line.replace(/^#+\s*/, '').trim();
-        }
-      }
-    }
-    return 'プロセス構造図';
-  }
-
-  function buildInfographicImagePrompt(mermaidCode, noteContent, forcedStyle) {
-    const dirText = extractFlowDirectionText(mermaidCode);
-    const title = deriveDiagramTitle(mermaidCode, noteContent);
-    const styleName = forcedStyle || (config.general && config.general.diagramStyle) || 'material';
-    const stylePrompt = getInfographicStylePrompt(styleName);
-
-    return [
-      `A high-quality ${stylePrompt}`,
-      `REFERENCE (Mermaid code for understanding only; do NOT render this text verbatim): """\n${mermaidCode}\n"""`,
-      `DIAGRAM FIDELITY (highest priority): The Mermaid code is the blueprint. Render a clean diagram/infographic that matches the Mermaid structure exactly: include every node and every edge; preserve branches/merges; preserve subgraph groupings as separate containers with titles; follow the declared direction (${dirText}).`,
-      `TEXT FIDELITY: Copy node labels, decision labels, and subgraph titles from the Mermaid code VERBATIM. Do not translate, do not paraphrase, do not summarize Mermaid labels. Do not invent any new labels that are not present in the Mermaid code.`,
-      `Text rendering: render clean, sharp, legible labels for nodes, decisions, and subgraph titles in Japanese (Noto Sans JP) or original language from the Mermaid diagram.`,
-      `Slide layout: wide 16:9. Use a clean card composition: (1) a prominent header title '${title}' (normal-to-medium weight geometric sans), (2) a central diagram area following the Mermaid structure on crisp white cards with 28px rounded corners and 1px light border, (3) clear directional arrows with Action Blue #0b57d0 accents.`,
-      `Visual system: strict 8px spacing grid, Google Material Symbols Outlined line icons, consistent stroke weight, clear arrowheads, generous structural whitespace.`,
-      `TITLE RULE: The slide must prominently display the header title: '${title}'.`,
-      `NEGATIVE CONSTRAINTS: ${CLEAN_INFOGRAPHIC_NEGATIVES}`,
-      `high resolution, 8k, sharp focus, aesthetic composition, publication-ready vector finish.`
-    ].join(' ');
-  }
-
-  function isDedicatedImageModel(model) {
-    if (!model || typeof model !== 'string') return false;
-    const m = model.toLowerCase().trim();
-    if (m.startsWith('imagen-') || m.endsWith('-image') || m.includes('banana')) return true;
-    return false;
-  }
-
-  function generateImageFromMermaid() {
-    clearGhostText();
-    const curTab = getActiveTab();
-    if (!curTab) return;
-
-    const mermaidCode = extractMermaidAtCursor();
-    if (!mermaidCode) {
-      showMessage(t('noMermaidFound'), 4000);
-      return;
-    }
-
-    // Ensure Gemini endpoint is used for image generation (do not inherit local vision baseUrl)
-    let imageBaseUrl = (config.image && config.image.baseUrl) || '';
-    if (!imageBaseUrl || imageBaseUrl.includes('localhost') || imageBaseUrl.includes('127.0.0.1') || imageBaseUrl.startsWith('http://')) {
-      if (config.vision && config.vision.baseUrl && !config.vision.baseUrl.includes('localhost') && !config.vision.baseUrl.includes('127.0.0.1') && !config.vision.baseUrl.startsWith('http://')) {
-        imageBaseUrl = config.vision.baseUrl;
-      } else {
-        imageBaseUrl = 'https://generativelanguage.googleapis.com';
-      }
-    }
-
-    // Check Gemini API key (priority: image > vision > text). Another group's key is borrowed only while that group talks to
-    // the same host as the image endpoint: it is sent there as ?key=, so a key of another provider must not be.
-    const apiKey = (config.image && config.image.apiKey) || borrowedApiKey(imageBaseUrl, [
-      { baseUrl: (config.vision && config.vision.baseUrl) || 'https://generativelanguage.googleapis.com', apiKey: config.vision && config.vision.apiKey },
-      { baseUrl: (config.text && config.text.baseUrl) || 'http://localhost:11434', apiKey: config.text && config.text.apiKey }
-    ]);
-    if (!apiKey && (!window.backend || !window.backend.generateImageAsync)) {
-      showMessage(t('geminiKeyRequired'), 4000);
-      return;
-    }
-
-    const reqId = genReqId('img_');
-    const anchorId = `[${t('generatingImageAnchor')}]`;
-
-    // Find the end of the mermaid block to insert image directly below it
-    const val = editorEl.value;
-    const mermaidBlockIdx = val.indexOf(mermaidCode);
-    let insertPos = editorEl.selectionEnd;
-    if (mermaidBlockIdx !== -1) {
-      const fenceEnd = val.indexOf('```', mermaidBlockIdx + mermaidCode.length);
-      if (fenceEnd !== -1) {
-        insertPos = fenceEnd + 3;
-      }
-    }
-
-    editorEl.setSelectionRange(insertPos, insertPos);
-    const insertion = `\n\n${anchorId}\n\n`;
-    insertTextWithUndo(insertion);
-
-    curTab.content = editorEl.value;
-    curTab.isDirty = true;
-    renderTabs();
-    updateLineNumbers();
-    updateStatusBar();
-
-    registerPendingLLMRequest(reqId, {
-      tabId: curTab.id,
-      anchorId: anchorId,
-      persistedText: insertion,
-      persistRestore: '',
-      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
-    });
-    listCancellableRequest(reqId, anchorId);
-
-    updateLLMIndicator();
-
-    const imageGenPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
-    let imageModel = (config.image && config.image.model) ? config.image.model.trim() : '';
-    if (!imageModel) {
-      imageModel = 'gemini-3.1-flash-lite-image';
-    }
-    const imageAspect = (config.image && config.image.aspectRatio) || '16:9';
-    const imageRes = (config.image && config.image.resolution) || '1024';
-
-    const imageConfig = {
-      baseUrl: imageBaseUrl,
-      model: imageModel,
-      apiKey: apiKey,
-      aspectRatio: imageAspect,
-      resolution: imageRes
-    };
-
-    if (window.backend && window.backend.generateImageAsync) {
-      window.backend.generateImageAsync(reqId, imageGenPrompt, JSON.stringify(imageConfig), curTab.path || '');
-    } else {
-      setTimeout(() => {
-        window.__onLLMResult(reqId, `![Generated Diagram](https://placehold.co/800x450/252526/ffffff?text=Gemini+Infographic)`, '');
-      }, 2500);
-    }
-  }
-
-  function generateImagePromptFromMermaid() {
-    clearGhostText();
-    const curTab = getActiveTab();
-    if (!curTab) return;
-
-    const mermaidCode = extractMermaidAtCursor();
-    if (!mermaidCode) {
-      showMessage(t('noMermaidFound'), 4000);
-      return;
-    }
-
-    const reqId = genReqId('imgprompt_');
-    const anchorId = `[${t('extractingPromptAnchor')}]`;
-
-    const insertPos = editorEl.selectionEnd;
-    editorEl.setSelectionRange(insertPos, insertPos);
-    const insertion = `\n\n${anchorId}\n\n`;
-    insertTextWithUndo(insertion);
-
-    curTab.content = editorEl.value;
-    curTab.isDirty = true;
-    renderTabs();
-    updateLineNumbers();
-    updateStatusBar();
-
-    registerPendingLLMRequest(reqId, {
-      tabId: curTab.id,
-      anchorId: anchorId,
-      persistedText: insertion,
-      persistRestore: '',
-      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
-    });
-    listCancellableRequest(reqId, anchorId);
-
-    updateLLMIndicator();
-
-    const infoPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
-    const promptPayload = `以下のMermaid図の構造と意味を理解し、GeminiやMidjourney等でMaterial Design 3（Action Blue #0b57d0, フラット単色, 白カード28px角丸, ドロップシャドウ・グラデーション禁止, Noto Sans JP）に完全準拠した美麗なインフォグラフィック図解を生成するための「英語プロンプト」を出力してください。\n\n【推奨ベースプロンプト】:\n${infoPrompt}\n\n【Mermaid図】:\n${mermaidCode}\n\n回答はプロンプト（英語）のみを引用形式で出力してください。`;
-
-    if (window.backend && window.backend.queryLLMAsync) {
-      window.backend.queryLLMAsync(reqId, promptPayload, JSON.stringify(config.text));
-    } else {
-      setTimeout(() => {
-        window.__onLLMResult(reqId, `> ${infoPrompt}`, '');
-      }, 1500);
-    }
-  }
-
-
-
   // --- Phase 3: Ambient Context Engine (Serendipity Recall) ---
   let ambientDebounceTimer = null;
 
@@ -10064,20 +9630,6 @@ OUTPUT FORMAT:
         desc: t('cmdPaletteConvertMermaidDesc'),
         iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M10 6.5h4a2 2 0 0 1 2 2v5.5"/></svg>',
         action: () => convertSelectionToMermaid()
-      },
-      {
-        id: 'cmd_mermaid_to_image',
-        title: t('cmdPaletteMermaidToImage'),
-        desc: t('cmdPaletteMermaidToImageDesc'),
-        iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
-        action: () => generateImageFromMermaid()
-      },
-      {
-        id: 'cmd_mermaid_to_prompt',
-        title: t('cmdPaletteMermaidToPrompt'),
-        desc: t('cmdPaletteMermaidToPromptDesc'),
-        iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>',
-        action: () => generateImagePromptFromMermaid()
       },
       {
         id: 'cmd_ai_correct',
@@ -12855,13 +12407,6 @@ OUTPUT FORMAT:
       return;
     }
 
-    // Render Mermaid Diagram to Image
-    if (matchShortcut(e, config.shortcuts && config.shortcuts.mermaidToImage)) {
-      e.preventDefault();
-      generateImageFromMermaid();
-      return;
-    }
-
     // Export Plain Text
     if (matchShortcut(e, config.shortcuts && config.shortcuts.exportPlainText)) {
       e.preventDefault();
@@ -12982,22 +12527,21 @@ OUTPUT FORMAT:
       }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.inlinePrompt)) {
       e.preventDefault();
-      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.ask); openInlinePromptBar(); }
+      if (!isDialogOpen()) { openInlinePromptBar(); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.rewriteSelection)) {
       e.preventDefault();
-      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.rewrite); openInlinePromptBar({ mode: 'rewrite' }); }
+      if (!isDialogOpen()) { openInlinePromptBar({ mode: 'rewrite' }); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.runCliFilter)) {
       e.preventDefault();
-      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar('cli'); }
+      if (!isDialogOpen()) { openCommandBar('cli'); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.runAiCli)) {
       e.preventDefault();
-      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar('ai'); }
+      if (!isDialogOpen()) { openCommandBar('ai'); }
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.mobileDrop)) {
       e.preventDefault();
       startMobileDrop();
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.quickActions)) {
       e.preventDefault();
-      telemetryCommand(TELEMETRY_CMD.quickActions);
       if (window.JevAction && window.JevAction.triggerJevPrediction) {
         window.JevAction.triggerJevPrediction();
       }
@@ -13007,7 +12551,7 @@ OUTPUT FORMAT:
     } else if (matchShortcut(e, config.shortcuts && config.shortcuts.commandBar)) {
       // Last in the chain: a binding the user chose for another action before this default existed still wins.
       e.preventDefault();
-      if (!isDialogOpen()) { telemetryCommand(TELEMETRY_CMD.commandBar); openCommandBar(); }
+      if (!isDialogOpen()) { openCommandBar(); }
     } else if (isCtrl && e.key === 'Tab') {
       e.preventDefault();
       if (tabs.length > 1) {
@@ -13500,13 +13044,6 @@ OUTPUT FORMAT:
     ctxConvertMermaid.onclick = () => {
       contextMenu.classList.add('hidden');
       convertSelectionToMermaid();
-    };
-  }
-  const ctxMermaidToImage = document.getElementById('ctx-mermaid-to-image');
-  if (ctxMermaidToImage) {
-    ctxMermaidToImage.onclick = () => {
-      contextMenu.classList.add('hidden');
-      generateImageFromMermaid();
     };
   }
   document.getElementById('ctx-save-txt').onclick = () => {
@@ -15144,13 +14681,13 @@ OUTPUT FORMAT:
     const hint = document.getElementById('discord-test-result-hint');
     if (!hint || !settingsModal || settingsModal.classList.contains('hidden')) return;
     if (info.status === 'connected') {
-      hint.textContent = t('discordBridgeStatusConnected');
+      hint.textContent = t('cfBridgeStatusConnected');
       hint.style.color = 'var(--accent-color)';
     } else if (info.status === 'connecting') {
-      hint.textContent = t('discordBridgeStatusConnecting');
+      hint.textContent = t('cfBridgeStatusConnecting');
       hint.style.color = 'var(--text-muted)';
     } else if (info.status === 'error') {
-      hint.textContent = t('discordBridgeStatusError', { err: info.message || '' });
+      hint.textContent = t('cfBridgeStatusError', { err: info.message || '' });
       hint.style.color = 'var(--text-danger-hint)';
     }
   };
@@ -15195,7 +14732,7 @@ OUTPUT FORMAT:
       }, 50);
     }
 
-    showMessage(t('discordBridgeMessageToast'), 2500);
+    showMessage(t('cfBridgeMessageToast'), 2500);
   };
 
   // --- Mobile Bridge (Cloudflare): background status + arrival notification ---
@@ -15484,14 +15021,6 @@ OUTPUT FORMAT:
     }
     const checkUpdatesCheckbox = document.getElementById('cfg-check-updates');
     if (checkUpdatesCheckbox) checkUpdatesCheckbox.checked = updateCheckAtStartup();
-    const telemetryCheckbox = document.getElementById('cfg-telemetry');
-    if (telemetryCheckbox) telemetryCheckbox.checked = !!(config.general && config.general.telemetry === true);
-    renderTelemetryInfo();
-    const activityAppsCheckbox = document.getElementById('cfg-activity-apps');
-    if (activityAppsCheckbox) activityAppsCheckbox.checked = !!(config.general && config.general.activityApps === true);
-    const activityEditsCheckbox = document.getElementById('cfg-activity-edits');
-    if (activityEditsCheckbox) activityEditsCheckbox.checked = !!(config.general && config.general.activityEdits === true);
-    renderActivityInfo();
     renderCloudConsentRow();
 
     // Slot & Autonomous Agent Settings (v2.2.0)
@@ -16544,12 +16073,6 @@ OUTPUT FORMAT:
     }
     const checkUpdatesSaveCheckbox = document.getElementById('cfg-check-updates');
     if (checkUpdatesSaveCheckbox) config.general.checkUpdates = checkUpdatesSaveCheckbox.checked;
-    const telemetrySaveCheckbox = document.getElementById('cfg-telemetry');
-    if (telemetrySaveCheckbox) config.general.telemetry = telemetrySaveCheckbox.checked;
-    const activityAppsSaveCheckbox = document.getElementById('cfg-activity-apps');
-    if (activityAppsSaveCheckbox) config.general.activityApps = activityAppsSaveCheckbox.checked && !activityAppsSaveCheckbox.disabled;
-    const activityEditsSaveCheckbox = document.getElementById('cfg-activity-edits');
-    if (activityEditsSaveCheckbox) config.general.activityEdits = activityEditsSaveCheckbox.checked;
 
     // Save Slot & Autonomous Agent Settings
     const saveSlotTimeoutEl = document.getElementById('cfg-slot-timeout');
@@ -16662,7 +16185,6 @@ OUTPUT FORMAT:
     if (config.general.language !== prevGeneral.language) {
       applyLanguage();
     }
-    applyTelemetry();
     // The status-bar toggles follow what was just saved: autosave, IME and the AI item (model label, switches).
     renderAutosaveStatus();
     renderImeStatus();
@@ -17939,8 +17461,6 @@ OUTPUT FORMAT:
       if (config.general && config.general.restoreSession === false && config.general.splitViewOnStartup && !isSplitMode) {
         await toggleSplitMode();
       }
-
-      applyTelemetry();
 
       // Check for app updates asynchronously in background (deferred 2.5s to keep startup 0ms smooth)
       // (general.checkUpdates = false: no timer and no request; About syki::sok > Check now still works)
@@ -19224,7 +18744,6 @@ OUTPUT FORMAT:
     openQuickPick,
     openInlinePromptBar,
     convertSelectionToMermaid,
-    generateImageFromMermaid,
     triggerAICorrection,
     createTab,
     getActiveEditor,

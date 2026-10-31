@@ -54,8 +54,6 @@ const baseCommandIds = [
   "cmd_pipe_bullets",
   "cmd_pipe_tasks",
   "cmd_convert_mermaid",
-  "cmd_mermaid_to_image",
-  "cmd_mermaid_to_prompt",
   "cmd_ai_correct",
   "cmd_export_plain",
   "cmd_toggle_zen",

@@ -35,7 +35,7 @@ assert(/savePersistentConfig\(\)\.then\(\(saved\) => \{\s*if \(saved !== false\)
 console.log("PASS: Optimistic UI execution order verified (instant modal dismissal; the toast waits for the write).");
 
 // 5. Check taskkill non-blocking async execution in Windows
-const ollamaWin = fs.readFileSync('ollama_ops_windows.go', 'utf8');
+const ollamaWin = fs.readFileSync('cmd/syki-gui/ollama_ops_windows.go', 'utf8');
 assert(ollamaWin.includes('_ = cmd.Start()'), 'cmd.Start() used instead of cmd.Run() for taskkill in Windows');
 console.log("PASS: Non-blocking async process termination in ollama_ops_windows.go verified.");
 

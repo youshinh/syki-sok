@@ -46,6 +46,7 @@ const factory = new Function(
   'getImeGuardian', 'insertTextWithUndo', 'onEditorInput', 'getTab', 'genReqId',
   'setTimeout', 'clearTimeout', 'scheduleUpdateStatusBar', 'triggerCursorAuraDebounced', 'describeLlmFailure',
   `
+  function resetLayoutContainerScrolls() {}
   let isPreviewMode = false, ghostSuggestion = '', ghostTargetCursor = 0, activeImeSuggestion = null;
   let autocompleteTimer = null, currentAutocompleteReqId = null, activeTabId = 'tab-1';
   ${engineSrc}

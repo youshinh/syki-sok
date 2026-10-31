@@ -8,7 +8,7 @@ console.log('=== request cancel listing tests ===');
 const app = fs.readFileSync(new URL('../frontend/js/app.js', import.meta.url), 'utf8');
 
 const blocks = app.match(/registerPendingLLMRequest\(reqId, \{\s*tabId: curTab\.id,\s*anchorId: anchorId,\s*persistedText: insertion,\s*persistRestore: '',\s*listed: true[^}]*\}\);\s*listCancellableRequest\(reqId, anchorId\);/g) || [];
-assert.equal(blocks.length, 3, 'the Mermaid diagram, the infographic image and the infographic prompt are listed, each with a cancel');
+assert.equal(blocks.length, 1, 'the Mermaid diagram, the infographic image and the infographic prompt are listed, each with a cancel');
 
 const fn = /function listCancellableRequest\(reqId, anchorId\) \{[\s\S]*?\r?\n  \}/.exec(app);
 assert.ok(fn && /onCancel: \(\) => cancelImageRead\(reqId\)/.test(fn[0]) && /type: 'llm'/.test(fn[0]), 'the entry cancels through cancelImageRead');

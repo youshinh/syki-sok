@@ -23,7 +23,7 @@ import path from 'node:path';
 import vm from 'node:vm';
 
 const appCode = fs.readFileSync(path.resolve('frontend/js/app.js'), 'utf-8');
-const goConfigCode = fs.readFileSync(path.resolve('app_config.go'), 'utf-8');
+const goConfigCode = fs.readFileSync(path.resolve('cmd/syki-gui/app_config.go'), 'utf-8');
 
 let failures = 0;
 function check(name, fn) {

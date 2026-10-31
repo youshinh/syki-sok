@@ -188,11 +188,7 @@ const jsFiles = fs.readdirSync('frontend/js').filter((f) => f.endsWith('.js') &&
 // The colours the scripts may write, each with the reason. A line is matched by file and by a part of its text; an entry
 // that matches nothing fails the test (so the list cannot go stale).
 const ALLOWED_JS = [
-  { file: 'appearance.js', includes: "'rgba('", reason: 'colour maths of a self-chosen accent: builds the text of a gradient from computed numbers (no colour of the app is written here)' },
-  { file: 'app.js', includes: 'Page canvas is a slightly blue-tinted light grey', reason: 'text of an AI image prompt, not a colour of the app' },
-  { file: 'app.js', includes: 'Primary accent is Action Blue', reason: 'text of an AI image prompt' },
-  { file: 'app.js', includes: 'Slide layout: wide 16:9', reason: 'text of an AI image prompt' },
-  { file: 'app.js', includes: 'Material Design 3', reason: 'text of an AI image prompt' }
+  { file: 'appearance.js', includes: "'rgba('", reason: 'colour maths of a self-chosen accent: builds the text of a gradient from computed numbers (no colour of the app is written here)' }
 ];
 
 // ---- tokens.css ---------------------------------------------------------------------------------------------------
@@ -319,7 +315,7 @@ check('index.html links tokens.css before style.css, and the app embeds the whol
   const s = html.search(/<link[^>]+href="css\/style\.css[^"]*"/);
   assert.ok(t !== -1 && s !== -1 && t < s, 'tokens.css is linked, and before style.css');
   assert.ok(!/<link[^>]+href="css\/tokens\.css[^"]*"[^>]*media=/.test(html), 'tokens.css applies to every medium (no media attribute)');
-  assert.ok(/\/\/go:embed frontend\/\*/.test(read('main.go')), 'main.go embeds frontend/* (so css/tokens.css is part of the program)');
+  assert.ok(/\/\/go:embed css\/\*/.test(read('frontend/embed.go')), 'frontend/embed.go embeds css/* (so css/tokens.css is part of the program)');
 });
 
 // ---- the mutation check: the scanners must catch a colour that is written into the real files ----------------------

@@ -465,36 +465,6 @@ check('C10-18: allowing https://host:port does not allow http://host:port (the k
   assert.equal(only.llmCalls.length, 0);
 });
 
-const MERMAID_NOTE = '```mermaid\ngraph TD\nA-->B\n```';
-async function imageKeyFor(config) {
-  const calls = [];
-  const env = await createEnv({ backendConfig: config, backend: { generateImageAsync: (reqId, prompt, cfgJson) => { calls.push(JSON.parse(cfgJson)); } } });
-  env.setNote(MERMAID_NOTE, 5, 5);
-  env.helper.generateImageFromMermaid();
-  assert.equal(calls.length, 1, 'the request went out');
-  return calls[0];
-}
-
-check('C10-14: an API key of another settings group is not sent to a different host (image generation: the text key never goes to the Gemini endpoint)', async () => {
-  const text = { baseUrl: 'https://api.openai.com/v1', model: 'm', apiKey: 'OPENAIKEY' };
-  const noVisionKey = await imageKeyFor({ text, vision: { baseUrl: 'https://generativelanguage.googleapis.com', apiKey: '' } });
-  assert.equal(noVisionKey.baseUrl, 'https://generativelanguage.googleapis.com');
-  assert.equal(noVisionKey.apiKey, '', 'the OpenAI key is not sent to Google');
-
-  const localVision = await imageKeyFor({ text, vision: { baseUrl: 'http://localhost:11434', apiKey: 'OLLAMAKEY' } });
-  assert.equal(localVision.baseUrl, 'https://generativelanguage.googleapis.com', 'a local vision server is not used for image generation');
-  assert.equal(localVision.apiKey, '', 'and its key does not follow the request to Google');
-
-  const own = await imageKeyFor({ text, image: { apiKey: 'IMAGEKEY' } });
-  assert.equal(own.apiKey, 'IMAGEKEY', 'the image group\'s own key is always used');
-
-  // the same host: the key is lent, as before
-  const vision = await imageKeyFor({ text, vision: { baseUrl: 'https://generativelanguage.googleapis.com', apiKey: 'GOOGLEKEY' } });
-  assert.equal(vision.apiKey, 'GOOGLEKEY');
-  const gemini = await imageKeyFor({ text: { baseUrl: 'https://generativelanguage.googleapis.com', model: 'm', apiKey: 'TEXTGEMINI' }, vision: { baseUrl: 'https://generativelanguage.googleapis.com', apiKey: '' } });
-  assert.equal(gemini.apiKey, 'TEXTGEMINI', 'the text key is lent when the text model is on the same host');
-});
-
 check('C6-03: a shortcut that is not a string (a number, true, a list) in config.json or the page copy is ignored: key presses and Settings still work', async () => {
   const junk = { find: 5, zenMode: true, openFile: ['Ctrl+O'], quickOpen: { a: 1 }, toggleFullscreen: 'F11', cleared: null };
   for (const [label, opts] of [

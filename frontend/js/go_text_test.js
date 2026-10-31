@@ -116,7 +116,7 @@ check('every phrase the table points to exists in both languages; the English ho
 
 check('every opening in the table is still what the Go sources say (a reworded Go message must come here too)', () => {
   const root = path.join(__dirname, '..', '..');
-  const go = ['app_files.go', 'ollama_ops.go'].map((f) => fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
+  const go = ['cmd/syki-gui/app_files.go', 'cmd/syki-gui/ollama_ops.go'].map((f) => fs.readFileSync(path.join(root, f), 'utf8')).join('\n');
   for (const [prefix] of GoText.PREFIXES) {
     assert.ok(go.includes(prefix), 'not in app_files.go / ollama_ops.go any more: ' + prefix);
   }

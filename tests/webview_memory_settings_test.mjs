@@ -8,7 +8,7 @@ const read = (p) => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 const html = read('frontend/index.html');
 const app = read('frontend/js/app.js');
 const i18n = read('frontend/js/i18n.js');
-const go = read('webview_trim.go');
+const go = read('cmd/syki-gui/webview_trim.go');
 
 assert.ok(/id="cfg-trim-webview" checked/.test(html), 'the trim switch is on by default');
 assert.ok(/id="cfg-webview-inproc-gpu">/.test(html) && !/id="cfg-webview-inproc-gpu" checked/.test(html), 'the GPU merge switch is off by default');

@@ -7,8 +7,8 @@ const read = (p) => fs.readFileSync(new URL('../' + p, import.meta.url), 'utf8')
 const appJs = read('frontend/js/app.js');
 const indexHtml = read('frontend/index.html');
 const i18nJs = read('frontend/js/i18n.js');
-const winGo = read('window_windows.go');
-const macGo = read('window_darwin.go');
+const winGo = read('cmd/syki-gui/window_windows.go');
+const macGo = read('cmd/syki-gui/window_darwin.go');
 
 function extractFn(src, header) {
   const start = src.indexOf(header);

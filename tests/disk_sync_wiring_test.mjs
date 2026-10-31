@@ -8,7 +8,7 @@ const app = read('frontend/js/app.js');
 const html = read('frontend/index.html');
 const slot = read('frontend/js/slot_agent.js');
 const i18n = read('frontend/js/i18n.js');
-const bindCommon = read('bind_common.go');
+const bindCommon = read('cmd/syki-gui/bind_common.go');
 
 let n = 0;
 function check(name, fn) { fn(); n++; console.log('PASS: ' + name); }
@@ -26,7 +26,7 @@ check('a file the tab knows is saved through saveFileChecked, with the fingerpri
 
 check('the bound backend has saveFileChecked on every platform', () => {
   assert.ok(/Bind\("backend_saveFileChecked", app\.SaveFileChecked\)/.test(bindCommon));
-  for (const f of ['window_windows.go', 'window_darwin.go']) {
+  for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
     assert.ok(/saveFileChecked: \(path, content, enc, expectSig\) => window\.backend_saveFileChecked\(/.test(read(f)), f);
   }
 });

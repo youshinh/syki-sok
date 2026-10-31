@@ -8,10 +8,7 @@ import (
 	"sync/atomic"
 	"time"
 
-	"syki-sok/pkg/cfbridge"
-	"syki-sok/pkg/dropzone"
 	"syki-sok/pkg/gitsync"
-	"syki-sok/pkg/inbox"
 	"syki-sok/pkg/jev"
 	"syki-sok/pkg/slotagent"
 )
@@ -75,20 +72,9 @@ type App struct {
 	cfgCacheMu sync.Mutex
 	cfgCache   *configCacheEntry
 
-	// dropzoneMu guards dropzoneServer, the single active Mobile Drop session (see
-	// app_mobiledrop.go). At most one session exists at a time.
-	dropzoneMu     sync.Mutex
-	dropzoneServer *dropzone.Server
-
-	// cfMu guards cfPoller, the Cloudflare mobile bridge poller (see app_cfbridge.go).
-	cfMu     sync.Mutex
-	cfPoller *cfbridge.Poller
-
-	// inboxMu guards inboxWatcher, the single running hot-folder watcher (see app_inbox.go).
-	// Re-initializing swaps it out: the old one is stopped before a new one (or none, when
-	// disabled) takes its place.
-	inboxMu      sync.Mutex
-	inboxWatcher *inbox.Watcher
+	// ReceptorOrganelles encapsulates Ring 2 detachable background receptors
+	// (Mobile Drop HTTP server, Cloudflare Bridge poller, and Hot-folder Inbox watcher).
+	ReceptorOrganelles
 
 	// nativeLookMu guards nativeLookPaper (whether the window's OS-drawn colours are the paper look now) and nativeLookApply (what
 	// repaints them when a saved look differs). See nativelook.go.

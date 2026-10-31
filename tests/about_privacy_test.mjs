@@ -907,14 +907,14 @@ check('about_dialog.js: loading it does nothing (no listener, no DOM access, no 
 });
 
 check('Go: backend_getAppInfo is bound once for both platforms and reaches the page as window.backend.getAppInfo with no arguments', () => {
-  const common = read('bind_common.go');
+  const common = read('cmd/syki-gui/bind_common.go');
   assert.equal((common.match(/w\.Bind\("backend_getAppInfo", app\.GetAppInfo\)/g) || []).length, 1);
-  for (const f of ['window_windows.go', 'window_darwin.go']) {
+  for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
     const src = read(f);
     assert.ok(/getAppInfo: \(\) => window\.backend_getAppInfo\(\),/.test(src), f);
     assert.ok(!/w\.Bind\("backend_getAppInfo"/.test(src), f + ' does not bind it a second time');
   }
-  const go = read('app_about.go');
+  const go = read('cmd/syki-gui/app_about.go');
   assert.ok(/func \(a \*App\) GetAppInfo\(\) AppInfo/.test(go));
   const code = go.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
   assert.ok(!/[Aa]pi[Kk]ey|[Tt]oken|[Pp]assword|ReadFile|LoadConfig/.test(code), 'nothing secret can be read by it');
