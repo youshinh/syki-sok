@@ -15,12 +15,12 @@ An instant, featherweight Markdown scratchpad with AI right at your cursor.
 | :--- | :--- | :--- |
 | **AI at Cursor** | `Ctrl+L` | Generates directly below selection. No chat hopping. |
 | **Ghost-Text** | `Tab` | Local LLM predicts next sentence inline as you type. |
-| **Voice Dictation** | `Ctrl+Shift+R` | Real-time AI dictation & in-place rescue prompt. |
+| **Voice Dictation** | `Ctrl+Shift+R` | On-device speech.cpp (Haas-ja), streaming, and meeting diarization. |
 | **Vision & OCR** | `Ctrl+Shift+U` | Smart OCR paste & instant zero-app mobile drop. |
 | **Agent Dispatch** | `Ctrl+Enter` | Delegates `{{ @claude ... }}` tasks autonomously. |
 | **Shell Pipe** | `Ctrl+E` | Streams selected lines into `jq`, `sort`, or CLI. |
 | **Instant Summon** | `Ctrl+Alt+M` | Instant &lt; 15 ms wake via Go core (5–15 MB idle). |
-| **Headless API** | `stdin / rpc` | `cat log \| syki` and complete JSON-RPC for agents. |
+| **Headless API / CLI** | `stdin / rpc` | `syki speech`, `cat log | syki` and complete JSON-RPC for agents. |
 
 ---
 

@@ -1627,7 +1627,7 @@
       <!-- 音声入力 -->
       <section class="doc-section" id="voice-input">
         <h3>書く｜音声入力 (<span class="kbd">Ctrl+Shift+R</span>)</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> キーを押して話すと、カーソル位置に文字起こしが入ります。 <span class="kbd">Ctrl + Shift + R</span> <span class="pill req">Gemini の APIキーが必要</span></div></div>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>ひとことで:</strong> キーを押して話すと、カーソル位置に文字起こしが入ります。 <span class="kbd">Ctrl + Shift + R</span> <span class="pill ok">ローカル（キー不要）または Gemini</span></div></div>
 
         <figure class="fig half"><div class="fig-frame"><img src="./img/manual/ja/voice-recording.png" alt="音声入力の録音中にカーソル位置へ挿入された「音声入力中」のマーカー" loading="lazy" width="900" height="202"></div><figcaption>録音中：カーソル位置にマーカーが入ります</figcaption>
           <ol class="fig-legend">
@@ -1768,7 +1768,31 @@
             </tbody>
           </table>
         </div>
-        <p>文字起こしには 2 つの種類があり、設定 → AIモデル → 音声入力 で、それぞれにエンジンを選べます。<strong>リアルタイム</strong>は待っている短い録音で、この画面での音声入力（<span class="kbd">Ctrl + Shift + R</span>）と、ウィンドウにドロップした音声ファイルです。<strong>バッチ</strong>は長い録音や待たない録音で、会議メモ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a> です。どちらも「Gemini(クラウド)」（既定）か、Windows (x64) では、このPC内で動く Whisper を選べます。</p>
+        <p>文字起こしには 2 つの種類があり、設定 → AIモデル → 音声入力 で、それぞれにエンジンを選べます。<strong>リアルタイム</strong>はエディタでの音声入力（<span class="kbd">Ctrl + Shift + R</span>）やコマンドパレットへの入力です。<strong>バッチ</strong>は長い録音や待たない録音で、会議メモ、ウィンドウへのファイルドロップ、Mobile Drop、<a href="#hot-folder" style="color: var(--accent);">ホットフォルダ</a>、<a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a> です。どちらも「Gemini(クラウド)」か、このPC内で動く軽量C++ランタイム <strong>speech.cpp（Haas-ja GGUF）</strong> を選べます（Windows x64 / macOS Apple Silicon Metal 対応、完全オフライン・APIキー不要）。</p>
+
+        <p><strong>ローカル音声認識（speech.cpp + Haas-ja GGUF）とストリーミング</strong></p>
+        <ul>
+          <li><strong>超高速・省メモリ:</strong> C++製の単一ランタイムにより、PythonやPyTorch不要で動作。メモリ消費は1GB未満、CPUでも実時間の15〜25倍速、MacではMetalアクセラレーションにより瞬時に文字起こしが完了します。</li>
+          <li><strong>ストリーミング文字起こし:</strong> 設定でストリーミングをオンにすると、発話に合わせてカーソル位置へリアルタイムにテキストが流し込まれます。コマンドパレット（<span class="kbd">Ctrl + Shift + P</span>）への音声入力も即時ストリーミングで反映されます。</li>
+          <li><strong>会議録音・話者識別（Diarization）とノイズ除去:</strong> 会議録音では、設定の詳細オプションで <code>話者識別 (Nemotron-3)</code> と <code>ノイズ除去 (RE-USE)</code> を有効化できます。複数人の発言を自動で分離し、<code>[00:12] 話者 0: こんにちは</code>、<code>[00:15] 話者 1: よろしくお願いします</code> のような議事録形式に自動整形してノートへ出力します。</li>
+        </ul>
+
+        <p><strong>CLI からの音声文字起こしとパイプ制御（syki speech）</strong></p>
+        <p>ターミナルや外部スクリプト・AIエージェントから、単独でローカル音声文字起こしを実行できます（syki本体が起動していなくても動作します）。</p>
+        <pre class="code-block"><code># 音声ファイルを文字起こしして標準出力に出力
+syki speech meeting.wav
+
+# パイプから音声データを流し込んで文字起こし
+cat voice_memo.wav | syki speech
+
+# 話者識別・ノイズ除去・タイムスタンプ付きで文字起こしし、今日のスクラップに追記
+syki speech --diarize --enhance --timestamps --scrap meeting.wav
+
+# 文字起こし結果をそのまま開いているエディタの末尾に追記
+syki speech audio.wav | syki buffer append
+
+# 文字起こし結果を新しいスクラップエントリとしてパイプ保存
+syki speech audio.wav | syki "会議録音メモ"</code></pre>
 
         <details class="more"><summary>メッセージとエラー</summary><div class="more-body">
           <p>状況に応じたメッセージが、ステータスバーに6〜9秒ほど表示されます。</p>

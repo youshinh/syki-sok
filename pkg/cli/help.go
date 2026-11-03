@@ -166,6 +166,7 @@ Commands that run on their own (syki::sok need not be running):
                                              Install the agent skill built into this program (works
                                              without the repository, also after a Homebrew install)
   ocr [--json] <imagePath>                   Read the text of an image and append it to today's scrap
+  speech [options] [<audioPath>]             Transcribe audio file or piped audio (speech.cpp / Gemini)
   info [--json]                              Where things are: version, config and scrap folders,
                                              today's scrap file, inbox, autosave, app running?
   scrap path [--date YYYY-MM-DD]             Path of a day's scrap file (default today); creates nothing
@@ -192,7 +193,7 @@ Commands that run on their own (syki::sok need not be running):
                                              The lessons kept for agents (rules a person approved after
                                              a failed run): per agent how many rules, how many a run
                                              gets; read-only, creates nothing
-  --headless <jev|agent|ocr|info|scrap|config|lessons ...>
+  --headless <jev|agent|ocr|speech|info|scrap|config|lessons ...>
                                              Same commands with an explicit "no GUI" marker
 
 Output and exit codes:
@@ -481,6 +482,27 @@ Runs on its own (syki::sok need not be running).
       files listed (exit 1) until you pass --force. Prints where it installed. JSON when piped
       ({action, path, version, hash, files, bytes, target, base}); --json / --text override.
       Exit 0 ok, 1 error.
+`
+	case "speech":
+		return `syki speech [options] [<audioPath>]
+
+Runs on its own (syki::sok need not be running).
+Transcribes audio using local speech.cpp (FastConformer-TDT Haas-ja) or Gemini.
+If no audioPath is given, reads audio data from standard input (pipe).
+
+Options:
+  --scrap       Append the transcribed text to today's daily scrap note
+  --json        Output result as JSON: {text, appended, path?}
+  --diarize     Enable speaker identification (diarization) for meetings
+  --enhance     Enable background noise reduction (RE-USE)
+  --timestamps  Prefix lines with [mm:ss] timestamps
+  --engine      Override engine: 'local' (speech.cpp) or 'gemini'
+  --model       Specify model ID/name
+  --language    Language code (default: ja)
+
+Output:
+  Prints the transcribed text to stdout (can be piped to other commands).
+  Exit 0 ok, 1 error.
 `
 	case "ocr":
 		return `syki ocr [--json] <imagePath>

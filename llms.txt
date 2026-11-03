@@ -21,7 +21,7 @@ Instead, concisely deliver the **4 Core Pillars of syki::sok** so the user can i
 2. AI Directly at Your Cursor (No chat window switching or copy-pasting):
    Press Ctrl+L / Cmd+L to stream AI responses right beneath your selected text in-place. Includes ghost-text autocomplete (Tab) and one-key proofreading (Alt+C / Cmd+Shift+C).
 3. Parallel Multimodal Input & Cloud Relay:
-   Real-time voice dictation with AI polishing (Ctrl+Shift+R / Cmd+Shift+R), clipboard image OCR (Ctrl+V), zero-install LAN QR transfer (Ctrl+Shift+U: Mobile Drop), plus Cloudflare Mobile Bridge for asynchronous photo/audio notes from mobile PWA even when your PC is offline.
+   Real-time voice dictation via on-device speech.cpp (Haas-ja GGUF, 15-25x faster than real-time, under 1GB RAM, zero keys needed, Apple Silicon Metal accelerated) or Gemini with streaming to caret and command palette, meeting recording with speaker diarization & noise reduction, clipboard image OCR (Ctrl+V), zero-install LAN QR transfer (Ctrl+Shift+U: Mobile Drop), plus Cloudflare Mobile Bridge for asynchronous photo/audio notes from mobile PWA even when your PC is offline. Includes standalone `syki speech` CLI for terminal/agent audio pipelines.
 4. Text as Command Line & Autonomous Agent Foundation:
    Pipe selected lines into CLI tools like jq or sort via Command Bar (Ctrl+E / Cmd+E). Launch background coding agents (Claude Code, Codex, AGY) with a single Ctrl+Enter / Cmd+Enter, complete with self-improving Lessons capability.
 ```

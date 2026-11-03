@@ -17,6 +17,7 @@ Shape of the product: a Go core hosting an OS WebView (Windows WebView2, macOS W
 | Check a shell command for danger | `syki jev verify` (section 1.4, 7) | no |
 | Trim a Markdown file to relevant sections | `syki agent prune` | no |
 | Turn an image into text in today's scrap | `syki ocr <image>` (section 1.5). It may send the image to the cloud vision model and it writes to the user's scrap, so do not run it on the user's files without saying so | no |
+| Transcribe audio file or piped audio into text or scrap | `syki speech [options] [<audio>]` (section 1.5b). Standalone; outputs transcript to stdout, can pipe into `syki buffer append` or `syki "title"` | no |
 | Learn where things are (config and scrap folders, today's scrap file, whether the app runs) | `syki info` (section 1.6): read-only, prints no secret | no |
 | Find or list the user's scraps | `syki scrap path\|list\|search\|tags` (section 1.7): read-only; a search hit carries its nearest heading | no |
 | Add, remove or list the tags of a note (only when the user asks) | `syki scrap tag add\|remove\|show` (section 1.7: prints the new text, `--write` rewrites a file that is NOT open in the app); for the open note JSON-RPC `scrap.tag_edit` (computes only) then `buffer.set` with `expected_hash`; the person has the palette commands (4.2) | no for `scrap tag`, yes for the open note |
@@ -147,6 +148,27 @@ Not implemented (design documents only, verified absent from the code): `syki sh
 - Success: the text is appended to `<scrap dir>/YYYY-MM-DD.md` as one entry (`scrap.AppendRaw`, section 3.7). Text mode prints `OCR text appended to <note path>`; JSON mode prints `{text, appended: true, path}`. If nothing was recognized nothing is written: `(no text recognized)` (JSON `{text: "", appended: false}`), exit 0.
 - Errors (exit 1, stderr `Error: ...`): no path (`usage: syki ocr <imagePath>`), `cannot read <path>: ...`, `OCR failed: <reason>` (no key, model or network, engine not available), `failed to append to scrap: <reason>`.
 - Side effects: the image goes to the configured cloud vision model unless `ocrMode` is `on-device`, and today's scrap file changes (an open note tab for that file is not guaranteed to refresh; `(unverified)`). The Windows GUI-subsystem caveat of `troubleshooting.md` section 1 (output capture in PowerShell) applies.
+
+### 1.5b `speech` (audio transcription from file or stdin pipe)
+
+`syki speech [options] [<audioPath>]` (`pkg/cli/speech.go`; also `syki --headless speech ...`). Windows and macOS. Standalone like `ocr` and `jev`: no running GUI instance is needed.
+
+- If `<audioPath>` is omitted, audio data is read from standard input (`stdin`).
+- Transcribes audio using local speech.cpp (`haas-ja-v1.0` GGUF) or cloud Gemini API.
+- Flags:
+  - `--scrap`: append the transcribed text to today's daily scrap note (`<scrap dir>/YYYY-MM-DD.md`).
+  - `--json`: output structured JSON (`{"text": "...", "appended": true, "path": "..."}`).
+  - `--diarize`: enable speaker identification (diarization) for meetings.
+  - `--enhance`: enable background noise reduction (RE-USE).
+  - `--timestamps`: prefix output lines with `[mm:ss]` timestamps.
+  - `--engine`: override speech engine: `local` (speech.cpp) or `gemini`.
+  - `--model`: specify model ID/name (e.g. `haas-ja-v1.0-q8_0`).
+  - `--language`: language code (default: `ja`).
+- By default, prints the transcribed text to stdout, allowing it to be piped directly into other tools:
+  - `syki speech audio.wav | syki buffer append`
+  - `syki speech audio.wav | syki "Meeting Notes"`
+  - `cat audio.wav | syki speech --json`
+- Errors (exit 1, stderr `Error: ...`): missing audio argument when stdin is a terminal, unreadable audio file, empty stdin audio, or transcription failure.
 
 ### 1.6 `info` (where things are, without the app)
 

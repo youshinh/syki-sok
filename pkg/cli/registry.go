@@ -30,6 +30,7 @@ var commands = []command{
 	{name: "jev", standalone: (*HeadlessRunner).runJev},
 	{name: "agent", standalone: (*HeadlessRunner).runAgent},
 	{name: "ocr", standalone: (*HeadlessRunner).runOCR, noAction: true},
+	{name: "speech", standalone: (*HeadlessRunner).runSpeech, noAction: true},
 	{name: "info", standalone: (*HeadlessRunner).runInfo, noAction: true},
 	{name: "scrap", standalone: (*HeadlessRunner).runScrap},
 	{name: "config", standalone: (*HeadlessRunner).runConfig},

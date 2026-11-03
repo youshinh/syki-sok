@@ -1614,7 +1614,7 @@
       <!-- Voice Input -->
       <section class="doc-section" id="voice-input">
         <h3>Write · Voice Input (<span class="kbd">Ctrl+Shift+R</span>)</h3>
-        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> Press the key and speak. The transcript is inserted at the caret. <span class="kbd">Ctrl + Shift + R</span> <span class="pill req">Gemini API key needed</span></div></div>
+        <div class="tldr"><svg class="tldr-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg><div class="tldr-body"><strong>In one line:</strong> Press the key and speak. The transcript is inserted at the caret. <span class="kbd">Ctrl + Shift + R</span> <span class="pill ok">Local (no key needed) or Gemini</span></div></div>
 
         <figure class="fig half"><div class="fig-frame"><img src="./img/manual/en/voice-recording.png" alt="The recording marker inserted at the caret while voice input is recording" loading="lazy" width="900" height="202"></div><figcaption>While recording: a marker is inserted at the caret</figcaption>
           <ol class="fig-legend">
@@ -1687,7 +1687,31 @@
         <p>When the reason is <code>話し声が検出されませんでした</code> (no speech was detected), the API works and the recording simply holds almost no speech: check the microphone choice and level (Windows Settings -&gt; System -&gt; Sound).</p>
         <p>When no answer comes back at all, the marker turns into the <code>[Retry]</code> form once the wait (30 s by default, plus 20 s) is over, and an old &ldquo;transcribing&rdquo; marker left by an answer that was lost while the app was closed is cleaned up when you click in the note.</p>
 
-        <p><strong>A note on the speech engine:</strong> Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. <strong>Realtime</strong> is what you wait for: voice input on this page and an audio file dropped on the window. <strong>Batch</strong> is long or unattended: the meeting recording, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a>, the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>. Each is "Gemini (cloud)" (the default) or, on Windows x64, the on-device Whisper.</p>
+        <p><strong>A note on the speech engine:</strong> Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. <strong>Realtime</strong> is for voice input at the caret (<span class="kbd">Ctrl + Shift + R</span>) and streaming to the command palette. <strong>Batch</strong> is for long or unattended intake: meeting recordings, audio files dropped on the window, <a href="#mobile-drop" style="color: var(--accent);">Mobile Drop</a>, the <a href="#hot-folder" style="color: var(--accent);">hot folder</a> and <a href="#cf-bridge" style="color: var(--accent);">Cloudflare Mobile Bridge</a>. Each is "Gemini (cloud)" or the ultra-fast C++ runtime <strong>speech.cpp (Haas-ja GGUF)</strong> running entirely on this PC (Windows x64 / macOS Apple Silicon Metal with full hardware acceleration, zero API keys required).</p>
+
+        <p><strong>On-Device Speech Recognition (speech.cpp + Haas-ja GGUF) &amp; Streaming</strong></p>
+        <ul>
+          <li><strong>Ultra-Fast &amp; Memory-Lean:</strong> Native single binary in C++, no Python or PyTorch needed. Uses under 1GB RAM and runs 15&ndash;25x faster than real-time on CPU (instantaneous on Apple Silicon Mac via Metal).</li>
+          <li><strong>Real-time Streaming Transcription:</strong> Toggle on streaming in voice settings to stream speech directly into the editor at your cursor position as you speak. The Quick Pick command palette (<span class="kbd">Ctrl + Shift + P</span>) also streams text instantaneously.</li>
+          <li><strong>Meeting Recording: Speaker Diarization &amp; Noise Reduction:</strong> In Advanced options, turn on <code>Speaker identification (Diarization: Nemotron-3)</code> and <code>Noise reduction (RE-USE)</code>. Meeting recordings automatically identify different participants and format output into structured transcripts: <code>[00:12] Speaker 0: Hello</code>, <code>[00:15] Speaker 1: Good morning</code>.</li>
+        </ul>
+
+        <p><strong>CLI Voice Transcription &amp; Pipe Pipelines (syki speech)</strong></p>
+        <p>Transcribe audio directly from terminal scripts, shell pipelines or AI agents (syki::sok does not need to be open):</p>
+        <pre class="code-block"><code># Transcribe an audio file to stdout
+syki speech meeting.wav
+
+# Pipe audio data from stdin
+cat voice_memo.wav | syki speech
+
+# Transcribe with diarization, noise reduction and timestamps, appending to today's scrap
+syki speech --diarize --enhance --timestamps --scrap meeting.wav
+
+# Pipe transcription directly to the end of the currently open editor tab
+syki speech audio.wav | syki buffer append
+
+# Pipe transcription to a titled daily scrap entry
+syki speech audio.wav | syki "Meeting Audio Transcript"</code></pre>
 
         <p><strong>Settings</strong> (Settings → AI Models, "Voice input" group, right below the Image analysis (OCR) settings)</p>
         <div class="doc-table-wrap">
