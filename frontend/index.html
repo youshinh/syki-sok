@@ -1178,7 +1178,7 @@
                 <label for="cfg-speech-engine-rt" data-i18n="speechEngineLabel">Engine:</label>
                 <select id="cfg-speech-engine-rt" class="form-select">
                   <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
-                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
+                  <option value="whisper-local" data-i18n="speechEngineWhisper">Local (speech.cpp / Haas-ja, offline)</option>
                 </select>
               </div>
               <div id="voice-gemini-rt">
@@ -1249,7 +1249,7 @@
                 <label for="cfg-speech-engine-bt" data-i18n="speechEngineLabel">Engine:</label>
                 <select id="cfg-speech-engine-bt" class="form-select">
                   <option value="gemini" data-i18n="speechEngineGemini">Gemini (cloud)</option>
-                  <option value="whisper-local" data-i18n="speechEngineWhisper">Whisper (on this PC, offline)</option>
+                  <option value="whisper-local" data-i18n="speechEngineWhisper">Local (speech.cpp / Haas-ja, offline)</option>
                 </select>
               </div>
               <div id="voice-gemini-bt">
@@ -1374,13 +1374,13 @@
             <!-- Whisper (on-device): the program and the options the two profiles share; each profile picks its engine and model above -->
             <div id="speech-engine-block">
               <div class="settings-section-header" style="margin-top: 18px;">
-                <h4 data-i18n="sectionSpeechEngine">Whisper (on this PC)</h4>
+                <h4 data-i18n="sectionSpeechEngine">Local speech (speech.cpp / Haas-ja)</h4>
               </div>
-              <small data-i18n="speechEngineHint">Both kinds share one Whisper program and these options; each picks its own model above.</small>
+              <small data-i18n="speechEngineHint">Both kinds share one local speech engine and these options; each picks its own model above.</small>
               <div id="speech-whisper-panel">
                 <div id="speech-unsupported" class="form-group hidden"><small data-i18n="speechUnsupported">On-device Whisper is only available on Windows (x64) for now.</small></div>
                 <div class="form-group">
-                  <label data-i18n="speechRuntimeLabel">Whisper program</label>
+                  <label data-i18n="speechRuntimeLabel">Speech engine (speech.cpp)</label>
                   <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
                     <span id="speech-runtime-status" style="flex: 1; min-width: 160px;"></span>
                     <button type="button" id="btn-speech-runtime-install" class="btn-secondary" data-i18n="speechDownload">Download</button>

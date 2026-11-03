@@ -19,7 +19,8 @@ import (
 
 // isLocalEngine reports whether cfg asks for the on-device engine.
 func isLocalEngine(cfg llm.VoiceConfig) bool {
-	return strings.EqualFold(strings.TrimSpace(cfg.Engine), "whisper-local")
+	s := strings.ToLower(strings.TrimSpace(cfg.Engine))
+	return s == "whisper-local" || s == "speech-local" || s == "local"
 }
 
 // inputsTranscribe transcribes a recording held as base64. A variable so tests never reach the network or run whisper-cli.

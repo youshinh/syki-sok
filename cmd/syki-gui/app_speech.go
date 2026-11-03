@@ -78,9 +78,9 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 	speechInit()
 	cfg := parseVoiceConfigJSON(voiceConfigJSON)
 
-	defModel := speech.DefaultWhisperModelID()
-	if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
-		defModel = speech.DefaultSpeechModelID()
+	defModel := speech.DefaultSpeechModelID()
+	if !isLocalEngine(cfg) && cfg.Engine != "" {
+		defModel = speech.DefaultWhisperModelID()
 	}
 
 	view := speechStatusView{
@@ -89,10 +89,10 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 		Local:        speechSvc.LocalStatus(cfg),
 	}
 
-	// Runtime part: check speech.cpp runtime first if engine is speech-local/local, otherwise whisper
+	// Runtime part: check speech.cpp runtime first for any local engine, then whisper
 	var rt components.Part
 	var ok bool
-	if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
+	if isLocalEngine(cfg) || cfg.Engine == "" {
 		rt, ok = speech.SpeechRuntimePart()
 	}
 	if !ok {
@@ -133,7 +133,7 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 func speechPartFor(which string, cfg llm.VoiceConfig) (components.Part, bool) {
 	switch which {
 	case "runtime":
-		if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
+		if isLocalEngine(cfg) || cfg.Engine == "" {
 			if sp, ok := speech.SpeechRuntimePart(); ok {
 				return sp, true
 			}
