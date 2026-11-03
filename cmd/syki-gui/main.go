@@ -107,6 +107,11 @@ func main() {
 			Action:    ipc.ActionActivate,
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
+	} else if !isPipe && len(args) == 1 && (args[0] == "new" || args[0] == "--new" || args[0] == "-n") {
+		ipcMsg = &ipc.Message{
+			Action:    ipc.ActionNewTab,
+			Timestamp: time.Now().Format(time.RFC3339),
+		}
 	} else if !isPipe {
 		// `syki notes.md` while an instance is already running. Until now no IPC message
 		// was built for this case at all, so on Windows the single-instance mutex stopped the
@@ -180,6 +185,9 @@ func main() {
 			_, _ = app.AppendDailyScrap(msg.Content, msg.Command, msg.Cwd)
 			activatePlatformWindow()
 		case ipc.ActionActivate:
+			activatePlatformWindow()
+		case ipc.ActionNewTab:
+			_ = app.CreateNewTab()
 			activatePlatformWindow()
 		case ipc.ActionOpen:
 			// The path is already absolute (resolveStartupFileArg made it so in the sending

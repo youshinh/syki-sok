@@ -108,22 +108,24 @@ jobs:
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
         run: |
-          VER="${GITHUB_REF_NAME#v}"
-          SHA=$(shasum -a 256 syki-macos.zip | awk '{print $1}')
+          export VER="${GITHUB_REF_NAME#v}"
+          export SHA=$(shasum -a 256 syki-macos.zip | awk '{print $1}')
           echo "Updating youshinh/homebrew-tap to v${VER} (SHA256: ${SHA})..."
 
           git clone "https://x-access-token:${HOMEBREW_TAP_TOKEN}@github.com/youshinh/homebrew-tap.git" tap-repo
           cd tap-repo
 
-          python3 -c "
-          import re
+          python3 - << 'EOF'
+          import os, re
+          ver = os.environ["VER"]
+          sha = os.environ["SHA"]
           with open('Casks/syki.rb', 'r', encoding='utf-8') as f:
               content = f.read()
-          content = re.sub(r'version "[^"]+"', f'version "${VER}"', content)
-          content = re.sub(r'sha256 "[^"]+"', f'sha256 "${SHA}"', content)
+          content = re.sub(r'version "[^"]+"', f'version "{ver}"', content)
+          content = re.sub(r'sha256 "[^"]+"', f'sha256 "{sha}"', content)
           with open('Casks/syki.rb', 'w', encoding='utf-8') as f:
               f.write(content)
-          "
+          EOF
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"

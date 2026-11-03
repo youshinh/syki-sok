@@ -9,12 +9,42 @@
   <link rel="icon" type="image/png" href="app.png">
   <link rel="shortcut icon" href="app.png">
   <!-- Every colour of the app is a token defined once in tokens.css; style.css only uses var(--name). -->
-  <link rel="stylesheet" href="css/tokens.css?v=1.0.0">
+  <link rel="stylesheet" href="css/tokens.css?v=1.0.1">
   <link rel="stylesheet" href="css/style.css?v=1.5.13">
   <!-- v2 chrome: the overlay bars, the numbers the text boxes share (padding), the auto-hide. Screen only; style.css stays the base. -->
-  <link rel="stylesheet" href="css/chrome.css?v=1.0.0" media="screen">
+  <link rel="stylesheet" href="css/chrome.css?v=1.0.1" media="screen">
   <!-- Paper look for printing the preview (the printer button of the preview). media="print": it applies to nothing on the screen. -->
-  <link rel="stylesheet" href="css/print.css?v=1.0.0" media="print">
+  <link rel="stylesheet" href="css/print.css?v=1.0.1" media="print">
+  <!-- Early Key Hook: capture shortcuts and early keystrokes before heavy scripts finish loading (0ms feel) -->
+  <script>
+    (function () {
+      window.__earlyKeys = [];
+      window.__earlyPendingVoice = false;
+      window.__earlyPendingNewTab = false;
+      function onEarlyKey(e) {
+        // Voice input / Meeting recording (Ctrl+Shift+R or Cmd+Shift+R)
+        if ((e.ctrlKey || e.metaKey) && e.shiftKey && !e.altKey && (e.key === 'R' || e.key === 'r' || e.code === 'KeyR')) {
+          e.preventDefault();
+          window.__earlyPendingVoice = true;
+          return;
+        }
+        // New tab shortcut (Ctrl+N or Cmd+N)
+        if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey && (e.key === 'n' || e.key === 'N' || e.code === 'KeyN')) {
+          e.preventDefault();
+          window.__earlyPendingNewTab = true;
+          return;
+        }
+        // Printable character buffering before editor focus
+        if (!e.ctrlKey && !e.metaKey && !e.altKey && e.key && e.key.length === 1) {
+          window.__earlyKeys.push(e.key);
+        }
+      }
+      window.addEventListener('keydown', onEarlyKey, true);
+      window.__cleanupEarlyKey = function () {
+        window.removeEventListener('keydown', onEarlyKey, true);
+      };
+    })();
+  </script>
 </head>
 <body class="dark-theme theme-olive" data-bars="light" data-view="page">
   <!-- The look a profile chose is on the page before the first paint: this runs before anything below is painted, the scripts at the end of the page after it.
@@ -1201,6 +1231,13 @@
                   <input type="text" id="cfg-speech-model-sha-rt" spellcheck="false" autocomplete="off">
                   <small data-i18n="speechModelUrlHint">Optional but recommended: the download is verified against it.</small>
                 </div>
+                <div class="form-group" style="margin-top: 8px;">
+                  <label class="checkbox-label" style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                    <input type="checkbox" id="cfg-speech-streaming-rt">
+                    <span data-i18n="speechStreamingLabel">ストリーミング文字起こし (発話中に逐次入力)</span>
+                  </label>
+                  <small data-i18n="speechStreamingHint">オンにすると話している最中に文字がリアルタイム入力されます</small>
+                </div>
                 <div class="form-group"><small id="speech-ready-hint-rt"></small></div>
               </div>
             </div>
@@ -1373,6 +1410,21 @@
                   <div class="form-group inline-group">
                     <label>
                       <input type="checkbox" id="cfg-speech-cloud-fallback"> <span data-i18n="speechCloudFallbackLabel">If Whisper fails, retry with Gemini (sends the audio out)</span>
+                    </label>
+                  </div>
+                  <div class="form-group inline-group">
+                    <label>
+                      <input type="checkbox" id="cfg-speech-diarize"> <span data-i18n="speechDiarizeLabel">Speaker identification (Diarization: label speakers in meetings)</span>
+                    </label>
+                  </div>
+                  <div class="form-group inline-group">
+                    <label>
+                      <input type="checkbox" id="cfg-speech-enhance"> <span data-i18n="speechEnhanceLabel">Audio enhancement (RE-USE: reduce background noise)</span>
+                    </label>
+                  </div>
+                  <div class="form-group inline-group">
+                    <label>
+                      <input type="checkbox" id="cfg-speech-timestamps"> <span data-i18n="speechTimestampsLabel">Timestamps (prefix lines with [mm:ss])</span>
                     </label>
                   </div>
                 </details>
@@ -2146,55 +2198,56 @@
     </div>
   </div>
 
-  <script src="js/platform.js?v=1.0.0"></script>
+  <script src="js/platform.js?v=1.0.1"></script>
   <script src="js/i18n.js?v=1.5.17"></script>
   <script src="js/ime_guardian.js?v=1.5.6"></script>
   <script src="js/task_manager.js?v=1.0.5"></script>
-  <script src="js/html_comments.js?v=1.0.0"></script>
-  <script src="js/comment_toggle.js?v=1.0.0"></script>
-  <script src="js/auto_selector.js?v=1.0.0"></script>
-  <script src="js/slot_snippets.js?v=1.0.0"></script>
-  <script src="js/agent_risk.js?v=1.0.0"></script>
-  <script src="js/bulk_insert.js?v=1.0.0"></script>
-  <script src="js/disk_sync.js?v=1.0.0"></script>
-  <script src="js/ghost_diff.js?v=1.0.0"></script>
+  <script src="js/html_comments.js?v=1.0.1"></script>
+  <script src="js/comment_toggle.js?v=1.0.1"></script>
+  <script src="js/auto_selector.js?v=1.0.1"></script>
+  <script src="js/slot_snippets.js?v=1.0.1"></script>
+  <script src="js/agent_risk.js?v=1.0.1"></script>
+  <script src="js/bulk_insert.js?v=1.0.1"></script>
+  <script src="js/disk_sync.js?v=1.0.1"></script>
+  <script src="js/ghost_diff.js?v=1.0.1"></script>
   <script src="js/slot_agent.js?v=2.4.1"></script>
-  <script src="js/llm_error.js?v=1.0.0"></script>
-  <script src="js/go_text.js?v=1.0.0"></script>
-  <script src="js/panel_fade.js?v=1.0.0"></script>
-  <script src="js/chrome_overlay.js?v=1.0.0"></script>
+  <script src="js/llm_error.js?v=1.0.1"></script>
+  <script src="js/go_text.js?v=1.0.1"></script>
+  <script src="js/panel_fade.js?v=1.0.1"></script>
+  <script src="js/chrome_overlay.js?v=1.0.1"></script>
   <script src="js/jev_action.js?v=1.3.0"></script>
-  <script src="js/chrome_layout.js?v=1.0.0"></script>
-  <script src="js/tab_strip.js?v=1.0.0"></script>
-  <script src="js/tab_overflow.js?v=1.0.0"></script>
-  <script src="js/view_layout.js?v=1.0.0"></script>
-  <script src="js/html_to_md.js?v=1.0.0"></script>
-  <script src="js/voice_profiles.js?v=1.0.0"></script>
-  <script src="js/voice_input.js?v=1.0.0"></script>
-  <script src="js/bar_voice.js?v=1.0.0"></script>
-  <script src="js/speech_settings.js?v=1.0.0"></script>
-  <script src="js/semantic_settings.js?v=1.0.0"></script>
+  <script src="js/chrome_layout.js?v=1.0.1"></script>
+  <script src="js/tab_strip.js?v=1.0.1"></script>
+  <script src="js/tab_overflow.js?v=1.0.1"></script>
+  <script src="js/view_layout.js?v=1.0.1"></script>
+  <script src="js/html_to_md.js?v=1.0.1"></script>
+  <script src="js/voice_profiles.js?v=1.0.1"></script>
+  <script src="js/voice_input.js?v=1.0.1"></script>
+  <script src="js/bar_voice.js?v=1.0.1"></script>
+  <script src="js/speech_settings.js?v=1.0.1"></script>
+  <script src="js/speech_stream.js?v=1.0.1"></script>
+  <script src="js/semantic_settings.js?v=1.0.1"></script>
   <script src="js/file_anchor.js?v=1.1.0"></script>
-  <script src="js/drop_zones.js?v=1.0.0"></script>
-  <script src="js/immersive_exit.js?v=1.0.0"></script>
-  <script src="js/line_gutter.js?v=1.0.0"></script>
-  <script src="js/preview_images.js?v=1.0.0"></script>
-  <script src="js/appearance.js?v=1.0.0"></script>
-  <script src="js/mermaid_tone.js?v=1.0.0"></script>
-  <script src="js/mermaid_repair.js?v=1.0.0"></script>
-  <script src="js/scrap_quote.js?v=1.0.0"></script>
-  <script src="js/scraps_filter.js?v=1.0.0"></script>
-  <script src="js/note_title.js?v=1.0.0"></script>
-  <script src="js/result_blocks.js?v=1.0.0"></script>
-  <script src="js/config_pack.js?v=1.0.0"></script>
-  <script src="js/secret_strip.js?v=1.0.0"></script>
-  <script src="js/builtin_ai.js?v=1.0.0"></script>
-  <script src="js/note_hash.js?v=1.0.0"></script>
-  <script src="js/settings_compact.js?v=1.0.0"></script>
-  <script src="js/about_dialog.js?v=1.0.0"></script>
-  <script src="js/a11y.js?v=1.0.0"></script>
-  <script src="js/status_ai.js?v=1.0.0"></script>
-  <script src="js/first_run.js?v=1.0.0"></script>
+  <script src="js/drop_zones.js?v=1.0.1"></script>
+  <script src="js/immersive_exit.js?v=1.0.1"></script>
+  <script src="js/line_gutter.js?v=1.0.1"></script>
+  <script src="js/preview_images.js?v=1.0.1"></script>
+  <script src="js/appearance.js?v=1.0.1"></script>
+  <script src="js/mermaid_tone.js?v=1.0.1"></script>
+  <script src="js/mermaid_repair.js?v=1.0.1"></script>
+  <script src="js/scrap_quote.js?v=1.0.1"></script>
+  <script src="js/scraps_filter.js?v=1.0.1"></script>
+  <script src="js/note_title.js?v=1.0.1"></script>
+  <script src="js/result_blocks.js?v=1.0.1"></script>
+  <script src="js/config_pack.js?v=1.0.1"></script>
+  <script src="js/secret_strip.js?v=1.0.1"></script>
+  <script src="js/builtin_ai.js?v=1.0.1"></script>
+  <script src="js/note_hash.js?v=1.0.1"></script>
+  <script src="js/settings_compact.js?v=1.0.1"></script>
+  <script src="js/about_dialog.js?v=1.0.1"></script>
+  <script src="js/a11y.js?v=1.0.1"></script>
+  <script src="js/status_ai.js?v=1.0.1"></script>
+  <script src="js/first_run.js?v=1.0.1"></script>
   <script src="js/app.js?v=1.6.9"></script>
 </body>
 </html>

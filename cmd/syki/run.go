@@ -127,6 +127,9 @@ func handoffMessage(args []string, e env) (*ipc.Message, error) {
 	if len(args) == 0 {
 		return &ipc.Message{Action: ipc.ActionActivate, Timestamp: now}, nil
 	}
+	if len(args) == 1 && (args[0] == "new" || args[0] == "--new" || args[0] == "-n") {
+		return &ipc.Message{Action: ipc.ActionNewTab, Timestamp: now}, nil
+	}
 	return nil, fmt.Errorf("%q is neither a command nor an existing file (syki-cli --help lists the commands)", strings.Join(args, " "))
 }
 

@@ -11,12 +11,17 @@ import (
 )
 
 const (
-	defaultModelID  = "kotoba-v2.0-q5_0"
-	modelCustomPath = "custom-path"
-	modelCustomURL  = "custom-url"
+	defaultModelID       = "kotoba-v2.0-q5_0"
+	defaultSpeechModelID = "haas-ja-v1.0-q8_0"
+	modelCustomPath      = "custom-path"
+	modelCustomURL       = "custom-url"
 
 	hfWhisperCpp = "https://huggingface.co/ggerganov/whisper.cpp/resolve/main/"
 	hfKotoba     = "https://huggingface.co/kotoba-tech/kotoba-whisper-v2.0-ggml/resolve/main/"
+	hfHaas       = "https://huggingface.co/sakasegawa/Haas-ja-v1.0-GGUF/resolve/main/"
+	hfSilero     = "https://huggingface.co/sakasegawa/silero-vad-GGUF/resolve/main/"
+	hfDiarize    = "https://huggingface.co/sakasegawa/Nemotron-3-Diarization-GGUF/resolve/main/"
+	hfEnhance    = "https://huggingface.co/sakasegawa/NVIDIA-NemotronLabs-RE-USE-GGUF/resolve/main/"
 )
 
 var hostPlatform = func() string { return runtime.GOOS + "/" + runtime.GOARCH }
@@ -34,6 +39,60 @@ func runtimeCatalogPart() components.Part {
 		Extract:  []string{"whisper-cli.exe", "whisper.dll", "ggml*.dll"},
 		Entry:    "whisper-cli.exe",
 		Platform: "windows/amd64",
+	}
+}
+
+func speechRuntimeCatalogParts() []components.Part {
+	return []components.Part{
+		{
+			ID:       "speech-runtime-v0.10.1-win-x64",
+			Kind:     "runtime",
+			Title:    "speech.cpp 実行ファイル (v0.10.1 / Windows x64 AVX2/Vulkan)",
+			Note:     "軽量・高速なローカル音声認識エンジン(約28MB)",
+			URL:      "https://github.com/nyosegawa/speech.cpp/releases/download/v0.10.1/speech-0.10.1-windows-x64-vulkan.zip",
+			SHA256:   "a8fe0e4b4f463c460e7ace9d38c363bec08b254cac5a7f764b7967af35d4fa1a",
+			Size:     29548632,
+			Archive:  "zip",
+			Extract:  []string{"speech.exe", "speech.dll"},
+			Entry:    "speech.exe",
+			Platform: "windows/amd64",
+		},
+		{
+			ID:       "speech-runtime-v0.10.1-darwin-arm64",
+			Kind:     "runtime",
+			Title:    "speech.cpp 実行ファイル (v0.10.1 / macOS Apple Silicon Metal)",
+			Note:     "Apple Silicon Metal 最適化ローカル音声認識エンジン(約6MB)",
+			URL:      "https://github.com/nyosegawa/speech.cpp/releases/download/v0.10.1/speech-0.10.1-macos-arm64-metal.zip",
+			SHA256:   "ff24f6f58c9d2dedb01caa88ba043ae845c76eff228e4cbfae5de749174404c1",
+			Size:     6092040,
+			Archive:  "zip",
+			Extract:  []string{"speech", "libspeech*.dylib"},
+			Entry:    "speech",
+			Platform: "darwin/arm64",
+		},
+	}
+}
+
+func speechModelCatalogParts() []components.Part {
+	model := func(id, title, note, base, file, sum string, size int64) components.Part {
+		return components.Part{ID: id, Kind: "model", Title: title, Note: note, URL: base + file, SHA256: sum, Size: size, Entry: file}
+	}
+	return []components.Part{
+		model(defaultSpeechModelID, "Haas-ja v1.0 量子化版(q8_0・推奨)",
+			"日本語特化の超高速・高精度ストリーミング対応ASRモデル。約626MB。元モデルと精度差ほぼゼロ",
+			hfHaas, "Haas-616M-ja-v1.0-Q8_0.gguf", "9dffbc7235614a2f046393ec232eea55d5495dd512da3202d6497fd03a55360f", 656381472),
+		model("haas-ja-v1.0-q4_k", "Haas-ja v1.0 超軽量版(q4_k)",
+			"メモリ消費約350MBの極小・高速ASRモデル。一般的なノートPCで超低負荷動作",
+			hfHaas, "Haas-616M-ja-v1.0-Q4_K.gguf", "d24d53f29b75214a933ff482b0de1217e0a800f4118cca39ad6cf03609a89d6f", 351901216),
+		model("silero-vad", "Silero VAD v6.2 (音声区間検出)",
+			"リアルタイム無音検知・発話区切りモデル。約1.2MB。ストリーミング認識に必須",
+			hfSilero, "silero-vad-309K-v6.2-F32.gguf", "2fc312514e5fc4fa4ffd02b25c76a4853fa4130e8fb9777d01502183b01238cb", 1238624),
+		model("nemotron-3-diarization", "Nemotron-3 Diarization (話者識別)",
+			"会議録音で発言者を分離・識別するモデル。約106MB",
+			hfDiarize, "Nemotron-3-Diarization-99M-Q8_0.gguf", "336df6350dce2ea5ff06aa6e2b249d331a859ced13305fbb45c44bdb3c0abe20", 106179488),
+		model("re-use", "RE-USE (ノイズ除去・音声強調)",
+			"会議やカフェの環境ノイズを除去するモデル。約38MB",
+			hfEnhance, "NVIDIA-NemotronLabs-RE-USE-10M-F32.gguf", "827faf209c6988b9cfd07b08ee7f212a7b2eeb7870a25380df671d55338b3879", 38519136),
 	}
 }
 
@@ -66,6 +125,23 @@ func Catalog() (components.Part, []components.Part) {
 	return runtimeCatalogPart(), modelCatalogParts()
 }
 
+// SpeechCatalog returns the speech.cpp runtime for the current host and all speech models.
+func SpeechCatalog() (components.Part, []components.Part) {
+	rt, _ := SpeechRuntimePart()
+	return rt, speechModelCatalogParts()
+}
+
+// SpeechRuntimePart returns the speech.cpp runtime part for the current platform if supported.
+func SpeechRuntimePart() (components.Part, bool) {
+	host := hostPlatform()
+	for _, p := range speechRuntimeCatalogParts() {
+		if p.Platform == host {
+			return p, true
+		}
+	}
+	return components.Part{}, false
+}
+
 // RuntimePart returns the runtime part when it supports this OS/architecture.
 func RuntimePart() (components.Part, bool) {
 	rt := runtimeCatalogPart()
@@ -76,6 +152,7 @@ func RuntimePart() (components.Part, bool) {
 }
 
 func DefaultWhisperModelID() string { return defaultModelID }
+func DefaultSpeechModelID() string  { return defaultSpeechModelID }
 
 // ResolveModelPart finds the downloadable part for w.Model. It is false for "custom-path" (no
 // download), for a "custom-url" without a URL, and for unknown ids.
@@ -89,6 +166,13 @@ func ResolveModelPart(w llm.WhisperSettings) (components.Part, bool) {
 		}
 		return CustomURLPart(w.CustomURL, w.CustomSHA256), true
 	default:
+		// Check speech.cpp models first
+		for _, p := range speechModelCatalogParts() {
+			if p.ID == id {
+				return p, true
+			}
+		}
+		// Then check legacy Whisper models
 		for _, p := range modelCatalogParts() {
 			if p.ID == id {
 				return p, true

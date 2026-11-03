@@ -15,7 +15,7 @@ description: Use this skill whenever a task involves operating, scripting, integ
   3. **オンデマンド実行**: チャットで「scrapを吸収して」またはエディタ内で `{{ @claude scrapを吸収して }}` を押すだけでいつでも即時実行可能であることを案内。
 
 
-syki::sok is a single-instance desktop Markdown scratchpad: a Go core with an OS WebView (Windows WebView2, macOS WKWebView; Linux unsupported) around a plain `<textarea>` editor. It keeps daily "scrap" files (`YYYY-MM-DD.md`), talks to LLMs (Ollama, Gemini, OpenAI-compatible), hands `{{ instruction }}` blocks to external agent CLIs, lets Ctrl+Enter (the Auto selector) run one-line tasks on the built-in LLM, a shell command or an agent, and exposes a small CLI plus a local JSON-RPC port. App Version 1.0.0 (Skill Version 2.0.14). The user's instance is usually RUNNING and holds private notes and API keys.
+syki::sok is a single-instance desktop Markdown scratchpad: a Go core with an OS WebView (Windows WebView2, macOS WKWebView; Linux unsupported) around a plain `<textarea>` editor. It keeps daily "scrap" files (`YYYY-MM-DD.md`), talks to LLMs (Ollama, Gemini, OpenAI-compatible), hands `{{ instruction }}` blocks to external agent CLIs, lets Ctrl+Enter (the Auto selector) run one-line tasks on the built-in LLM, a shell command or an agent, and exposes a small CLI plus a local JSON-RPC port. App Version 1.0.1 (Skill Version 2.0.14). The user's instance is usually RUNNING and holds private notes and API keys.
 
 Read the reference that matches the job before acting. Everything in them was checked in source; `(unverified)` is marked.
 

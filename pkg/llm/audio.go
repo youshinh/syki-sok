@@ -115,6 +115,12 @@ type WhisperSettings struct {
 	// CloudFallback: when the local engine fails or is not installed, retry with Gemini. Off by
 	// default because it sends the audio out - the point of a local engine is that it does not.
 	CloudFallback bool `json:"cloudFallback"`
+	Streaming     bool `json:"streaming,omitempty"`
+
+	// Diarization & Enhancement parameters for meeting recording
+	Diarize    bool `json:"diarize,omitempty"`    // Speaker diarization
+	Timestamps bool `json:"timestamps,omitempty"` // Timestamp output
+	Enhance    bool `json:"enhance,omitempty"`    // Background noise enhancement
 }
 
 // voiceRequest is what every API style receives, already validated and normalised by QueryAudio.

@@ -253,7 +253,7 @@ check('mutation check: broken copies of the sources are caught', () => {
   // the contract
   caught(contractProblems({ ...files, html: mutate(files.html, 'id="btn-new-tab"', 'id="btn-new"') }), /btn-new-tab/, 'a renamed "+" is caught');
   caught(contractProblems({ ...files, html: mutate(files.html, '<div id="tab-index-left" class="tab-index" data-side="left">', '<div id="tab-index-left" class="tab-index" data-side="left" style="">') }), /left strip is the first thing/, 'a different strip markup is caught');
-  caught(contractProblems({ ...files, html: mutate(files.html, '  <script src="js/tab_strip.js?v=1.0.0"></script>\n', '') }), /loads before tab_overflow/, 'the script missing is caught');
+  caught(contractProblems({ ...files, html: mutate(files.html, '  <script src="js/tab_strip.js?v=1.0.1"></script>\n', '') }), /loads before tab_overflow/, 'the script missing is caught');
   // the stylesheet
   const s = (find, replace) => styleProblems({ ...files, style: mutate(files.style, find, replace) });
   caught(s('--tab-strip-w: 12px;', '--tab-strip-w: 8px;'), /--tab-strip-w is 8px/, 'a changed width is caught (change the test with the number)');

@@ -311,7 +311,7 @@ func showAndRestoreWindow(hwnd windows.Handle) {
 	// Refocus active editor on frontend to guarantee document.hasFocus() and immediate shortcut responsiveness
 	if globalApp != nil && globalApp.w != nil {
 		globalApp.w.Dispatch(func() {
-			globalApp.w.Eval("if (window.refocusActiveEditor) { window.refocusActiveEditor(); } else { var e = document.getElementById('editor'); if (e && typeof e.focus === 'function') e.focus(); }")
+			globalApp.w.Eval("if (window.__onWindowRestored) { window.__onWindowRestored(); } else if (window.refocusActiveEditor) { window.refocusActiveEditor(); } else { var e = document.getElementById('editor'); if (e && typeof e.focus === 'function') e.focus(); }")
 		})
 	}
 }
@@ -1272,6 +1272,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			installSpeechPartAsync: (reqID, which, voiceConfigJson) => window.backend_installSpeechPartAsync(reqID, which || "", voiceConfigJson || ""),
 			cancelSpeechInstall: (reqID) => window.backend_cancelSpeechInstall(reqID),
 			removeSpeechPart: (which, voiceConfigJson) => window.backend_removeSpeechPart(which || "", voiceConfigJson || ""),
+			ensureSpeechServer: (voiceConfigJson) => window.backend_ensureSpeechServer(voiceConfigJson || ""),
 			validateWhisperModelFile: (path) => window.backend_validateWhisperModelFile(path || ""),
 			pickFilePath: (title) => window.backend_pickFilePath(title || ""),
 			openQuickCapture: () => window.backend_openQuickCapture(),

@@ -127,6 +127,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_installSpeechPartAsync", app.InstallSpeechPartAsync)
 	_ = w.Bind("backend_cancelSpeechInstall", app.CancelSpeechInstall)
 	_ = w.Bind("backend_removeSpeechPart", app.RemoveSpeechPart)
+	_ = w.Bind("backend_ensureSpeechServer", app.EnsureSpeechServer)
 	_ = w.Bind("backend_validateWhisperModelFile", app.ValidateWhisperModelFile)
 	_ = w.Bind("backend_pickFilePath", app.PickFilePath)
 	_ = w.Bind("backend_openInboxFolder", app.OpenInboxFolder)

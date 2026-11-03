@@ -118,6 +118,21 @@ func str(s string) *string { return &s }
 
 const notRunningError = "Error: syki is not running. Start syki.exe first.\n"
 
+func TestNewTabArgumentSendsActionNewTab(t *testing.T) {
+	for _, arg := range []string{"new", "--new", "-n"} {
+		t.Run(arg, func(t *testing.T) {
+			app := startFakeApp(t)
+			res := runCLI(t, nil, arg)
+			if res.code != 0 || res.stdout != "" || res.stderr != "" {
+				t.Fatalf("code %d, stdout %q, stderr %q; want silent success", res.code, res.stdout, res.stderr)
+			}
+			if m := app.next(t); m.Action != ipc.ActionNewTab {
+				t.Errorf("action = %q, want %q", m.Action, ipc.ActionNewTab)
+			}
+		})
+	}
+}
+
 func TestNoArgumentsActivateTheRunningApp(t *testing.T) {
 	app := startFakeApp(t)
 	res := runCLI(t, nil)

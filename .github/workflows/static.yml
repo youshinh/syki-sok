@@ -38,7 +38,7 @@ jobs:
         run: |
           mkdir -p _site
           cp -r img _site/
-          cp index.html index_ja.html manual.html manual_ja.html app.png app.ico llm.txt llms.txt .nojekyll _site/
+          cp index.html index_ja.html manual.html manual_ja.html app.png app.ico llms.txt .nojekyll _site/
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:

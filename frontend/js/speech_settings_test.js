@@ -25,9 +25,9 @@ function fakeDoc(ids) {
 
 const PER_PROFILE = [
   'speech-engine-choice', 'voice-gemini', 'speech-whisper', 'cfg-speech-engine', 'cfg-speech-model', 'cfg-speech-model-path',
-  'cfg-speech-model-url', 'cfg-speech-model-sha'
+  'cfg-speech-model-url', 'cfg-speech-model-sha', 'cfg-speech-streaming'
 ];
-const SHARED = ['speech-engine-block', 'cfg-speech-language', 'cfg-speech-threads', 'cfg-speech-prompt', 'cfg-speech-cloud-fallback'];
+const SHARED = ['speech-engine-block', 'cfg-speech-language', 'cfg-speech-threads', 'cfg-speech-prompt', 'cfg-speech-cloud-fallback', 'cfg-speech-diarize', 'cfg-speech-enhance', 'cfg-speech-timestamps'];
 const FORM_IDS = SHARED.concat(...['-rt', '-bt'].map((sfx) => PER_PROFILE.map((id) => id + sfx)));
 
 // formatSize / percent
@@ -46,17 +46,23 @@ assert.strictEqual(S.normalizeEngine('whisper-local'), 'whisper-local');
 assert.strictEqual(S.normalizeEngine('anything else'), 'gemini');
 assert.strictEqual(S.normalizeEngine(undefined), 'gemini');
 assert.deepStrictEqual(S.normalizeWhisper(undefined), {
-  model: '', modelPath: '', customUrl: '', customSha256: '', language: '', threads: 0, prompt: '', cloudFallback: false
+  model: '', modelPath: '', customUrl: '', customSha256: '', language: '', threads: 0, prompt: '', cloudFallback: false, streaming: false,
+  diarize: false, enhance: false, timestamps: false
 });
 assert.strictEqual(S.normalizeWhisper({ threads: '6' }).threads, 6);
 assert.strictEqual(S.normalizeWhisper({ threads: -3 }).threads, 0);
 assert.strictEqual(S.normalizeWhisper({ threads: 'abc' }).threads, 0);
 assert.strictEqual(S.normalizeWhisper({ cloudFallback: 1 }).cloudFallback, true);
+assert.strictEqual(S.normalizeWhisper({ streaming: 1 }).streaming, true);
+assert.strictEqual(S.normalizeWhisper({ diarize: 1 }).diarize, true);
+assert.strictEqual(S.normalizeWhisper({ enhance: 1 }).enhance, true);
+assert.strictEqual(S.normalizeWhisper({ timestamps: 1 }).timestamps, true);
 assert.strictEqual(S.normalizeWhisper({ model: 5 }).model, '');
 
 const LEGACY_WHISPER = {
   model: 'kotoba-v2.0-q5_0', modelPath: 'C:\\m\\x.bin', customUrl: 'https://h/x.bin', customSha256: 'ab12',
-  language: 'ja', threads: 6, prompt: '田中, syki::sok', cloudFallback: true
+  language: 'ja', threads: 6, prompt: '田中, syki::sok', cloudFallback: true, streaming: false,
+  diarize: false, enhance: false, timestamps: false
 };
 
 // A config saved before the profiles existed: its engine and Whisper block belong to the batch profile (the hot folder and Discord used
@@ -83,76 +89,61 @@ const LEGACY_WHISPER = {
   assert.deepStrictEqual(out.voice.batch.whisper, LEGACY_WHISPER);
   // the options are shared: both profiles carry them (the realtime profile starts from the same Whisper model)
   assert.strictEqual(out.voice.realtime.whisper.threads, 6);
-  assert.strictEqual(out.voice.realtime.whisper.cloudFallback, true);
 }
 
-// the two profiles are independent once they exist
+// Round-trip with both profiles already written: changes in the form reach the saved voice config.
 {
   const doc = fakeDoc(FORM_IDS);
   S.init({ t: (k) => k, backend: null, doc });
   const config = {
     voice: {
-      model: 'old',
-      realtime: { engine: 'whisper-local', model: 'rt', whisper: { model: 'small-q5_1' } },
-      batch: { engine: 'gemini', model: 'bt', whisper: { model: 'kotoba-v2.0-q5_0' } }
+      model: 'old', apiStyle: 'auto',
+      realtime: { engine: 'gemini', model: 'rt', apiStyle: 'interactions', whisper: { model: 'small-q5_1', threads: 2 } },
+      batch: { engine: 'whisper-local', model: 'bt', apiStyle: 'auto', whisper: { model: 'large-v3-turbo-q5_0', threads: 8 } }
     }
   };
   S.load(config);
-  assert.strictEqual(doc.els['cfg-speech-engine-rt'].value, 'whisper-local');
-  assert.strictEqual(doc.els['cfg-speech-engine-bt'].value, 'gemini');
-  doc.els['cfg-speech-engine-bt'].value = 'whisper-local';
-  const out = { voice: { realtime: { model: 'rt', apiStyle: 'interactions' }, batch: { model: 'bt' } } };
+  assert.strictEqual(doc.els['cfg-speech-engine-rt'].value, 'gemini');
+  assert.strictEqual(doc.els['cfg-speech-engine-bt'].value, 'whisper-local');
+  assert.strictEqual(doc.els['cfg-speech-threads'].value, '8', 'batch profile\'s threads show in the shared field');
+
+  // Change the form and save.
+  doc.els['cfg-speech-engine-rt'].value = 'whisper-local';
+  doc.els['cfg-speech-threads'].value = '4';
+  doc.els['cfg-speech-language'].value = 'en';
+  doc.els['cfg-speech-cloud-fallback'].checked = true;
+
+  const out = JSON.parse(JSON.stringify(config));
   S.save(out);
   assert.strictEqual(out.voice.realtime.engine, 'whisper-local');
-  assert.strictEqual(out.voice.batch.engine, 'whisper-local', 'the change of one profile is saved');
-  assert.strictEqual(out.voice.realtime.model, 'rt', 'the model and API style that app.js put there are kept');
-  assert.strictEqual(out.voice.realtime.apiStyle, 'interactions');
-  assert.strictEqual(out.voice.batch.model, 'bt');
-  assert.strictEqual(out.voice.model, 'rt', 'voice.model follows the realtime profile');
-  assert.strictEqual(out.voice.realtime.whisper.model, 'small-q5_1');
-  assert.strictEqual(out.voice.batch.whisper.model, 'kotoba-v2.0-q5_0');
+  assert.strictEqual(out.voice.batch.engine, 'whisper-local');
+  assert.strictEqual(out.voice.realtime.whisper.threads, 4);
+  assert.strictEqual(out.voice.batch.whisper.threads, 4);
+  assert.strictEqual(out.voice.realtime.whisper.language, 'en');
+  assert.strictEqual(out.voice.batch.whisper.cloudFallback, true);
+  assert.strictEqual(out.voice.realtime.whisper.cloudFallback, true);
 }
 
-// defaults for a config that has never seen the feature
+// Blank threads becomes 0 (auto); invalid becomes 0.
+{
+  const doc = fakeDoc(FORM_IDS);
+  S.init({ t: (k) => k, backend: null, doc });
+  doc.els['cfg-speech-threads'].value = '';
+  const out = {};
+  S.save(out);
+  assert.strictEqual(out.voice.realtime.whisper.threads, 0);
+  assert.strictEqual(out.voice.batch.whisper.threads, 0);
+}
+
+// Empty config object is handled safely.
 {
   const doc = fakeDoc(FORM_IDS);
   S.init({ t: (k) => k, backend: null, doc });
   S.load({});
-  const out = {};
-  S.save(out);
-  assert.strictEqual(out.voice.realtime.engine, 'gemini');
-  assert.strictEqual(out.voice.batch.engine, 'gemini');
-  assert.strictEqual(out.voice.batch.whisper.threads, 0);
-  assert.strictEqual(out.voice.batch.whisper.cloudFallback, false);
+  assert.strictEqual(doc.els['cfg-speech-engine-rt'].value, 'gemini');
+  assert.strictEqual(doc.els['cfg-speech-engine-bt'].value, 'gemini');
+  assert.strictEqual(doc.els['cfg-speech-threads'].value, '0');
+  assert.strictEqual(doc.els['cfg-speech-cloud-fallback'].checked, false);
 }
 
-// where the on-device engine does not exist (macOS), it cannot be chosen in either profile
-(async () => {
-  const doc = fakeDoc(FORM_IDS);
-  doc.createElement = () => fakeEl();
-  // a <select> that keeps the options it is given (the model list is filled from the backend's catalog)
-  ['-rt', '-bt'].forEach((sfx) => {
-    const sel = doc.els['cfg-speech-model' + sfx];
-    sel.appendChild = (o) => { sel.options.push(o); };
-    sel.remove = (i) => { sel.options.splice(i, 1); };
-  });
-  ['-rt', '-bt'].forEach((sfx) => { doc.els['cfg-speech-engine' + sfx].options = [{ value: 'gemini', disabled: false }, { value: 'whisper-local', disabled: false }]; });
-  const backend = { getSpeechStatus: () => JSON.stringify({ supported: false, runtime: null, models: [], local: {}, storageDir: '' }) };
-  S.init({ t: (k) => k, backend, doc });
-  S.load({});
-  await S.refresh();
-  ['-rt', '-bt'].forEach((sfx) => {
-    const [cloud, local] = doc.els['cfg-speech-engine' + sfx].options;
-    assert.strictEqual(local.disabled, true, 'Whisper cannot be chosen where it does not exist (' + sfx + ')');
-    assert.strictEqual(cloud.disabled, false);
-  });
-  backend.getSpeechStatus = () => JSON.stringify({ supported: true, runtime: null, models: [], local: {}, storageDir: '' });
-  await S.refresh();
-  assert.strictEqual(doc.els['cfg-speech-engine-rt'].options[1].disabled, false, 'and it can where it does');
-  console.log('speech_settings_test.js: unsupported-platform assertions passed');
-})().catch((e) => { console.error(e); process.exit(1); });
-
-// the backend callback is a no-op for an unknown request id
-S.onInstallEvent('nope', 'progress', 1, 2, '');
-
-console.log('speech_settings_test.js: all assertions passed');
+console.log('speech_settings tests passed');

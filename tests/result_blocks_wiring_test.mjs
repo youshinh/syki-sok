@@ -529,7 +529,7 @@ check('the gutter refresh paths of both editors draw the bars', () => {
 });
 
 check('result_blocks.js is a script of the page, loaded before app.js', () => {
-  const m = indexHtml.indexOf('<script src="js/result_blocks.js?v=1.0.0"></script>');
+  const m = indexHtml.indexOf('<script src="js/result_blocks.js?v=1.0.1"></script>');
   const a = indexHtml.indexOf('<script src="js/app.js');
   assert.ok(m > 0 && a > m, 'result_blocks.js comes before app.js');
 });

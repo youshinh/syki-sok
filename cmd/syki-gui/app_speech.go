@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
 
 	"syki-sok/pkg/components"
@@ -48,25 +49,25 @@ func speechService() *speech.Service {
 	return speechSvc
 }
 
-type speechPartView struct {
-	Part   components.Part   `json:"part"`
-	Status components.Status `json:"status"`
-}
-
 type speechStatusView struct {
-	Supported    bool               `json:"supported"`
-	StorageDir   string             `json:"storageDir"`
-	DefaultModel string             `json:"defaultModel"`
-	Runtime      *speechPartView    `json:"runtime"`
-	Models       []speechPartView   `json:"models"`
-	Custom       *speechPartView    `json:"custom"`
+	Supported    bool              `json:"supported"`
+	StorageDir   string            `json:"storageDir"`
+	DefaultModel string            `json:"defaultModel"`
 	Local        speech.LocalStatus `json:"local"`
+	Runtime      *speechPartView   `json:"runtime,omitempty"`
+	Models       []speechPartView  `json:"models"`
+	Custom       *speechPartView   `json:"custom,omitempty"`
 }
 
-func parseVoiceConfigJSON(voiceConfigJSON string) llm.VoiceConfig {
+type speechPartView struct {
+	components.Part
+	components.Status
+}
+
+func parseVoiceConfigJSON(raw string) llm.VoiceConfig {
 	var cfg llm.VoiceConfig
-	if voiceConfigJSON != "" {
-		_ = json.Unmarshal([]byte(voiceConfigJSON), &cfg)
+	if strings.TrimSpace(raw) != "" {
+		_ = json.Unmarshal([]byte(raw), &cfg)
 	}
 	return cfg
 }
@@ -77,19 +78,48 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 	speechInit()
 	cfg := parseVoiceConfigJSON(voiceConfigJSON)
 
+	defModel := speech.DefaultWhisperModelID()
+	if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
+		defModel = speech.DefaultSpeechModelID()
+	}
+
 	view := speechStatusView{
 		StorageDir:   speechComponentsDir(),
-		DefaultModel: speech.DefaultWhisperModelID(),
+		DefaultModel: defModel,
 		Local:        speechSvc.LocalStatus(cfg),
 	}
-	if p, ok := speech.RuntimePart(); ok {
+
+	// Runtime part: check speech.cpp runtime first if engine is speech-local/local, otherwise whisper
+	var rt components.Part
+	var ok bool
+	if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
+		rt, ok = speech.SpeechRuntimePart()
+	}
+	if !ok {
+		rt, ok = speech.RuntimePart()
+	}
+	if ok {
 		view.Supported = true
-		view.Runtime = &speechPartView{Part: p, Status: speechMgr.Status(p)}
+		view.Runtime = &speechPartView{Part: rt, Status: speechMgr.Status(rt)}
 	}
-	_, models := speech.Catalog()
-	for _, m := range models {
-		view.Models = append(view.Models, speechPartView{Part: m, Status: speechMgr.Status(m)})
+
+	// Collect models from both catalogs without duplicates
+	seen := map[string]bool{}
+	_, speechModels := speech.SpeechCatalog()
+	for _, m := range speechModels {
+		if !seen[m.ID] {
+			seen[m.ID] = true
+			view.Models = append(view.Models, speechPartView{Part: m, Status: speechMgr.Status(m)})
+		}
 	}
+	_, whisperModels := speech.Catalog()
+	for _, m := range whisperModels {
+		if !seen[m.ID] {
+			seen[m.ID] = true
+			view.Models = append(view.Models, speechPartView{Part: m, Status: speechMgr.Status(m)})
+		}
+	}
+
 	if cfg.Whisper.Model == "custom-url" {
 		if p, ok := speech.ResolveModelPart(cfg.Whisper); ok {
 			view.Custom = &speechPartView{Part: p, Status: speechMgr.Status(p)}
@@ -103,6 +133,11 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 func speechPartFor(which string, cfg llm.VoiceConfig) (components.Part, bool) {
 	switch which {
 	case "runtime":
+		if strings.EqualFold(cfg.Engine, "speech-local") || strings.EqualFold(cfg.Engine, "local") {
+			if sp, ok := speech.SpeechRuntimePart(); ok {
+				return sp, true
+			}
+		}
 		return speech.RuntimePart()
 	case "model":
 		return speech.ResolveModelPart(cfg.Whisper)
@@ -120,9 +155,7 @@ func (a *App) dispatchSpeechInstall(reqID, state string, done, total int64, mess
 }
 
 // InstallSpeechPartAsync downloads one part ("runtime" or the selected "model") in the background
-// and reports progress through window.__onSpeechInstall(reqID, state, done, total, message) with
-// state "progress" | "done" | "error" | "canceled". It only ever runs because the user pressed a
-// download button.
+// and reports progress through window.__onSpeechInstall(reqID, state, done, total, message).
 func (a *App) InstallSpeechPartAsync(reqID, which, voiceConfigJSON string) {
 	speechInit()
 	part, ok := speechPartFor(which, parseVoiceConfigJSON(voiceConfigJSON))
@@ -161,7 +194,7 @@ func (a *App) InstallSpeechPartAsync(reqID, which, voiceConfigJSON string) {
 	}()
 }
 
-// CancelSpeechInstall stops a running download; the partial file is kept so the next attempt resumes.
+// CancelSpeechInstall stops a running download.
 func (a *App) CancelSpeechInstall(reqID string) {
 	speechInstallMu.Lock()
 	cancel := speechInstalls[reqID]
@@ -171,7 +204,7 @@ func (a *App) CancelSpeechInstall(reqID string) {
 	}
 }
 
-// RemoveSpeechPart deletes one downloaded part and returns "" on success or an error message.
+// RemoveSpeechPart deletes one downloaded part.
 func (a *App) RemoveSpeechPart(which, voiceConfigJSON string) string {
 	speechInit()
 	part, ok := speechPartFor(which, parseVoiceConfigJSON(voiceConfigJSON))
@@ -184,14 +217,57 @@ func (a *App) RemoveSpeechPart(which, voiceConfigJSON string) string {
 	return ""
 }
 
-// PickFilePath shows the native open-file dialog and returns only the chosen path ("" when
-// cancelled). Unlike OpenFile it never reads the file, which matters for a multi-hundred-MB model.
+// EnsureSpeechServer starts the local speech.cpp server on-demand and returns {"wsUrl": "...", "baseUrl": "..."}.
+func (a *App) EnsureSpeechServer(voiceConfigJSON string) string {
+	speechInit()
+	cfg := parseVoiceConfigJSON(voiceConfigJSON)
+
+	sp, ok := speech.SpeechRuntimePart()
+	if !ok {
+		res, _ := json.Marshal(map[string]string{"error": "speech.cpp ランタイムが未対応です"})
+		return string(res)
+	}
+	exe, ok := speechMgr.Path(sp)
+	if !ok || exe == "" {
+		res, _ := json.Marshal(map[string]string{"error": "speech.cpp 実行ファイルが未インストールです"})
+		return string(res)
+	}
+
+	modelPart, ok := speech.ResolveModelPart(cfg.Whisper)
+	if !ok {
+		res, _ := json.Marshal(map[string]string{"error": "指定されたモデルが見つかりません"})
+		return string(res)
+	}
+	modelPath, ok := speechMgr.Path(modelPart)
+	if !ok || modelPath == "" {
+		res, _ := json.Marshal(map[string]string{"error": "モデルファイルが未インストールです: " + modelPart.Title})
+		return string(res)
+	}
+
+	var vadPath string
+	if vadPart, ok := speech.ResolveModelPart(llm.WhisperSettings{Model: "silero-vad"}); ok {
+		if vp, ok := speechMgr.Path(vadPart); ok {
+			vadPath = vp
+		}
+	}
+
+	mgr := speech.GetServerManager()
+	baseURL, wsURL, err := mgr.EnsureServer(context.Background(), exe, modelPath, vadPath, cfg.Whisper.Threads)
+	if err != nil {
+		res, _ := json.Marshal(map[string]string{"error": err.Error()})
+		return string(res)
+	}
+
+	res, _ := json.Marshal(map[string]string{"baseUrl": baseURL, "wsUrl": wsURL})
+	return string(res)
+}
+
+// PickFilePath shows the native open-file dialog.
 func (a *App) PickFilePath(title string) (string, error) {
 	return dialog.OpenFileDialog(title)
 }
 
-// ValidateWhisperModelFile checks a user-chosen model file and returns
-// {"ok":bool,"multilingual":bool,"error":string} as JSON.
+// ValidateWhisperModelFile checks a user-chosen model file.
 func (a *App) ValidateWhisperModelFile(path string) string {
 	info, err := speech.ValidateModelFile(path)
 	res := map[string]interface{}{"ok": err == nil, "multilingual": info.Multilingual, "error": ""}

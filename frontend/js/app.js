@@ -2017,7 +2017,7 @@
       return;
     }
     try {
-      if (!window.TagEdit) await loadScript('js/tag_edit.js?v=1.0.0');
+      if (!window.TagEdit) await loadScript('js/tag_edit.js?v=1.0.1');
     } catch (err) {
       showMessage(t('tagEditFailed', { message: oneLineFailure(err, false) }), 5000, { important: true });
       return;
@@ -2059,7 +2059,7 @@
   async function ensureLessons() {
     if (window.Lessons) return true;
     try {
-      await loadScript('js/lessons.js?v=1.0.0');
+      await loadScript('js/lessons.js?v=1.0.1');
       return true;
     } catch (err) {
       showMessage(t('lessonsOpenFailed', { message: oneLineFailure(err, false) }), 5000, { important: true });
@@ -2245,9 +2245,12 @@
     if (path && content !== undefined) rememberDiskText(newTab, initialContent);
 
     tabs.push(newTab);
-    renderTabs();
     if (!(background && activeTabId && getTab(activeTabId))) {
       showTab(tabId);
+      const activeEd = getActiveEditor();
+      if (activeEd && typeof activeEd.focus === 'function') activeEd.focus();
+    } else {
+      renderTabs();
     }
     saveSessionDebounced();
     return newTab;
@@ -2516,6 +2519,18 @@
       try { window.focus(); } catch (_) {}
       editor.focus();
     }
+  };
+
+  window.__onWindowRestored = function () {
+    window.refocusActiveEditor();
+    if (typeof verifyRestoredTabsAgainstDisk === 'function') {
+      setTimeout(verifyRestoredTabsAgainstDisk, 500);
+    }
+  };
+
+  window.__onNewTabRequested = function () {
+    createTab();
+    window.refocusActiveEditor();
   };
 
   // Get the tab corresponding to the currently active pane
@@ -4192,7 +4207,7 @@
         idle();
       };
       try {
-        if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.0');
+        if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.1');
         restore = await window.PrintPreview.prepare(printTarget().pane, { resetMermaid: resetMermaid });
         if (isMac && window.backend && window.backend.printSystem) {
           // the native dialog; its answer comes when the dialog is closed (printed, saved or cancelled), and no afterprint
@@ -4223,8 +4238,8 @@
         return;
       }
       try {
-        if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.0');
-        if (!window.PrintPanel) await loadScript('js/print_panel.js?v=1.0.0');
+        if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.1');
+        if (!window.PrintPanel) await loadScript('js/print_panel.js?v=1.0.1');
         printPanelOpen = true;
         await window.PrintPanel.open({
           t: t,
@@ -7066,7 +7081,7 @@
         if (tabDock || tabDockLoading || isTabsPinned || e.pointerType === 'touch') return;
         if (config.general && config.general.tabDock === false) return;
         tabDockLoading = true;
-        loadScript('js/tab_dock.js?v=1.0.0').then(() => {
+        loadScript('js/tab_dock.js?v=1.0.1').then(() => {
           tabDock = window.TabDock.create({
             strips: [
               { el: tabIndexLeft, listEl: tabsListEl, footEl: tabIndexLeft.querySelector('.tab-index-foot') },
@@ -15462,7 +15477,7 @@ OUTPUT FORMAT:
   // The model fields read their suggestions from the provider (frontend/js/model_list.js, loaded on the first focus of one of them); the
   // options of index.html are the fallback.
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com';
-  const ensureModelList = () => window.ModelList ? Promise.resolve() : loadScript('js/model_list.js?v=1.0.0');
+  const ensureModelList = () => window.ModelList ? Promise.resolve() : loadScript('js/model_list.js?v=1.0.1');
   const settingValue = (id) => { const el = document.getElementById(id); return el ? el.value.trim() : ''; };
   const textEndpoint = () => ({ baseUrl: settingValue('cfg-base-url'), apiKey: settingValue('cfg-api-key') });
   const visionEndpoint = () => {
@@ -16854,7 +16869,6 @@ OUTPUT FORMAT:
       const targetTabId = tabs.some(t => t.id === asId(sessionData.activeTabId))
         ? asId(sessionData.activeTabId)
         : tabs[0].id;
-      renderTabs();
       selectTab(targetTabId);
 
       // Restore layout & split mode state
@@ -16885,11 +16899,33 @@ OUTPUT FORMAT:
     return false;
   }
 
+  let lastRestoredSessionRaw = '';
+
+  function isEquivalentSession(dataA, dataB) {
+    if (!dataA || !dataB) return false;
+    try {
+      const a = typeof dataA === 'string' ? JSON.parse(dataA) : dataA;
+      const b = typeof dataB === 'string' ? JSON.parse(dataB) : dataB;
+      if (!a.tabs || !b.tabs || a.tabs.length !== b.tabs.length) return false;
+      if (String(a.activeTabId || '') !== String(b.activeTabId || '')) return false;
+      for (let i = 0; i < a.tabs.length; i++) {
+        if (a.tabs[i].id !== b.tabs[i].id || a.tabs[i].content !== b.tabs[i].content || a.tabs[i].path !== b.tabs[i].path) {
+          return false;
+        }
+      }
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   function loadLocalSessionSync() {
     try {
       const str = localStorage.getItem('syki_session_v1') || localStorage.getItem('md_notepad_session_v1');
       if (str) {
-        return restoreSessionFromData(JSON.parse(str));
+        const ok = restoreSessionFromData(JSON.parse(str));
+        if (ok) lastRestoredSessionRaw = str;
+        return ok;
       }
     } catch (e) {}
     return false;
@@ -17375,6 +17411,26 @@ OUTPUT FORMAT:
       }
     } catch (_) {}
     editorEl.focus();
+
+    // Replay early captured shortcuts / keystrokes while app.js was loading (0ms response)
+    if (typeof window.__cleanupEarlyKey === 'function') {
+      window.__cleanupEarlyKey();
+    }
+    if (window.__earlyPendingNewTab) {
+      window.__earlyPendingNewTab = false;
+      createTab();
+    }
+    if (window.__earlyPendingVoice) {
+      window.__earlyPendingVoice = false;
+      setTimeout(() => {
+        if (window.VoiceInput) window.VoiceInput.toggle();
+      }, 50);
+    } else if (window.__earlyKeys && window.__earlyKeys.length > 0 && editorEl) {
+      const earlyChars = window.__earlyKeys.join('');
+      window.__earlyKeys = [];
+      insertTextWithUndo(earlyChars, editorEl);
+    }
+
     triggerCursorAuraDebounced();
     // Cheap listener registration only (hover-preview mousemove, scroll, keydown); no
     // per-file work happens until an actual drag/click/hover occurs.
@@ -17407,9 +17463,14 @@ OUTPUT FORMAT:
           const backendSessionStr = await window.backend.getSession();
           if (backendSessionStr) {
             backendSessionFound = true;
-            const sessionData = JSON.parse(backendSessionStr);
-            if (sessionData && Array.isArray(sessionData.tabs) && sessionData.tabs.length > 0) {
-              restoreSessionFromData(sessionData);
+            if (restored && (backendSessionStr === lastRestoredSessionRaw || isEquivalentSession(backendSessionStr, lastRestoredSessionRaw))) {
+              // Local session is identical to backend file; skip redundant DOM rebuild for maximum speed
+            } else {
+              const sessionData = JSON.parse(backendSessionStr);
+              if (sessionData && Array.isArray(sessionData.tabs) && sessionData.tabs.length > 0) {
+                restoreSessionFromData(sessionData);
+                lastRestoredSessionRaw = backendSessionStr;
+              }
             }
           }
         } catch (e) {
@@ -18276,8 +18337,8 @@ OUTPUT FORMAT:
         rpcFail('invalid_params', 'an HTML page has no print layout: only a Markdown note can be saved as a PDF');
       }
       await waitForDiagrams(previewPane, 4000);
-      if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.0');
-      if (!window.PrintPanel) await loadScript('js/print_panel.js?v=1.0.0');
+      if (!window.PrintPreview) await loadScript('js/print_preview.js?v=1.0.1');
+      if (!window.PrintPanel) await loadScript('js/print_panel.js?v=1.0.1');
       restoreDiagrams = await window.PrintPreview.prepare(previewPane, { resetMermaid: () => { mermaidAppliedTone = null; applyMermaidTone(); } });
       const asked = window.PrintPanel.requestOf({}, { title: tab.title, path: tab.path }, t('printUnsaved'));
       Object.assign(asked, {

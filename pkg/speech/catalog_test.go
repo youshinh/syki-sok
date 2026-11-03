@@ -174,3 +174,80 @@ func TestCustomURLPart(t *testing.T) {
 		t.Error("different URLs must not share an id")
 	}
 }
+
+
+func TestSpeechCatalogIntegrity(t *testing.T) {
+	parts := speechRuntimeCatalogParts()
+	if len(parts) != 2 {
+		t.Fatalf("expected 2 speech runtime parts, got %d", len(parts))
+	}
+	platforms := map[string]bool{}
+	for _, p := range parts {
+		platforms[p.Platform] = true
+		if !strings.HasPrefix(p.URL, "https://") {
+			t.Errorf("%s: URL %q is not https", p.ID, p.URL)
+		}
+		if !hex64.MatchString(p.SHA256) {
+			t.Errorf("%s: SHA256 %q is not 64 hex chars", p.ID, p.SHA256)
+		}
+		if p.Entry == "" || p.Size <= 0 {
+			t.Errorf("%s: missing entry or size", p.ID)
+		}
+	}
+	if !platforms["windows/amd64"] || !platforms["darwin/arm64"] {
+		t.Errorf("missing platform in speech runtimes: %v", platforms)
+	}
+
+	models := speechModelCatalogParts()
+	if len(models) < 3 {
+		t.Fatalf("expected at least 3 speech models, got %d", len(models))
+	}
+	ids := map[string]bool{}
+	for _, m := range models {
+		ids[m.ID] = true
+		if !strings.HasPrefix(m.URL, "https://") {
+			t.Errorf("%s: URL %q is not https", m.ID, m.URL)
+		}
+		if !hex64.MatchString(m.SHA256) {
+			t.Errorf("%s: SHA256 %q is not 64 hex chars", m.ID, m.SHA256)
+		}
+		if m.Entry == "" || m.Size <= 0 {
+			t.Errorf("%s: missing entry or size", m.ID)
+		}
+	}
+	if !ids[DefaultSpeechModelID()] {
+		t.Errorf("default speech model %q not in speech model catalog", DefaultSpeechModelID())
+	}
+}
+
+func TestSpeechRuntimePlatforms(t *testing.T) {
+	old := hostPlatform
+	t.Cleanup(func() { hostPlatform = old })
+
+	hostPlatform = func() string { return "windows/amd64" }
+	p, ok := SpeechRuntimePart()
+	if !ok || p.ID != "speech-runtime-v0.10.1-win-x64" || p.Entry != "speech.exe" {
+		t.Errorf("windows/amd64 speech runtime = %+v, %v", p, ok)
+	}
+
+	hostPlatform = func() string { return "darwin/arm64" }
+	p, ok = SpeechRuntimePart()
+	if !ok || p.ID != "speech-runtime-v0.10.1-darwin-arm64" || p.Entry != "speech" {
+		t.Errorf("darwin/arm64 speech runtime = %+v, %v", p, ok)
+	}
+
+	hostPlatform = func() string { return "linux/arm64" }
+	_, ok = SpeechRuntimePart()
+	if ok {
+		t.Error("linux/arm64 should not have speech runtime yet")
+	}
+}
+
+func TestResolveSpeechModelPart(t *testing.T) {
+	for _, id := range []string{"haas-ja-v1.0-q8_0", "haas-ja-v1.0-q4_k", "silero-vad"} {
+		p, ok := ResolveModelPart(llm.WhisperSettings{Model: id})
+		if !ok || p.ID != id {
+			t.Errorf("failed to resolve speech model %q: got %+v, %v", id, p, ok)
+		}
+	}
+}

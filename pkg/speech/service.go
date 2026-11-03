@@ -17,6 +17,8 @@ import (
 const (
 	engineGemini        = "gemini"
 	engineWhisperLocal  = "whisper-local"
+	engineSpeechLocal   = "speech-local"
+	engineLocal         = "local"
 	transcriptFileName  = "transcript"
 	silencePeak         = 64 // of 32768, about -54 dBFS; below this a recording holds no speech
 	minAutoThreads      = 2
@@ -26,23 +28,20 @@ const (
 
 var ErrNotInstalled = errors.New("speech: local Whisper is not installed")
 
-// notInstalledError carries a message meant for the user while still matching ErrNotInstalled.
 type notInstalledError string
 
 func (e notInstalledError) Error() string        { return string(e) }
 func (e notInstalledError) Is(target error) bool { return target == ErrNotInstalled }
 
-// PartStore is satisfied by *components.Manager.
 type PartStore interface {
 	Path(p components.Part) (string, bool)
 }
 
-// queryGeminiAudio is a var so tests can stub the network call.
 var queryGeminiAudio = llm.QueryAudio
 
 type Service struct {
 	store    PartStore
-	tempRoot string // "" = the OS temp dir
+	tempRoot string
 }
 
 func NewService(store PartStore) *Service { return &Service{store: store} }
@@ -51,7 +50,6 @@ func (s *Service) Transcribe(ctx context.Context, cfg llm.VoiceConfig, audio []b
 	return s.dispatch(ctx, cfg, audioInput{data: audio, mime: mimeType})
 }
 
-// TranscribeBase64 accepts a "data:...;base64," prefix like llm.QueryAudio does.
 func (s *Service) TranscribeBase64(ctx context.Context, cfg llm.VoiceConfig, audioBase64, mimeType string) (string, error) {
 	audioBase64 = strings.TrimSpace(audioBase64)
 	if idx := strings.Index(audioBase64, ","); idx != -1 {
@@ -65,7 +63,6 @@ func (s *Service) TranscribeBase64(ctx context.Context, cfg llm.VoiceConfig, aud
 	return s.dispatch(ctx, cfg, audioInput{b64: audioBase64, mime: mimeType})
 }
 
-// TranscribeFile leaves the file on disk for the local engine; only the Gemini path has to read it.
 func (s *Service) TranscribeFile(ctx context.Context, cfg llm.VoiceConfig, path, mimeType string) (string, error) {
 	return s.dispatch(ctx, cfg, audioInput{path: path, mime: mimeType})
 }
@@ -77,7 +74,7 @@ func (s *Service) dispatch(ctx context.Context, cfg llm.VoiceConfig, in audioInp
 	switch strings.ToLower(strings.TrimSpace(cfg.Engine)) {
 	case "", engineGemini:
 		return s.transcribeCloud(cfg, in)
-	case engineWhisperLocal:
+	case engineWhisperLocal, engineSpeechLocal, engineLocal:
 		text, err := s.transcribeLocal(ctx, cfg, in)
 		if err == nil || !cfg.Whisper.CloudFallback || ctx.Err() != nil {
 			return text, err
@@ -113,12 +110,8 @@ func (s *Service) transcribeCloud(cfg llm.VoiceConfig, in audioInput) (string, e
 	return queryGeminiAudio(cfg.Prompt, b64, mime, cfg)
 }
 
-// localGate lets one on-device recognition run at a time, whoever asks: the hot folder, the Discord bridge, a meeting's pieces, a
-// dictation and a batch of dropped files all reach transcribeLocal. whisper-cli loads the whole model each time it starts, so several
-// at once would hold several models in memory and fight for the CPU; one after another costs the same total time and a third of the memory.
 var localGate = make(chan struct{}, 1)
 
-// acquireLocalGate waits for its turn (or for ctx to end) and returns what gives the turn back.
 func acquireLocalGate(ctx context.Context) (func(), error) {
 	select {
 	case localGate <- struct{}{}:
@@ -128,12 +121,13 @@ func acquireLocalGate(ctx context.Context) (func(), error) {
 	}
 }
 
+func isSpeechExe(exe string) bool {
+	base := strings.ToLower(filepath.Base(exe))
+	return strings.Contains(base, "speech")
+}
+
 func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in audioInput) (string, error) {
 	w := cfg.Whisper
-	exe, err := s.locateRuntime()
-	if err != nil {
-		return "", err
-	}
 	modelPath, err := s.locateModel(w)
 	if err != nil {
 		return "", err
@@ -142,6 +136,17 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 	if err != nil {
 		return "", err
 	}
+
+	exe, err := s.locateRuntimeForEngine(cfg.Engine, info)
+	if err != nil {
+		return "", err
+	}
+
+	// If using whisper-cli, reject GGUF models
+	if !isSpeechExe(exe) && info.Format == "gguf" {
+		return "", fmt.Errorf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", modelPath)
+	}
+
 	if in.b64 != "" {
 		if in.data, err = decodeBase64(in.b64); err != nil {
 			return "", err
@@ -168,21 +173,60 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 	if stats.samples == 0 {
 		return "", errors.New("音声データが空です")
 	}
-	// Whisper invents text ("ご視聴ありがとうございました" and the like) for silence.
 	if stats.peak < silencePeak {
 		return "", nil
 	}
 
+	threads := w.Threads
+	if threads <= 0 {
+		threads = autoThreads(runtime.NumCPU())
+	}
+
+	// speech.cpp runner
+	if isSpeechExe(exe) {
+		job := speechJob{
+			model:      modelPath,
+			wav:        wav,
+			threads:    threads,
+			device:     "cpu",
+			timestamps: w.Timestamps || w.Diarize,
+		}
+		if w.Diarize || w.Timestamps {
+			if vadPart, ok := ResolveModelPart(llm.WhisperSettings{Model: "silero-vad"}); ok {
+				if vp, ok := s.partPath(vadPart); ok {
+					job.vad = vp
+				}
+			}
+		}
+		if w.Diarize {
+			if diarizePart, ok := ResolveModelPart(llm.WhisperSettings{Model: "nemotron-3-diarization"}); ok {
+				if dp, ok := s.partPath(diarizePart); ok {
+					job.diarize = dp
+				}
+			}
+		}
+		if w.Enhance {
+			if enhancePart, ok := ResolveModelPart(llm.WhisperSettings{Model: "re-use"}); ok {
+				if ep, ok := s.partPath(enhancePart); ok {
+					job.enhance = ep
+				}
+			}
+		}
+		text, err := execSpeech(ctx, exe, job.args())
+		if err != nil {
+			return "", err
+		}
+		return cleanTranscript(text), nil
+	}
+
+	// whisper-cli runner
 	job := whisperJob{
 		model:     modelPath,
 		wav:       wav,
 		lang:      whisperLanguage(w.Language, info.Multilingual),
-		threads:   w.Threads,
+		threads:   threads,
 		outPrefix: filepath.Join(dir, transcriptFileName),
 		prompt:    whisperPrompt(w.Prompt, cfg.CustomVocabulary),
-	}
-	if job.threads <= 0 {
-		job.threads = autoThreads(runtime.NumCPU())
 	}
 	if err := execWhisper(ctx, exe, job.args()); err != nil {
 		return "", err
@@ -194,13 +238,8 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 	return cleanTranscript(string(raw)), nil
 }
 
-// maxWhisperPromptRunes bounds the initial prompt: whisper-cli keeps only a few hundred tokens of it (the rest is dropped), and a
-// long list of terms that is cut at an arbitrary point only crowds the audio out. The first terms are the ones that stay.
 const maxWhisperPromptRunes = 200
 
-// whisperPrompt is the initial prompt of one recognition: the prompt the person wrote for Whisper, then the custom vocabulary of the
-// voice settings (the same list the cloud takes as a spelling hint), so a name or a term that is written once is favoured by both
-// engines. Blank and repeated terms are dropped, and terms that no longer fit in maxWhisperPromptRunes are left out whole.
 func whisperPrompt(prompt string, vocabulary []string) string {
 	out := strings.TrimSpace(prompt)
 	if r := []rune(out); len(r) > maxWhisperPromptRunes {
@@ -217,10 +256,10 @@ func whisperPrompt(prompt string, vocabulary []string) string {
 		seen[v] = true
 		add := len([]rune(v))
 		if len(terms) > 0 || out != "" {
-			add += 2 // the separator in front of it
+			add += 2
 		}
 		if used+add > maxWhisperPromptRunes {
-			continue // a shorter term further on may still fit
+			continue
 		}
 		terms = append(terms, v)
 		used += add
@@ -248,7 +287,6 @@ func decodeBase64(s string) ([]byte, error) {
 
 func autoThreads(cpus int) int { return min(max(cpus/2, minAutoThreads), maxAutoThreads) }
 
-// An English-only model ignores -l anyway (whisper-cli just warns), so say "en" outright.
 func whisperLanguage(lang string, multilingual bool) string {
 	lang = strings.ToLower(strings.TrimSpace(lang))
 	switch {
@@ -265,7 +303,6 @@ func isEnglish(lang string) bool {
 	return lang == "en" || lang == "english"
 }
 
-// cleanTranscript joins the segments one per line, dropping whisper's marker for silence.
 func cleanTranscript(raw string) string {
 	raw = strings.ToValidUTF8(strings.TrimPrefix(raw, "\xef\xbb\xbf"), "")
 	var lines []string
@@ -288,18 +325,42 @@ func (s *Service) partPath(p components.Part) (string, bool) {
 }
 
 func (s *Service) locateRuntime() (string, error) {
-	rt, ok := RuntimePart()
-	if !ok {
-		return "", fmt.Errorf("この環境(%s)ではローカル音声認識に対応していません(Windows 64bit のみ)", hostPlatform())
+	return s.locateRuntimeForEngine("", ModelInfo{})
+}
+
+func (s *Service) locateRuntimeForEngine(engine string, info ModelInfo) (string, error) {
+	isSpeech := strings.EqualFold(engine, engineSpeechLocal) || strings.EqualFold(engine, engineLocal) || info.Format == "gguf"
+
+	if isSpeech {
+		if sp, ok := SpeechRuntimePart(); ok {
+			if path, ok := s.partPath(sp); ok {
+				return path, nil
+			}
+		}
 	}
-	if path, ok := s.partPath(rt); ok {
-		return path, nil
+
+	// Whisper runtime
+	if rt, ok := RuntimePart(); ok {
+		if path, ok := s.partPath(rt); ok {
+			return path, nil
+		}
+	}
+
+	// Fallback to speech if whisper not installed
+	if !isSpeech {
+		if sp, ok := SpeechRuntimePart(); ok {
+			if path, ok := s.partPath(sp); ok {
+				return path, nil
+			}
+		}
+	}
+
+	if _, ok := RuntimePart(); !ok {
+		return "", fmt.Errorf("この環境(%s)ではローカル音声認識に対応していません(Windows 64bit のみ)", hostPlatform())
 	}
 	return "", notInstalledError("ローカル音声認識の実行ファイルが未インストールです。" + installHintSettings)
 }
 
-// locateModel returns the model file to use. A missing download is a notInstalledError; a setting
-// that names nothing usable is a plain error.
 func (s *Service) locateModel(w llm.WhisperSettings) (string, error) {
 	id := effectiveModelID(w)
 	if id == modelCustomPath {
@@ -337,19 +398,32 @@ type LocalStatus struct {
 	Reason           string `json:"reason"`
 }
 
-// LocalStatus reports what the settings screen needs to know: whether Transcribe would run the
-// local engine now and, when it would not, why. It reads at most one small file header.
 func (s *Service) LocalStatus(cfg llm.VoiceConfig) LocalStatus {
 	w := cfg.Whisper
 	st := LocalStatus{ModelID: effectiveModelID(w)}
 	var reason string
 
-	if rt, ok := RuntimePart(); !ok {
-		reason = "この環境ではローカル音声認識に対応していません(Windows 64bit のみ)"
+	isSpeech := strings.EqualFold(cfg.Engine, engineSpeechLocal) || strings.EqualFold(cfg.Engine, engineLocal)
+
+	if isSpeech {
+		sp, sok := SpeechRuntimePart()
+		if !sok {
+			reason = "この環境ではローカル音声認識に対応していません"
+		} else {
+			st.Supported = true
+			if _, st.RuntimeInstalled = s.partPath(sp); !st.RuntimeInstalled {
+				reason = "ローカル音声認識の実行ファイルが未インストールです"
+			}
+		}
 	} else {
-		st.Supported = true
-		if _, st.RuntimeInstalled = s.partPath(rt); !st.RuntimeInstalled {
-			reason = "ローカル音声認識の実行ファイルが未インストールです"
+		rt, ok := RuntimePart()
+		if !ok {
+			reason = "この環境ではローカル音声認識に対応していません(Windows 64bit のみ)"
+		} else {
+			st.Supported = true
+			if _, st.RuntimeInstalled = s.partPath(rt); !st.RuntimeInstalled {
+				reason = "ローカル音声認識の実行ファイルが未インストールです"
+			}
 		}
 	}
 
@@ -360,14 +434,20 @@ func (s *Service) LocalStatus(cfg llm.VoiceConfig) LocalStatus {
 		}
 	} else {
 		st.ModelInstalled, st.ModelPath = true, path
-		if info, verr := ValidateModelFile(path); verr != nil {
+		info, verr := ValidateModelFile(path)
+		if verr != nil {
 			st.ModelWarning = verr.Error()
 			if reason == "" {
 				reason = st.ModelWarning
 			}
 		} else {
 			st.Multilingual = info.Multilingual
-			if !info.Multilingual && !isEnglish(w.Language) {
+			if !isSpeech && info.Format == "gguf" {
+				st.ModelWarning = fmt.Sprintf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", path)
+				if reason == "" {
+					reason = st.ModelWarning
+				}
+			} else if !info.Multilingual && !isEnglish(w.Language) {
 				st.ModelWarning = "このモデルは英語専用です。日本語などは認識できません。多言語モデルか kotoba-whisper を選んでください"
 			}
 		}

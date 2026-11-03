@@ -857,6 +857,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			installSpeechPartAsync: (reqID, which, voiceConfigJson) => window.backend_installSpeechPartAsync(reqID, which || "", voiceConfigJson || ""),
 			cancelSpeechInstall: (reqID) => window.backend_cancelSpeechInstall(reqID),
 			removeSpeechPart: (which, voiceConfigJson) => window.backend_removeSpeechPart(which || "", voiceConfigJson || ""),
+			ensureSpeechServer: (voiceConfigJson) => window.backend_ensureSpeechServer(voiceConfigJson || ""),
 			validateWhisperModelFile: (path) => window.backend_validateWhisperModelFile(path || ""),
 			pickFilePath: (title) => window.backend_pickFilePath(title || ""),
 			openInboxFolder: () => window.backend_openInboxFolder(),

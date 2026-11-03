@@ -32,6 +32,8 @@ const (
 	// second process is never started (and, on Windows, so the file is no longer silently
 	// dropped by the single-instance mutex).
 	ActionOpen = "open"
+	// ActionNewTab opens a new blank tab and fronts the window for instantaneous memo capture.
+	ActionNewTab = "new-tab"
 )
 
 // Message represents a legacy IPC payload passed between CLI and running instance.

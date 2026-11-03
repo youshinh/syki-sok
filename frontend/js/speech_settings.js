@@ -12,7 +12,7 @@
   const MODEL_CUSTOM_URL = 'custom-url';
   // key: the name in config.voice and in VoiceProfiles; sfx: the end of the element ids.
   const PROFILES = [{ key: 'realtime', sfx: '-rt' }, { key: 'batch', sfx: '-bt' }];
-  const SHARED_ADVANCED = ['language', 'threads', 'prompt', 'cloudFallback'];
+  const SHARED_ADVANCED = ['language', 'threads', 'prompt', 'cloudFallback', 'diarize', 'enhance', 'timestamps'];
 
   // 1024-based, like Explorer, so a size matches what the file shows on disk.
   function formatSize(bytes) {
@@ -39,7 +39,11 @@
       language: typeof src.language === 'string' ? src.language : '',
       threads: Number.isFinite(threads) && threads > 0 ? threads : 0,
       prompt: typeof src.prompt === 'string' ? src.prompt : '',
-      cloudFallback: !!src.cloudFallback
+      cloudFallback: !!src.cloudFallback,
+      streaming: !!src.streaming,
+      diarize: !!src.diarize,
+      enhance: !!src.enhance,
+      timestamps: !!src.timestamps
     };
   }
 
@@ -99,7 +103,11 @@
         language: get('cfg-speech-language').trim(),
         threads: get('cfg-speech-threads'),
         prompt: get('cfg-speech-prompt').trim(),
-        cloudFallback: checked('cfg-speech-cloud-fallback')
+        cloudFallback: checked('cfg-speech-cloud-fallback'),
+        streaming: key === 'realtime' ? checked('cfg-speech-streaming-rt') : false,
+        diarize: checked('cfg-speech-diarize'),
+        enhance: checked('cfg-speech-enhance'),
+        timestamps: checked('cfg-speech-timestamps')
       })
     };
   }
@@ -133,6 +141,14 @@
     set('cfg-speech-prompt', shared.prompt);
     const cf = $('cfg-speech-cloud-fallback');
     if (cf) cf.checked = shared.cloudFallback;
+    const dia = $('cfg-speech-diarize');
+    if (dia) dia.checked = !!shared.diarize;
+    const enh = $('cfg-speech-enhance');
+    if (enh) enh.checked = !!shared.enhance;
+    const ts = $('cfg-speech-timestamps');
+    if (ts) ts.checked = !!shared.timestamps;
+    const stEl = $('cfg-speech-streaming-rt');
+    if (stEl) stEl.checked = !!profileOfConfig(voice, 'realtime').whisper.streaming;
     refresh();
   }
 

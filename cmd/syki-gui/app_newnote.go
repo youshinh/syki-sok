@@ -191,3 +191,12 @@ func (a *App) ProcessDroppedMedia(reqID, name, mimeType, dataBase64, visionConfi
 		answer(text, "")
 	}()
 }
+
+// CreateNewTab asks the running UI to open a new blank tab and focus it immediately.
+func (a *App) CreateNewTab() error {
+	if a.w == nil || atomic.LoadInt32(&a.isDestroyed) != 0 {
+		return fmt.Errorf("webview is not running")
+	}
+	a.dispatchEval("if (window.__sykiRPC && window.__sykiRPC.newTab) { window.__sykiRPC.newTab(); } else if (typeof createTab === 'function') { createTab(); } if (window.refocusActiveEditor) window.refocusActiveEditor();")
+	return nil
+}

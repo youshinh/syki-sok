@@ -24,9 +24,16 @@ func TestValidateModelFile(t *testing.T) {
 		return p
 	}
 
+	t.Run("gguf", func(t *testing.T) {
+		info, err := ValidateModelFile(write("haas.gguf", append([]byte("GGUF"), make([]byte, 20)...)))
+		if err != nil || info.Format != "gguf" || !info.Multilingual || info.Size != 24 {
+			t.Fatalf("got %+v, %v", info, err)
+		}
+	})
+
 	t.Run("multilingual", func(t *testing.T) {
 		info, err := ValidateModelFile(write("kotoba.bin", header(ggmlMagic, 51866, 100)))
-		if err != nil || info.VocabSize != 51866 || !info.Multilingual || info.Size != 108 {
+		if err != nil || info.VocabSize != 51866 || !info.Multilingual || info.Size != 108 || info.Format != "ggml" {
 			t.Fatalf("got %+v, %v", info, err)
 		}
 	})
@@ -43,25 +50,18 @@ func TestValidateModelFile(t *testing.T) {
 		}
 	})
 
-	notGGML := map[string][]byte{
-		"gguf":        append([]byte("GGUF"), make([]byte, 20)...),
+	notSupported := map[string][]byte{
 		"safetensors": append([]byte{0x10, 0, 0, 0, 0, 0, 0, 0}, []byte(`{"a":1}`)...),
 		"zip":         append([]byte("PK\x03\x04"), make([]byte, 20)...),
 		"text":        []byte("this is not a model at all"),
 	}
-	for name, b := range notGGML {
+	for name, b := range notSupported {
 		t.Run(name, func(t *testing.T) {
 			_, err := ValidateModelFile(write(name+".bin", b))
-			if err == nil || !strings.Contains(err.Error(), "ggml") {
-				t.Fatalf("got %v, want an error that mentions ggml", err)
+			if err == nil || !strings.Contains(err.Error(), "形式") {
+				t.Fatalf("got %v, want an error mentioning format", err)
 			}
 		})
-	}
-	if _, err := ValidateModelFile(write("gguf2.bin", notGGML["gguf"])); err == nil || !strings.Contains(err.Error(), "GGUF") {
-		t.Errorf("a GGUF file should be named as such, got %v", err)
-	}
-	if _, err := ValidateModelFile(write("st2.bin", notGGML["safetensors"])); err == nil || !strings.Contains(err.Error(), "safetensors") {
-		t.Errorf("a safetensors file should be named as such, got %v", err)
 	}
 
 	t.Run("bad vocab", func(t *testing.T) {

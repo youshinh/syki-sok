@@ -103,6 +103,11 @@
   function anchorWords(lang) { return ANCHOR_WORDS[lang] || ANCHOR_WORDS[getUILang()]; }
 
   function buildRecordingAnchor(id, lang) { return `⦅${anchorWords(lang).recording} [id:${id}]⦆`; }
+  function buildStreamingAnchor(id, partial, lang) {
+    const w = anchorWords(lang);
+    const text = partial ? ` (${partial})` : '';
+    return `⦅${w.recording}${text} [id:${id}]⦆`;
+  }
   function buildTranscribingAnchor(id, lang) { return `⦅${anchorWords(lang).transcribing} [id:${id}]⦆`; }
   function buildRescueAnchor(id, lang) {
     const w = anchorWords(lang);
@@ -388,6 +393,8 @@
   let currentId = null;
   let currentTabId = null;
   let currentAnchor = null;
+  let activeStreamClient = null;
+  let lastStreamTranscript = '';
   let indicatorEl = null;
   let indicatorTimer = null;
   let indicatorStartMs = 0;
@@ -887,6 +894,47 @@
     logVoice(true);
 
     const cfg = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
+    lastStreamTranscript = '';
+    activeStreamClient = null;
+
+    const qpModal = global.document ? global.document.getElementById('quick-pick-modal') : null;
+    const isQPOpen = qpModal && !qpModal.classList.contains('hidden');
+    const isStreaming = isQPOpen || (cfg.whisper && !!cfg.whisper.streaming);
+
+    if (isLocalEngine(cfg) && isStreaming && global.SpeechStream && bridge && typeof bridge.ensureSpeechServer === 'function') {
+      try {
+        const srvResRaw = bridge.ensureSpeechServer(JSON.stringify(cfg));
+        const srvRes = JSON.parse(srvResRaw || '{}');
+        if (srvRes && srvRes.wsUrl) {
+          activeStreamClient = global.SpeechStream.create({
+            wsUrl: srvRes.wsUrl,
+            mediaStream: stream,
+            onDelta: (accum) => {
+              if (isQPOpen) {
+                const qpInput = global.document.getElementById('quick-pick-input');
+                if (qpInput) {
+                  qpInput.value = accum;
+                  qpInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+                return;
+              }
+              if (currentTabId != null && bridge && typeof bridge.replaceAnchor === 'function' && currentAnchor) {
+                const nextAnchor = buildStreamingAnchor(id, accum);
+                if (bridge.replaceAnchor(currentTabId, currentAnchor, nextAnchor)) {
+                  currentAnchor = nextAnchor;
+                }
+              }
+            },
+            onComplete: (finalText) => {
+              lastStreamTranscript = finalText;
+            }
+          });
+        }
+      } catch (e) {
+        // stream startup fallback
+      }
+    }
+
     setupSilenceDetection(stream, cfg);
     showIndicator(bridge);
     notifyState();
@@ -900,6 +948,9 @@
 
   function stop() {
     if (!recording || stopping) return;
+    if (activeStreamClient) {
+      try { activeStreamClient.stop(); } catch (e) {}
+    }
     if (meetingMode) { stopping = true; finishMeeting(); return; }
     stopping = true;
     stopTracks();
@@ -914,6 +965,9 @@
 
   function abort() {
     if (!recording) return;
+    if (activeStreamClient) {
+      try { activeStreamClient.abort(); } catch (e) {}
+    }
     if (meetingMode) {
       const bridge = global.SykiBridge;
       const id = currentId;

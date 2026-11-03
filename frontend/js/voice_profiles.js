@@ -32,7 +32,11 @@
   }
   function isObject(v) { return !!v && typeof v === 'object' && !Array.isArray(v); }
 
-  function normalizeEngine(e) { return e === LOCAL_ENGINE ? LOCAL_ENGINE : 'gemini'; }
+  function normalizeEngine(e) {
+    const s = str(e).trim().toLowerCase();
+    if (s === LOCAL_ENGINE || s === 'speech-local' || s === 'local') return LOCAL_ENGINE;
+    return 'gemini';
+  }
 
   function resolve(voice, name) {
     const v = isObject(voice) ? voice : {};
