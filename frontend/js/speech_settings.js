@@ -229,7 +229,11 @@
       o.textContent = label;
       sel.appendChild(o);
     };
-    (status.models || []).forEach((m) => add(m.part.id, m.part.title + ' (' + formatSize(m.part.size) + ')'));
+    (status.models || []).forEach((m) => {
+      const isInst = !!(m.status && m.status.installed);
+      const badge = isInst ? (' ' + (t('speechInstalledBadge') || '[ダウンロード済]')) : '';
+      add(m.part.id, m.part.title + ' (' + formatSize(m.part.size) + ')' + badge);
+    });
     add(MODEL_CUSTOM_PATH, t('speechModelCustomPath'));
     add(MODEL_CUSTOM_URL, t('speechModelCustomUrl'));
     const known = Array.from(sel.options).some((o) => o.value === wanted);
@@ -293,6 +297,7 @@
         hint = local.ready ? t('speechReady') : (local.reason || '');
         if (local.modelWarning) hint += (hint ? ' ' : '') + local.modelWarning;
         const needsRuntime = !local.ready && !local.runtimeInstalled && (local.reason || '').includes('実行ファイル');
+        if (quickBtn) quickBtn.textContent = t('speechDownloadEngine');
         setHidden(quickBtn, !needsRuntime || installs.runtime !== null);
       } else {
         setHidden(quickBtn, true);

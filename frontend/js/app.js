@@ -618,6 +618,7 @@
     });
 
     // Update status bar texts
+    shortcutsTableDirty = true;
     renderAutosaveStatus();
     renderImeStatus();
     updateActionStatus(); // also redraws the AI item (its label and popover, in the new language)
@@ -14133,13 +14134,23 @@ OUTPUT FORMAT:
       modalBody.classList.toggle('tab-shortcuts-active', tabName === 'shortcuts');
     }
 
+    // Shortcuts: once rendered, switching to it is purely a 0ms un-hide operation.
+    // Only invoke renderShortcutsTable if it has never been rendered, is dirty, or is recording.
+    if (settingsTabTaskTimer) {
+      clearTimeout(settingsTabTaskTimer);
+      settingsTabTaskTimer = null;
+    }
+    if (tabName === 'shortcuts') {
+      if (!shortcutsTableRendered || shortcutsTableDirty || activeRecordingAction) {
+        renderShortcutsTable();
+      }
+      return;
+    }
+
     // Offload heavy IPC/validation tasks to idle frame so tab switch paint completes instantaneously (0ms)
-    if (settingsTabTaskTimer) clearTimeout(settingsTabTaskTimer);
     settingsTabTaskTimer = setTimeout(() => {
       settingsTabTaskTimer = null;
-      if (tabName === 'shortcuts') {
-        renderShortcutsTable();
-      } else if (tabName === 'model') {
+      if (tabName === 'model') {
         updateOllamaStatus();
       } else if (tabName === 'agent') {
         checkActiveAgentsConfigStatus();
@@ -14150,7 +14161,7 @@ OUTPUT FORMAT:
           updateGitRepoStatusUI(scrapDirInput.value.trim());
         }
       }
-    }, 50);
+    }, 100);
   }
 
   // --- Dynamic Keyboard Shortcuts Engine ---
@@ -16003,11 +16014,15 @@ OUTPUT FORMAT:
   }
 
   // Ollama Lifecycle & Automated Gemma 4 Setup
-  async function updateOllamaStatus() {
+  let lastOllamaStatusCheck = 0;
+  async function updateOllamaStatus(force) {
     const badge = document.getElementById('ollama-status-badge');
     const btnStart = document.getElementById('btn-start-ollama');
     const btnStop = document.getElementById('btn-stop-ollama');
     if (!badge) return;
+
+    if (!force && Date.now() - lastOllamaStatusCheck < 3000) return;
+    lastOllamaStatusCheck = Date.now();
 
     if (!window.backend || !window.backend.checkOllamaRunning) {
       badge.removeAttribute('data-i18n');

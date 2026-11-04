@@ -5,7 +5,7 @@
 //   * @container, container-type, container-name, cqw / cqi / cqh / cqb units      Safari 16
 //   * CSS nesting (a rule inside a rule)                                           Safari 16.5
 //   * scrollbar-gutter                                                             Safari 18.2
-//   * :has( more than the uses that are already there (the settings dialog, the printed preview; Safari 15.4)
+//   * :has( more than the uses that are already there (the printed preview; Safari 15.4)
 // The one exception: js/file_anchor.js writes color-mix() in a line that has a declaration without it right before it (a browser that cannot
 // read the second line keeps the first).
 //
@@ -21,7 +21,7 @@ const stripCssComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, blank);
 const lineOf = (text, pos) => text.slice(0, pos).split('\n').length;
 
 // the :has() uses that exist (frontend/css file -> number of occurrences outside comments). A new use needs a new reason, so it is a new number here.
-const HAS_BASELINE = { 'style.css': 1, 'print.css': 3, 'tokens.css': 0 }; // style.css: 6 until the auto-hide (chrome.css, JS pins) replaced the five of the old typing dimmer
+const HAS_BASELINE = { 'style.css': 0, 'print.css': 3, 'tokens.css': 0 }; // style.css: 0 (settings dialog :has() eliminated for 0ms tab switching; .tab-shortcuts-active used instead)
 
 const FORBIDDEN = [
   [/color-mix\s*\(/gi, 'color-mix() (Safari 16.2): use a channel token with rgb(var(--x-rgb) / alpha), or a precomputed token'],
@@ -128,7 +128,7 @@ check('no script writes it into a style (except file_anchor.js, right after a de
   assert.ok(/color-mix\(/.test(read('frontend/js/file_anchor.js')), 'the exception still exists (if it is gone, remove it from this test)');
 });
 
-check(':has( is used only where it already was (settings dialog, printed preview); a new use needs a new baseline here', () => {
+check(':has( is used only where it already was (printed preview); a new use needs a new baseline here', () => {
   for (const f of cssFiles) assert.equal(hasCount(read(path.join(CSS_DIR, f))), HAS_BASELINE[f] === undefined ? 0 : HAS_BASELINE[f], f + ': the number of :has( uses');
 });
 

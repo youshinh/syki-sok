@@ -7,20 +7,27 @@ const S = require('./speech_settings.js');
 
 function fakeEl(initial) {
   const classes = new Set();
-  return Object.assign({
+  const el = Object.assign({
     value: '', checked: false, textContent: '', options: [],
     classList: {
       toggle(c, on) { if (on) classes.add(c); else classes.delete(c); },
       contains: (c) => classes.has(c)
     },
-    addEventListener() {}
+    addEventListener() {},
+    appendChild(child) { el.options.push(child); },
+    remove(idx) { el.options.splice(idx, 1); }
   }, initial || {});
+  return el;
 }
 
 function fakeDoc(ids) {
   const els = {};
   ids.forEach((id) => { els[id] = fakeEl(); });
-  return { els, getElementById: (id) => els[id] || null };
+  return {
+    els,
+    getElementById: (id) => els[id] || null,
+    createElement: (tag) => fakeEl({ tagName: tag.toUpperCase() })
+  };
 }
 
 const PER_PROFILE = [
@@ -144,6 +151,38 @@ const LEGACY_WHISPER = {
   assert.strictEqual(doc.els['cfg-speech-engine-bt'].value, 'gemini');
   assert.strictEqual(doc.els['cfg-speech-threads'].value, '0');
   assert.strictEqual(doc.els['cfg-speech-cloud-fallback'].checked, false);
+}
+
+
+// Test model select installed badge
+{
+  const doc = fakeDoc(FORM_IDS);
+  S.init({ t: (k) => k === 'speechInstalledBadge' ? '[ダウンロード済]' : k, backend: null, doc });
+  const sel = doc.els['cfg-speech-model-rt'];
+  sel.options = [];
+  sel.remove = (i) => sel.options.splice(i, 1);
+  sel.appendChild = (opt) => sel.options.push(opt);
+
+  // Fake status with one installed and one uninstalled model
+  const fakeStatus = {
+    realtime: {
+      defaultModel: 'm1',
+      models: [
+        { part: { id: 'm1', title: 'Model One', size: 1000 }, status: { installed: true, size: 1000 } },
+        { part: { id: 'm2', title: 'Model Two', size: 2000 }, status: { installed: false, size: 0 } }
+      ]
+    }
+  };
+  // Mock backend getSpeechStatus
+  const fakeBackend = {
+    getSpeechStatus: () => JSON.stringify(fakeStatus.realtime)
+  };
+  S.init({ t: (k) => k === 'speechInstalledBadge' ? '[ダウンロード済]' : k, backend: fakeBackend, doc });
+  S.refresh().then(() => {
+    assert.ok(sel.options[0].textContent.includes('[ダウンロード済]'), 'installed model should have badge');
+    assert.ok(!sel.options[1].textContent.includes('[ダウンロード済]'), 'uninstalled model should not have badge');
+    console.log('badge test passed');
+  });
 }
 
 console.log('speech_settings tests passed');
