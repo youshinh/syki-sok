@@ -32,7 +32,7 @@ func CheckOllamaHealth(baseURL string) bool {
 	}
 
 	fastPingClient := &http.Client{
-		Timeout: 1500 * time.Millisecond,
+		Timeout: 200 * time.Millisecond,
 	}
 
 	resp, err := fastPingClient.Do(req)

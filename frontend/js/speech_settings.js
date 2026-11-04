@@ -288,9 +288,14 @@
       // what this profile needs is said for this profile only, and only when it uses Whisper
       const local = status.local || {};
       let hint = '';
+      const quickBtn = $('btn-speech-quick-runtime' + p.sfx);
       if (engineOf(p.key) === LOCAL_ENGINE) {
         hint = local.ready ? t('speechReady') : (local.reason || '');
         if (local.modelWarning) hint += (hint ? ' ' : '') + local.modelWarning;
+        const needsRuntime = !local.ready && !local.runtimeInstalled && (local.reason || '').includes('実行ファイル');
+        setHidden(quickBtn, !needsRuntime || installs.runtime !== null);
+      } else {
+        setHidden(quickBtn, true);
       }
       setText('speech-ready-hint' + p.sfx, hint);
     });
@@ -333,7 +338,15 @@
     installs[slot] = null;
     if (state === 'error') setText(hintIdFor(slot), t('speechInstallFailed', { error: message || '' }));
     else if (state === 'canceled') setText(hintIdFor(slot), t('speechCanceled'));
-    refresh();
+    refresh().then(() => {
+      // Auto-install runtime if a model finished installing successfully but runtime is still missing
+      if (state !== 'error' && state !== 'canceled' && slot.startsWith('model')) {
+        const any = lastStatus.realtime || lastStatus.batch;
+        if (any && any.runtime && !any.runtime.status.installed && !installs.runtime) {
+          startInstall('runtime');
+        }
+      }
+    });
   }
 
   // Called by the Go backend: window.__onSpeechInstall(reqId, state, done, total, message).
@@ -418,6 +431,8 @@
     on('btn-speech-runtime-install', 'click', () => startInstall('runtime'));
     on('btn-speech-runtime-cancel', 'click', () => cancelInstall('runtime'));
     on('btn-speech-runtime-remove', 'click', () => removePart('runtime'));
+    on('btn-speech-quick-runtime-rt', 'click', () => startInstall('runtime'));
+    on('btn-speech-quick-runtime-bt', 'click', () => startInstall('runtime'));
   }
 
   // opts: { t: (key, params) => string, backend: window.backend, doc: document }

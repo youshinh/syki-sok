@@ -14128,7 +14128,12 @@ OUTPUT FORMAT:
     if (paneSync) paneSync.classList.toggle('hidden', tabName !== 'sync');
     if (paneShortcuts) paneShortcuts.classList.toggle('hidden', tabName !== 'shortcuts');
 
-    // Offload heavy IPC/validation tasks to the next animation frame / tick so paint completes instantaneously
+    const modalBody = settingsModal ? settingsModal.querySelector('.modal-body') : null;
+    if (modalBody) {
+      modalBody.classList.toggle('tab-shortcuts-active', tabName === 'shortcuts');
+    }
+
+    // Offload heavy IPC/validation tasks to idle frame so tab switch paint completes instantaneously (0ms)
     if (settingsTabTaskTimer) clearTimeout(settingsTabTaskTimer);
     settingsTabTaskTimer = setTimeout(() => {
       settingsTabTaskTimer = null;
@@ -14145,7 +14150,7 @@ OUTPUT FORMAT:
           updateGitRepoStatusUI(scrapDirInput.value.trim());
         }
       }
-    }, 0);
+    }, 50);
   }
 
   // --- Dynamic Keyboard Shortcuts Engine ---

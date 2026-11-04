@@ -3144,6 +3144,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
 }
 
 /* Shortcuts: the hint line and Reset stay in view, only the list scrolls; rows of 36px, keys as kbd chips, category names as labels */
+#settings-modal .modal-body.tab-shortcuts-active,
 #settings-modal .modal-body:has(#pane-shortcuts:not(.hidden)) {
   overflow: hidden;
   display: flex;
