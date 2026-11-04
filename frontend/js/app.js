@@ -9328,9 +9328,9 @@ OUTPUT FORMAT:
 
     let mermaidCode = extractMermaidAtCursor();
     if (!mermaidCode) {
-      const previewCard = document.querySelector(".mermaid-card");
-      if (previewCard && previewCard.dataset && previewCard.dataset.mermaidSrc) {
-        mermaidCode = previewCard.dataset.mermaidSrc;
+      const previewEl = document.querySelector("[data-mermaid-src]");
+      if (previewEl && previewEl.dataset && previewEl.dataset.mermaidSrc) {
+        mermaidCode = previewEl.dataset.mermaidSrc;
       }
     }
 
@@ -9339,39 +9339,52 @@ OUTPUT FORMAT:
       return;
     }
 
+    const renderId = "mermaid-render-" + Date.now();
     try {
       await ensureMermaidLibraries();
+      const tone = (typeof applyMermaidTone === "function" && applyMermaidTone()) || "auto";
+
+      let drawn = mermaidCode;
+      let svgHtml = "";
+      try {
+        const rendered = await window.mermaid.render(renderId, drawn);
+        svgHtml = rendered.svg;
+      } catch (firstErr) {
+        removeMermaidLeftovers(renderId);
+        const fixed = (window.MermaidRepair && typeof window.MermaidRepair.repair === "function")
+          ? window.MermaidRepair.repair(mermaidCode).code
+          : mermaidCode;
+        if (fixed && fixed !== mermaidCode) {
+          drawn = fixed;
+          try {
+            const rendered2 = await window.mermaid.render(renderId + "r", drawn);
+            svgHtml = rendered2.svg;
+          } catch (secondErr) {
+            removeMermaidLeftovers(renderId + "r");
+            throw firstErr;
+          }
+        } else {
+          throw firstErr;
+        }
+      }
 
       const tempContainer = document.createElement("div");
-      tempContainer.className = "mermaid-container";
+      tempContainer.className = "mermaid-container tone-" + (tone || "dark");
       tempContainer.style.position = "fixed";
       tempContainer.style.left = "-9999px";
       tempContainer.style.top = "-9999px";
       tempContainer.style.visibility = "hidden";
+      tempContainer.dataset.mermaidSrc = drawn;
+      tempContainer.innerHTML = svgHtml;
       document.body.appendChild(tempContainer);
 
-      let svgHtml = "";
-      const renderId = "mermaid-render-" + Date.now();
+      let canvas;
       try {
-        const rendered = await window.mermaid.render(renderId, mermaidCode);
-        svgHtml = rendered.svg;
-      } catch (renderErr) {
-        removeMermaidLeftovers(renderId);
-        if (window.MermaidRepair && typeof window.MermaidRepair.repair === "function") {
-          const repaired = window.MermaidRepair.repair(mermaidCode);
-          const rendered2 = await window.mermaid.render(renderId + "r", repaired);
-          svgHtml = rendered2.svg;
-        } else {
-          throw renderErr;
+        canvas = await rasterizeMermaidSvgToCanvas(tempContainer);
+      } finally {
+        if (tempContainer.parentNode) {
+          tempContainer.parentNode.removeChild(tempContainer);
         }
-      }
-
-      tempContainer.dataset.mermaidSrc = mermaidCode;
-      tempContainer.innerHTML = svgHtml;
-
-      const canvas = await rasterizeMermaidSvgToCanvas(tempContainer);
-      if (tempContainer.parentNode) {
-        tempContainer.parentNode.removeChild(tempContainer);
       }
 
       let copiedToClipboard = false;
@@ -9397,7 +9410,10 @@ OUTPUT FORMAT:
           const assetRes = await window.backend.saveAsset(noteDir, "png", base64Data);
           if (assetRes && assetRes.RelPath) {
             const relSlash = assetRes.RelPath.replace(/\\/g, "/");
-            const imgMarkdown = `\n\n![Diagram](${markdownLinkTarget(relSlash)})\n`;
+            const safePath = (window.FileAnchor && typeof window.FileAnchor.encodeLinkTarget === "function")
+              ? window.FileAnchor.encodeLinkTarget(relSlash)
+              : relSlash.replace(/%/g, "%25").replace(/ /g, "%20").replace(/\(/g, "%28").replace(/\)/g, "%29");
+            const imgMarkdown = `\n\n![Diagram](${safePath})\n`;
 
             const val = editorEl.value;
             const mermaidBlockIdx = val.indexOf(mermaidCode);
@@ -9433,6 +9449,8 @@ OUTPUT FORMAT:
         showMessage("Downloaded diagram as PNG file.", 3500);
       }
     } catch (err) {
+      removeMermaidLeftovers(renderId);
+      removeMermaidLeftovers(renderId + "r");
       console.error("Render mermaid to image error:", err);
       showMessage(t("mermaidExportError", { err: err.message || String(err) }) || ("Export error: " + err.message), 4000, { important: true });
     }
