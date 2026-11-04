@@ -9321,6 +9321,123 @@ OUTPUT FORMAT:
     return null;
   }
 
+  async function renderMermaidToImage() {
+    clearGhostText();
+    const curTab = getActiveTab();
+    if (!curTab) return;
+
+    let mermaidCode = extractMermaidAtCursor();
+    if (!mermaidCode) {
+      const previewCard = document.querySelector(".mermaid-card");
+      if (previewCard && previewCard.dataset && previewCard.dataset.mermaidSrc) {
+        mermaidCode = previewCard.dataset.mermaidSrc;
+      }
+    }
+
+    if (!mermaidCode) {
+      showMessage(t("noMermaidFound") || "No Mermaid diagram found near cursor", 4000);
+      return;
+    }
+
+    try {
+      await ensureMermaidLibraries();
+
+      const tempContainer = document.createElement("div");
+      tempContainer.className = "mermaid-container";
+      tempContainer.style.position = "fixed";
+      tempContainer.style.left = "-9999px";
+      tempContainer.style.top = "-9999px";
+      tempContainer.style.visibility = "hidden";
+      document.body.appendChild(tempContainer);
+
+      let svgHtml = "";
+      const renderId = "mermaid-render-" + Date.now();
+      try {
+        const rendered = await window.mermaid.render(renderId, mermaidCode);
+        svgHtml = rendered.svg;
+      } catch (renderErr) {
+        removeMermaidLeftovers(renderId);
+        if (window.MermaidRepair && typeof window.MermaidRepair.repair === "function") {
+          const repaired = window.MermaidRepair.repair(mermaidCode);
+          const rendered2 = await window.mermaid.render(renderId + "r", repaired);
+          svgHtml = rendered2.svg;
+        } else {
+          throw renderErr;
+        }
+      }
+
+      tempContainer.dataset.mermaidSrc = mermaidCode;
+      tempContainer.innerHTML = svgHtml;
+
+      const canvas = await rasterizeMermaidSvgToCanvas(tempContainer);
+      if (tempContainer.parentNode) {
+        tempContainer.parentNode.removeChild(tempContainer);
+      }
+
+      let copiedToClipboard = false;
+      if (canvas.toBlob && navigator.clipboard && typeof ClipboardItem !== "undefined") {
+        try {
+          const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
+          if (blob) {
+            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
+            copiedToClipboard = true;
+          }
+        } catch (clipErr) {
+          console.warn("Clipboard write failed:", clipErr);
+        }
+      }
+
+      const dataUrl = canvas.toDataURL("image/png");
+      const base64Data = dataUrl.replace(/^data:image\/png;base64,/, "");
+
+      let insertedInNote = false;
+      if (window.backend && window.backend.saveAsset) {
+        try {
+          const noteDir = await getNoteDir(curTab);
+          const assetRes = await window.backend.saveAsset(noteDir, "png", base64Data);
+          if (assetRes && assetRes.RelPath) {
+            const relSlash = assetRes.RelPath.replace(/\\/g, "/");
+            const imgMarkdown = `\n\n![Diagram](${markdownLinkTarget(relSlash)})\n`;
+
+            const val = editorEl.value;
+            const mermaidBlockIdx = val.indexOf(mermaidCode);
+            let insertPos = editorEl.selectionEnd;
+            if (mermaidBlockIdx !== -1) {
+              const fenceEnd = val.indexOf("```", mermaidBlockIdx + mermaidCode.length);
+              if (fenceEnd !== -1) {
+                insertPos = fenceEnd + 3;
+              }
+            }
+            editorEl.setSelectionRange(insertPos, insertPos);
+            insertTextWithUndo(imgMarkdown);
+            curTab.content = editorEl.value;
+            curTab.isDirty = true;
+            renderTabs();
+            updateLineNumbers();
+            updateStatusBar();
+            insertedInNote = true;
+          }
+        } catch (assetErr) {
+          console.warn("Save asset failed:", assetErr);
+        }
+      }
+
+      if (insertedInNote && copiedToClipboard) {
+        showMessage(t("mermaidImageSavedAndCopied") || "Diagram saved to assets and copied to clipboard!", 3500);
+      } else if (copiedToClipboard) {
+        showMessage(t("mermaidCopiedImage") || "Diagram copied to clipboard as image!", 3500);
+      } else if (insertedInNote) {
+        showMessage("Diagram saved to assets and inserted in note.", 3500);
+      } else {
+        downloadCanvasAsPng(canvas, `diagram_${Date.now()}.png`);
+        showMessage("Downloaded diagram as PNG file.", 3500);
+      }
+    } catch (err) {
+      console.error("Render mermaid to image error:", err);
+      showMessage(t("mermaidExportError", { err: err.message || String(err) }) || ("Export error: " + err.message), 4000, { important: true });
+    }
+  }
+
   // --- Phase 3: Ambient Context Engine (Serendipity Recall) ---
   let ambientDebounceTimer = null;
 
@@ -9649,6 +9766,13 @@ OUTPUT FORMAT:
         desc: t('cmdPaletteConvertMermaidDesc'),
         iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><path d="M10 6.5h4a2 2 0 0 1 2 2v5.5"/></svg>',
         action: () => convertSelectionToMermaid()
+      },
+      {
+        id: 'cmd_mermaid_to_image',
+        title: t('cmdPaletteMermaidToImage'),
+        desc: paletteDescWithShortcut('cmdPaletteMermaidToImageDesc', 'mermaidToImage'),
+        iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+        action: () => renderMermaidToImage()
       },
       {
         id: 'cmd_ai_correct',
@@ -12426,6 +12550,13 @@ OUTPUT FORMAT:
       return;
     }
 
+    // Mermaid Diagram to Image (PNG)
+    if (matchShortcut(e, config.shortcuts && config.shortcuts.mermaidToImage)) {
+      e.preventDefault();
+      renderMermaidToImage();
+      return;
+    }
+
     // Export Plain Text
     if (matchShortcut(e, config.shortcuts && config.shortcuts.exportPlainText)) {
       e.preventDefault();
@@ -13063,6 +13194,13 @@ OUTPUT FORMAT:
     ctxConvertMermaid.onclick = () => {
       contextMenu.classList.add('hidden');
       convertSelectionToMermaid();
+    };
+  }
+  const ctxMermaidToImage = document.getElementById('ctx-mermaid-to-image');
+  if (ctxMermaidToImage) {
+    ctxMermaidToImage.onclick = () => {
+      contextMenu.classList.add('hidden');
+      renderMermaidToImage();
     };
   }
   document.getElementById('ctx-save-txt').onclick = () => {
@@ -18821,6 +18959,8 @@ OUTPUT FORMAT:
     openQuickPick,
     openInlinePromptBar,
     convertSelectionToMermaid,
+    renderMermaidToImage,
+    generateImageFromMermaid: renderMermaidToImage,
     triggerAICorrection,
     createTab,
     getActiveEditor,
