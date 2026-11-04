@@ -60,8 +60,8 @@ type speechStatusView struct {
 }
 
 type speechPartView struct {
-	components.Part
-	components.Status
+	Part   components.Part   `json:"part"`
+	Status components.Status `json:"status"`
 }
 
 func parseVoiceConfigJSON(raw string) llm.VoiceConfig {
@@ -79,9 +79,6 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 	cfg := parseVoiceConfigJSON(voiceConfigJSON)
 
 	defModel := speech.DefaultSpeechModelID()
-	if !isLocalEngine(cfg) && cfg.Engine != "" {
-		defModel = speech.DefaultWhisperModelID()
-	}
 
 	view := speechStatusView{
 		StorageDir:   speechComponentsDir(),
@@ -140,6 +137,9 @@ func speechPartFor(which string, cfg llm.VoiceConfig) (components.Part, bool) {
 		}
 		return speech.RuntimePart()
 	case "model":
+		if strings.TrimSpace(cfg.Whisper.Model) == "" {
+			cfg.Whisper.Model = speech.DefaultSpeechModelID()
+		}
 		return speech.ResolveModelPart(cfg.Whisper)
 	}
 	return components.Part{}, false

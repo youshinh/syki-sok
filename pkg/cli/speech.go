@@ -116,6 +116,9 @@ func (r *HeadlessRunner) runSpeech(args []string) (int, error) {
 	if *model != "" {
 		voiceCfg.Whisper.Model = *model
 	}
+	if voiceCfg.Whisper.Model == "" {
+		voiceCfg.Whisper.Model = speech.DefaultSpeechModelID()
+	}
 	if *lang != "" {
 		voiceCfg.Whisper.Language = *lang
 	}
