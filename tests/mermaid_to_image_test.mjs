@@ -2,51 +2,40 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-test('renderMermaidToImage contract and mistake-proofing', async (t) => {
+test('Gemini / Nano Banana image generation and Local PNG renderer wiring', async (t) => {
   const appJs = readFileSync('frontend/js/app.js', 'utf8');
 
-  await t.test('calls repair(code).code and passes a string to mermaid.render', () => {
-    // Crucial: repair() returns { code, fixes, type }. Passing the object itself
-    // causes "i.replace is not a function" inside Mermaid's detectType parser.
+  await t.test('wires shortcut and context menu to generateImageFromMermaid (Gemini / Nano Banana)', () => {
     assert.match(
       appJs,
-      /window\.MermaidRepair\.repair\(mermaidCode\)\.code/,
-      'Must extract .code from MermaidRepair.repair'
+      /matchShortcut\(e,\s*config\.shortcuts\s*&&\s*config\.shortcuts\.mermaidToImage\)[^}]+generateImageFromMermaid\(\)/,
+      'mermaidToImage shortcut must call generateImageFromMermaid'
     );
-    assert.doesNotMatch(
+    assert.match(
       appJs,
-      /await window\.mermaid\.render\([^,]+,\s*repaired\)/,
-      'Must never pass repaired object directly to mermaid.render'
+      /ctxMermaidToImage\.onclick\s*=\s*\(\)\s*=>\s*\{[^}]+generateImageFromMermaid\(\);/,
+      'ctxMermaidToImage must call generateImageFromMermaid'
     );
   });
 
-  await t.test('does not reference non-existent markdownLinkTarget in JS', () => {
-    // markdownLinkTarget is a Go function; JS uses FileAnchor.encodeLinkTarget
-    assert.doesNotMatch(
+  await t.test('calls backend.generateImageAsync with ImageConfig', () => {
+    assert.match(
       appJs,
-      /markdownLinkTarget\(/,
-      'Must not call undefined markdownLinkTarget in app.js'
+      /window\.backend\.generateImageAsync\(/,
+      'generateImageFromMermaid must call window.backend.generateImageAsync'
     );
   });
 
-  await t.test('supports fallback preview container [data-mermaid-src]', () => {
+  await t.test('exposes generateImageFromMermaid and renderMermaidToImage to test helper', () => {
     assert.match(
       appJs,
-      /document\.querySelector\(\s*["']\[data-mermaid-src\]["']\s*\)/,
-      'Must check [data-mermaid-src] on preview elements'
-    );
-  });
-
-  await t.test('cleans up Mermaid error leftovers on failure', () => {
-    assert.match(
-      appJs,
-      /removeMermaidLeftovers\(renderId\)/,
-      'Must clean up renderId leftovers'
+      /generateImageFromMermaid,/,
+      'Must expose generateImageFromMermaid in test helper'
     );
     assert.match(
       appJs,
-      /removeMermaidLeftovers\(renderId \+ ['"]r['"]\)/,
-      'Must clean up repaired renderId leftovers'
+      /renderMermaidToImage,/,
+      'Must expose renderMermaidToImage in test helper'
     );
   });
 });

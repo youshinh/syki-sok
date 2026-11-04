@@ -9321,6 +9321,285 @@ OUTPUT FORMAT:
     return null;
   }
 
+  // --- Feature 6: Mermaid Diagram to Infographic Image via Gemini / nano-banana ---
+  function getInfographicStylePrompt(styleName) {
+    const s = styleName || 'material';
+    switch (s) {
+      case 'sketchy':
+        return "Hand-drawn whiteboard and marker sketch infographic design system. " +
+          "Whiteboard surface background (#f8fafc), marker pen line art with subtle organic hand-drawn wobble, friendly casual brainstorming aesthetic. " +
+          "Content containers resemble light pastel sticky-notes with gentle 8px rounded corners (pale yellow #fef08a, soft mint #bbf7d0, light sky #bae6fd, pure white). " +
+          "Focal accent is a single bright marker highlight (Coral Red #e11d48) on 1 or 2 key nodes only; secondary elements use neutral dark slate pen strokes (#334155). " +
+          "Connectors are clean orthogonal or gentle hand-drawn right-angle elbow arrows, never chaotic crossed lines. " +
+          "Typography is friendly, highly legible Japanese hand-lettering or clean rounded sans (Noto Sans JP / Casual Sans). " +
+          "Strictly NO 3D effects, NO drop shadows, NO photorealism, NO glossy gradients.";
+      case 'editorial':
+        return "Minimal editorial architectural design system (Swiss style publication aesthetic). " +
+          "Warm off-white paper canvas (#f9f8f6), crisp jet-black hairline borders (1px #1c1917), and generous architectural whitespace. " +
+          "Focal accent is exactly ONE vibrant Tangerine / Coral accent (#e0533c) reserved strictly for the 1 or 2 hero nodes; everything else is quiet ink (#1c1917) and muted gray (#78716c). " +
+          "Connectors MUST be strictly orthogonal right-angle elbows (r=8px rounded corners); absolutely NO diagonal lines or crossed lines. " +
+          "Typography uses an elegant editorial serif title with crisp geometric sans-serif node names (Noto Sans JP). " +
+          "Strictly flat 2D, NO shadows, NO gradients, NO illustrations.";
+      case 'terminal':
+        return "Developer terminal and modern dark CLI window infographic design system. " +
+          "Deep charcoal/black console background (#0d1117), crisp 1px borders (#30363d), with a subtle top macOS-style window header bar with small colored dots (red, yellow, green). " +
+          "Node containers are dark elevated blocks (#161b22) with 6px rounded corners. " +
+          "Focal accent uses vibrant Emerald Green (#2ea043) or Cyan (#58a6ff) on 1 or 2 critical nodes/links only. " +
+          "Connectors are sharp orthogonal terminal routing lines with crisp arrowheads. " +
+          "Typography uses monospace styling for endpoints, commands, and sublabels, with clean Noto Sans JP for primary labels. " +
+          "Strictly clean developer UI, NO photorealism, NO 3D, NO muddy neon glows.";
+      case 'ink':
+        return "Japanese Wa-Modern sumi-ink minimalist infographic design system. " +
+          "Textured pale washi paper background (#f6f5f0), deep sumi-ink black clean lines and typography (#222222), serene spatial harmony and generous breathing space (Ma). " +
+          "Focal accent is a single traditional Japanese vermilion seal mark / cinnabar red accent (#c23a2b) on 1 key focal point; all other elements remain pure monochrome ink. " +
+          "Connectors are precise, serene orthogonal right-angle lines with subtle brush-stroke termination. " +
+          "Typography is refined, balanced Japanese Noto Sans JP / Mincho hybrid. " +
+          "Calm, dignified, contemplative 2D technical aesthetic. NO glossy gradients, NO shadows.";
+      case 'material':
+      default:
+        return "Material Design 3 infographic design system. " +
+          "Flat solid colors only — absolutely NO gradients anywhere. " +
+          "Page canvas is a slightly blue-tinted light grey (#f0f4f9); content sits on pure white cards with a 28px corner radius, a 1px light grey border (#c4c7c5) and NO drop shadow. " +
+          "Primary accent is Action Blue #0b57d0, used sparingly on ONLY the 1 or 2 most important hero nodes; supporting elements use neutral white or soft tonal container tint (#d3e3fd). " +
+          "Connectors MUST be strictly orthogonal right-angle elbows with rounded corners; NO diagonal lines. " +
+          "Action-like elements are full pill shapes; inputs 4px radius. " +
+          "Typography is a clean geometric sans (Noto Sans JP / Roboto): headings are LARGE at normal-to-medium weight. " +
+          "Icons are Google Material Symbols Outlined line icons, 24px, monochrome. " +
+          "Strict 8px spacing grid, generous structural spacing, left-aligned layout, calm corporate aesthetic.";
+    }
+  }
+
+  const CLEAN_INFOGRAPHIC_STYLE = getInfographicStylePrompt('material');
+
+  const CLEAN_INFOGRAPHIC_NEGATIVES = 
+    "No gradients of any kind. No drop shadows on cards. No heavy bold headings. " +
+    "No emoji, no Unicode-symbol icons, no filled/colored icon badges. " +
+    "No photography, no photorealism, no 3D, no glossy or glassy effects. " +
+    "No hand-drawn or sketchy style. No neon, no dark cyberpunk. No decorative illustration. " +
+    "No gibberish text. No random placeholder words. No blurry text. No tiny unreadable text. " +
+    "Do NOT render any prompt meta labels such as: REFERENCE, DIAGRAM FIDELITY, TEXT FIDELITY, NEGATIVE CONSTRAINTS. " +
+    "Do NOT render the instruction text of this prompt. Render only content derived from the Mermaid diagram.";
+
+  function extractFlowDirectionText(code) {
+    const src = String(code == null ? '' : code).replace(/\r/g, '');
+    const first = src.split('\n').map(x => x.trim()).filter(Boolean)[0] || '';
+    const flow = /^(?:flowchart|graph)\s+([A-Za-z]{2})\b/i.exec(first);
+    if (flow && flow[1]) {
+      const dir = flow[1].toUpperCase();
+      switch (dir) {
+        case 'LR': return 'from left to right';
+        case 'RL': return 'from right to left';
+        case 'TB':
+        case 'TD': return 'from top to bottom';
+        case 'BT': return 'from bottom to top';
+      }
+    }
+    const stateDir = /(?:^|\n)\s*direction\s+([A-Za-z]{2})\b/i.exec(src);
+    if (stateDir && stateDir[1]) {
+      const dir = stateDir[1].toUpperCase();
+      switch (dir) {
+        case 'LR': return 'from left to right';
+        case 'RL': return 'from right to left';
+        case 'TB':
+        case 'TD': return 'from top to bottom';
+        case 'BT': return 'from bottom to top';
+      }
+    }
+    return 'with a clear directional flow';
+  }
+
+  function deriveDiagramTitle(mermaidCode, noteContent) {
+    const src = String(mermaidCode == null ? '' : mermaidCode).replace(/\r/g, '');
+    const m = /^\s*(?:%%\s*)?title\s*[:\s]\s*["']?(.+?)["']?\s*$/im.exec(src);
+    if (m && m[1]) return m[1].trim();
+
+    // Try finding title from note content near mermaid
+    if (noteContent) {
+      const lines = noteContent.split('\n');
+      for (let i = 0; i < lines.length; i++) {
+        const line = lines[i].trim();
+        if (line.startsWith('#') && !line.includes('```')) {
+          return line.replace(/^#+\s*/, '').trim();
+        }
+      }
+    }
+    return 'プロセス構造図';
+  }
+
+  function buildInfographicImagePrompt(mermaidCode, noteContent, forcedStyle) {
+    const dirText = extractFlowDirectionText(mermaidCode);
+    const title = deriveDiagramTitle(mermaidCode, noteContent);
+    const styleName = forcedStyle || (config.general && config.general.diagramStyle) || 'material';
+    const stylePrompt = getInfographicStylePrompt(styleName);
+
+    return [
+      `A high-quality ${stylePrompt}`,
+      `REFERENCE (Mermaid code for understanding only; do NOT render this text verbatim): """\n${mermaidCode}\n"""`,
+      `DIAGRAM FIDELITY (highest priority): The Mermaid code is the blueprint. Render a clean diagram/infographic that matches the Mermaid structure exactly: include every node and every edge; preserve branches/merges; preserve subgraph groupings as separate containers with titles; follow the declared direction (${dirText}).`,
+      `TEXT FIDELITY: Copy node labels, decision labels, and subgraph titles from the Mermaid code VERBATIM. Do not translate, do not paraphrase, do not summarize Mermaid labels. Do not invent any new labels that are not present in the Mermaid code.`,
+      `Text rendering: render clean, sharp, legible labels for nodes, decisions, and subgraph titles in Japanese (Noto Sans JP) or original language from the Mermaid diagram.`,
+      `Slide layout: wide 16:9. Use a clean card composition: (1) a prominent header title '${title}' (normal-to-medium weight geometric sans), (2) a central diagram area following the Mermaid structure on crisp white cards with 28px rounded corners and 1px light border, (3) clear directional arrows with Action Blue #0b57d0 accents.`,
+      `Visual system: strict 8px spacing grid, Google Material Symbols Outlined line icons, consistent stroke weight, clear arrowheads, generous structural whitespace.`,
+      `TITLE RULE: The slide must prominently display the header title: '${title}'.`,
+      `NEGATIVE CONSTRAINTS: ${CLEAN_INFOGRAPHIC_NEGATIVES}`,
+      `high resolution, 8k, sharp focus, aesthetic composition, publication-ready vector finish.`
+    ].join(' ');
+  }
+
+  function isDedicatedImageModel(model) {
+    if (!model || typeof model !== 'string') return false;
+    const m = model.toLowerCase().trim();
+    if (m.startsWith('imagen-') || m.endsWith('-image') || m.includes('banana')) return true;
+    return false;
+  }
+
+  function generateImageFromMermaid() {
+    clearGhostText();
+    const curTab = getActiveTab();
+    if (!curTab) return;
+
+    let mermaidCode = extractMermaidAtCursor();
+    if (!mermaidCode) {
+      const previewEl = document.querySelector("[data-mermaid-src]");
+      if (previewEl && previewEl.dataset && previewEl.dataset.mermaidSrc) {
+        mermaidCode = previewEl.dataset.mermaidSrc;
+      }
+    }
+    if (!mermaidCode) {
+      showMessage(t('noMermaidFound'), 4000);
+      return;
+    }
+
+    // Ensure Gemini endpoint is used for image generation (do not inherit local vision baseUrl)
+    let imageBaseUrl = (config.image && config.image.baseUrl) || '';
+    if (!imageBaseUrl || imageBaseUrl.includes('localhost') || imageBaseUrl.includes('127.0.0.1') || imageBaseUrl.startsWith('http://')) {
+      if (config.vision && config.vision.baseUrl && !config.vision.baseUrl.includes('localhost') && !config.vision.baseUrl.includes('127.0.0.1') && !config.vision.baseUrl.startsWith('http://')) {
+        imageBaseUrl = config.vision.baseUrl;
+      } else {
+        imageBaseUrl = 'https://generativelanguage.googleapis.com';
+      }
+    }
+
+    // Check Gemini API key (priority: image > vision > text). Another group's key is borrowed only while that group talks to
+    // the same host as the image endpoint: it is sent there as ?key=, so a key of another provider must not be.
+    const apiKey = (config.image && config.image.apiKey) || borrowedApiKey(imageBaseUrl, [
+      { baseUrl: (config.vision && config.vision.baseUrl) || 'https://generativelanguage.googleapis.com', apiKey: config.vision && config.vision.apiKey },
+      { baseUrl: (config.text && config.text.baseUrl) || 'http://localhost:11434', apiKey: config.text && config.text.apiKey }
+    ]);
+    if (!apiKey && (!window.backend || !window.backend.generateImageAsync)) {
+      showMessage(t('geminiKeyRequired'), 4000);
+      return;
+    }
+
+    const reqId = genReqId('img_');
+    const anchorId = `[${t('generatingImageAnchor')}]`;
+
+    // Find the end of the mermaid block to insert image directly below it
+    const val = editorEl.value;
+    const mermaidBlockIdx = val.indexOf(mermaidCode);
+    let insertPos = editorEl.selectionEnd;
+    if (mermaidBlockIdx !== -1) {
+      const fenceEnd = val.indexOf('```', mermaidBlockIdx + mermaidCode.length);
+      if (fenceEnd !== -1) {
+        insertPos = fenceEnd + 3;
+      }
+    }
+
+    editorEl.setSelectionRange(insertPos, insertPos);
+    const insertion = `\n\n${anchorId}\n\n`;
+    insertTextWithUndo(insertion);
+
+    curTab.content = editorEl.value;
+    curTab.isDirty = true;
+    renderTabs();
+    updateLineNumbers();
+    updateStatusBar();
+
+    registerPendingLLMRequest(reqId, {
+      tabId: curTab.id,
+      anchorId: anchorId,
+      persistedText: insertion,
+      persistRestore: '',
+      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
+    });
+    listCancellableRequest(reqId, anchorId);
+
+    updateLLMIndicator();
+
+    const imageGenPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
+    let imageModel = (config.image && config.image.model) ? config.image.model.trim() : '';
+    if (!imageModel) {
+      imageModel = 'gemini-3.1-flash-lite-image';
+    }
+    const imageAspect = (config.image && config.image.aspectRatio) || '16:9';
+    const imageRes = (config.image && config.image.resolution) || '1024';
+
+    const imageConfig = {
+      baseUrl: imageBaseUrl,
+      model: imageModel,
+      apiKey: apiKey,
+      aspectRatio: imageAspect,
+      resolution: imageRes
+    };
+
+    if (window.backend && window.backend.generateImageAsync) {
+      window.backend.generateImageAsync(reqId, imageGenPrompt, JSON.stringify(imageConfig), curTab.path || '');
+    } else {
+      setTimeout(() => {
+        window.__onLLMResult(reqId, `![Generated Diagram](https://placehold.co/800x450/252526/ffffff?text=Gemini+Infographic)`, '');
+      }, 2500);
+    }
+  }
+
+  function generateImagePromptFromMermaid() {
+    clearGhostText();
+    const curTab = getActiveTab();
+    if (!curTab) return;
+
+    const mermaidCode = extractMermaidAtCursor();
+    if (!mermaidCode) {
+      showMessage(t('noMermaidFound'), 4000);
+      return;
+    }
+
+    const reqId = genReqId('imgprompt_');
+    const anchorId = `[${t('extractingPromptAnchor')}]`;
+
+    const insertPos = editorEl.selectionEnd;
+    editorEl.setSelectionRange(insertPos, insertPos);
+    const insertion = `\n\n${anchorId}\n\n`;
+    insertTextWithUndo(insertion);
+
+    curTab.content = editorEl.value;
+    curTab.isDirty = true;
+    renderTabs();
+    updateLineNumbers();
+    updateStatusBar();
+
+    registerPendingLLMRequest(reqId, {
+      tabId: curTab.id,
+      anchorId: anchorId,
+      persistedText: insertion,
+      persistRestore: '',
+      listed: true // in the task panel, where it can be cancelled (listCancellableRequest)
+    });
+    listCancellableRequest(reqId, anchorId);
+
+    updateLLMIndicator();
+
+    const infoPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
+    const promptPayload = `以下のMermaid図の構造と意味を理解し、GeminiやMidjourney等でMaterial Design 3（Action Blue #0b57d0, フラット単色, 白カード28px角丸, ドロップシャドウ・グラデーション禁止, Noto Sans JP）に完全準拠した美麗なインフォグラフィック図解を生成するための「英語プロンプト」を出力してください。\n\n【推奨ベースプロンプト】:\n${infoPrompt}\n\n【Mermaid図】:\n${mermaidCode}\n\n回答はプロンプト（英語）のみを引用形式で出力してください。`;
+
+    if (window.backend && window.backend.queryLLMAsync) {
+      window.backend.queryLLMAsync(reqId, promptPayload, JSON.stringify(config.text));
+    } else {
+      setTimeout(() => {
+        window.__onLLMResult(reqId, `> ${infoPrompt}`, '');
+      }, 1500);
+    }
+  }
+
+  // --- Local Fallback / Offline PNG Renderer ---
   async function renderMermaidToImage() {
     clearGhostText();
     const curTab = getActiveTab();
@@ -9790,6 +10069,20 @@ OUTPUT FORMAT:
         title: t('cmdPaletteMermaidToImage'),
         desc: paletteDescWithShortcut('cmdPaletteMermaidToImageDesc', 'mermaidToImage'),
         iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>',
+        action: () => generateImageFromMermaid()
+      },
+      {
+        id: 'cmd_mermaid_to_prompt',
+        title: t('cmdPaletteMermaidToPrompt'),
+        desc: t('cmdPaletteMermaidToPromptDesc'),
+        iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>',
+        action: () => generateImagePromptFromMermaid()
+      },
+      {
+        id: 'cmd_mermaid_render_png',
+        title: t('cmdPaletteRenderMermaidPng') || 'Diagram: Render Mermaid to Local PNG',
+        desc: t('cmdPaletteRenderMermaidPngDesc') || 'Render diagram to high-resolution PNG locally without AI',
+        iconSvg: '<svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
         action: () => renderMermaidToImage()
       },
       {
@@ -12568,10 +12861,10 @@ OUTPUT FORMAT:
       return;
     }
 
-    // Mermaid Diagram to Image (PNG)
+    // Mermaid Diagram to AI Infographic Image (Gemini / nano-banana)
     if (matchShortcut(e, config.shortcuts && config.shortcuts.mermaidToImage)) {
       e.preventDefault();
-      renderMermaidToImage();
+      generateImageFromMermaid();
       return;
     }
 
@@ -13218,7 +13511,7 @@ OUTPUT FORMAT:
   if (ctxMermaidToImage) {
     ctxMermaidToImage.onclick = () => {
       contextMenu.classList.add('hidden');
-      renderMermaidToImage();
+      generateImageFromMermaid();
     };
   }
   document.getElementById('ctx-save-txt').onclick = () => {
@@ -18978,7 +19271,8 @@ OUTPUT FORMAT:
     openInlinePromptBar,
     convertSelectionToMermaid,
     renderMermaidToImage,
-    generateImageFromMermaid: renderMermaidToImage,
+    generateImageFromMermaid,
+    generateImagePromptFromMermaid,
     triggerAICorrection,
     createTab,
     getActiveEditor,

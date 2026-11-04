@@ -49,6 +49,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_readFileByPath", app.ReadFileByPath)
 	_ = w.Bind("backend_queryLLMAsync", app.QueryLLMAsync)
 	_ = w.Bind("backend_queryVisionAsync", app.QueryVisionAsync)
+	_ = w.Bind("backend_generateImageAsync", app.GenerateImageAsync)
 	_ = w.Bind("backend_autocompleteAsync", app.AutocompleteAsync)
 	_ = w.Bind("backend_trimMemory", app.TrimMemory)
 	_ = w.Bind("backend_uiReady", app.MarkUIReady)

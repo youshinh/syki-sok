@@ -259,7 +259,7 @@ const I18N = {
     shortcutActionAICorrection: "Proofread Text",
     shortcutActionQuickActions: "Suggest Quick Actions",
     shortcutActionConvertMermaid: "To Flowchart / Diagram",
-    shortcutActionMermaidToImage: "Render Diagram to Image",
+    shortcutActionMermaidToImage: "Generate Diagram Image (Gemini / Nano Banana)",
 
     // Line Operations
     shortcutGroupLine: "Line Operations",
@@ -979,8 +979,10 @@ const I18N = {
     cmdPalettePipeTasksPrompt: "Extract action items and TODOs into a - [ ] Markdown task list.",
     cmdPaletteConvertMermaid: "Diagram: Convert Selection to Mermaid",
     cmdPaletteConvertMermaidDesc: "Convert text to Mermaid flowchart/sequence/mindmap via diagram prompt",
-    cmdPaletteMermaidToImage: "Diagram: Render Mermaid to Image (PNG)",
-    cmdPaletteMermaidToImageDesc: "Render Mermaid diagram as high-resolution PNG, save to note assets and copy to clipboard",
+    cmdPaletteMermaidToImage: "Diagram: Generate Image with Gemini (Nano Banana)",
+    cmdPaletteMermaidToImageDesc: "Render Mermaid diagram as a modern visual infographic using Gemini / Nano Banana",
+    cmdPaletteRenderMermaidPng: "Diagram: Export Diagram to Local PNG",
+    cmdPaletteRenderMermaidPngDesc: "Render diagram to high-resolution PNG locally without AI",
     cmdPaletteMermaidToPrompt: "Diagram: Generate Image Prompt from Mermaid",
     cmdPaletteMermaidToPromptDesc: "Extract optimized Midjourney / DALL-E prompt from Mermaid diagram",
     cmdPaletteAiCorrect: "AI Typo & Mistake Correction",
@@ -1828,7 +1830,7 @@ const I18N = {
     shortcutActionAICorrection: "AI文章校正・誤字修正",
     shortcutActionQuickActions: "アクション候補を表示",
     shortcutActionConvertMermaid: "図・フローチャート生成",
-    shortcutActionMermaidToImage: "図の画像化 (PNG)",
+    shortcutActionMermaidToImage: "図の画像化 (Gemini / Nano Banana)",
 
     // 行操作
     shortcutGroupLine: "行操作",
@@ -2549,8 +2551,10 @@ const I18N = {
     cmdPalettePipeTasksPrompt: "文章から未完了タスク・TODOを抽出し、- [ ] 形式のチェックリストに変換してください。",
     cmdPaletteConvertMermaid: "図解: 選択範囲をMermaid図に変換",
     cmdPaletteConvertMermaidDesc: "テキストからMermaidフローチャート・シーケンス図等を自動生成",
-    cmdPaletteMermaidToImage: "図解: Mermaid図を画像化 (PNG)",
-    cmdPaletteMermaidToImageDesc: "Mermaid図を高解像度PNG画像にレンダリングしてノートに保存＆コピー",
+    cmdPaletteMermaidToImage: "図解: MermaidからGemini (Nano Banana) で画像生成",
+    cmdPaletteMermaidToImageDesc: "Mermaid図を元にGemini / Nano Bananaでインフォグラフィック画像を生成",
+    cmdPaletteRenderMermaidPng: "図解: Mermaid図をローカルPNG保存",
+    cmdPaletteRenderMermaidPngDesc: "AIを使わずオフラインで高解像度PNG画像を生成して保存",
     cmdPaletteMermaidToPrompt: "図解: Mermaidから画像プロンプト抽出",
     cmdPaletteMermaidToPromptDesc: "Mermaid図からMidjourney/DALL-E向けプロンプトを抽出",
     cmdPaletteAiCorrect: "AI 入力間違い・誤字脱字自動補正",
