@@ -582,6 +582,10 @@
     return window.Appearance ? window.Appearance.signature(window.Appearance.fromConfig(config)) : String((config.general && config.general.theme) || 'olive');
   }
 
+  // Cache state for Settings > Shortcuts table to prevent heavy DOM thrashing on tab switch
+  let shortcutsTableRendered = false;
+  let shortcutsTableDirty = true;
+
   function applyLanguage() {
     const lang = (config.general && config.general.language) || 'en';
     document.documentElement.lang = lang;
@@ -13650,6 +13654,8 @@ OUTPUT FORMAT:
     };
   }
 
+  let settingsTabTaskTimer = null;
+
   function switchSettingsTab(tabName) {
     // Normalize legacy tab names
     if (tabName === 'text') tabName = 'general';
@@ -13658,6 +13664,7 @@ OUTPUT FORMAT:
     if (tabName === 'scraps') tabName = 'sync';
     if (tabName === 'keys') tabName = 'shortcuts';
 
+    // 0ms immediate UI switch: toggle tab highlight & pane visibility without blocking
     if (tabBtnGeneral) tabBtnGeneral.classList.toggle('active', tabName === 'general');
     if (tabBtnModel) tabBtnModel.classList.toggle('active', tabName === 'model');
     if (tabBtnAgent) tabBtnAgent.classList.toggle('active', tabName === 'agent');
@@ -13672,22 +13679,24 @@ OUTPUT FORMAT:
     if (paneSync) paneSync.classList.toggle('hidden', tabName !== 'sync');
     if (paneShortcuts) paneShortcuts.classList.toggle('hidden', tabName !== 'shortcuts');
 
-    if (tabName === 'shortcuts') {
-      renderShortcutsTable();
-    }
-    if (tabName === 'model') {
-      updateOllamaStatus();
-    }
-    if (tabName === 'agent') {
-      checkActiveAgentsConfigStatus();
-    }
-    if (tabName === 'sync') {
-      checkGitInstalledStatusUI();
-      const scrapDirInput = document.getElementById('cfg-scrap-dir');
-      if (scrapDirInput) {
-        updateGitRepoStatusUI(scrapDirInput.value.trim());
+    // Offload heavy IPC/validation tasks to the next animation frame / tick so paint completes instantaneously
+    if (settingsTabTaskTimer) clearTimeout(settingsTabTaskTimer);
+    settingsTabTaskTimer = setTimeout(() => {
+      settingsTabTaskTimer = null;
+      if (tabName === 'shortcuts') {
+        renderShortcutsTable();
+      } else if (tabName === 'model') {
+        updateOllamaStatus();
+      } else if (tabName === 'agent') {
+        checkActiveAgentsConfigStatus();
+      } else if (tabName === 'sync') {
+        checkGitInstalledStatusUI();
+        const scrapDirInput = document.getElementById('cfg-scrap-dir');
+        if (scrapDirInput) {
+          updateGitRepoStatusUI(scrapDirInput.value.trim());
+        }
       }
-    }
+    }, 0);
   }
 
   // --- Dynamic Keyboard Shortcuts Engine ---
@@ -14171,6 +14180,7 @@ OUTPUT FORMAT:
     }
     config.shortcuts[actionKey] = comboOrEmpty;
     clearShortcutParseCache();
+    shortcutsTableDirty = true;
     renderShortcutsTable();
     updateShortcutLabels();
   }
@@ -14268,8 +14278,11 @@ OUTPUT FORMAT:
     }
   ];
 
-  function renderShortcutsTable() {
+  function renderShortcutsTable(force) {
     if (!shortcutsListBody) return;
+    if (!force && shortcutsTableRendered && !shortcutsTableDirty && !activeRecordingAction) {
+      return;
+    }
     shortcutsListBody.innerHTML = '';
 
     const shortcutsHintEl = document.getElementById('shortcuts-hint');
@@ -14330,6 +14343,8 @@ OUTPUT FORMAT:
         shortcutsListBody.appendChild(tr);
       });
     });
+    shortcutsTableRendered = true;
+    shortcutsTableDirty = false;
   }
 
   if (btnResetShortcuts) {
@@ -14337,6 +14352,7 @@ OUTPUT FORMAT:
       config.shortcuts = Object.assign({}, DEFAULT_SHORTCUTS);
       clearShortcutParseCache();
       activeRecordingAction = null;
+      shortcutsTableDirty = true;
       // The OS hotkeys (summon, quick capture) are NOT registered here: Cancel puts config.shortcuts back but cannot take back what the
       // OS was told, which left the hotkeys at the defaults while Settings and config.json still showed the person's own. Save compares
       // with what the dialog opened with and registers what changed (the click handler of #btn-save-settings).
