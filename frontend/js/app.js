@@ -2200,6 +2200,22 @@
 
   // Zero-Taxonomy: Derive clean filename / tab title (no ".md") from the note; the rules live in note_title.js.
   // This runs on every keystroke for auto-titled unsaved tabs; the module reads at most 200 lines.
+
+  let deriveTitleTimer = null;
+  function scheduleDeriveTitle(tab, content) {
+    clearTimeout(deriveTitleTimer);
+    deriveTitleTimer = setTimeout(() => {
+      if (!tab || tab.path || !tab.isAutoTitle) return;
+      const newTitle = deriveTitleFromContent(content);
+      if (newTitle && tab.title !== `${newTitle}.md`) {
+        tab.title = `${newTitle}.md`;
+        syncSecondaryTitle(tab);
+        patchTabItem(tab.id);
+        updateHeaderTitle();
+      }
+    }, 250);
+  }
+
   function deriveTitleFromContent(text) {
     if (!text || !window.NoteTitle) return '';
     return window.NoteTitle.deriveTitle(text);
@@ -2272,10 +2288,16 @@
 
   function updatePaneFocusClasses() {
     if (editorPane) {
-      editorPane.classList.toggle('pane-focused', !isSplitMode || activePane === 'primary');
+      const wantPrimary = !isSplitMode || activePane === 'primary';
+      if (editorPane.classList.contains('pane-focused') !== wantPrimary) {
+        editorPane.classList.toggle('pane-focused', wantPrimary);
+      }
     }
     if (secondaryPane) {
-      secondaryPane.classList.toggle('pane-focused', isSplitMode && activePane === 'secondary');
+      const wantSecondary = isSplitMode && activePane === 'secondary';
+      if (secondaryPane.classList.contains('pane-focused') !== wantSecondary) {
+        secondaryPane.classList.toggle('pane-focused', wantSecondary);
+      }
     }
   }
 
@@ -3095,16 +3117,28 @@
   }
 
   // Ultra-Fast Zero-HTML Line Numbers
-  function updateLineNumbers() {
+  let wrapMeasureTimer = null;
+  function updateLineNumbers(fullCheck = false) {
     // Every place that sets the note's text itself (tab switch, replace, LLM merge...) passes through
     // here, so this is where the link underlines are told the text may have changed (a no-op unless
     // the note has links; the work happens once typing pauses).
     if (window.FileAnchor && window.FileAnchor.scheduleMarks) window.FileAnchor.scheduleMarks(editorEl);
     const lines = countNewlines(editorEl.value) + 1;
+    const linesChanged = lines !== cachedLineCount;
+
+    // Fast path: if line count didn't change and plain gutter is active, skip layout reflows during active typing
+    if (!linesChanged && !fullCheck && !isGutterWrapped(lineNumbersEl)) {
+      clearTimeout(wrapMeasureTimer);
+      wrapMeasureTimer = setTimeout(() => {
+        updateLineNumbers(true);
+      }, 150);
+      return;
+    }
+
     const rows = lineRowsOf(editorEl);
     // Plain numbering only changes with the line count; a wrapped layout also changes when a line
     // wraps differently (typing, a resize, a zoom), so it is re-checked every time.
-    if (rows || lines !== cachedLineCount || isGutterWrapped(lineNumbersEl)) {
+    if (rows || linesChanged || isGutterWrapped(lineNumbersEl)) {
       cachedLineCount = lines;
       renderLineGutter(lineNumbersEl, lines, rows);
     }
@@ -3263,8 +3297,10 @@
     const lastNewline = start > 0 ? text.lastIndexOf('\n', start - 1) : -1;
     const colNum = start - lastNewline;
 
-    statCursor.textContent = t('lineCol', { line: lineNum, col: colNum });
-    statChars.textContent = t('charCount', { count: countChars(text) });
+    const curStr = t('lineCol', { line: lineNum, col: colNum });
+    if (statCursor.textContent !== curStr) statCursor.textContent = curStr;
+    const charStr = t('charCount', { count: countChars(text) });
+    if (statChars.textContent !== charStr) statChars.textContent = charStr;
 
     const selLength = Math.abs(end - start);
     if (selLength > 0) {
@@ -3637,12 +3673,24 @@
     updatePaneFocusClasses();
   }
 
-  function updateSecondaryLineNumbers() {
+  let secondaryWrapMeasureTimer = null;
+  function updateSecondaryLineNumbers(fullCheck = false) {
     if (!isSplitMode || secondaryViewMode !== 'editor' || !editorSecondary || !secondaryLineNumbers) return;
     if (window.FileAnchor && window.FileAnchor.scheduleMarks) window.FileAnchor.scheduleMarks(editorSecondary);
     const lines = countNewlines(editorSecondary.value) + 1;
+    const linesChanged = lines !== cachedSecondaryLineCount;
+
+    // Fast path: if line count didn't change and plain gutter is active, skip layout reflows during active typing
+    if (!linesChanged && !fullCheck && !isGutterWrapped(secondaryLineNumbers)) {
+      clearTimeout(secondaryWrapMeasureTimer);
+      secondaryWrapMeasureTimer = setTimeout(() => {
+        updateSecondaryLineNumbers(true);
+      }, 150);
+      return;
+    }
+
     const rows = lineRowsOf(editorSecondary);
-    if (rows || lines !== cachedSecondaryLineCount || isGutterWrapped(secondaryLineNumbers)) {
+    if (rows || linesChanged || isGutterWrapped(secondaryLineNumbers)) {
       cachedSecondaryLineCount = lines;
       renderLineGutter(secondaryLineNumbers, lines, rows);
     }
@@ -4560,6 +4608,11 @@
     if (platformCapabilities.nativeImeSwitch === false) return;
     const ed = editor || getActiveEditor();
     if (!ed) return;
+    // Fast path: 0ns bailout if no backticks exist in text
+    if (ed.value.indexOf('`') === -1) {
+      if (lastInCodeBlock) lastInCodeBlock = false;
+      return;
+    }
     const guardian = getImeGuardian();
     if (!guardian || !guardian.isInsideCodeBlock) return;
     const inCode = guardian.isInsideCodeBlock(ed.value, ed.selectionStart);
@@ -6467,12 +6520,14 @@
     isComposing = false;
     handleZenkakuGuardOnCompositionEnd(editorEl, e && e.data);
     offerEnglishRetype(e && e.data);
+    onEditorInput(editorEl, getTab(activeTabId), false);
     triggerAutocompleteDebounced();
     syncCodeBlockIMEMode(editorEl);
     triggerCursorAuraDebounced();
   });
 
   editorEl.addEventListener('input', () => {
+    if (isComposing) return; // Native IME composition runs at full speed without JS interference
     activePane = 'primary';
     updatePaneFocusClasses();
     if (isAcceptingGhost) {
@@ -6480,7 +6535,6 @@
     } else {
       onEditorInput(editorEl, getTab(activeTabId), false);
     }
-    hideCursorAura(false);
     triggerCursorAuraDebounced();
   });
   function resetLayoutContainerScrolls() {
@@ -6503,7 +6557,6 @@
   }
 
   editorEl.addEventListener('keyup', () => {
-    resetLayoutContainerScrolls();
     scheduleUpdateStatusBar();
     if (activeImeSuggestion && editorEl.selectionStart !== activeImeSuggestion.endPos) {
       clearGhostText();
@@ -6562,11 +6615,14 @@
 
   // Secondary Editor Event Listeners (Zero overhead when not in split mode)
   if (editorSecondary) {
-    editorSecondary.addEventListener('compositionend', () => {
+    editorSecondary.addEventListener('compositionend', (e) => {
+      isComposing = false;
       handleZenkakuGuardOnCompositionEnd(editorSecondary, e && e.data);
+      onEditorInput(editorSecondary, getTab(secondaryTabId), false);
       syncCodeBlockIMEMode(editorSecondary);
     });
     editorSecondary.addEventListener('input', () => {
+      if (isComposing) return;
       const secTab = getTab(secondaryTabId);
       if (secTab) {
         secTab.content = editorSecondary.value;
@@ -18018,9 +18074,7 @@ OUTPUT FORMAT:
       // Restore saved workspace folder if any (defer non-critical heavy scan well after first paint and input responsiveness)
       const savedFolder = localStorage.getItem('syki_workspace_folder');
       if (savedFolder) {
-        setTimeout(() => {
-          loadWorkspaceFolder(savedFolder, true);
-        }, 3000);
+        setTimeout(() => { loadWorkspaceFolder(savedFolder, true); }, 300);
       }
 
       // Background asynchronous sync of configuration

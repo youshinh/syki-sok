@@ -2503,7 +2503,13 @@
       }
     }, true);
 
+    let isSlotComposing = false;
+    editor.addEventListener('compositionstart', () => {
+      isSlotComposing = true;
+    });
+
     editor.addEventListener('input', () => {
+      if (isSlotComposing) return;
       lastTypingTime = Date.now();
       scheduleRunButtonUpdate(editor);
 
@@ -2561,6 +2567,7 @@
     });
 
     editor.addEventListener('compositionend', () => {
+      isSlotComposing = false;
       normalizeIMESlotTrigger(editor);
     });
 
