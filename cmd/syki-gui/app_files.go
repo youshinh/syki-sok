@@ -139,11 +139,21 @@ func (a *App) GetSession() (string, error) {
 // The file is replaced as a whole (temporary file, then rename): a crash or a power cut in the middle of a write leaves the
 // previous session, not a half-written one. A new file is private (0600): it holds the text of every open note.
 func (a *App) SaveSession(sessionJSON string) (bool, error) {
+	a.sessionSaveMu.Lock()
+	defer a.sessionSaveMu.Unlock()
 	path := getSessionFilePath()
 	if err := atomicfile.WriteMode(path, []byte(sessionJSON), ".session-*.tmp", 0o600); err != nil {
 		return false, fmt.Errorf("セッションファイルの書き込みに失敗しました: %w", err)
 	}
 	return true, nil
+}
+
+// SaveSessionAsync writes session.json off the UI thread so FlushFileBuffers and rename do not stall typing.
+func (a *App) SaveSessionAsync(reqID, sessionJSON string) {
+	go func() {
+		ok, err := a.SaveSession(sessionJSON)
+		a.dispatchDeepSearchResult(reqID, ok, err)
+	}()
 }
 
 // GetStartupFile checks if a file path was passed via command line arguments (e.g. file association double-click).
@@ -492,6 +502,22 @@ func (a *App) SaveFileChecked(path, content, enc, expectSig string) (*SaveResult
 		return &SaveResult{Path: path, Title: filepath.Base(path), Conflict: true}, nil
 	}
 	return a.SaveFile(path, content, enc)
+}
+
+// SaveFileAsync writes the note off the UI thread so disk / cloud-drive I/O does not stall typing.
+func (a *App) SaveFileAsync(reqID, path, content, enc string) {
+	go func() {
+		res, err := a.SaveFile(path, content, enc)
+		a.dispatchDeepSearchResult(reqID, res, err)
+	}()
+}
+
+// SaveFileCheckedAsync runs SaveFileChecked off the UI thread so disk / cloud-drive I/O does not stall typing.
+func (a *App) SaveFileCheckedAsync(reqID, path, content, enc, expectSig string) {
+	go func() {
+		res, err := a.SaveFileChecked(path, content, enc, expectSig)
+		a.dispatchDeepSearchResult(reqID, res, err)
+	}()
 }
 
 // diskTextChanged reports whether the file at path holds a text other than the one fingerprinted as expectSig.

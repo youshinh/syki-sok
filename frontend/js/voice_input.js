@@ -901,7 +901,7 @@
     const isQPOpen = qpModal && !qpModal.classList.contains('hidden');
     const isStreaming = isQPOpen || (cfg.whisper && !!cfg.whisper.streaming);
 
-    if (isLocalEngine(cfg) && isStreaming && global.SpeechStream && bridge && typeof bridge.ensureSpeechServer === 'function') {
+    if (localEngine && isStreaming && global.SpeechStream && bridge && typeof bridge.ensureSpeechServer === 'function') {
       try {
         const srvResRaw = bridge.ensureSpeechServer(JSON.stringify(cfg));
         const srvRes = JSON.parse(srvResRaw || '{}');

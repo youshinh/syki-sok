@@ -2201,21 +2201,6 @@
   // Zero-Taxonomy: Derive clean filename / tab title (no ".md") from the note; the rules live in note_title.js.
   // This runs on every keystroke for auto-titled unsaved tabs; the module reads at most 200 lines.
 
-  let deriveTitleTimer = null;
-  function scheduleDeriveTitle(tab, content) {
-    clearTimeout(deriveTitleTimer);
-    deriveTitleTimer = setTimeout(() => {
-      if (!tab || tab.path || !tab.isAutoTitle) return;
-      const newTitle = deriveTitleFromContent(content);
-      if (newTitle && tab.title !== `${newTitle}.md`) {
-        tab.title = `${newTitle}.md`;
-        syncSecondaryTitle(tab);
-        patchTabItem(tab.id);
-        updateHeaderTitle();
-      }
-    }, 250);
-  }
-
   function deriveTitleFromContent(text) {
     if (!text || !window.NoteTitle) return '';
     return window.NoteTitle.deriveTitle(text);
@@ -3117,28 +3102,16 @@
   }
 
   // Ultra-Fast Zero-HTML Line Numbers
-  let wrapMeasureTimer = null;
-  function updateLineNumbers(fullCheck = false) {
+  function updateLineNumbers() {
     // Every place that sets the note's text itself (tab switch, replace, LLM merge...) passes through
     // here, so this is where the link underlines are told the text may have changed (a no-op unless
     // the note has links; the work happens once typing pauses).
     if (window.FileAnchor && window.FileAnchor.scheduleMarks) window.FileAnchor.scheduleMarks(editorEl);
     const lines = countNewlines(editorEl.value) + 1;
-    const linesChanged = lines !== cachedLineCount;
-
-    // Fast path: if line count didn't change and plain gutter is active, skip layout reflows during active typing
-    if (!linesChanged && !fullCheck && !isGutterWrapped(lineNumbersEl)) {
-      clearTimeout(wrapMeasureTimer);
-      wrapMeasureTimer = setTimeout(() => {
-        updateLineNumbers(true);
-      }, 150);
-      return;
-    }
-
     const rows = lineRowsOf(editorEl);
     // Plain numbering only changes with the line count; a wrapped layout also changes when a line
     // wraps differently (typing, a resize, a zoom), so it is re-checked every time.
-    if (rows || linesChanged || isGutterWrapped(lineNumbersEl)) {
+    if (rows || lines !== cachedLineCount || isGutterWrapped(lineNumbersEl)) {
       cachedLineCount = lines;
       renderLineGutter(lineNumbersEl, lines, rows);
     }
@@ -3673,24 +3646,12 @@
     updatePaneFocusClasses();
   }
 
-  let secondaryWrapMeasureTimer = null;
-  function updateSecondaryLineNumbers(fullCheck = false) {
+  function updateSecondaryLineNumbers() {
     if (!isSplitMode || secondaryViewMode !== 'editor' || !editorSecondary || !secondaryLineNumbers) return;
     if (window.FileAnchor && window.FileAnchor.scheduleMarks) window.FileAnchor.scheduleMarks(editorSecondary);
     const lines = countNewlines(editorSecondary.value) + 1;
-    const linesChanged = lines !== cachedSecondaryLineCount;
-
-    // Fast path: if line count didn't change and plain gutter is active, skip layout reflows during active typing
-    if (!linesChanged && !fullCheck && !isGutterWrapped(secondaryLineNumbers)) {
-      clearTimeout(secondaryWrapMeasureTimer);
-      secondaryWrapMeasureTimer = setTimeout(() => {
-        updateSecondaryLineNumbers(true);
-      }, 150);
-      return;
-    }
-
     const rows = lineRowsOf(editorSecondary);
-    if (rows || linesChanged || isGutterWrapped(secondaryLineNumbers)) {
+    if (rows || lines !== cachedSecondaryLineCount || isGutterWrapped(secondaryLineNumbers)) {
       cachedSecondaryLineCount = lines;
       renderLineGutter(secondaryLineNumbers, lines, rows);
     }
@@ -4645,7 +4606,7 @@
         replaceRangeWithUndo(ed, lineStart, pos, indent + '```');
         ed.setSelectionRange(lineStart + indent.length + 3, lineStart + indent.length + 3);
         onEditorInput(ed);
-        return;
+        return true;
       }
       if (typeof normalizeZenkakuCode === 'function') {
         const committed = committedData || '';
@@ -4656,7 +4617,7 @@
             replaceRangeWithUndo(ed, pos - len, pos, norm);
             ed.setSelectionRange(pos - len + norm.length, pos - len + norm.length);
             onEditorInput(ed);
-            return;
+            return true;
           }
         } else if (pos >= 1) {
           const char = val.charAt(pos - 1);
@@ -4665,11 +4626,11 @@
             replaceRangeWithUndo(ed, pos - 1, pos, norm);
             ed.setSelectionRange(pos, pos);
             onEditorInput(ed);
-            return;
+            return true;
           }
         }
       }
-      return;
+      return false;
     }
 
     // 2. Outside Code:
@@ -4678,7 +4639,7 @@
       replaceRangeWithUndo(ed, pos - 1, pos, '`');
       ed.setSelectionRange(pos, pos);
       onEditorInput(ed);
-      return;
+      return true;
     }
 
     // 2b. Line-Start Markdown triggers (headings, lists, blockquotes, code fences)
@@ -4690,9 +4651,10 @@
         replaceRangeWithUndo(ed, lineStart, pos, normPrefix);
         ed.setSelectionRange(lineStart + normPrefix.length, lineStart + normPrefix.length);
         onEditorInput(ed);
-        return;
+        return true;
       }
     }
+    return false;
   }
 
   function offerEnglishRetype(committed) {
@@ -5783,8 +5745,10 @@
   // text over it. Backends without saveFileChecked (a test mock) and tabs that never learned the file save plainly.
   function writeTabToItsFile(tab, force) {
     const body = window.DiskSync ? window.DiskSync.applyEol(persistedContent(tab), tab.eol) : persistedContent(tab);
-    if (!force && tab.diskSig && window.backend.saveFileChecked) {
-      return window.backend.saveFileChecked(tab.path, body, tab.encoding, tab.diskSig);
+    if (!force && tab.diskSig && (window.backend.saveFileCheckedAsync || window.backend.saveFileChecked)) {
+      return window.backend.saveFileCheckedAsync
+        ? window.backend.saveFileCheckedAsync(tab.path, body, tab.encoding, tab.diskSig)
+        : window.backend.saveFileChecked(tab.path, body, tab.encoding, tab.diskSig);
     }
     return window.backend.saveFile(tab.path, body, tab.encoding);
   }
@@ -6454,12 +6418,16 @@
 
       // Zero-Taxonomy: If tab is unfiled/untitled, update tab title dynamically from 1st line
       if (tab.isAutoTitle && !tab.path) {
-        const newTitle = deriveTitleFromContent(editor.value);
-        if (newTitle && tab.title !== `${newTitle}.md`) {
-          tab.title = `${newTitle}.md`;
-          syncSecondaryTitle(tab);
-          patchTabItem(tab.id);
-          updateHeaderTitle();
+        const headSlice = editor.value.slice(0, 1024);
+        if (tab._lastTitleHead !== headSlice) {
+          tab._lastTitleHead = headSlice;
+          const newTitle = deriveTitleFromContent(headSlice);
+          if (newTitle && tab.title !== `${newTitle}.md`) {
+            tab.title = `${newTitle}.md`;
+            syncSecondaryTitle(tab);
+            patchTabItem(tab.id);
+            updateHeaderTitle();
+          }
         }
       }
 
@@ -6499,8 +6467,8 @@
     // Trigger local LLM autocomplete
     if (skipAutocomplete !== true) {
       triggerAutocompleteDebounced();
-    syncCodeBlockIMEMode(editor);
     }
+    syncCodeBlockIMEMode(editor);
 
     // Schedule background memory trimming when editing idles
     scheduleMemoryTrim();
@@ -6518,11 +6486,11 @@
   });
   editorEl.addEventListener('compositionend', (e) => {
     isComposing = false;
-    handleZenkakuGuardOnCompositionEnd(editorEl, e && e.data);
+    const guardHandled = handleZenkakuGuardOnCompositionEnd(editorEl, e && e.data);
     offerEnglishRetype(e && e.data);
-    onEditorInput(editorEl, getTab(activeTabId), false);
-    triggerAutocompleteDebounced();
-    syncCodeBlockIMEMode(editorEl);
+    if (!guardHandled) {
+      onEditorInput(editorEl, getTab(activeTabId), false);
+    }
     triggerCursorAuraDebounced();
   });
 
@@ -6557,6 +6525,7 @@
   }
 
   editorEl.addEventListener('keyup', () => {
+    if (isComposing) return;
     scheduleUpdateStatusBar();
     if (activeImeSuggestion && editorEl.selectionStart !== activeImeSuggestion.endPos) {
       clearGhostText();
@@ -6615,11 +6584,17 @@
 
   // Secondary Editor Event Listeners (Zero overhead when not in split mode)
   if (editorSecondary) {
+    editorSecondary.addEventListener('compositionstart', () => {
+      isComposing = true;
+      hideCursorAura(true);
+    });
     editorSecondary.addEventListener('compositionend', (e) => {
       isComposing = false;
-      handleZenkakuGuardOnCompositionEnd(editorSecondary, e && e.data);
-      onEditorInput(editorSecondary, getTab(secondaryTabId), false);
-      syncCodeBlockIMEMode(editorSecondary);
+      const guardHandled = handleZenkakuGuardOnCompositionEnd(editorSecondary, e && e.data);
+      if (!guardHandled) {
+        onEditorInput(editorSecondary, getTab(secondaryTabId), false);
+      }
+      triggerCursorAuraDebounced();
     });
     editorSecondary.addEventListener('input', () => {
       if (isComposing) return;
@@ -6633,12 +6608,16 @@
 
         // Zero-Taxonomy: If tab is unfiled/untitled, update tab title dynamically from 1st line
         if (secTab.isAutoTitle && !secTab.path) {
-          const newTitle = deriveTitleFromContent(editorSecondary.value.slice(0, 512));
-          if (newTitle && secTab.title !== `${newTitle}.md`) {
-            secTab.title = `${newTitle}.md`;
-            syncSecondaryTitle(secTab);
-            patchTabItem(secTab.id);
-            updateHeaderTitle();
+          const headSlice = editorSecondary.value.slice(0, 1024);
+          if (secTab._lastTitleHead !== headSlice) {
+            secTab._lastTitleHead = headSlice;
+            const newTitle = deriveTitleFromContent(headSlice);
+            if (newTitle && secTab.title !== `${newTitle}.md`) {
+              secTab.title = `${newTitle}.md`;
+              syncSecondaryTitle(secTab);
+              patchTabItem(secTab.id);
+              updateHeaderTitle();
+            }
           }
         }
       }
@@ -9384,31 +9363,31 @@ OUTPUT FORMAT:
     switch (s) {
       case 'sketchy':
         return "Hand-drawn whiteboard and marker sketch infographic design system. " +
-          "Whiteboard surface background (#f8fafc), marker pen line art with subtle organic hand-drawn wobble, friendly casual brainstorming aesthetic. " +
-          "Content containers resemble light pastel sticky-notes with gentle 8px rounded corners (pale yellow #fef08a, soft mint #bbf7d0, light sky #bae6fd, pure white). " +
-          "Focal accent is a single bright marker highlight (Coral Red #e11d48) on 1 or 2 key nodes only; secondary elements use neutral dark slate pen strokes (#334155). " +
+          "Whiteboard surface background (off-white slate), marker pen line art with subtle organic hand-drawn wobble, friendly casual brainstorming aesthetic. " +
+          "Content containers resemble light pastel sticky-notes with gentle 8px rounded corners (pale yellow, soft mint, light sky, pure white). " +
+          "Focal accent is a single bright marker highlight (Coral Red) on 1 or 2 key nodes only; secondary elements use neutral dark slate pen strokes. " +
           "Connectors are clean orthogonal or gentle hand-drawn right-angle elbow arrows, never chaotic crossed lines. " +
           "Typography is friendly, highly legible Japanese hand-lettering or clean rounded sans (Noto Sans JP / Casual Sans). " +
           "Strictly NO 3D effects, NO drop shadows, NO photorealism, NO glossy gradients.";
       case 'editorial':
         return "Minimal editorial architectural design system (Swiss style publication aesthetic). " +
-          "Warm off-white paper canvas (#f9f8f6), crisp jet-black hairline borders (1px #1c1917), and generous architectural whitespace. " +
-          "Focal accent is exactly ONE vibrant Tangerine / Coral accent (#e0533c) reserved strictly for the 1 or 2 hero nodes; everything else is quiet ink (#1c1917) and muted gray (#78716c). " +
+          "Warm off-white paper canvas, crisp jet-black hairline borders (1px), and generous architectural whitespace. " +
+          "Focal accent is exactly ONE vibrant Tangerine / Coral accent reserved strictly for the 1 or 2 hero nodes; everything else is quiet ink and muted gray. " +
           "Connectors MUST be strictly orthogonal right-angle elbows (r=8px rounded corners); absolutely NO diagonal lines or crossed lines. " +
           "Typography uses an elegant editorial serif title with crisp geometric sans-serif node names (Noto Sans JP). " +
           "Strictly flat 2D, NO shadows, NO gradients, NO illustrations.";
       case 'terminal':
         return "Developer terminal and modern dark CLI window infographic design system. " +
-          "Deep charcoal/black console background (#0d1117), crisp 1px borders (#30363d), with a subtle top macOS-style window header bar with small colored dots (red, yellow, green). " +
-          "Node containers are dark elevated blocks (#161b22) with 6px rounded corners. " +
-          "Focal accent uses vibrant Emerald Green (#2ea043) or Cyan (#58a6ff) on 1 or 2 critical nodes/links only. " +
+          "Deep charcoal/black console background, crisp 1px dark slate borders, with a subtle top macOS-style window header bar with small colored dots (red, yellow, green). " +
+          "Node containers are dark elevated blocks with 6px rounded corners. " +
+          "Focal accent uses vibrant Emerald Green or Cyan on 1 or 2 critical nodes/links only. " +
           "Connectors are sharp orthogonal terminal routing lines with crisp arrowheads. " +
           "Typography uses monospace styling for endpoints, commands, and sublabels, with clean Noto Sans JP for primary labels. " +
           "Strictly clean developer UI, NO photorealism, NO 3D, NO muddy neon glows.";
       case 'ink':
         return "Japanese Wa-Modern sumi-ink minimalist infographic design system. " +
-          "Textured pale washi paper background (#f6f5f0), deep sumi-ink black clean lines and typography (#222222), serene spatial harmony and generous breathing space (Ma). " +
-          "Focal accent is a single traditional Japanese vermilion seal mark / cinnabar red accent (#c23a2b) on 1 key focal point; all other elements remain pure monochrome ink. " +
+          "Textured pale washi paper background, deep sumi-ink black clean lines and typography, serene spatial harmony and generous breathing space (Ma). " +
+          "Focal accent is a single traditional Japanese vermilion seal mark / cinnabar red accent on 1 key focal point; all other elements remain pure monochrome ink. " +
           "Connectors are precise, serene orthogonal right-angle lines with subtle brush-stroke termination. " +
           "Typography is refined, balanced Japanese Noto Sans JP / Mincho hybrid. " +
           "Calm, dignified, contemplative 2D technical aesthetic. NO glossy gradients, NO shadows.";
@@ -9416,8 +9395,8 @@ OUTPUT FORMAT:
       default:
         return "Material Design 3 infographic design system. " +
           "Flat solid colors only — absolutely NO gradients anywhere. " +
-          "Page canvas is a slightly blue-tinted light grey (#f0f4f9); content sits on pure white cards with a 28px corner radius, a 1px light grey border (#c4c7c5) and NO drop shadow. " +
-          "Primary accent is Action Blue #0b57d0, used sparingly on ONLY the 1 or 2 most important hero nodes; supporting elements use neutral white or soft tonal container tint (#d3e3fd). " +
+          "Page canvas is a slightly blue-tinted light grey; content sits on pure white cards with a 28px corner radius, a 1px light grey border and NO drop shadow. " +
+          "Primary accent is Action Blue, used sparingly on ONLY the 1 or 2 most important hero nodes; supporting elements use neutral white or soft tonal blue container tint. " +
           "Connectors MUST be strictly orthogonal right-angle elbows with rounded corners; NO diagonal lines. " +
           "Action-like elements are full pill shapes; inputs 4px radius. " +
           "Typography is a clean geometric sans (Noto Sans JP / Roboto): headings are LARGE at normal-to-medium weight. " +
@@ -9495,7 +9474,7 @@ OUTPUT FORMAT:
       `DIAGRAM FIDELITY (highest priority): The Mermaid code is the blueprint. Render a clean diagram/infographic that matches the Mermaid structure exactly: include every node and every edge; preserve branches/merges; preserve subgraph groupings as separate containers with titles; follow the declared direction (${dirText}).`,
       `TEXT FIDELITY: Copy node labels, decision labels, and subgraph titles from the Mermaid code VERBATIM. Do not translate, do not paraphrase, do not summarize Mermaid labels. Do not invent any new labels that are not present in the Mermaid code.`,
       `Text rendering: render clean, sharp, legible labels for nodes, decisions, and subgraph titles in Japanese (Noto Sans JP) or original language from the Mermaid diagram.`,
-      `Slide layout: wide 16:9. Use a clean card composition: (1) a prominent header title '${title}' (normal-to-medium weight geometric sans), (2) a central diagram area following the Mermaid structure on crisp white cards with 28px rounded corners and 1px light border, (3) clear directional arrows with Action Blue #0b57d0 accents.`,
+      `Slide layout: wide 16:9. Use a clean card composition: (1) a prominent header title '${title}' (normal-to-medium weight geometric sans), (2) a central diagram area following the Mermaid structure on crisp white cards with 28px rounded corners and 1px light border, (3) clear directional arrows with Action Blue accents.`,
       `Visual system: strict 8px spacing grid, Google Material Symbols Outlined line icons, consistent stroke weight, clear arrowheads, generous structural whitespace.`,
       `TITLE RULE: The slide must prominently display the header title: '${title}'.`,
       `NEGATIVE CONSTRAINTS: ${CLEAN_INFOGRAPHIC_NEGATIVES}`,
@@ -9645,7 +9624,7 @@ OUTPUT FORMAT:
     updateLLMIndicator();
 
     const infoPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
-    const promptPayload = `以下のMermaid図の構造と意味を理解し、GeminiやMidjourney等でMaterial Design 3（Action Blue #0b57d0, フラット単色, 白カード28px角丸, ドロップシャドウ・グラデーション禁止, Noto Sans JP）に完全準拠した美麗なインフォグラフィック図解を生成するための「英語プロンプト」を出力してください。\n\n【推奨ベースプロンプト】:\n${infoPrompt}\n\n【Mermaid図】:\n${mermaidCode}\n\n回答はプロンプト（英語）のみを引用形式で出力してください。`;
+    const promptPayload = `以下のMermaid図の構造と意味を理解し、GeminiやMidjourney等でMaterial Design 3（Action Blue, フラット単色, 白カード28px角丸, ドロップシャドウ・グラデーション禁止, Noto Sans JP）に完全準拠した美麗なインフォグラフィック図解を生成するための「英語プロンプト」を出力してください。\n\n【推奨ベースプロンプト】:\n${infoPrompt}\n\n【Mermaid図】:\n${mermaidCode}\n\n回答はプロンプト（英語）のみを引用形式で出力してください。`;
 
     if (window.backend && window.backend.queryLLMAsync) {
       window.backend.queryLLMAsync(reqId, promptPayload, JSON.stringify(config.text));
@@ -12877,11 +12856,11 @@ OUTPUT FORMAT:
 
     // F6 / Shift+F6 by default: the focus goes round the note -> the header -> the status bar -> the note, and the bars come back
     // for it. The same key backwards is the shortcut with Shift added (unless it already has Shift in it).
-    if (chromeOverlay && config.shortcuts && config.shortcuts.focusChrome && !isDialogOpen()) {
+    if (chromeOverlay && config.shortcuts && config.shortcuts.focusChrome) {
       const chordHasShift = /(^|\+)shift(\+|$)/i.test(config.shortcuts.focusChrome);
       const backwards = e.shiftKey && !chordHasShift;
       const asPressed = backwards ? { key: e.key, code: e.code, ctrlKey: e.ctrlKey, metaKey: e.metaKey, altKey: e.altKey, shiftKey: false } : e;
-      if (matchShortcut(asPressed, config.shortcuts.focusChrome)) {
+      if (matchShortcut(asPressed, config.shortcuts.focusChrome) && config.shortcuts.focusChrome && !isDialogOpen()) {
         e.preventDefault();
         chromeOverlay.focusBar(backwards ? -1 : 1);
         return;
@@ -17504,7 +17483,9 @@ OUTPUT FORMAT:
       try {
         localStorage.setItem('syki_session_v1', jsonStr);
       } catch (e) {}
-      if (window.backend && window.backend.saveSession) {
+      if (window.backend && window.backend.saveSessionSync) {
+        window.backend.saveSessionSync(jsonStr);
+      } else if (window.backend && window.backend.saveSession) {
         window.backend.saveSession(jsonStr);
       }
     }

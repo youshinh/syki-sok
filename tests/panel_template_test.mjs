@@ -157,7 +157,7 @@ function placeProblems({ app, jev }) {
   // shortcuts: keys are chips, recording is green rather than red
   const rec = rule('#settings-modal .shortcut-key-btn.recording');
   assert.ok(!/#e51400|red|255, ?136, ?136/i.test(rec), 'recording is not red');
-  assert.ok(/:has\(#pane-shortcuts:not\(\.hidden\)\)/.test(css), 'the shortcut list scrolls under a fixed hint line');
+  assert.ok(/#settings-modal \.modal-body\.tab-shortcuts-active/.test(css), 'the shortcut list scrolls under a fixed hint line');
   console.log('PASS: Settings shares the panels\' width, rows, labels, buttons and keys.');
 }
 

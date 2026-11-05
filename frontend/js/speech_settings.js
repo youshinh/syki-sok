@@ -298,7 +298,7 @@
         if (local.ready) {
           hint = '✓ ' + (t('speechReady') || '準備完了: 音声はこのPC内で高速・安全に文字起こしされます。');
           if (hintEl) {
-            hintEl.style.color = 'var(--text-ok, #4ade80)';
+            hintEl.style.color = 'var(--text-ok)';
             hintEl.style.fontWeight = '600';
           }
           setHidden(quickBtn, true);
@@ -311,7 +311,7 @@
           }
           if (local.modelWarning) hint += (hint ? ' ' : '') + local.modelWarning;
           if (hintEl) {
-            hintEl.style.color = 'var(--text-warn, #fbbf24)';
+            hintEl.style.color = 'var(--text-warn-orange)';
             hintEl.style.fontWeight = 'normal';
           }
           if (quickBtn) quickBtn.textContent = t('speechDownloadEngine') || '音声認識エンジンをダウンロード';

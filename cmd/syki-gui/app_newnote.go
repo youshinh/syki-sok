@@ -86,6 +86,14 @@ func (a *App) CreateNoteInFolder(content, enc, name, dir string) (*SaveResult, e
 	return nil, errors.New("同じ名前のファイルが多すぎて保存できませんでした")
 }
 
+// CreateNoteInFolderAsync runs CreateNoteInFolder off the UI thread so autosaving a new note does not stall typing.
+func (a *App) CreateNoteInFolderAsync(reqID, content, enc, name, dir string) {
+	go func() {
+		res, err := a.CreateNoteInFolder(content, enc, name, dir)
+		a.dispatchDeepSearchResult(reqID, res, err)
+	}()
+}
+
 var windowsReservedNames = map[string]bool{
 	"con": true, "prn": true, "aux": true, "nul": true,
 	"com1": true, "com2": true, "com3": true, "com4": true, "com5": true, "com6": true, "com7": true, "com8": true, "com9": true,

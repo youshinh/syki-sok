@@ -17,8 +17,7 @@
   // has a link at all.
   const MARK_MAX_CHARS = 100000;
   const MAX_MARKS = 3000;
-  const MARK_DEBOUNCE_MS = 100;
-  const MARK_MAX_WAIT_MS = 400;
+  const MARK_DEBOUNCE_MS = 250;
 
   const I18N_FALLBACK = {
     ja: {
@@ -551,22 +550,22 @@
     syncLayerScroll(editor, layer);
   }
 
-  // Marks are refreshed once typing pauses (or every MARK_MAX_WAIT_MS of continuous typing), not per
-  // keystroke: rebuilding the layer means laying out a copy of the note.
+  // Marks are refreshed once typing pauses, not per keystroke or during IME composition:
+  // rebuilding the layer means laying out a copy of the note.
   const markTimers = new Map();
+  const markComposing = new WeakSet();
 
   function scheduleMarks(editor) {
     if (!editor) return;
-    const now = Date.now();
+    if (markComposing.has(editor)) return;
     let st = markTimers.get(editor);
-    if (!st) { st = { timer: null, since: now }; markTimers.set(editor, st); }
-    // `since` is when the current burst of changes began: a new burst starts once the last one ran.
-    if (st.timer) clearTimeout(st.timer); else st.since = now;
-    const wait = Math.max(0, Math.min(MARK_DEBOUNCE_MS, st.since + MARK_MAX_WAIT_MS - now));
+    if (!st) { st = { timer: null }; markTimers.set(editor, st); }
+    if (st.timer) clearTimeout(st.timer);
     st.timer = setTimeout(() => {
       st.timer = null;
+      if (markComposing.has(editor)) return;
       try { updateMarks(editor); } catch (e) { /* the marks are decoration only */ }
-    }, wait);
+    }, MARK_DEBOUNCE_MS);
   }
 
   // The link under a viewport point, from the geometry of the layer's own spans (exact, wrapped
@@ -673,7 +672,19 @@
     for (let i = 0; i < MARKED_EDITOR_IDS.length; i++) {
       const editor = global.document.getElementById(MARKED_EDITOR_IDS[i]);
       if (!editor || !editor.addEventListener) continue;
-      editor.addEventListener('input', () => scheduleMarks(editor));
+      editor.addEventListener('compositionstart', () => {
+        markComposing.add(editor);
+        const st = markTimers.get(editor);
+        if (st && st.timer) { clearTimeout(st.timer); st.timer = null; }
+      });
+      editor.addEventListener('compositionend', () => {
+        markComposing.delete(editor);
+        scheduleMarks(editor);
+      });
+      editor.addEventListener('input', () => {
+        if (markComposing.has(editor)) return;
+        scheduleMarks(editor);
+      });
       editor.addEventListener('scroll', () => {
         const layer = layers.get(editor);
         if (layer && layer.text !== null) syncLayerScroll(editor, layer);
