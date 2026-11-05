@@ -33,6 +33,7 @@ import "embed"
 //go:embed js/html_comments.js
 //go:embed js/html_to_md.js
 //go:embed js/i18n.js
+//go:embed js/infographic_prompt.js
 //go:embed js/ime_guardian.js
 //go:embed js/immersive_exit.js
 //go:embed js/jev_action.js

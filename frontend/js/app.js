@@ -9376,7 +9376,10 @@ OUTPUT FORMAT:
   }
 
   // --- Feature 6: Mermaid Diagram to Infographic Image via Gemini / nano-banana ---
+  const infoPrompt = typeof window !== 'undefined' ? window.InfographicPrompt : null;
+
   function getInfographicStylePrompt(styleName) {
+    if (infoPrompt) return infoPrompt.getInfographicStylePrompt(styleName);
     const s = styleName || 'material';
     switch (s) {
       case 'sketchy':
@@ -9423,9 +9426,9 @@ OUTPUT FORMAT:
     }
   }
 
-  const CLEAN_INFOGRAPHIC_STYLE = getInfographicStylePrompt('material');
+  const CLEAN_INFOGRAPHIC_STYLE = infoPrompt ? infoPrompt.CLEAN_INFOGRAPHIC_STYLE : getInfographicStylePrompt('material');
 
-  const CLEAN_INFOGRAPHIC_NEGATIVES = 
+  const CLEAN_INFOGRAPHIC_NEGATIVES = infoPrompt ? infoPrompt.CLEAN_INFOGRAPHIC_NEGATIVES : 
     "No gradients of any kind. No drop shadows on cards. No heavy bold headings. " +
     "No emoji, no Unicode-symbol icons, no filled/colored icon badges. " +
     "No photography, no photorealism, no 3D, no glossy or glassy effects. " +
@@ -9435,6 +9438,7 @@ OUTPUT FORMAT:
     "Do NOT render the instruction text of this prompt. Render only content derived from the Mermaid diagram.";
 
   function extractFlowDirectionText(code) {
+    if (infoPrompt) return infoPrompt.extractFlowDirectionText(code);
     const src = String(code == null ? '' : code).replace(/\r/g, '');
     const first = src.split('\n').map(x => x.trim()).filter(Boolean)[0] || '';
     const flow = /^(?:flowchart|graph)\s+([A-Za-z]{2})\b/i.exec(first);
@@ -9463,6 +9467,7 @@ OUTPUT FORMAT:
   }
 
   function deriveDiagramTitle(mermaidCode, noteContent) {
+    if (infoPrompt) return infoPrompt.deriveDiagramTitle(mermaidCode, noteContent);
     const src = String(mermaidCode == null ? '' : mermaidCode).replace(/\r/g, '');
     const m = /^\s*(?:%%\s*)?title\s*[:\s]\s*["']?(.+?)["']?\s*$/im.exec(src);
     if (m && m[1]) return m[1].trim();
@@ -9481,9 +9486,11 @@ OUTPUT FORMAT:
   }
 
   function buildInfographicImagePrompt(mermaidCode, noteContent, forcedStyle) {
+    const defaultStyle = (config.general && config.general.diagramStyle) || 'material';
+    if (infoPrompt) return infoPrompt.buildInfographicImagePrompt(mermaidCode, noteContent, forcedStyle, defaultStyle);
     const dirText = extractFlowDirectionText(mermaidCode);
     const title = deriveDiagramTitle(mermaidCode, noteContent);
-    const styleName = forcedStyle || (config.general && config.general.diagramStyle) || 'material';
+    const styleName = forcedStyle || defaultStyle;
     const stylePrompt = getInfographicStylePrompt(styleName);
 
     return [
@@ -9501,6 +9508,7 @@ OUTPUT FORMAT:
   }
 
   function isDedicatedImageModel(model) {
+    if (infoPrompt) return infoPrompt.isDedicatedImageModel(model);
     if (!model || typeof model !== 'string') return false;
     const m = model.toLowerCase().trim();
     if (m.startsWith('imagen-') || m.endsWith('-image') || m.includes('banana')) return true;
