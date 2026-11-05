@@ -14134,6 +14134,10 @@ OUTPUT FORMAT:
       modalBody.classList.toggle('tab-shortcuts-active', tabName === 'shortcuts');
     }
 
+    if (tabName !== 'shortcuts' && activeRecordingAction) {
+      activeRecordingAction = null;
+    }
+
     // Shortcuts: once rendered, switching to it is purely a 0ms un-hide operation.
     // Only invoke renderShortcutsTable if it has never been rendered, is dirty, or is recording.
     if (settingsTabTaskTimer) {
@@ -14878,6 +14882,10 @@ OUTPUT FORMAT:
 
   window.addEventListener('keydown', (e) => {
     if (activeRecordingAction) {
+      if (!settingsModal || settingsModal.classList.contains('hidden')) {
+        activeRecordingAction = null;
+        return;
+      }
       if (['Control', 'Shift', 'Alt', 'Meta'].includes(e.key)) return;
 
       e.preventDefault();
@@ -15311,7 +15319,6 @@ OUTPUT FORMAT:
     } catch (e) {
       openedConfigSnapshot = Object.assign({}, config);
     }
-    applyLanguage();
 
     document.getElementById('cfg-base-url').value = config.text.baseUrl || '';
     document.getElementById('cfg-model').value = config.text.model || '';
@@ -15589,30 +15596,27 @@ OUTPUT FORMAT:
       if (ocrGroup && ocrGroup.classList) ocrGroup.classList.toggle('hidden', isMac || platformCapabilities.os === 'darwin');
     }
 
-    // On-device speech engine (Whisper) panel in the Voice section.
-    if (window.SpeechSettings) {
-      window.SpeechSettings.init({ t, backend: window.backend, doc: document });
-      window.SpeechSettings.load(config);
-    }
-    // Semantic search section (switch, embedding model, where the notes go, the index): js/semantic_settings.js
-    if (window.SemanticSettings) {
-      window.SemanticSettings.init({ t, backend: window.backend, doc: document, oneLine: (e) => oneLineFailure(e, false) });
-      window.SemanticSettings.load(config);
-    }
-
-    refreshSendToStatus();
-    refreshFileTypesStatus();
-
-    const currentScrapDir = scrapDirEl ? scrapDirEl.value.trim() : '';
-    updateGitRepoStatusUI(currentScrapDir);
-
-    renderShortcutsTable();
-    updateShortcutLabels();
     switchSettingsTab('general');
-    updateOllamaStatus();
     updateQuickActionsFieldStates();
     updateLLMProviderDetection();
     settingsModal.classList.remove('hidden');
+
+    // Defer heavy background IPC and validation tasks so modal paints in 0ms immediately
+    setTimeout(() => {
+      if (window.SpeechSettings) {
+        window.SpeechSettings.init({ t, backend: window.backend, doc: document });
+        window.SpeechSettings.load(config);
+      }
+      if (window.SemanticSettings) {
+        window.SemanticSettings.init({ t, backend: window.backend, doc: document, oneLine: (e) => oneLineFailure(e, false) });
+        window.SemanticSettings.load(config);
+      }
+      refreshSendToStatus();
+      refreshFileTypesStatus();
+      const currentScrapDir = scrapDirEl ? scrapDirEl.value.trim() : '';
+      updateGitRepoStatusUI(currentScrapDir);
+      updateShortcutLabels();
+    }, 20);
     // Match the other modals in this app: move focus into the dialog on open, and
     // back to the editor on close.
     setTimeout(() => {
