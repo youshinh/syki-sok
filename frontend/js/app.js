@@ -1739,6 +1739,7 @@
 
   // --- Line Operations ---
   function getLineBoundaries(val, start, end) {
+    if (window.LineOperations) return window.LineOperations.getLineBoundaries(val, start, end);
     const lineStart = val.lastIndexOf('\n', start - 1) + 1;
     let lineEnd = val.indexOf('\n', end);
     if (lineEnd === -1) lineEnd = val.length;
@@ -1750,15 +1751,16 @@
     const val = editor.value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const { lineStart, lineEnd } = getLineBoundaries(val, start, end);
+    const lo = window.LineOperations;
 
     if (direction === 'up') {
-      if (lineStart === 0) return; // At top
-      const prevLineStart = val.lastIndexOf('\n', lineStart - 2) + 1;
-      const prevLineText = val.substring(prevLineStart, lineStart - 1);
-      const targetText = val.substring(lineStart, lineEnd);
-      const newBlock = targetText + '\n' + prevLineText;
-      const shift = prevLineText.length + 1;
+      const res = lo ? lo.computeMoveLineUp(val, start, end) : null;
+      if (lo && !res) return; // At top
+      const prevLineStart = res ? res.prevLineStart : (val.lastIndexOf('\n', (val.lastIndexOf('\n', start - 1) + 1) - 2) + 1);
+      const lineEnd = res ? res.lineEnd : (val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end));
+      const newBlock = res ? res.newBlock : (val.substring((val.lastIndexOf('\n', start - 1) + 1), lineEnd) + '\n' + val.substring(prevLineStart, (val.lastIndexOf('\n', start - 1) + 1) - 1));
+      const shift = res ? res.shift : (val.substring(prevLineStart, (val.lastIndexOf('\n', start - 1) + 1) - 1).length + 1);
+      if (!lo && (val.lastIndexOf('\n', start - 1) + 1) === 0) return;
 
       editor.focus();
       editor.setSelectionRange(prevLineStart, lineEnd);
@@ -1771,13 +1773,13 @@
       }
       editor.setSelectionRange(start - shift, end - shift);
     } else if (direction === 'down') {
-      if (lineEnd >= val.length) return; // At bottom
-      const nextLineEndIdx = val.indexOf('\n', lineEnd + 1);
-      const nextLineEnd = nextLineEndIdx === -1 ? val.length : nextLineEndIdx;
-      const nextLineText = val.substring(lineEnd + 1, nextLineEnd);
-      const targetText = val.substring(lineStart, lineEnd);
-      const newBlock = nextLineText + '\n' + targetText;
-      const shift = nextLineText.length + 1;
+      const res = lo ? lo.computeMoveLineDown(val, start, end) : null;
+      if (lo && !res) return; // At bottom
+      const lineStart = res ? res.lineStart : (val.lastIndexOf('\n', start - 1) + 1);
+      const nextLineEnd = res ? res.nextLineEnd : (val.indexOf('\n', (val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end)) + 1) === -1 ? val.length : val.indexOf('\n', (val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end)) + 1));
+      const newBlock = res ? res.newBlock : (val.substring((val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end)) + 1, nextLineEnd) + '\n' + val.substring(lineStart, (val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end))));
+      const shift = res ? res.shift : (val.substring((val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end)) + 1, nextLineEnd).length + 1);
+      if (!lo && (val.indexOf('\n', end) === -1 ? val.length : val.indexOf('\n', end)) >= val.length) return;
 
       editor.focus();
       editor.setSelectionRange(lineStart, nextLineEnd);
@@ -1801,33 +1803,35 @@
     const val = editor.value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const { lineStart, lineEnd } = getLineBoundaries(val, start, end);
-    const targetText = val.substring(lineStart, lineEnd);
+    const lo = window.LineOperations;
+    const res = lo ? (direction === 'down' ? lo.computeDuplicateLineDown(val, start, end) : lo.computeDuplicateLineUp(val, start, end)) : null;
 
     editor.focus();
     if (direction === 'down') {
-      editor.setSelectionRange(lineEnd, lineEnd);
-      const toInsert = '\n' + targetText;
+      const insertPos = res ? res.insertPos : getLineBoundaries(val, start, end).lineEnd;
+      const toInsert = res ? res.toInsert : ('\n' + val.substring(getLineBoundaries(val, start, end).lineStart, insertPos));
+      const shift = res ? res.shift : (toInsert.length);
+      editor.setSelectionRange(insertPos, insertPos);
       let success = false;
       try {
         success = document.execCommand('insertText', false, toInsert);
       } catch (e) {}
       if (!success) {
-        editor.value = val.substring(0, lineEnd) + toInsert + val.substring(lineEnd);
+        editor.value = val.substring(0, insertPos) + toInsert + val.substring(insertPos);
       }
-      const shift = targetText.length + 1;
       editor.setSelectionRange(start + shift, end + shift);
     } else { // 'up'
-      editor.setSelectionRange(lineStart, lineStart);
-      const toInsert = targetText + '\n';
+      const insertPos = res ? res.insertPos : getLineBoundaries(val, start, end).lineStart;
+      const toInsert = res ? res.toInsert : (val.substring(insertPos, getLineBoundaries(val, start, end).lineEnd) + '\n');
+      const shift = res ? res.shift : (toInsert.length);
+      editor.setSelectionRange(insertPos, insertPos);
       let success = false;
       try {
         success = document.execCommand('insertText', false, toInsert);
       } catch (e) {}
       if (!success) {
-        editor.value = val.substring(0, lineStart) + toInsert + val.substring(lineStart);
+        editor.value = val.substring(0, insertPos) + toInsert + val.substring(insertPos);
       }
-      const shift = targetText.length + 1;
       editor.setSelectionRange(start + shift, end + shift);
     }
 
@@ -1841,14 +1845,21 @@
     const val = editor.value;
     const start = editor.selectionStart;
     const end = editor.selectionEnd;
-    const { lineStart, lineEnd } = getLineBoundaries(val, start, end);
-
-    let deleteStart = lineStart;
-    let deleteEnd = lineEnd;
-    if (deleteEnd < val.length && val[deleteEnd] === '\n') {
-      deleteEnd += 1;
-    } else if (deleteStart > 0 && val[deleteStart - 1] === '\n') {
-      deleteStart -= 1;
+    const lo = window.LineOperations;
+    const res = lo ? lo.computeDeleteLine(val, start, end) : null;
+    let deleteStart, deleteEnd;
+    if (res) {
+      deleteStart = res.deleteStart;
+      deleteEnd = res.deleteEnd;
+    } else {
+      const b = getLineBoundaries(val, start, end);
+      deleteStart = b.lineStart;
+      deleteEnd = b.lineEnd;
+      if (deleteEnd < val.length && val[deleteEnd] === '\n') {
+        deleteEnd += 1;
+      } else if (deleteStart > 0 && val[deleteStart - 1] === '\n') {
+        deleteStart -= 1;
+      }
     }
 
     editor.focus();
@@ -1860,7 +1871,7 @@
     if (!success) {
       editor.value = val.substring(0, deleteStart) + val.substring(deleteEnd);
     }
-    const newPos = Math.min(lineStart, editor.value.length);
+    const newPos = Math.min(deleteStart, editor.value.length);
     editor.setSelectionRange(newPos, newPos);
 
     onEditorInput(editor);

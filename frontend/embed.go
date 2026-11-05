@@ -27,6 +27,7 @@ import "embed"
 //go:embed js/ghost_diff.js
 //go:embed js/go_text.js
 //go:embed js/goto_line.js
+//go:embed js/line_operations.js
 //go:embed js/html_comments.js
 //go:embed js/html_to_md.js
 //go:embed js/i18n.js
