@@ -11531,8 +11531,9 @@ OUTPUT FORMAT:
   function openGotoLineModal() {
     const editor = getActiveEditor();
     if (!editor) return;
-    const lines = editor.value.split('\n').length;
-    const curLine = editor.value.substring(0, editor.selectionStart).split('\n').length;
+    const gl = window.GotoLine;
+    const lines = gl ? gl.getEditorLineCount(editor.value) : editor.value.split('\n').length;
+    const curLine = gl ? gl.getEditorCurrentLine(editor.value, editor.selectionStart) : editor.value.substring(0, editor.selectionStart).split('\n').length;
     gotoLineInput.max = lines;
     gotoLineInput.value = curLine;
     gotoLineModal.classList.remove('hidden');
@@ -11549,27 +11550,34 @@ OUTPUT FORMAT:
   function gotoLineNumber(targetLine) {
     const editor = getActiveEditor();
     if (!editor) return;
-    if (!isNaN(targetLine) && targetLine >= 1) {
+    const gl = window.GotoLine;
+    const pos = gl ? gl.calculateTargetPosition(editor.value, targetLine) : null;
+    let charPos;
+    if (pos) {
+      charPos = pos.charPos;
+    } else if (!isNaN(targetLine) && targetLine >= 1) {
       const lines = editor.value.split('\n');
       const clampedLine = Math.min(targetLine, lines.length);
-      let charPos = 0;
+      charPos = 0;
       for (let i = 0; i < clampedLine - 1; i++) {
         charPos += lines[i].length + 1;
       }
-      editor.focus();
-      editor.setSelectionRange(charPos, charPos);
-      const targetY = getCharPixelTop(charPos, editor);
-      const viewHeight = editor.clientHeight;
-      const targetScroll = Math.max(0, targetY - Math.floor(viewHeight / 3));
-      editor.scrollTop = targetScroll;
-      if (editor === editorSecondary) {
-        if (secondaryLineNumbers) secondaryLineNumbers.scrollTop = targetScroll;
-      } else {
-        if (lineNumbersEl) lineNumbersEl.scrollTop = targetScroll;
-        if (ghostSuggestion) syncGhostScroll();
-      }
-      revealCaretInHugeNote(editor);
+    } else {
+      return;
     }
+    editor.focus();
+    editor.setSelectionRange(charPos, charPos);
+    const targetY = getCharPixelTop(charPos, editor);
+    const viewHeight = editor.clientHeight;
+    const targetScroll = Math.max(0, targetY - Math.floor(viewHeight / 3));
+    editor.scrollTop = targetScroll;
+    if (editor === editorSecondary) {
+      if (secondaryLineNumbers) secondaryLineNumbers.scrollTop = targetScroll;
+    } else {
+      if (lineNumbersEl) lineNumbersEl.scrollTop = targetScroll;
+      if (ghostSuggestion) syncGhostScroll();
+    }
+    revealCaretInHugeNote(editor);
   }
 
   function flashEditorLine(lineNum) {
