@@ -18015,12 +18015,12 @@ OUTPUT FORMAT:
       // The restored tabs are checked against their files once the window is up (a file may have changed while the app was closed).
       setTimeout(verifyRestoredTabsAgainstDisk, 1700);
 
-      // Restore saved workspace folder if any (defer non-critical scan slightly to guarantee instantaneous first paint)
+      // Restore saved workspace folder if any (defer non-critical heavy scan well after first paint and input responsiveness)
       const savedFolder = localStorage.getItem('syki_workspace_folder');
       if (savedFolder) {
         setTimeout(() => {
           loadWorkspaceFolder(savedFolder, true);
-        }, 300);
+        }, 3000);
       }
 
       // Background asynchronous sync of configuration

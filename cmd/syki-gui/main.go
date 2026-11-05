@@ -36,7 +36,11 @@ var (
 // MarkUIReady is bound as backend_uiReady and called by the injected shim on
 // DOMContentLoaded/load. It is idempotent, so the shim may safely signal more than once.
 func (a *App) MarkUIReady() {
-	uiReadyOnce.Do(func() { close(uiReadyCh) })
+	uiReadyOnce.Do(func() {
+		close(uiReadyCh)
+		// UI is ready: return to compact memory mode
+		debug.SetGCPercent(50)
+	})
 }
 
 // waitUIReady blocks until the WebView has signalled readiness, or timeout elapses.
@@ -149,8 +153,9 @@ func main() {
 		return
 	}
 
-	// Tighten Go heap growth threshold to keep idle runtime memory around ~2-3MB
-	debug.SetGCPercent(50)
+	// During cold boot critical path, defer aggressive GC cycles to prevent STW pauses.
+	// MarkUIReady restores it to 50 once first frame is interactive.
+	debug.SetGCPercent(200)
 
 	installCrashLog()
 

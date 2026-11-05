@@ -877,6 +877,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			"--disable-sync "+
 			"--disable-translate "+
 			"--disable-features=Translate,OptimizationHints,MediaRouter,CalculateNativeWinOcclusion "+
+			"--enable-features=NetworkServiceInProcess "+
 			"--disable-component-update "+
 			"--mute-audio "+
 			"--disable-extensions "+
