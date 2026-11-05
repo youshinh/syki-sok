@@ -10677,6 +10677,9 @@ OUTPUT FORMAT:
   // is one character ([😀] and . must not see its two halves); tried first and dropped when the pattern is not valid with it (a
   // stray \- or { is a syntax error in unicode mode, fine without). No lookbehind: WKWebView before 16.4 does not know it.
   function buildFindRegex(query, useRegex, caseSensitive) {
+    if (typeof window !== 'undefined' && window.FindReplaceEngine) {
+      return window.FindReplaceEngine.buildFindRegex(query, useRegex, caseSensitive);
+    }
     const pattern = useRegex ? query : query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const flags = 'gm' + (caseSensitive ? '' : 'i');
     try {
@@ -10691,6 +10694,9 @@ OUTPUT FORMAT:
   // with its letter) sits on both sides of it; an edge that is itself none of those (an emoji, a dot) always is one.
   // (Code points, with the ASCII ones decided without a regex: this runs once per match, and a note can have millions.)
   function isWholeWordMatch(text, start, end) {
+    if (typeof window !== 'undefined' && window.FindReplaceEngine) {
+      return window.FindReplaceEngine.isWholeWordMatch(text, start, end);
+    }
     if (end <= start) return false;
     const isWord = (cp) => {
       if (cp === undefined) return false;
@@ -10709,6 +10715,9 @@ OUTPUT FORMAT:
   // lastIndex moves on by a whole character: in unicode mode one that points into an emoji is taken back to its start, which
   // would find the same match for ever.
   function scanFindMatches(text, regex, wholeWord, onMatch) {
+    if (typeof window !== 'undefined' && window.FindReplaceEngine) {
+      return window.FindReplaceEngine.scanFindMatches(text, regex, wholeWord, onMatch);
+    }
     const stepPast = (i) => ((text.charCodeAt(i) & 0xFC00) === 0xD800 && (text.charCodeAt(i + 1) & 0xFC00) === 0xDC00 ? i + 2 : i + 1);
     let m;
     while ((m = regex.exec(text)) !== null) {
@@ -10723,6 +10732,9 @@ OUTPUT FORMAT:
 
   // What Replace all (whole-word, regex mode) puts in for one match, as String.replace would read the text: $$ $& $` $' $1..$99 $<name>.
   function expandReplacement(tpl, m, text) {
+    if (typeof window !== 'undefined' && window.FindReplaceEngine) {
+      return window.FindReplaceEngine.expandReplacement(tpl, m, text);
+    }
     return tpl.replace(/\$(\$|&|`|'|\d\d?|<[^>]*>)/g, (all, tok) => {
       if (tok === '$') return '$';
       if (tok === '&') return m[0];
