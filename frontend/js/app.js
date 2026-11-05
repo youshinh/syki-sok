@@ -6987,14 +6987,17 @@
   });
 
   // --- Editor Zoom (Font Size) ---
-  let currentFontSize = 14;
-  try {
-    const savedSize = localStorage.getItem('syki_font_size');
-    if (savedSize) currentFontSize = parseInt(savedSize, 10) || 14;
-  } catch (e) {}
+  const zoomMod = window.EditorZoom;
+  let currentFontSize = zoomMod ? zoomMod.loadSavedFontSize() : 14;
+  if (!zoomMod) {
+    try {
+      const savedSize = localStorage.getItem('syki_font_size');
+      if (savedSize) currentFontSize = parseInt(savedSize, 10) || 14;
+    } catch (e) {}
+  }
 
   function applyFontSize(size) {
-    currentFontSize = Math.max(10, Math.min(36, size));
+    currentFontSize = zoomMod ? zoomMod.clampFontSize(size) : Math.max(10, Math.min(36, size));
     editorEl.style.fontSize = `${currentFontSize}px`;
     ghostOverlayEl.style.fontSize = `${currentFontSize}px`;
     lineNumbersEl.style.fontSize = `${currentFontSize}px`;
@@ -7002,9 +7005,13 @@
     if (headerForFont && headerForFont.style && typeof headerForFont.style.setProperty === 'function') headerForFont.style.setProperty('--editor-fs', `${currentFontSize}px`); // see noteHeaderGutterDigits
     if (editorSecondary) editorSecondary.style.fontSize = `${currentFontSize}px`;
     if (secondaryLineNumbers) secondaryLineNumbers.style.fontSize = `${currentFontSize}px`;
-    try {
-      localStorage.setItem('syki_font_size', currentFontSize.toString());
-    } catch (e) {}
+    if (zoomMod) {
+      zoomMod.saveFontSize(currentFontSize);
+    } else {
+      try {
+        localStorage.setItem('syki_font_size', currentFontSize.toString());
+      } catch (e) {}
+    }
     invalidateCharPixelMirrors();
     hideCursorAura(true);
     triggerCursorAuraDebounced();
@@ -7034,13 +7041,13 @@
   }
 
   function zoomIn() {
-    applyFontSize(currentFontSize + 1);
+    applyFontSize(zoomMod ? zoomMod.calculateZoomIn(currentFontSize) : currentFontSize + 1);
   }
   function zoomOut() {
-    applyFontSize(currentFontSize - 1);
+    applyFontSize(zoomMod ? zoomMod.calculateZoomOut(currentFontSize) : currentFontSize - 1);
   }
   function zoomReset() {
-    applyFontSize(14);
+    applyFontSize(zoomMod ? zoomMod.calculateZoomReset() : 14);
   }
 
   // --- The header and the status bar fade away while you write or scroll (js/chrome_overlay.js, css/chrome.css) ---

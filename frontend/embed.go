@@ -23,6 +23,7 @@ import "embed"
 //go:embed js/disk_sync.js
 //go:embed js/drop_zones.js
 //go:embed js/file_anchor.js
+//go:embed js/editor_zoom.js
 //go:embed js/first_run.js
 //go:embed js/ghost_diff.js
 //go:embed js/go_text.js
