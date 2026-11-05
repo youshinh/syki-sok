@@ -155,11 +155,18 @@ func main() {
 	installCrashLog()
 
 	app := &App{}
-	app.InitScrapEngine()
-	app.InitSlotEngine()
-	app.InitJevEngine()
-	app.InitCFBridge()
-	app.InitInboxWatcher()
+	go func() {
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("background engine init recovered: %v", r)
+			}
+		}()
+		app.InitScrapEngine()
+		app.InitSlotEngine()
+		app.InitJevEngine()
+		app.InitCFBridge()
+		app.InitInboxWatcher()
+	}()
 
 	// A macOS .app launched from Finder, the Dock or Spotlight inherits launchd's PATH
 	// ("/usr/bin:/bin:/usr/sbin:/sbin"), not the user's, so Homebrew, pipx and version-manager
@@ -228,9 +235,17 @@ func main() {
 			return
 		}
 
-		w.Header().Set("Cache-Control", "no-cache, no-store, must-revalidate")
-		w.Header().Set("Pragma", "no-cache")
-		w.Header().Set("Expires", "0")
+		// Static embedded frontend assets (JS/CSS/fonts/images) are immutable per binary build.
+		// Allow browser disk & memory cache so cold startup does not re-fetch 50+ scripts over loopback.
+		p := strings.ToLower(r.URL.Path)
+		if strings.HasPrefix(p, "/js/") || strings.HasPrefix(p, "/css/") ||
+			strings.HasSuffix(p, ".js") || strings.HasSuffix(p, ".css") ||
+			strings.HasSuffix(p, ".png") || strings.HasSuffix(p, ".svg") ||
+			strings.HasSuffix(p, ".woff2") {
+			w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
+		} else {
+			w.Header().Set("Cache-Control", "no-cache")
+		}
 		fileServer.ServeHTTP(w, r)
 	})
 
