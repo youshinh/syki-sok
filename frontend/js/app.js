@@ -14105,6 +14105,9 @@ OUTPUT FORMAT:
   }
 
   let settingsTabTaskTimer = null;
+  let modelTabInitialized = false;
+  let syncTabInitialized = false;
+  let agentTabInitialized = false;
 
   function switchSettingsTab(tabName) {
     // Normalize legacy tab names
@@ -14139,11 +14142,6 @@ OUTPUT FORMAT:
     }
 
     // Shortcuts: once rendered, switching to it is purely a 0ms un-hide operation.
-    // Only invoke renderShortcutsTable if it has never been rendered, is dirty, or is recording.
-    if (settingsTabTaskTimer) {
-      clearTimeout(settingsTabTaskTimer);
-      settingsTabTaskTimer = null;
-    }
     if (tabName === 'shortcuts') {
       if (!shortcutsTableRendered || shortcutsTableDirty || activeRecordingAction) {
         renderShortcutsTable();
@@ -14151,21 +14149,46 @@ OUTPUT FORMAT:
       return;
     }
 
-    // Offload heavy IPC/validation tasks to idle frame so tab switch paint completes instantaneously (0ms)
+    // Heavy IPC tasks deferred and initialized purely ON DEMAND (only on first tab visit)
+    if (settingsTabTaskTimer) {
+      clearTimeout(settingsTabTaskTimer);
+      settingsTabTaskTimer = null;
+    }
     settingsTabTaskTimer = setTimeout(() => {
       settingsTabTaskTimer = null;
       if (tabName === 'model') {
-        updateOllamaStatus();
+        if (!modelTabInitialized) {
+          modelTabInitialized = true;
+          if (window.SpeechSettings) {
+            window.SpeechSettings.init({ t, backend: window.backend, doc: document });
+            window.SpeechSettings.load(config);
+          }
+          if (window.SemanticSettings) {
+            window.SemanticSettings.init({ t, backend: window.backend, doc: document, oneLine: (e) => oneLineFailure(e, false) });
+            window.SemanticSettings.load(config);
+          }
+        }
+        const prov = (config.text && config.text.provider) || '';
+        const url = (config.text && config.text.baseUrl) || '';
+        if (prov === 'ollama' || url.includes('11434')) {
+          updateOllamaStatus();
+        }
       } else if (tabName === 'agent') {
-        checkActiveAgentsConfigStatus();
+        if (!agentTabInitialized) {
+          agentTabInitialized = true;
+          checkActiveAgentsConfigStatus();
+        }
       } else if (tabName === 'sync') {
-        checkGitInstalledStatusUI();
-        const scrapDirInput = document.getElementById('cfg-scrap-dir');
-        if (scrapDirInput) {
-          updateGitRepoStatusUI(scrapDirInput.value.trim());
+        if (!syncTabInitialized) {
+          syncTabInitialized = true;
+          checkGitInstalledStatusUI();
+          const scrapDirInput = document.getElementById('cfg-scrap-dir');
+          if (scrapDirInput) {
+            updateGitRepoStatusUI(scrapDirInput.value.trim());
+          }
         }
       }
-    }, 100);
+    }, 20);
   }
 
   // --- Dynamic Keyboard Shortcuts Engine ---
@@ -14752,12 +14775,12 @@ OUTPUT FORMAT:
     if (!force && shortcutsTableRendered && !shortcutsTableDirty && !activeRecordingAction) {
       return;
     }
-    shortcutsListBody.innerHTML = '';
-
     const shortcutsHintEl = document.getElementById('shortcuts-hint');
     if (shortcutsHintEl) {
       shortcutsHintEl.textContent = activeRecordingAction ? t('shortcutRecordingHint') : t('shortcutsHint');
     }
+
+    const fragment = document.createDocumentFragment();
 
     SHORTCUT_GROUPS.forEach(group => {
       // Category header row
@@ -14767,7 +14790,7 @@ OUTPUT FORMAT:
       headerTh.colSpan = 2;
       headerTh.textContent = t(group.titleKey);
       headerTr.appendChild(headerTh);
-      shortcutsListBody.appendChild(headerTr);
+      fragment.appendChild(headerTr);
 
       group.actions.forEach(act => {
         if (act.needsBackend && !(window.backend && window.backend[act.needsBackend])) return;
@@ -14809,9 +14832,11 @@ OUTPUT FORMAT:
         tdKey.appendChild(btn);
         tr.appendChild(tdAction);
         tr.appendChild(tdKey);
-        shortcutsListBody.appendChild(tr);
+        fragment.appendChild(tr);
       });
     });
+    shortcutsListBody.innerHTML = '';
+    shortcutsListBody.appendChild(fragment);
     shortcutsTableRendered = true;
     shortcutsTableDirty = false;
   }
@@ -15601,20 +15626,16 @@ OUTPUT FORMAT:
     updateLLMProviderDetection();
     settingsModal.classList.remove('hidden');
 
-    // Defer heavy background IPC and validation tasks so modal paints in 0ms immediately
+    // Reset tab on-demand init flags for new settings session
+    modelTabInitialized = false;
+    syncTabInitialized = false;
+    agentTabInitialized = false;
+
+    // Lightweight tasks only; heavy tasks (Git status on cloud folders, Speech/Semantic status)
+    // are deferred strictly to when their respective tabs are actively opened.
     setTimeout(() => {
-      if (window.SpeechSettings) {
-        window.SpeechSettings.init({ t, backend: window.backend, doc: document });
-        window.SpeechSettings.load(config);
-      }
-      if (window.SemanticSettings) {
-        window.SemanticSettings.init({ t, backend: window.backend, doc: document, oneLine: (e) => oneLineFailure(e, false) });
-        window.SemanticSettings.load(config);
-      }
       refreshSendToStatus();
       refreshFileTypesStatus();
-      const currentScrapDir = scrapDirEl ? scrapDirEl.value.trim() : '';
-      updateGitRepoStatusUI(currentScrapDir);
       updateShortcutLabels();
     }, 20);
     // Match the other modals in this app: move focus into the dialog on open, and

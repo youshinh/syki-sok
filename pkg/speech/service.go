@@ -398,12 +398,24 @@ type LocalStatus struct {
 	Reason           string `json:"reason"`
 }
 
+func isSpeechTarget(engine string, modelID string) bool {
+	if strings.EqualFold(engine, engineSpeechLocal) || strings.EqualFold(engine, engineLocal) {
+		return true
+	}
+	m := strings.ToLower(modelID)
+	if strings.HasPrefix(m, "haas-") || strings.Contains(m, "speech") {
+		return true
+	}
+	return false
+}
+
 func (s *Service) LocalStatus(cfg llm.VoiceConfig) LocalStatus {
 	w := cfg.Whisper
-	st := LocalStatus{ModelID: effectiveModelID(w)}
+	modelID := effectiveModelID(w)
+	st := LocalStatus{ModelID: modelID}
 	var reason string
 
-	isSpeech := strings.EqualFold(cfg.Engine, engineSpeechLocal) || strings.EqualFold(cfg.Engine, engineLocal)
+	isSpeech := isSpeechTarget(cfg.Engine, modelID)
 
 	if isSpeech {
 		sp, sok := SpeechRuntimePart()

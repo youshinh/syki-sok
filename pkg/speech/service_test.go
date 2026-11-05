@@ -625,6 +625,19 @@ func TestLocalStatus(t *testing.T) {
 			t.Fatalf("empty path: %+v", st)
 		}
 	})
+	t.Run("haas-ja model with gguf format", func(t *testing.T) {
+		e := newTestEnv(t)
+		if sp, ok := SpeechRuntimePart(); ok {
+		e.store[sp.ID] = e.exe
+		}
+		ggufFile := writeFile(t, "haas.gguf", "GGUF\x03\x00\x00\x00\x00\x00\x00\x00")
+		e.store["haas-ja-v1.0-q4_k"] = ggufFile
+
+		st := e.svc.LocalStatus(cfg(llm.WhisperSettings{Model: "haas-ja-v1.0-q4_k"}))
+		if !st.Supported || !st.RuntimeInstalled || !st.ModelInstalled || !st.Ready || st.ModelWarning != "" {
+			t.Fatalf("Haas-ja GGUF model should be ready with speech runtime, got: %+v", st)
+		}
+	})
 	t.Run("custom-url", func(t *testing.T) {
 		e := newTestEnv(t)
 		w := llm.WhisperSettings{Model: "custom-url", CustomURL: "https://example.com/m.bin"}
