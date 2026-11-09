@@ -85,7 +85,7 @@ func (s *Service) dispatch(ctx context.Context, cfg llm.VoiceConfig, in audioInp
 		}
 		return text, nil
 	}
-	return "", fmt.Errorf("不明な音声認識エンジンです: %q (指定できるのは gemini / whisper-local)", cfg.Engine)
+	return "", fmt.Errorf("不明な音声認識エンジンです: %q (指定できるのは gemini / whisper-local / speech-local)", cfg.Engine)
 }
 
 func (s *Service) transcribeCloud(cfg llm.VoiceConfig, in audioInput) (string, error) {
@@ -121,9 +121,26 @@ func acquireLocalGate(ctx context.Context) (func(), error) {
 	}
 }
 
-func isSpeechExe(exe string) bool {
-	base := strings.ToLower(filepath.Base(exe))
-	return strings.Contains(base, "speech")
+func (s *Service) runtimeFor(w llm.WhisperSettings, info ModelInfo, modelPath string) (string, string, error) {
+	rt := ModelRuntime(w, info.Format)
+	id := effectiveModelID(w)
+	if id != modelCustomPath && id != modelCustomURL {
+		if rt == RuntimeWhisper && info.Format == "gguf" {
+			return "", "", fmt.Errorf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", modelPath)
+		}
+		if rt == RuntimeSpeech && info.Format == "ggml" {
+			return "", "", fmt.Errorf("speech.cpp 用の GGUF 形式のモデルではありません(ggml 形式のファイルです): %s", modelPath)
+		}
+	}
+	part, ok := RuntimePartFor(rt)
+	if !ok {
+		return "", "", fmt.Errorf("この環境(%s)ではこのモデルのローカル音声認識に対応していません", hostPlatform())
+	}
+	path, ok := s.partPath(part)
+	if !ok {
+		return "", "", notInstalledError("ローカル音声認識の実行ファイルが未インストールです。" + installHintSettings)
+	}
+	return rt, path, nil
 }
 
 func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in audioInput) (string, error) {
@@ -137,14 +154,9 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 		return "", err
 	}
 
-	exe, err := s.locateRuntimeForEngine(cfg.Engine, info)
+	rt, exe, err := s.runtimeFor(w, info, modelPath)
 	if err != nil {
 		return "", err
-	}
-
-	// If using whisper-cli, reject GGUF models
-	if !isSpeechExe(exe) && info.Format == "gguf" {
-		return "", fmt.Errorf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", modelPath)
 	}
 
 	if in.b64 != "" {
@@ -183,7 +195,7 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 	}
 
 	// speech.cpp runner
-	if isSpeechExe(exe) {
+	if rt == RuntimeSpeech {
 		job := speechJob{
 			model:      modelPath,
 			wav:        wav,
@@ -191,24 +203,15 @@ func (s *Service) transcribeLocal(ctx context.Context, cfg llm.VoiceConfig, in a
 			device:     "cpu",
 			timestamps: w.Timestamps || w.Diarize,
 		}
-		if w.Diarize || w.Timestamps {
-			if vadPart, ok := ResolveModelPart(llm.WhisperSettings{Model: "silero-vad"}); ok {
-				if vp, ok := s.partPath(vadPart); ok {
-					job.vad = vp
-				}
-			}
-		}
-		if w.Diarize {
-			if diarizePart, ok := ResolveModelPart(llm.WhisperSettings{Model: "nemotron-3-diarization"}); ok {
-				if dp, ok := s.partPath(diarizePart); ok {
-					job.diarize = dp
-				}
-			}
-		}
-		if w.Enhance {
-			if enhancePart, ok := ResolveModelPart(llm.WhisperSettings{Model: "re-use"}); ok {
-				if ep, ok := s.partPath(enhancePart); ok {
-					job.enhance = ep
+		for _, addon := range RequiredAddons(w) {
+			if ap, ok := s.partPath(addon.Part); ok {
+				switch addon.Role {
+				case RoleVAD:
+					job.vad = ap
+				case RoleDiarize:
+					job.diarize = ap
+				case RoleEnhance:
+					job.enhance = ap
 				}
 			}
 		}
@@ -324,43 +327,6 @@ func (s *Service) partPath(p components.Part) (string, bool) {
 	return path, ok && path != ""
 }
 
-func (s *Service) locateRuntime() (string, error) {
-	return s.locateRuntimeForEngine("", ModelInfo{})
-}
-
-func (s *Service) locateRuntimeForEngine(engine string, info ModelInfo) (string, error) {
-	isSpeech := strings.EqualFold(engine, engineSpeechLocal) || strings.EqualFold(engine, engineLocal) || info.Format == "gguf"
-
-	if isSpeech {
-		if sp, ok := SpeechRuntimePart(); ok {
-			if path, ok := s.partPath(sp); ok {
-				return path, nil
-			}
-		}
-	}
-
-	// Whisper runtime
-	if rt, ok := RuntimePart(); ok {
-		if path, ok := s.partPath(rt); ok {
-			return path, nil
-		}
-	}
-
-	// Fallback to speech if whisper not installed
-	if !isSpeech {
-		if sp, ok := SpeechRuntimePart(); ok {
-			if path, ok := s.partPath(sp); ok {
-				return path, nil
-			}
-		}
-	}
-
-	if _, ok := RuntimePart(); !ok {
-		return "", fmt.Errorf("この環境(%s)ではローカル音声認識に対応していません(Windows 64bit のみ)", hostPlatform())
-	}
-	return "", notInstalledError("ローカル音声認識の実行ファイルが未インストールです。" + installHintSettings)
-}
-
 func (s *Service) locateModel(w llm.WhisperSettings) (string, error) {
 	id := effectiveModelID(w)
 	if id == modelCustomPath {
@@ -398,71 +364,64 @@ type LocalStatus struct {
 	Reason           string `json:"reason"`
 }
 
-func isSpeechTarget(engine string, modelID string) bool {
-	if strings.EqualFold(engine, engineSpeechLocal) || strings.EqualFold(engine, engineLocal) {
-		return true
-	}
-	m := strings.ToLower(modelID)
-	if strings.HasPrefix(m, "haas-") || strings.Contains(m, "speech") {
-		return true
-	}
-	return false
-}
-
 func (s *Service) LocalStatus(cfg llm.VoiceConfig) LocalStatus {
 	w := cfg.Whisper
 	modelID := effectiveModelID(w)
 	st := LocalStatus{ModelID: modelID}
-	var reason string
+	var runtimeReason string
+	var modelReason string
 
-	isSpeech := isSpeechTarget(cfg.Engine, modelID)
-
-	if isSpeech {
-		sp, sok := SpeechRuntimePart()
-		if !sok {
-			reason = "この環境ではローカル音声認識に対応していません"
-		} else {
-			st.Supported = true
-			if _, st.RuntimeInstalled = s.partPath(sp); !st.RuntimeInstalled {
-				reason = "ローカル音声認識の実行ファイルが未インストールです"
-			}
-		}
+	path, err := s.locateModel(w)
+	var info ModelInfo
+	if err != nil {
+		modelReason = err.Error()
 	} else {
-		rt, ok := RuntimePart()
-		if !ok {
-			reason = "この環境ではローカル音声認識に対応していません(Windows 64bit のみ)"
+		st.ModelInstalled, st.ModelPath = true, path
+		var verr error
+		info, verr = ValidateModelFile(path)
+		if verr != nil {
+			st.ModelWarning = verr.Error()
+			modelReason = st.ModelWarning
 		} else {
-			st.Supported = true
-			if _, st.RuntimeInstalled = s.partPath(rt); !st.RuntimeInstalled {
-				reason = "ローカル音声認識の実行ファイルが未インストールです"
+			st.Multilingual = info.Multilingual
+		}
+	}
+
+	rt := ModelRuntime(w, info.Format)
+	id := effectiveModelID(w)
+	if id != modelCustomPath && id != modelCustomURL && info.Format != "" {
+		if rt == RuntimeWhisper && info.Format == "gguf" {
+			st.ModelWarning = fmt.Sprintf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", path)
+			if modelReason == "" {
+				modelReason = st.ModelWarning
+			}
+		} else if rt == RuntimeSpeech && info.Format == "ggml" {
+			st.ModelWarning = fmt.Sprintf("speech.cpp 用の GGUF 形式のモデルではありません(ggml 形式のファイルです): %s", path)
+			if modelReason == "" {
+				modelReason = st.ModelWarning
 			}
 		}
 	}
 
-	path, err := s.locateModel(w)
-	if err != nil {
-		if reason == "" {
-			reason = err.Error()
-		}
-	} else {
-		st.ModelInstalled, st.ModelPath = true, path
-		info, verr := ValidateModelFile(path)
-		if verr != nil {
-			st.ModelWarning = verr.Error()
-			if reason == "" {
-				reason = st.ModelWarning
-			}
+	if rt == RuntimeWhisper && info.Format != "" && !info.Multilingual && !isEnglish(w.Language) {
+		st.ModelWarning = "このモデルは英語専用です。日本語などは認識できません。多言語モデルか kotoba-whisper を選んでください"
+	}
+
+	if rt != "" {
+		part, ok := RuntimePartFor(rt)
+		if !ok {
+			runtimeReason = "この環境ではローカル音声認識に対応していません"
 		} else {
-			st.Multilingual = info.Multilingual
-			if !isSpeech && info.Format == "gguf" {
-				st.ModelWarning = fmt.Sprintf("Whisper の ggml 形式のモデルではありません(GGUF 形式のファイルです)。whisper.cpp 用の ggml-*.bin を指定してください: %s", path)
-				if reason == "" {
-					reason = st.ModelWarning
-				}
-			} else if !info.Multilingual && !isEnglish(w.Language) {
-				st.ModelWarning = "このモデルは英語専用です。日本語などは認識できません。多言語モデルか kotoba-whisper を選んでください"
+			st.Supported = true
+			if _, st.RuntimeInstalled = s.partPath(part); !st.RuntimeInstalled {
+				runtimeReason = "ローカル音声認識の実行ファイルが未インストールです"
 			}
 		}
+	}
+
+	reason := runtimeReason
+	if reason == "" {
+		reason = modelReason
 	}
 	st.Ready, st.Reason = reason == "", reason
 	return st

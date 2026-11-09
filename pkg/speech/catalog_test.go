@@ -128,7 +128,7 @@ func TestResolveModelPart(t *testing.T) {
 		}
 	}
 	def, ok := ResolveModelPart(llm.WhisperSettings{})
-	if !ok || def.ID != DefaultWhisperModelID() {
+	if !ok || def.ID != DefaultModelID() {
 		t.Errorf("empty model resolved to %q, %v", def.ID, ok)
 	}
 	if p, ok := ResolveModelPart(llm.WhisperSettings{Model: " small-q5_1 "}); !ok || p.ID != "small-q5_1" {
@@ -249,5 +249,9 @@ func TestResolveSpeechModelPart(t *testing.T) {
 		if !ok || p.ID != id {
 			t.Errorf("failed to resolve speech model %q: got %+v, %v", id, p, ok)
 		}
+	}
+	q8, ok := ResolveModelPart(llm.WhisperSettings{Model: "haas-ja-v1.0-q8_0"})
+	if !ok || q8.SHA256 != "cd5f60b2f1c411404b83fca4a65e3ce30a26d9e951b6a346529e65f22758afeb" || q8.Size != 656381472 {
+		t.Errorf("haas-ja-v1.0-q8_0 pinned metadata mismatch: %+v", q8)
 	}
 }

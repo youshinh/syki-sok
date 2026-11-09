@@ -284,7 +284,8 @@ func newTestEnv(t *testing.T) *testEnv {
 
 	rt := runtimeCatalogPart()
 	e.store[rt.ID] = e.exe
-	def, _ := ResolveModelPart(llm.WhisperSettings{})
+	// The fixture is a ggml file, so it is registered as the Whisper default, not the catalog-wide default (a GGUF model).
+	def, _ := ResolveModelPart(llm.WhisperSettings{Model: DefaultWhisperModelID()})
 	e.store[def.ID] = e.model
 	e.svc = &Service{store: e.store, tempRoot: e.tempRoot}
 	return e
@@ -318,5 +319,5 @@ func (e *testEnv) assertTempClean(t *testing.T) {
 }
 
 func localCfg() llm.VoiceConfig {
-	return llm.VoiceConfig{Engine: engineWhisperLocal, Whisper: llm.WhisperSettings{Language: "ja", Threads: 3}}
+	return llm.VoiceConfig{Engine: engineWhisperLocal, Whisper: llm.WhisperSettings{Model: DefaultWhisperModelID(), Language: "ja", Threads: 3}}
 }

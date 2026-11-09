@@ -50,17 +50,19 @@ func speechService() *speech.Service {
 }
 
 type speechStatusView struct {
-	Supported    bool              `json:"supported"`
-	StorageDir   string            `json:"storageDir"`
-	DefaultModel string            `json:"defaultModel"`
+	Supported    bool               `json:"supported"`
+	StorageDir   string             `json:"storageDir"`
+	DefaultModel string             `json:"defaultModel"`
 	Local        speech.LocalStatus `json:"local"`
-	Runtime      *speechPartView   `json:"runtime,omitempty"`
-	Models       []speechPartView  `json:"models"`
-	Custom       *speechPartView   `json:"custom,omitempty"`
+	Runtime      *speechPartView    `json:"runtime,omitempty"`
+	Models       []speechPartView   `json:"models"`
+	Addons       []speechPartView   `json:"addons,omitempty"`
+	Custom       *speechPartView    `json:"custom,omitempty"`
 }
 
 type speechPartView struct {
 	Part   components.Part   `json:"part"`
+	Role   string            `json:"role,omitempty"`
 	Status components.Status `json:"status"`
 }
 
@@ -68,6 +70,9 @@ func parseVoiceConfigJSON(raw string) llm.VoiceConfig {
 	var cfg llm.VoiceConfig
 	if strings.TrimSpace(raw) != "" {
 		_ = json.Unmarshal([]byte(raw), &cfg)
+	}
+	if strings.TrimSpace(cfg.Whisper.Model) == "" {
+		cfg.Whisper.Model = speech.DefaultSpeechModelID()
 	}
 	return cfg
 }
@@ -78,7 +83,7 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 	speechInit()
 	cfg := parseVoiceConfigJSON(voiceConfigJSON)
 
-	defModel := speech.DefaultSpeechModelID()
+	defModel := speech.DefaultModelID()
 
 	view := speechStatusView{
 		StorageDir:   speechComponentsDir(),
@@ -86,35 +91,20 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 		Local:        speechSvc.LocalStatus(cfg),
 	}
 
-	// Runtime part: check speech.cpp runtime first for any local engine, then whisper
-	var rt components.Part
-	var ok bool
-	if isLocalEngine(cfg) || cfg.Engine == "" {
-		rt, ok = speech.SpeechRuntimePart()
-	}
-	if !ok {
-		rt, ok = speech.RuntimePart()
-	}
-	if ok {
+	// Runtime part: determined by the selected model's runtime
+	if rt, ok := speech.RuntimePartFor(speech.ModelRuntime(cfg.Whisper, "")); ok {
 		view.Supported = true
 		view.Runtime = &speechPartView{Part: rt, Status: speechMgr.Status(rt)}
 	}
 
-	// Collect models from both catalogs without duplicates
-	seen := map[string]bool{}
-	_, speechModels := speech.SpeechCatalog()
-	for _, m := range speechModels {
-		if !seen[m.ID] {
-			seen[m.ID] = true
-			view.Models = append(view.Models, speechPartView{Part: m, Status: speechMgr.Status(m)})
-		}
+	// Recognition models only
+	for _, m := range speech.ASRModels() {
+		view.Models = append(view.Models, speechPartView{Part: m, Role: speech.RoleASR, Status: speechMgr.Status(m)})
 	}
-	_, whisperModels := speech.Catalog()
-	for _, m := range whisperModels {
-		if !seen[m.ID] {
-			seen[m.ID] = true
-			view.Models = append(view.Models, speechPartView{Part: m, Status: speechMgr.Status(m)})
-		}
+
+	// Addon models (VAD, diarization, enhancement)
+	for _, ad := range speech.Addons() {
+		view.Addons = append(view.Addons, speechPartView{Part: ad.Part, Role: ad.Role, Status: speechMgr.Status(ad.Part)})
 	}
 
 	if cfg.Whisper.Model == "custom-url" {
@@ -128,19 +118,18 @@ func (a *App) GetSpeechStatus(voiceConfigJSON string) string {
 }
 
 func speechPartFor(which string, cfg llm.VoiceConfig) (components.Part, bool) {
-	switch which {
-	case "runtime":
-		if isLocalEngine(cfg) || cfg.Engine == "" {
-			if sp, ok := speech.SpeechRuntimePart(); ok {
-				return sp, true
+	switch {
+	case which == "runtime":
+		return speech.RuntimePartFor(speech.ModelRuntime(cfg.Whisper, ""))
+	case which == "model":
+		return speech.ResolveModelPart(cfg.Whisper)
+	case strings.HasPrefix(which, "addon:"):
+		id := strings.TrimPrefix(which, "addon:")
+		for _, ad := range speech.Addons() {
+			if ad.Part.ID == id {
+				return ad.Part, true
 			}
 		}
-		return speech.RuntimePart()
-	case "model":
-		if strings.TrimSpace(cfg.Whisper.Model) == "" {
-			cfg.Whisper.Model = speech.DefaultSpeechModelID()
-		}
-		return speech.ResolveModelPart(cfg.Whisper)
 	}
 	return components.Part{}, false
 }
@@ -221,6 +210,11 @@ func (a *App) RemoveSpeechPart(which, voiceConfigJSON string) string {
 func (a *App) EnsureSpeechServer(voiceConfigJSON string) string {
 	speechInit()
 	cfg := parseVoiceConfigJSON(voiceConfigJSON)
+
+	if speech.ModelRuntime(cfg.Whisper, "") != speech.RuntimeSpeech {
+		res, _ := json.Marshal(map[string]string{"error": "このモデルは speech.cpp のストリーミング認識に対応していません"})
+		return string(res)
+	}
 
 	sp, ok := speech.SpeechRuntimePart()
 	if !ok {

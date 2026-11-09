@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"syki-sok/pkg/llm"
+	"syki-sok/pkg/speech"
 )
 
 // The transcription every path shares: the engine in cfg decides who does it. Gemini (the default) sends the recording as it is: no
@@ -26,6 +27,9 @@ func isLocalEngine(cfg llm.VoiceConfig) bool {
 // inputsTranscribe transcribes a recording held as base64. A variable so tests never reach the network or run whisper-cli.
 var inputsTranscribe = func(ctx context.Context, audioBase64, mimeType string, cfg llm.VoiceConfig) (string, error) {
 	if isLocalEngine(cfg) {
+		if strings.TrimSpace(cfg.Whisper.Model) == "" {
+			cfg.Whisper.Model = speech.DefaultSpeechModelID()
+		}
 		return speechService().TranscribeBase64(ctx, cfg, audioBase64, mimeType)
 	}
 	return inputsQueryAudio(cfg.Prompt, audioBase64, mimeType, cfg)
@@ -35,6 +39,9 @@ var inputsTranscribe = func(ctx context.Context, audioBase64, mimeType string, c
 // lies; the cloud has to read it to send it.
 var inputsTranscribeFile = func(ctx context.Context, path, mimeType string, cfg llm.VoiceConfig) (string, error) {
 	if isLocalEngine(cfg) {
+		if strings.TrimSpace(cfg.Whisper.Model) == "" {
+			cfg.Whisper.Model = speech.DefaultSpeechModelID()
+		}
 		return speechService().TranscribeFile(ctx, cfg, path, mimeType)
 	}
 	data, err := os.ReadFile(path)

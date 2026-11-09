@@ -220,6 +220,9 @@ func TestLocalTranscribeOptions(t *testing.T) {
 	run := func(t *testing.T, e *testEnv, w llm.WhisperSettings) []string {
 		t.Helper()
 		e.whisper.calls = nil
+		if w.Model == "" {
+			w.Model = DefaultWhisperModelID()
+		}
 		if _, err := e.svc.Transcribe(context.Background(), llm.VoiceConfig{Engine: "whisper-local", Whisper: w}, speechWAV(), "audio/wav"); err != nil {
 			t.Fatal(err)
 		}
@@ -306,10 +309,10 @@ func TestLocalModelProblems(t *testing.T) {
 	}{
 		"custom-path empty":      {llm.WhisperSettings{Model: "custom-path"}, nil, "パス"},
 		"custom-path missing":    {llm.WhisperSettings{Model: "custom-path", ModelPath: "nope.bin"}, nil, "見つかりません"},
-		"custom-path gguf":       {llm.WhisperSettings{Model: "custom-path"}, func(t *testing.T) string { return writeFile(t, "m.gguf", "GGUF\x03\x00\x00\x00\x00\x00\x00\x00") }, "GGUF"},
+		"custom-path gguf":       {llm.WhisperSettings{Model: "custom-path"}, func(t *testing.T) string { return writeFile(t, "m.gguf", "GGUF\x03\x00\x00\x00\x00\x00\x00\x00") }, "実行ファイル"}, // runs on speech.cpp, which is not installed here
 		"custom-url without url": {llm.WhisperSettings{Model: "custom-url"}, nil, "URL"},
 		"unknown model":          {llm.WhisperSettings{Model: "large-v9"}, nil, "large-v9"},
-		"broken default model":   {llm.WhisperSettings{}, func(t *testing.T) string { return "" }, "ggml"},
+		"broken default model":   {llm.WhisperSettings{Model: DefaultWhisperModelID()}, func(t *testing.T) string { return "" }, "ggml"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			e := newTestEnv(t)
@@ -551,6 +554,9 @@ func TestLocalTranscribeFileStreams(t *testing.T) {
 
 func TestLocalStatus(t *testing.T) {
 	cfg := func(w llm.WhisperSettings) llm.VoiceConfig {
+		if w.Model == "" {
+			w.Model = DefaultWhisperModelID()
+		}
 		return llm.VoiceConfig{Engine: "whisper-local", Whisper: w}
 	}
 
@@ -612,8 +618,9 @@ func TestLocalStatus(t *testing.T) {
 
 		bad := writeFile(t, "bad.bin", "GGUF\x03\x00\x00\x00\x00\x00\x00\x00")
 		st = e.svc.LocalStatus(cfg(llm.WhisperSettings{Model: "custom-path", ModelPath: bad}))
-		if !st.ModelInstalled || st.Ready || !strings.Contains(st.ModelWarning, "GGUF") || st.Reason != st.ModelWarning {
-			t.Fatalf("invalid file: %+v", st)
+		// a custom GGUF file is a speech.cpp model: valid, but its runtime is not installed in this env
+		if !st.ModelInstalled || st.Ready || st.ModelWarning != "" || st.RuntimeInstalled || !strings.Contains(st.Reason, "実行ファイル") {
+			t.Fatalf("gguf file: %+v", st)
 		}
 
 		st = e.svc.LocalStatus(cfg(llm.WhisperSettings{Model: "custom-path", ModelPath: filepath.Join(t.TempDir(), "gone.bin")}))

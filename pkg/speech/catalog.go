@@ -80,7 +80,7 @@ func speechModelCatalogParts() []components.Part {
 	return []components.Part{
 		model(defaultSpeechModelID, "Haas-ja v1.0 量子化版(q8_0・推奨)",
 			"日本語特化の超高速・高精度ストリーミング対応ASRモデル。約626MB。元モデルと精度差ほぼゼロ",
-			hfHaas, "Haas-616M-ja-v1.0-Q8_0.gguf", "9dffbc7235614a2f046393ec232eea55d5495dd512da3202d6497fd03a55360f", 656381472),
+			hfHaas, "Haas-616M-ja-v1.0-Q8_0.gguf", "cd5f60b2f1c411404b83fca4a65e3ce30a26d9e951b6a346529e65f22758afeb", 656381472),
 		model("haas-ja-v1.0-q4_k", "Haas-ja v1.0 超軽量版(q4_k)",
 			"メモリ消費約350MBの極小・高速ASRモデル。一般的なノートPCで超低負荷動作",
 			hfHaas, "Haas-616M-ja-v1.0-Q4_K.gguf", "d24d53f29b75214a933ff482b0de1217e0a800f4118cca39ad6cf03609a89d6f", 351901216),
@@ -152,7 +152,7 @@ func RuntimePart() (components.Part, bool) {
 }
 
 func DefaultWhisperModelID() string { return defaultModelID }
-func DefaultSpeechModelID() string  { return defaultSpeechModelID }
+func DefaultSpeechModelID() string  { return DefaultModelID() }
 
 // ResolveModelPart finds the downloadable part for w.Model. It is false for "custom-path" (no
 // download), for a "custom-url" without a URL, and for unknown ids.
@@ -202,5 +202,5 @@ func effectiveModelID(w llm.WhisperSettings) string {
 	if id := strings.TrimSpace(w.Model); id != "" {
 		return id
 	}
-	return defaultModelID
+	return DefaultModelID()
 }

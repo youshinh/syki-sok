@@ -127,3 +127,16 @@ func TestSniffRecordingMIME(t *testing.T) {
 		}
 	}
 }
+
+func TestParseVoiceConfigJSONDefaultsToHaasQ8(t *testing.T) {
+	for _, raw := range []string{"", "{}", `{"engine":"whisper-local"}`, `{"whisper":{"model":"   "}}`} {
+		cfg := parseVoiceConfigJSON(raw)
+		if cfg.Whisper.Model != "haas-ja-v1.0-q8_0" {
+			t.Errorf("parseVoiceConfigJSON(%q).Whisper.Model = %q, want haas-ja-v1.0-q8_0", raw, cfg.Whisper.Model)
+		}
+	}
+	explicit := parseVoiceConfigJSON(`{"whisper":{"model":"haas-ja-v1.0-q4_k"}}`)
+	if explicit.Whisper.Model != "haas-ja-v1.0-q4_k" {
+		t.Errorf("expected explicit model preserved, got %q", explicit.Whisper.Model)
+	}
+}
