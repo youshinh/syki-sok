@@ -1416,15 +1416,45 @@
                       <input type="checkbox" id="cfg-speech-diarize"> <span data-i18n="speechDiarizeLabel">Speaker identification (Diarization: label speakers in meetings)</span>
                     </label>
                   </div>
+                  <div id="speech-addon-row-diarize" class="form-group hidden" style="margin-left: 20px; margin-top: 2px; margin-bottom: 8px;">
+                    <small style="color: var(--text-muted);">Nemotron-3 Diarization (~106MB):</small>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px;">
+                      <span id="speech-addon-status-diarize" style="font-size: 0.85em;"></span>
+                      <button type="button" id="btn-speech-addon-install-diarize" class="btn-secondary btn-sm" data-i18n="speechDownload">Download</button>
+                      <button type="button" id="btn-speech-addon-remove-diarize" class="btn-secondary btn-sm hidden" data-i18n="speechRemove">Remove</button>
+                      <button type="button" id="btn-speech-addon-cancel-diarize" class="btn-secondary btn-sm hidden" data-i18n="speechCancel">Cancel</button>
+                    </div>
+                    <progress id="speech-addon-progress-diarize" class="hidden" max="100" value="0" style="width: 100%; margin-top: 4px;"></progress>
+                  </div>
                   <div class="form-group inline-group">
                     <label>
                       <input type="checkbox" id="cfg-speech-enhance"> <span data-i18n="speechEnhanceLabel">Audio enhancement (RE-USE: reduce background noise)</span>
                     </label>
                   </div>
+                  <div id="speech-addon-row-enhance" class="form-group hidden" style="margin-left: 20px; margin-top: 2px; margin-bottom: 8px;">
+                    <small style="color: var(--text-muted);">RE-USE (~38MB):</small>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px;">
+                      <span id="speech-addon-status-enhance" style="font-size: 0.85em;"></span>
+                      <button type="button" id="btn-speech-addon-install-enhance" class="btn-secondary btn-sm" data-i18n="speechDownload">Download</button>
+                      <button type="button" id="btn-speech-addon-remove-enhance" class="btn-secondary btn-sm hidden" data-i18n="speechRemove">Remove</button>
+                      <button type="button" id="btn-speech-addon-cancel-enhance" class="btn-secondary btn-sm hidden" data-i18n="speechCancel">Cancel</button>
+                    </div>
+                    <progress id="speech-addon-progress-enhance" class="hidden" max="100" value="0" style="width: 100%; margin-top: 4px;"></progress>
+                  </div>
                   <div class="form-group inline-group">
                     <label>
                       <input type="checkbox" id="cfg-speech-timestamps"> <span data-i18n="speechTimestampsLabel">Timestamps (prefix lines with [mm:ss])</span>
                     </label>
+                  </div>
+                  <div id="speech-addon-row-vad" class="form-group hidden" style="margin-left: 20px; margin-top: 2px; margin-bottom: 8px;">
+                    <small style="color: var(--text-muted);">Silero VAD (~1.2MB):</small>
+                    <div style="display: flex; gap: 8px; align-items: center; flex-wrap: wrap; margin-top: 2px;">
+                      <span id="speech-addon-status-vad" style="font-size: 0.85em;"></span>
+                      <button type="button" id="btn-speech-addon-install-vad" class="btn-secondary btn-sm" data-i18n="speechDownload">Download</button>
+                      <button type="button" id="btn-speech-addon-remove-vad" class="btn-secondary btn-sm hidden" data-i18n="speechRemove">Remove</button>
+                      <button type="button" id="btn-speech-addon-cancel-vad" class="btn-secondary btn-sm hidden" data-i18n="speechCancel">Cancel</button>
+                    </div>
+                    <progress id="speech-addon-progress-vad" class="hidden" max="100" value="0" style="width: 100%; margin-top: 4px;"></progress>
                   </div>
                 </details>
                 <div class="form-group">

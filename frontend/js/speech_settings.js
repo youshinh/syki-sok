@@ -13,6 +13,11 @@
   // key: the name in config.voice and in VoiceProfiles; sfx: the end of the element ids.
   const PROFILES = [{ key: 'realtime', sfx: '-rt' }, { key: 'batch', sfx: '-bt' }];
   const SHARED_ADVANCED = ['language', 'threads', 'prompt', 'cloudFallback', 'diarize', 'enhance', 'timestamps'];
+  const ADDONS = [
+    { key: 'diarize', id: 'nemotron-3-diarization', controlId: 'cfg-speech-diarize' },
+    { key: 'enhance', id: 're-use', controlId: 'cfg-speech-enhance' },
+    { key: 'vad', id: 'silero-vad', controlIds: ['cfg-speech-diarize', 'cfg-speech-timestamps'] }
+  ];
 
   // 1024-based, like Explorer, so a size matches what the file shows on disk.
   function formatSize(bytes) {
@@ -211,6 +216,11 @@
     setHidden($('speech-engine-block'), !backendThere || !anyLocal);
   }
 
+  function findAddon(status, id) {
+    if (!status || !Array.isArray(status.addons)) return null;
+    return status.addons.find((a) => a.part && a.part.id === id) || null;
+  }
+
   function findPart(status, id) {
     if (!status) return null;
     const all = (status.models || []).slice();
@@ -271,7 +281,7 @@
       if (sel && sel.options) Array.from(sel.options).forEach((o) => { if (o.value === LOCAL_ENGINE) o.disabled = !supported; });
     });
 
-    renderRow('runtime', '', any.runtime, installs.runtime !== null, supported);
+    renderRow('runtime', '', any.runtime, !!installs.runtime, supported);
     setText('speech-storage-dir', any.storageDir || '');
 
     PROFILES.forEach((p) => {
@@ -285,7 +295,7 @@
       setHidden($('speech-custom-url' + p.sfx), !isUrl);
       setHidden($('speech-model-actions' + p.sfx), isPath);
       const entry = isPath ? null : (isUrl ? status.custom : findPart(status, modelId));
-      renderRow('model', p.sfx, entry, installs['model' + p.sfx] !== null, supported);
+      renderRow('model', p.sfx, entry, !!installs['model' + p.sfx], supported);
       setText('speech-model-note' + p.sfx, entry && entry.part.note ? entry.part.note : '');
       if (isUrl && !status.custom) setText('speech-model-status' + p.sfx, '');
 
@@ -315,7 +325,7 @@
             hintEl.style.fontWeight = 'normal';
           }
           if (quickBtn) quickBtn.textContent = t('speechDownloadEngine') || '音声認識エンジンをダウンロード';
-          setHidden(quickBtn, !isMissingRuntime || installs.runtime !== null);
+          setHidden(quickBtn, !isMissingRuntime || !!installs.runtime);
         }
       } else {
         setHidden(quickBtn, true);
@@ -326,19 +336,43 @@
       }
       if (hintEl) hintEl.textContent = hint;
     });
+
+    ADDONS.forEach((ad) => {
+      const isVisible = ad.controlId
+        ? !!($(ad.controlId) || {}).checked
+        : (ad.controlIds || []).some((cid) => !!($(cid) || {}).checked);
+      setHidden($('speech-addon-row-' + ad.key), !isVisible || !supported);
+      if (isVisible) {
+        const entry = findAddon(any, ad.id);
+        renderRow('addon', '-' + ad.key, entry, !!installs['addon-' + ad.key], supported);
+      }
+    });
   }
 
   function newReqId(which) {
     return 'speech_' + which + '_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
 
-  // slot: 'runtime', 'model-rt' or 'model-bt'.
+  // slot: 'runtime', 'model-rt', 'model-bt', or 'addon-<key>'.
   function startInstall(slot) {
     if (!hasBackend() || typeof backend.installSpeechPartAsync !== 'function' || installs[slot]) return;
-    const isModel = slot !== 'runtime';
+    const isAddon = slot.startsWith('addon-');
+    const isModel = !isAddon && slot !== 'runtime';
     const key = isModel ? keyOfSfx(slot.slice('model'.length)) : 'realtime';
     const reqId = newReqId(slot);
     installs[slot] = reqId;
+    if (isAddon) {
+      const ad = ADDONS.find((a) => a.key === slot.slice('addon-'.length));
+      setText('speech-addon-status-' + ad.key, t('speechDownloading', { done: formatSize(0), total: '…' }));
+      render();
+      try {
+        const p = backend.installSpeechPartAsync(reqId, 'addon:' + ad.id, configJSON('realtime'));
+        if (p && typeof p.catch === 'function') p.catch((e) => finishInstall(reqId, 'error', String((e && e.message) || e)));
+      } catch (e) {
+        finishInstall(reqId, 'error', String((e && e.message) || e));
+      }
+      return;
+    }
     setText('speech-ready-hint' + (isModel ? sfxOf(key) : sfxOf('realtime')), '');
     setText('speech-' + (isModel ? 'model-status' + sfxOf(key) : 'runtime-status'), t('speechDownloading', { done: formatSize(0), total: '…' }));
     render();
@@ -356,6 +390,7 @@
 
   // Where a message about a slot goes: a model's own hint, or the realtime hint for the shared program.
   function hintIdFor(slot) {
+    if (slot.startsWith('addon-')) return 'speech-addon-status-' + slot.slice('addon-'.length);
     return 'speech-ready-hint' + (slot === 'runtime' ? sfxOf('realtime') : slot.slice('model'.length));
   }
 
@@ -381,10 +416,15 @@
     const slot = slotForReq(reqId);
     if (!slot) return;
     if (state === 'progress') {
-      const bar = $(slot === 'runtime' ? 'speech-runtime-progress' : 'speech-model-progress' + slot.slice('model'.length));
+      const isAddon = slot.startsWith('addon-');
+      const bar = isAddon
+        ? $('speech-addon-progress-' + slot.slice('addon-'.length))
+        : $(slot === 'runtime' ? 'speech-runtime-progress' : 'speech-model-progress' + slot.slice('model'.length));
       if (bar) bar.value = percent(done, total);
-      setText(slot === 'runtime' ? 'speech-runtime-status' : 'speech-model-status' + slot.slice('model'.length),
-        t('speechDownloading', { done: formatSize(done), total: total ? formatSize(total) : '…' }));
+      const statusId = isAddon
+        ? 'speech-addon-status-' + slot.slice('addon-'.length)
+        : (slot === 'runtime' ? 'speech-runtime-status' : 'speech-model-status' + slot.slice('model'.length));
+      setText(statusId, t('speechDownloading', { done: formatSize(done), total: total ? formatSize(total) : '…' }));
       return;
     }
     finishInstall(reqId, state, message);
@@ -405,6 +445,15 @@
 
   function removePart(slot) {
     if (!hasBackend() || typeof backend.removeSpeechPart !== 'function') return;
+    if (slot.startsWith('addon-')) {
+      const ad = ADDONS.find((a) => a.key === slot.slice('addon-'.length));
+      if (!ad) return;
+      Promise.resolve(backend.removeSpeechPart('addon:' + ad.id, configJSON('realtime'))).then((err) => {
+        if (err) setText(hintIdFor(slot), String(err));
+        refresh();
+      }).catch(() => refresh());
+      return;
+    }
     const isModel = slot !== 'runtime';
     const key = isModel ? keyOfSfx(slot.slice('model'.length)) : 'realtime';
     if (isModel && modelUsedByOther(key)) {
@@ -460,6 +509,12 @@
     on('btn-speech-runtime-remove', 'click', () => removePart('runtime'));
     on('btn-speech-quick-runtime-rt', 'click', () => startInstall('runtime'));
     on('btn-speech-quick-runtime-bt', 'click', () => startInstall('runtime'));
+    ADDONS.forEach((ad) => {
+      on('btn-speech-addon-install-' + ad.key, 'click', () => startInstall('addon-' + ad.key));
+      on('btn-speech-addon-cancel-' + ad.key, 'click', () => cancelInstall('addon-' + ad.key));
+      on('btn-speech-addon-remove-' + ad.key, 'click', () => removePart('addon-' + ad.key));
+    });
+    ['cfg-speech-diarize', 'cfg-speech-enhance', 'cfg-speech-timestamps'].forEach((id) => on(id, 'change', render));
   }
 
   // opts: { t: (key, params) => string, backend: window.backend, doc: document }

@@ -154,35 +154,79 @@ const LEGACY_WHISPER = {
 }
 
 
-// Test model select installed badge
-{
-  const doc = fakeDoc(FORM_IDS);
-  S.init({ t: (k) => k === 'speechInstalledBadge' ? '[ダウンロード済]' : k, backend: null, doc });
-  const sel = doc.els['cfg-speech-model-rt'];
-  sel.options = [];
-  sel.remove = (i) => sel.options.splice(i, 1);
-  sel.appendChild = (opt) => sel.options.push(opt);
+(async () => {
+  // Test model select installed badge
+  {
+    const doc = fakeDoc(FORM_IDS);
+    const sel = doc.els['cfg-speech-model-rt'];
+    sel.options = [];
+    sel.remove = (i) => sel.options.splice(i, 1);
+    sel.appendChild = (opt) => sel.options.push(opt);
 
-  // Fake status with one installed and one uninstalled model
-  const fakeStatus = {
-    realtime: {
-      defaultModel: 'm1',
-      models: [
-        { part: { id: 'm1', title: 'Model One', size: 1000 }, status: { installed: true, size: 1000 } },
-        { part: { id: 'm2', title: 'Model Two', size: 2000 }, status: { installed: false, size: 0 } }
-      ]
-    }
-  };
-  // Mock backend getSpeechStatus
-  const fakeBackend = {
-    getSpeechStatus: () => JSON.stringify(fakeStatus.realtime)
-  };
-  S.init({ t: (k) => k === 'speechInstalledBadge' ? '[ダウンロード済]' : k, backend: fakeBackend, doc });
-  S.refresh().then(() => {
+    const fakeStatus = {
+      realtime: {
+        defaultModel: 'm1',
+        models: [
+          { part: { id: 'm1', title: 'Model One', size: 1000 }, status: { installed: true, size: 1000 } },
+          { part: { id: 'm2', title: 'Model Two', size: 2000 }, status: { installed: false, size: 0 } }
+        ]
+      }
+    };
+    const fakeBackend = {
+      getSpeechStatus: () => JSON.stringify(fakeStatus.realtime)
+    };
+    S.init({ t: (k) => k === 'speechInstalledBadge' ? '[ダウンロード済]' : k, backend: fakeBackend, doc });
+    await S.refresh();
     assert.ok(sel.options[0].textContent.includes('[ダウンロード済]'), 'installed model should have badge');
     assert.ok(!sel.options[1].textContent.includes('[ダウンロード済]'), 'uninstalled model should not have badge');
     console.log('badge test passed');
-  });
-}
+  }
 
-console.log('speech_settings tests passed');
+  // Test addon rows render based on checkboxes
+  {
+    const ADDON_IDS = [
+      'speech-addon-row-diarize', 'speech-addon-status-diarize', 'btn-speech-addon-install-diarize', 'btn-speech-addon-remove-diarize', 'btn-speech-addon-cancel-diarize', 'speech-addon-progress-diarize',
+      'speech-addon-row-enhance', 'speech-addon-status-enhance', 'btn-speech-addon-install-enhance', 'btn-speech-addon-remove-enhance', 'btn-speech-addon-cancel-enhance', 'speech-addon-progress-enhance',
+      'speech-addon-row-vad', 'speech-addon-status-vad', 'btn-speech-addon-install-vad', 'btn-speech-addon-remove-vad', 'btn-speech-addon-cancel-vad', 'speech-addon-progress-vad'
+    ];
+    const allIds = FORM_IDS.concat(ADDON_IDS).concat(['speech-unsupported', 'speech-storage-dir']);
+    const doc = fakeDoc(allIds);
+    const fakeStatus = {
+      supported: true,
+      addons: [
+        { part: { id: 'nemotron-3-diarization', size: 106000000 }, status: { installed: true, size: 106000000 } },
+        { part: { id: 're-use', size: 38000000 }, status: { installed: false, size: 0 } },
+        { part: { id: 'silero-vad', size: 1200000 }, status: { installed: true, size: 1200000 } }
+      ]
+    };
+    const fakeBackend = {
+      getSpeechStatus: () => JSON.stringify(fakeStatus)
+    };
+    S.init({ t: (k) => k, backend: fakeBackend, doc });
+    await S.refresh();
+
+    assert.ok(doc.els['speech-addon-row-diarize'].classList.contains('hidden'), 'diarize row hidden initially');
+    assert.ok(doc.els['speech-addon-row-enhance'].classList.contains('hidden'), 'enhance row hidden initially');
+    assert.ok(doc.els['speech-addon-row-vad'].classList.contains('hidden'), 'vad row hidden initially');
+
+    // Check diarize -> diarize and vad become visible
+    doc.els['cfg-speech-diarize'].checked = true;
+    await S.refresh();
+    assert.ok(!doc.els['speech-addon-row-diarize'].classList.contains('hidden'), 'diarize row visible when checked');
+    assert.ok(!doc.els['speech-addon-row-vad'].classList.contains('hidden'), 'vad row visible when diarize checked');
+    assert.ok(doc.els['speech-addon-row-enhance'].classList.contains('hidden'), 'enhance still hidden');
+    assert.ok(doc.els['speech-addon-status-diarize'].textContent.includes('speechInstalled'), 'diarize installed text');
+
+    // Check enhance
+    doc.els['cfg-speech-enhance'].checked = true;
+    await S.refresh();
+    assert.ok(!doc.els['speech-addon-row-enhance'].classList.contains('hidden'), 'enhance row visible');
+    assert.ok(doc.els['speech-addon-status-enhance'].textContent.includes('speechNotInstalled'), 'enhance not installed text');
+    console.log('addon render test passed');
+  }
+
+  console.log('speech_settings tests passed');
+})().catch((err) => {
+  console.error(err);
+  process.exit(1);
+});
