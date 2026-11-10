@@ -40,6 +40,13 @@ func (a *App) MarkUIReady() {
 		close(uiReadyCh)
 		// UI is ready: return to compact memory mode
 		debug.SetGCPercent(50)
+		// The WebView now owns its own copy of the boot bundle, so the Go-side
+		// inlined document and multi-megabyte bundle are dead weight: hand the
+		// heap pages back to the OS shortly after the first paint settles.
+		go func() {
+			time.Sleep(500 * time.Millisecond)
+			releaseFastBootAssets()
+		}()
 	})
 }
 
@@ -130,7 +137,12 @@ func main() {
 		}
 	}
 
-	if ipcMsg != nil {
+	singleInstance := false
+	if session == nil && runtime.GOOS == "windows" {
+		singleInstance = checkSingleInstance()
+	}
+
+	if ipcMsg != nil && (session != nil || !singleInstance) {
 		targetPort := ipc.DefaultPort
 		if session != nil && session.Port > 0 {
 			targetPort = session.Port
@@ -149,15 +161,14 @@ func main() {
 	}
 
 	// 5. First instance: verify platform single instance lock
-	if !checkSingleInstance() {
+	if !singleInstance && !checkSingleInstance() {
 		return
 	}
 
 	// During cold boot critical path, defer aggressive GC cycles to prevent STW pauses.
 	// MarkUIReady restores it to 50 once first frame is interactive.
 	debug.SetGCPercent(200)
-
-	installCrashLog()
+	warmFastBootAssets(frontend.FS)
 
 	app := &App{}
 	go func() {
@@ -166,6 +177,7 @@ func main() {
 				log.Printf("background engine init recovered: %v", r)
 			}
 		}()
+		installCrashLog()
 		app.InitScrapEngine()
 		app.InitSlotEngine()
 		app.InitJevEngine()
@@ -188,29 +200,45 @@ func main() {
 	}
 
 	// 6. Start local IPC server (JSON-RPC 2.0 + session.json + legacy notification support)
-	ipcServer, err := ipc.StartServer(ipc.DefaultPort, app.DispatchRPCOperation, func(msg *ipc.Message) {
-		if msg == nil {
-			return
+	var (
+		ipcMu     sync.Mutex
+		ipcServer *ipc.Server
+	)
+	go func() {
+		srv, err := ipc.StartServer(ipc.DefaultPort, app.DispatchRPCOperation, func(msg *ipc.Message) {
+			if msg == nil {
+				return
+			}
+			switch msg.Action {
+			case ipc.ActionPipe:
+				_, _ = app.AppendDailyScrap(msg.Content, msg.Command, msg.Cwd)
+				activatePlatformWindow()
+			case ipc.ActionActivate:
+				activatePlatformWindow()
+			case ipc.ActionNewTab:
+				_ = app.CreateNewTab()
+				activatePlatformWindow()
+			case ipc.ActionOpen:
+				// The path is already absolute (resolveStartupFileArg made it so in the sending
+				// process, whose working directory this one does not share).
+				_ = app.OpenPathInNewTab(msg.Path)
+				activatePlatformWindow()
+			}
+		})
+		if err == nil && srv != nil {
+			ipcMu.Lock()
+			ipcServer = srv
+			ipcMu.Unlock()
 		}
-		switch msg.Action {
-		case ipc.ActionPipe:
-			_, _ = app.AppendDailyScrap(msg.Content, msg.Command, msg.Cwd)
-			activatePlatformWindow()
-		case ipc.ActionActivate:
-			activatePlatformWindow()
-		case ipc.ActionNewTab:
-			_ = app.CreateNewTab()
-			activatePlatformWindow()
-		case ipc.ActionOpen:
-			// The path is already absolute (resolveStartupFileArg made it so in the sending
-			// process, whose working directory this one does not share).
-			_ = app.OpenPathInNewTab(msg.Path)
-			activatePlatformWindow()
+	}()
+	defer func() {
+		ipcMu.Lock()
+		srv := ipcServer
+		ipcMu.Unlock()
+		if srv != nil {
+			srv.Close()
 		}
-	})
-	if err == nil && ipcServer != nil {
-		defer ipcServer.Close()
-	}
+	}()
 
 	// Use embedded frontend filesystem
 	subFS := frontend.FS
@@ -237,6 +265,9 @@ func main() {
 		}
 		if r.URL.Path == "/api/print/preview.pdf" { // the PDF the print panel is showing (print_pdf.go)
 			servePrintPreview(w, r, port)
+			return
+		}
+		if serveFastBootAsset(w, r, subFS) {
 			return
 		}
 

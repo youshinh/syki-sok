@@ -59,6 +59,7 @@ import "embed"
 //go:embed js/slot_agent.js
 //go:embed js/slot_snippets.js
 //go:embed js/speech_settings.js
+//go:embed js/speech_stream.js
 //go:embed js/status_ai.js
 //go:embed js/tab_dock.js
 //go:embed js/tab_overflow.js

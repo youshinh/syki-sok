@@ -366,11 +366,26 @@ func saveCurrentWindowPlacement(hwnd windows.Handle) {
 	})
 }
 
+var (
+	startupWindowState       *windowState
+	startupWindowStateErr    error
+	startupWindowStateLoaded bool
+)
+
 func restoreWindowPlacement(hwnd windows.Handle) bool {
 	if hwnd == 0 {
 		return false
 	}
-	state, err := loadWindowState()
+	var (
+		state *windowState
+		err   error
+	)
+	if startupWindowStateLoaded {
+		state, err = startupWindowState, startupWindowStateErr
+		startupWindowState, startupWindowStateErr, startupWindowStateLoaded = nil, nil, false
+	} else {
+		state, err = loadWindowState()
+	}
 	if err != nil || state == nil || state.Width <= 0 || state.Height <= 0 {
 		return false
 	}
@@ -779,8 +794,52 @@ func toggleWindowFullscreen(hwnd windows.Handle) {
 	}
 }
 
+type batchedBinderWebView struct {
+	webview2.WebView
+	names []string
+}
+
+type webviewBindingsLayout struct {
+	hwnd       uintptr
+	mainthread uintptr
+	browser    struct {
+		itab uintptr
+		data unsafe.Pointer
+	}
+	autofocus bool
+	maxsz     struct{ X, Y int32 }
+	minsz     struct{ X, Y int32 }
+	m         sync.Mutex
+	bindings  map[string]interface{}
+}
+
+func (bb *batchedBinderWebView) Bind(name string, f interface{}) error {
+	wl := (*webviewBindingsLayout)(reflectValPointer(bb.WebView))
+	if wl == nil || wl.bindings == nil {
+		return bb.WebView.Bind(name, f)
+	}
+	wl.m.Lock()
+	wl.bindings[name] = f
+	wl.m.Unlock()
+	bb.names = append(bb.names, name)
+	return nil
+}
+
+func (bb *batchedBinderWebView) Init(js string) {
+	if len(bb.names) > 0 {
+		namesJSON, _ := json.Marshal(bb.names)
+		bb.names = nil
+		prefix := "(function(names){var RPC=window._rpc=(window._rpc||{nextSeq:1});for(var i=0;i<names.length;i++){(function(name){window[name]=function(){var seq=RPC.nextSeq++;var promise=new Promise(function(resolve,reject){RPC[seq]={resolve:resolve,reject:reject};});window.external.invoke(JSON.stringify({id:seq,method:name,params:Array.prototype.slice.call(arguments)}));return promise;};})(names[i]);}})(" + string(namesJSON) + ");\n"
+		js = prefix + js
+	}
+	bb.WebView.Init(js)
+}
+
 // reflectValPointer extracts the underlying interface data pointer
 func reflectValPointer(i interface{}) unsafe.Pointer {
+	if bb, ok := i.(*batchedBinderWebView); ok && bb != nil {
+		i = bb.WebView
+	}
 	type eface struct {
 		rtype uintptr
 		data  unsafe.Pointer
@@ -868,7 +927,7 @@ func runPlatformWindow(app *App, serverURL string) {
 	// Off unless Settings turns it on (and the app is started again): one process less, at the price that a fault of the graphics driver
 	// then takes the whole page with it, which is why it is not the default.
 	gpuArg := ""
-	if parseWebViewSettings(app.readConfigCached()).InProcessGPU {
+	if app.readGeneralConfigCached().webView.InProcessGPU {
 		gpuArg = "--in-process-gpu "
 	}
 	_ = os.Setenv("WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS",
@@ -928,7 +987,9 @@ func runPlatformWindow(app *App, serverURL string) {
 
 	initialWidth := uint(1050)
 	initialHeight := uint(720)
-	if savedState, err := loadWindowState(); err == nil && savedState != nil && savedState.Width > 0 && savedState.Height > 0 {
+	savedState, stateErr := loadWindowState()
+	startupWindowState, startupWindowStateErr, startupWindowStateLoaded = savedState, stateErr, true
+	if stateErr == nil && savedState != nil && savedState.Width > 0 && savedState.Height > 0 {
 		initialWidth = uint(savedState.Width)
 		initialHeight = uint(savedState.Height)
 	}
@@ -975,24 +1036,12 @@ func runPlatformWindow(app *App, serverURL string) {
 	// Configure WebView2 settings (browser accelerator keys off)
 	configureWebViewSettings(w)
 
-	// Add system tray icon
-	if globalHIcon != 0 {
-		addTrayIcon(hwnd, globalHIcon)
-	}
-
 	// Subclass window procedure to intercept WM_CLOSE and handle tray events
 	newWndProcCallback := windows.NewCallback(trayWndProc)
 	ret, _, _ := procSetWindowLongPtrW.Call(uintptr(hwnd), GWLP_WNDPROC, newWndProcCallback)
 	if ret != 0 {
 		origWndProc = ret
 	}
-
-	// Register global shortcut to restore/bring to front (reads from config, fallback to Ctrl+Alt+M)
-	updateGlobalHotKeyNative(getInitialGlobalShortcut())
-
-	// Register the fixed Ctrl+Shift+Q quick-capture hotkey (distinct from the
-	// user-configurable one above; see quickcapture_windows.go).
-	registerQuickCaptureWindowsHotkey(hwnd)
 
 	if !restoreWindowPlacement(hwnd) {
 		w.SetSize(1050, 720, webview2.HintNone)
@@ -1001,6 +1050,8 @@ func runPlatformWindow(app *App, serverURL string) {
 	// Bind Go RPC methods. bindCommonBackend (bind_common.go) covers every backend_X -> app.Y
 	// bind that is identical on Windows and macOS; only the Windows-specific and inline-closure
 	// binds are listed here.
+	w = &batchedBinderWebView{WebView: w, names: make([]string, 0, 148)}
+	app.w = w
 	bindCommonBackend(w, app)
 	_ = w.Bind("backend_openQuickCapture", app.OpenQuickCapture)
 	_ = w.Bind("backend_updateQuickCaptureShortcut", app.UpdateQuickCaptureShortcut)
@@ -1291,6 +1342,25 @@ func runPlatformWindow(app *App, serverURL string) {
 	`)
 
 	w.Navigate(serverURL)
+
+	go func() {
+		waitUIReady(uiReadyFallback)
+		time.Sleep(120 * time.Millisecond)
+		w.Dispatch(func() {
+			// Add system tray icon
+			if globalHIcon != 0 {
+				addTrayIcon(hwnd, globalHIcon)
+			}
+
+			// Register global shortcut to restore/bring to front (reads from config, fallback to Ctrl+Alt+M)
+			updateGlobalHotKeyNative(getInitialGlobalShortcut())
+
+			// Register the fixed Ctrl+Shift+Q quick-capture hotkey (distinct from the
+			// user-configurable one above; see quickcapture_windows.go).
+			registerQuickCaptureWindowsHotkey(hwnd)
+		})
+	}()
+
 	w.Run()
 }
 

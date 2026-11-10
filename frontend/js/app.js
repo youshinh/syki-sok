@@ -587,14 +587,15 @@
   let shortcutsTableDirty = true;
 
   function applyLanguage() {
+    if (typeof window !== 'undefined') window.__sykiApplyLangRan = true;
     const lang = (config.general && config.general.language) || 'en';
-    document.documentElement.lang = lang;
+    if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
 
     // Translate all elements with data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
       const key = el.getAttribute('data-i18n');
       const val = t(key);
-      if (val !== key) {
+      if (val !== key && el.textContent !== val) {
         el.textContent = val;
       }
     });
@@ -603,7 +604,7 @@
     document.querySelectorAll('[data-i18n-title]').forEach(el => {
       const key = el.getAttribute('data-i18n-title');
       const val = t(key);
-      if (val !== key) {
+      if (val !== key && el.title !== val) {
         el.title = val;
       }
     });
@@ -612,7 +613,7 @@
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
       const key = el.getAttribute('data-i18n-placeholder');
       const val = t(key);
-      if (val !== key) {
+      if (val !== key && el.placeholder !== val) {
         el.placeholder = val;
       }
     });
@@ -17073,10 +17074,13 @@ OUTPUT FORMAT:
     } catch (e) {}
     applyCalmToolbarForNewProfile();
     applyTheme();
+    if (typeof window !== 'undefined') window.__sykiApplyLangRan = false;
     applyLanguage();
     applyChromeLayout(); // synchronous, before the first paint: no flash of hidden icons
-    updateShortcutLabels();
-    updateActionStatus();
+    if (typeof window === 'undefined' || !window.__sykiApplyLangRan) {
+      updateShortcutLabels();
+      updateActionStatus();
+    }
   }
 
   // The scrap settings that only the older flat keys of config.json decide (scrap_dir, git_sync_enabled, ...), as `scraps.*` names.
@@ -17100,7 +17104,9 @@ OUTPUT FORMAT:
     let configFileFound = null;
     if (window.backend && window.backend.getConfig) {
       try {
-        const fileConfigStr = await window.backend.getConfig();
+        const pendingCfg = window.backend.__preloadedConfig;
+        window.backend.__preloadedConfig = null;
+        const fileConfigStr = await (pendingCfg || window.backend.getConfig());
         configFileFound = !!(fileConfigStr && String(fileConfigStr).trim());
         if (fileConfigStr) {
           const fileConfig = JSON.parse(fileConfigStr);
@@ -18031,17 +18037,26 @@ OUTPUT FORMAT:
     initDraggablePanels();
 
     // 2. Background Asynchronous Verification & Sync:
-    loadPlatformCapabilities();
     setTimeout(announceAgentIssues, 4000); // well after the first paint and the config sync
-    (async () => {
+    const runBackgroundStartupSync = () => {
+      loadPlatformCapabilities();
+      (async () => {
       // Check if a file path was passed via CLI argument or double-clicked from Explorer / Finder
       // The file is opened as one more tab AFTER the session, the workspace and the settings are restored (below): a start with a
       // file is still a normal start, it only adds a tab.
+      const startupFilePromise = (window.backend && window.backend.getStartupFile) ? Promise.resolve().then(() => window.backend.getStartupFile()) : null;
+      const sessionPromise = (config.general.restoreSession !== false && window.backend && window.backend.getSession) ? Promise.resolve().then(() => window.backend.getSession()) : null;
+      if (window.backend && window.backend.getConfig) {
+        window.backend.__preloadedConfig = Promise.resolve().then(() => window.backend.getConfig());
+        window.backend.__preloadedConfig.catch(() => {});
+      }
+      if (sessionPromise) sessionPromise.catch(() => {});
+
       let startupFile = null;
       let startupError = '';
-      if (window.backend && window.backend.getStartupFile) {
+      if (startupFilePromise) {
         try {
-          startupFile = await window.backend.getStartupFile();
+          startupFile = await startupFilePromise;
         } catch (e) {
           console.warn('Failed to retrieve startup file:', e);
           startupError = String((e && e.message) || e || 'unknown error');
@@ -18051,9 +18066,9 @@ OUTPUT FORMAT:
       // Sync session from backend file (AppData/syki-sok/session.json)
       let backendSessionFound = false;
       let sessionUnreadable = false;
-      if (config.general.restoreSession !== false && window.backend && window.backend.getSession) {
+      if (sessionPromise) {
         try {
-          const backendSessionStr = await window.backend.getSession();
+          const backendSessionStr = await sessionPromise;
           if (backendSessionStr) {
             backendSessionFound = true;
             if (restored && (backendSessionStr === lastRestoredSessionRaw || isEquivalentSession(backendSessionStr, lastRestoredSessionRaw))) {
@@ -18121,7 +18136,13 @@ OUTPUT FORMAT:
           if (updateCheckAtStartup()) checkForAppUpdates();
         }, 2500);
       }
-    })();
+      })();
+    };
+    if (document && document.readyState === 'loading') {
+      setTimeout(runBackgroundStartupSync, 60);
+    } else {
+      runBackgroundStartupSync();
+    }
 
     initPaneResizer();
   }
