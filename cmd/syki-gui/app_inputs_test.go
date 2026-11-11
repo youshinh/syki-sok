@@ -933,3 +933,58 @@ func TestTranscribeAudioAsync_NoCacheLeavesNothingOnDisk(t *testing.T) {
 		t.Errorf("the answer points at a cache file: %s", eval)
 	}
 }
+
+func TestListVoiceCaches_CleansTinyAndListsValid(t *testing.T) {
+	dir, err := voiceCacheDir()
+	if err != nil {
+		t.Fatalf("voiceCacheDir: %v", err)
+	}
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	// Tiny broken file (< 1KB) should be deleted
+	tinyPath := filepath.Join(dir, "2026-11-11-120000_tiny.webm")
+	if err := os.WriteFile(tinyPath, []byte("short"), 0600); err != nil {
+		t.Fatalf("write tiny: %v", err)
+	}
+
+	// Valid file (>= 1KB)
+	validData := make([]byte, 2048)
+	validPath := filepath.Join(dir, "2026-11-11-130000_valid.webm")
+	if err := os.WriteFile(validPath, validData, 0600); err != nil {
+		t.Fatalf("write valid: %v", err)
+	}
+	defer os.Remove(validPath)
+
+	app := &App{}
+	items, err := app.ListVoiceCaches()
+	if err != nil {
+		t.Fatalf("ListVoiceCaches: %v", err)
+	}
+
+	// Tiny file should have been removed
+	if _, err := os.Stat(tinyPath); !os.IsNotExist(err) {
+		t.Errorf("expected tiny file to be deleted")
+	}
+
+	// Valid file should be found
+	found := false
+	for _, it := range items {
+		if it.Filename == "2026-11-11-130000_valid.webm" {
+			found = true
+			if it.Kind != "voice" {
+				t.Errorf("expected kind voice, got %q", it.Kind)
+			}
+			if it.Timestamp != "2026/11/11 13:00:00" {
+				t.Errorf("expected parsed timestamp '2026/11/11 13:00:00', got %q", it.Timestamp)
+			}
+			if it.SizeBytes != 2048 {
+				t.Errorf("expected 2048 bytes, got %d", it.SizeBytes)
+			}
+		}
+	}
+	if !found {
+		t.Errorf("expected valid file in results, got: %+v", items)
+	}
+}

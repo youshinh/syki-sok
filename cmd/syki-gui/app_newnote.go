@@ -146,14 +146,20 @@ func droppedMediaKind(name, mimeType string) (dropzone.Kind, string) {
 	imageTypes := map[string]string{"png": "image/png", "jpg": "image/jpeg", "jpeg": "image/jpeg", "webp": "image/webp", "gif": "image/gif", "heic": "image/heic", "heif": "image/heif", "bmp": "image/bmp"}
 	audioTypes := map[string]string{"mp3": "audio/mpeg", "wav": "audio/wav", "m4a": "audio/mp4", "aac": "audio/aac", "ogg": "audio/ogg", "oga": "audio/ogg", "opus": "audio/ogg", "flac": "audio/flac", "weba": "audio/webm"}
 	switch {
+	case audioTypes[ext] != "":
+		if mimeType != "" && strings.HasPrefix(mimeType, "audio/") {
+			return dropzone.KindAudio, mimeType
+		}
+		return dropzone.KindAudio, audioTypes[ext]
+	case imageTypes[ext] != "":
+		if mimeType != "" && strings.HasPrefix(mimeType, "image/") && mimeType != "image/svg+xml" {
+			return dropzone.KindImage, mimeType
+		}
+		return dropzone.KindImage, imageTypes[ext]
 	case strings.HasPrefix(mimeType, "image/") && mimeType != "image/svg+xml":
 		return dropzone.KindImage, mimeType
 	case strings.HasPrefix(mimeType, "audio/"):
 		return dropzone.KindAudio, mimeType
-	case mimeType == "" && imageTypes[ext] != "":
-		return dropzone.KindImage, imageTypes[ext]
-	case mimeType == "" && audioTypes[ext] != "":
-		return dropzone.KindAudio, audioTypes[ext]
 	}
 	return "", mimeType
 }

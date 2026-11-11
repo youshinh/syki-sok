@@ -133,6 +133,7 @@ var execSpeech = func(ctx context.Context, exe string, args []string) (string, e
 		if res.Text != "" {
 			return res.Text, nil
 		}
+		return "", nil
 	}
 	return raw, nil
 }

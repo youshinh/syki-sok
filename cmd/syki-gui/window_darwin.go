@@ -868,7 +868,10 @@ func runPlatformWindow(app *App, serverURL string) {
 			openInboxFolder: () => window.backend_openInboxFolder(),
 			retryVoiceCacheAsync: (reqID, cachePath, voiceConfigJson) => window.backend_retryVoiceCacheAsync(reqID, cachePath || "", voiceConfigJson || ""),
 			keepVoiceCache: (cachePath, baseDir) => window.backend_keepVoiceCache(cachePath || "", baseDir || ""),
-			discardVoiceCache: (cachePath) => window.backend_discardVoiceCache(cachePath || "")
+			discardVoiceCache: (cachePath) => window.backend_discardVoiceCache(cachePath || ""),
+			listVoiceCaches: () => window.backend_listVoiceCaches(),
+			discardAllVoiceCaches: () => window.backend_discardAllVoiceCaches(),
+			transcribeVoiceCache: (cachePath, voiceConfigJson) => window.backend_transcribeVoiceCache(cachePath || "", voiceConfigJson || "")
 		};
 	`)
 

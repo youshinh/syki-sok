@@ -216,6 +216,18 @@
           <div id="tabs-list-right" role="tablist" aria-orientation="vertical"></div>
         </div>
       </div>
+      <!-- Pending Voice Recovery Bar (AAA) -->
+      <div id="voice-recovery-bar" class="voice-recovery-bar hidden" role="region" aria-label="未処理録音の復元">
+        <div class="voice-recovery-row">
+          <span class="voice-recovery-icon">🎙️</span>
+          <span id="voice-recovery-text" class="voice-recovery-text">未処理の録音があります</span>
+          <div class="voice-recovery-actions">
+            <button type="button" id="btn-voice-recovery-transcribe" class="btn-recovery-primary">文字起こし</button>
+            <button type="button" id="btn-voice-recovery-discard" class="btn-recovery-secondary">破棄</button>
+            <button type="button" id="btn-voice-recovery-close" class="btn-recovery-close" title="閉じる">✕</button>
+          </div>
+        </div>
+      </div>
       <!-- Floating Find & Replace Bar -->
       <div id="find-replace-bar" class="find-replace-bar hidden">
         <div class="find-row">

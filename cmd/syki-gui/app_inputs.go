@@ -11,6 +11,7 @@ import (
 	pathpkg "path"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -714,4 +715,133 @@ func (a *App) DiscardVoiceCache(cachePath string) error {
 		return fmt.Errorf("キャッシュの削除に失敗しました: %w", err)
 	}
 	return nil
+}
+
+// VoiceCacheItem describes a pending recording stored in voice_cache.
+type VoiceCacheItem struct {
+	Path      string `json:"path"`
+	Filename  string `json:"filename"`
+	Timestamp string `json:"timestamp"`
+	SizeStr   string `json:"sizeStr"`
+	SizeBytes int64  `json:"sizeBytes"`
+	Kind      string `json:"kind"`
+}
+
+func parseCacheTimestamp(name string, modTime time.Time) string {
+	if len(name) >= 17 {
+		prefix := name[:17]
+		if t, err := time.ParseInLocation("2006-01-02-150405", prefix, time.Local); err == nil {
+			return t.Format("2006/01/02 15:04:05")
+		}
+	}
+	return modTime.Format("2006/01/02 15:04:05")
+}
+
+func formatByteSize(bytes int64) string {
+	if bytes >= 1024*1024 {
+		return fmt.Sprintf("%.1f MB", float64(bytes)/(1024*1024))
+	}
+	if bytes >= 1024 {
+		return fmt.Sprintf("%d KB", bytes/1024)
+	}
+	return fmt.Sprintf("%d B", bytes)
+}
+
+// ListVoiceCaches scans voice_cache (and meetings subfolder), removes broken files (<1KB),
+// and returns all valid pending recordings ordered newest first.
+func (a *App) ListVoiceCaches() ([]VoiceCacheItem, error) {
+	dir, err := voiceCacheDir()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := os.Stat(dir); os.IsNotExist(err) {
+		return []VoiceCacheItem{}, nil
+	}
+
+	var items []VoiceCacheItem
+	scanDir := func(targetDir, kind string) {
+		entries, err := os.ReadDir(targetDir)
+		if err != nil {
+			return
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			path := filepath.Join(targetDir, e.Name())
+			fi, err := e.Info()
+			if err != nil {
+				continue
+			}
+			// Auto cleanup broken/tiny files (< 1KB) as per AAA spec
+			if fi.Size() < 1024 {
+				_ = os.Remove(path)
+				continue
+			}
+			ext := strings.ToLower(filepath.Ext(e.Name()))
+			if ext != ".webm" && ext != ".wav" && ext != ".m4a" && ext != ".mp4" {
+				continue
+			}
+			items = append(items, VoiceCacheItem{
+				Path:      path,
+				Filename:  e.Name(),
+				Timestamp: parseCacheTimestamp(e.Name(), fi.ModTime()),
+				SizeStr:   formatByteSize(fi.Size()),
+				SizeBytes: fi.Size(),
+				Kind:      kind,
+			})
+		}
+	}
+
+	scanDir(dir, "voice")
+	meetingDir := filepath.Join(dir, meetingSubdir)
+	if _, err := os.Stat(meetingDir); err == nil {
+		scanDir(meetingDir, "meeting")
+	}
+
+	sort.Slice(items, func(i, j int) bool {
+		return items[i].Timestamp > items[j].Timestamp
+	})
+
+	if items == nil {
+		items = []VoiceCacheItem{}
+	}
+	return items, nil
+}
+
+// DiscardAllVoiceCaches removes all pending voice recordings.
+func (a *App) DiscardAllVoiceCaches() (int, error) {
+	items, err := a.ListVoiceCaches()
+	if err != nil {
+		return 0, err
+	}
+	removed := 0
+	for _, it := range items {
+		if err := a.DiscardVoiceCache(it.Path); err == nil {
+			removed++
+		}
+	}
+	return removed, nil
+}
+
+// TranscribeVoiceCache transcribes a cached voice file, removing the cache file on success.
+func (a *App) TranscribeVoiceCache(cachePath, voiceConfigJSON string) (string, error) {
+	safePath, err := resolveVoiceCachePath(cachePath)
+	if err != nil {
+		return "", err
+	}
+	data, err := os.ReadFile(safePath)
+	if err != nil {
+		return "", fmt.Errorf("キャッシュの読み込みに失敗しました: %w", err)
+	}
+	cfg := parseVoiceRequestConfig(voiceConfigJSON)
+	audioBase64 := base64.StdEncoding.EncodeToString(data)
+	mime := sniffRecordingMIME(data)
+	text, err := inputsTranscribe(context.Background(), audioBase64, mime, cfg.VoiceConfig)
+	if err != nil {
+		return "", err
+	}
+	_ = os.Remove(safePath)
+	text, _ = refineTranscript(text, cfg)
+	return strings.TrimSpace(text), nil
 }

@@ -3,6 +3,7 @@ package speech
 import (
 	"context"
 	"encoding/binary"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -194,6 +195,17 @@ func TestFormatSpeechRegions(t *testing.T) {
 	expected := strings.Join(expectedLines, "\n")
 	if formatted != expected {
 		t.Errorf("formatSpeechRegions mismatch:\ngot:\n%s\nwant:\n%s", formatted, expected)
+	}
+}
+
+func TestExecSpeechEmptyResult(t *testing.T) {
+	rawJSON := `{"file":"test.wav","text":"","stop":"complete"}`
+	var res speechJSONOutput
+	if err := json.Unmarshal([]byte(rawJSON), &res); err != nil {
+		t.Fatalf("json unmarshal failed: %v", err)
+	}
+	if res.Text != "" {
+		t.Errorf("expected empty text, got %q", res.Text)
 	}
 }
 

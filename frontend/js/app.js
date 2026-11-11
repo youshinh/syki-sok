@@ -17634,16 +17634,16 @@ OUTPUT FORMAT:
   const DROP_MEDIA_MAX_BYTES = 20 * 1024 * 1024;
   const DROP_CONFIRM_FILES = 5; // this many files or more dropped at once ask before anything happens
   function droppedMediaKind(file) {
-    const type = String(file.type || '').toLowerCase();
-    if (type === 'image/svg+xml') return '';
-    if (type.startsWith('image/')) return 'image';
-    if (type.startsWith('audio/')) return 'audio';
-    if (type) return '';
-    const ext = (/\.([A-Za-z0-9]+)$/.exec(file.name || '') || [])[1];
-    const e = ext ? ext.toLowerCase() : '';
-    if (/^(png|jpe?g|webp|gif|heic|heif|bmp)$/.test(e)) return 'image';
-    if (/^(mp3|wav|m4a|aac|ogg|oga|opus|flac|weba)$/.test(e)) return 'audio';
-    return '';
+    const ext = (/\.([A-Za-z0-9]+)$/.exec(file.name || "") || [])[1];
+    const e = ext ? ext.toLowerCase() : "";
+    if (/^(png|jpe?g|webp|gif|heic|heif|bmp)$/.test(e)) return "image";
+    if (/^(mp3|wav|m4a|aac|ogg|oga|opus|flac|weba)$/.test(e)) return "audio";
+    const type = String(file.type || "").toLowerCase();
+    if (type === "image/svg+xml") return "";
+    if (type.startsWith("image/")) return "image";
+    if (type.startsWith("audio/")) return "audio";
+    if (type === "video/mp4" || type === "video/webm") return "audio";
+    return "";
   }
 
   function fileAsBase64(file) {
@@ -18144,10 +18144,97 @@ OUTPUT FORMAT:
       runBackgroundStartupSync();
     }
 
+    setTimeout(checkPendingVoiceCaches, 1200);
     initPaneResizer();
   }
 
   // Asynchronous background update checker (Zero impact on startup)
+
+  // Pending Voice Recovery Banner (AAA)
+  async function checkPendingVoiceCaches() {
+    if (!window.backend || typeof window.backend.listVoiceCaches !== 'function') return;
+    try {
+      const caches = await window.backend.listVoiceCaches();
+      if (!Array.isArray(caches) || caches.length === 0) return;
+
+      const bar = document.getElementById('voice-recovery-bar');
+      const textEl = document.getElementById('voice-recovery-text');
+      const btnTranscribe = document.getElementById('btn-voice-recovery-transcribe');
+      const btnDiscard = document.getElementById('btn-voice-recovery-discard');
+      const btnClose = document.getElementById('btn-voice-recovery-close');
+      if (!bar || !textEl || !btnTranscribe || !btnDiscard) return;
+
+      const count = caches.length;
+      const latest = caches[0];
+      const countMsg = count === 1
+        ? `未処理の録音があります（${latest.timestamp} / ${latest.sizeStr}）`
+        : `未処理の録音が ${count} 件あります（最新: ${latest.timestamp} / ${latest.sizeStr} 等）`;
+      textEl.textContent = countMsg;
+      bar.classList.remove('hidden');
+
+      const hideBar = () => { bar.classList.add('hidden'); };
+
+      if (btnClose) btnClose.onclick = hideBar;
+
+      btnDiscard.onclick = async () => {
+        if (!confirm(`未処理の録音 ${count} 件を破棄（削除）しますか？`)) return;
+        try {
+          if (window.backend.discardAllVoiceCaches) {
+            await window.backend.discardAllVoiceCaches();
+          } else {
+            for (const c of caches) {
+              await window.backend.discardVoiceCache(c.path);
+            }
+          }
+          showMessage(t('voiceDiscardSuccess') || '録音ファイルを破棄しました', 2500);
+        } catch (e) {
+          showMessage(String((e && e.message) || e), 4000, { important: true });
+        }
+        hideBar();
+      };
+
+      btnTranscribe.onclick = async () => {
+        hideBar();
+        showMessage(count === 1 ? '録音を文字起こし中...' : `録音 ${count} 件を文字起こし中...`, 5000);
+        const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON
+          ? window.VoiceInput.configJSON(config, { timeout: 0, profile: 'realtime' })
+          : '{}';
+
+        const results = [];
+        let successCount = 0;
+        for (const item of caches) {
+          try {
+            let text = '';
+            if (window.backend.transcribeVoiceCache) {
+              text = await window.backend.transcribeVoiceCache(item.path, voiceJSON);
+            }
+            if (text && text.trim()) {
+              results.push(`## 録音日時: ${item.timestamp} (${item.sizeStr})\n\n${text.trim()}`);
+              successCount++;
+            } else {
+              results.push(`## 録音日時: ${item.timestamp} (${item.sizeStr})\n\n> （文字起こし結果が空でした）`);
+            }
+          } catch (err) {
+            results.push(`## 録音日時: ${item.timestamp} (${item.sizeStr})\n\n> 文字起こし失敗: ${err.message || String(err)}`);
+          }
+        }
+
+        if (results.length > 0) {
+          const nowStr = new Date().toISOString().slice(0, 10);
+          const tabTitle = `録音復元_${nowStr}.md`;
+          const body = results.join('\n\n---\n\n') + '\n';
+          const tab = createTab(tabTitle, body);
+          tab.isAutoTitle = false;
+          tab.isDirty = true;
+          armAutoSave(tab);
+          renderTabs();
+          showMessage(successCount > 0 ? `録音 ${successCount} 件の文字起こしを復元しました` : '文字起こし結果が空でした', 3500);
+        }
+      };
+    } catch (e) {
+      console.warn('checkPendingVoiceCaches failed:', e);
+    }
+  }
   function isNewerVersion(latest, current) {
     const p1 = latest.split('.').map(n => parseInt(n, 10) || 0);
     const p2 = current.split('.').map(n => parseInt(n, 10) || 0);
