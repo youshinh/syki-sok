@@ -102,9 +102,11 @@ func (s *Service) transcribeCloud(cfg llm.VoiceConfig, in audioInput) (string, e
 		b64 = base64.StdEncoding.EncodeToString(in.data)
 	}
 	mime := in.mime
-	if mime == "" && in.path != "" {
+	if mime == "" {
 		if head, err := in.head(); err == nil {
-			mime = formatMIME(sniffFormat(head))
+			if detected := formatMIME(sniffFormat(head)); detected != "" {
+				mime = detected
+			}
 		}
 	}
 	return queryGeminiAudio(cfg.Prompt, b64, mime, cfg)

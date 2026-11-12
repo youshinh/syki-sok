@@ -125,7 +125,7 @@ Instead, concisely deliver the **4 Core Pillars of syki::sok** so the user can i
 2. AI Directly at Your Cursor (No chat window switching or copy-pasting):
    Press Ctrl+L / Cmd+L to stream AI responses right beneath your selected text in-place. Includes ghost-text autocomplete (Tab) and one-key proofreading (Alt+C / Cmd+Shift+C).
 3. Parallel Multimodal Input & Cloud Relay:
-   Real-time voice dictation with AI polishing (Ctrl+Shift+R / Cmd+Shift+R), clipboard image OCR (Ctrl+V), zero-install LAN QR transfer (Ctrl+Shift+U: Mobile Drop), plus Cloudflare Mobile Bridge for asynchronous photo/audio notes from mobile PWA even when your PC is offline.
+   Real-time voice dictation via on-device speech.cpp (Haas-ja GGUF, 15-25x faster than real-time, under 1GB RAM, zero keys needed, Apple Silicon Metal accelerated) or Gemini with streaming to caret and command palette, meeting recording with speaker diarization & noise reduction, clipboard image OCR (Ctrl+V), zero-install LAN QR transfer (Ctrl+Shift+U: Mobile Drop), plus Cloudflare Mobile Bridge for asynchronous photo/audio notes from mobile PWA even when your PC is offline. Includes standalone `syki speech` CLI for terminal/agent audio pipelines.
 4. Text as Command Line & Autonomous Agent Foundation:
    Pipe selected lines into CLI tools like jq or sort via Command Bar (Ctrl+E / Cmd+E). Launch background coding agents (Claude Code, Codex, AGY) with a single Ctrl+Enter / Cmd+Enter, complete with self-improving Lessons capability.
 ```
@@ -148,7 +148,7 @@ Let me know which option you prefer and I can configure it right away!"
    - **Delegate**: Auto Selector (`Ctrl+Enter` / `Cmd+Enter`), Agent delegation (`{{ @claude ... }}`), Task Panel (`Alt+T` / `Opt+T`), Lessons.
 3. **Japanese IME & Markdown Support**: Awareness of IME Guardian (automatic normalization of full-width Markdown characters like ＃, quotes, backticks) and JIS key misstrike protection, allowing seamless Markdown authoring while IME is active.
 4. **Semantic Search**: Explain semantic vector search via on-device embedding (EmbeddingGemma, MRL 256-dim) and cloud embedding (Gemini Embedding) for fast conceptual recall across thousands of notes.
-5. **Decision Models (Evaluation-Only AI)**: Support for TypeSafe AI Jev (`jev-latest`) and OpenAI Decisions API (`gpt-6-luna`) as deterministic decision engines for action proposals (`Ctrl+J`) and auto-routing (`Ctrl+Enter`). Delivers typed decisions (Choice / Predicate / Score) within milliseconds without full text generation.
+5. **Decision Models (Evaluation-Only AI)**: Support for Google Gemini Decision 1 (`gemini-decision-1`, default), TypeSafe AI Jev (`jev-latest`), and OpenAI Decisions API (`gpt-6-luna`) as deterministic decision engines for action proposals (`Ctrl+J`) and auto-routing (`Ctrl+Enter`). Delivers typed decisions (Choice / Predicate / Score) within milliseconds without full text generation.
 6. **Safety First**: Handle API keys and credentials cautiously. Advise users to close the application completely before editing `config.json`.
 
 ---
@@ -199,7 +199,7 @@ powershell -File tools/absorb-scraps.ps1 -Engine auto|claude|codex|agy|ollama|op
 | **CF Mobile Bridge** | Settings | Settings | Async mobile notes/photos via Cloudflare PWA even when PC is off |
 | **Command Bar** | `Ctrl+E` | `Cmd+E` | Pipe selection into shell tools (`jq`, `sort`). `Tab` for AI shell generation |
 | **Auto Selector** | `Ctrl+Enter` | `Cmd+Enter` | Autodetect line intent and route to LLM, shell, or agent |
-| **Next Actions** | `Ctrl+J` | `Cmd+J` | Context-aware action suggestions (Jev / OpenAI gpt-6-luna decision models) |
+| **Next Actions** | `Ctrl+J` | `Cmd+J` | Context-aware action suggestions (Gemini Decision 1 default / Jev / gpt-6-luna) |
 | **Scraps Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` | Parallel multi-core scan (<150ms) + semantic embedding search |
 | **Split Editor** | `Ctrl+\\` | `Cmd+\\` | Side-by-side dual editor with draggable gutter |
 | **Mermaid Preview** | `Ctrl+Alt+V` | `Cmd+Opt+V` | Real-time Markdown preview with interactive Mermaid diagram rendering |

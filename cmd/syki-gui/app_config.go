@@ -41,8 +41,11 @@ func getConfigFilePath() string {
 var (
 	lastConfigDirMu    sync.Mutex
 	lastConfigDir      string
-	defaultAgentLineRE = lazyre.New(`(?m)^(\s*default_agent\s*:\s*)[^\r\n#]+`)
-	versionLineRE      = lazyre.New(`(?m)^(\s*version\s*:\s*[^\r\n]+)`)
+	defaultAgentLineRE   = lazyre.New(`(?m)^(\s*default_agent\s*:\s*)[^\r\n#]+`)
+	versionLineRE        = lazyre.New(`(?m)^(\s*version\s*:\s*[^\r\n]+)`)
+	timeoutSecondsLineRE = lazyre.New(`(?m)^(\s*timeout_seconds\s*:\s*)[^\r\n#]+`)
+	hoverPeekLineRE      = lazyre.New(`(?m)^(\s*hover_peek_enabled\s*:\s*)[^\r\n#]+`)
+	ghostDiffLineRE      = lazyre.New(`(?m)^(\s*ghost_diff_duration_ms\s*:\s*)[^\r\n#]+`)
 )
 
 type generalConfigSnapshot struct {
@@ -398,6 +401,54 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 }
 
 // ExportAgentsConfigFile exports a commented agents config file (.yaml, .md, or .json) via SaveFileDialog.
+
+// UpdateActiveAgentsConfigSlotSettings updates timeout, hover peek, and ghost diff in active external agents.yaml.
+func (a *App) UpdateActiveAgentsConfigSlotSettings(scrapDir string, timeoutSec int, hoverPeek bool, ghostDiffMs int) error {
+	foundPath := slotagent.FindAgentConfigFile(scrapDir)
+	if foundPath == "" {
+		foundPath = slotagent.GetDefaultAgentConfigPath()
+	}
+	if foundPath == "" {
+		return fmt.Errorf("agent config file not found")
+	}
+
+	data, err := os.ReadFile(foundPath)
+	if err != nil {
+		return err
+	}
+
+	content := string(data)
+	updateOrAppend := func(re *lazyre.Regexp, key string, val string) {
+		if re.MatchString(content) {
+			content = re.ReplaceAllString(content, fmt.Sprintf("${1}%s", val))
+		} else {
+			if versionLineRE.MatchString(content) {
+				content = versionLineRE.ReplaceAllString(content, fmt.Sprintf("${1}\n%s: %s", key, val))
+			} else {
+				content = fmt.Sprintf("%s: %s\n", key, val) + content
+			}
+		}
+	}
+
+	if timeoutSec > 0 {
+		updateOrAppend(timeoutSecondsLineRE, "timeout_seconds", fmt.Sprintf("%d", timeoutSec))
+	}
+	updateOrAppend(hoverPeekLineRE, "hover_peek_enabled", fmt.Sprintf("%t", hoverPeek))
+	if ghostDiffMs > 0 {
+		updateOrAppend(ghostDiffRE(), "ghost_diff_duration_ms", fmt.Sprintf("%d", ghostDiffMs))
+	}
+
+	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+		return err
+	}
+	a.invalidateSlotConfigCache()
+	return nil
+}
+
+func ghostDiffRE() *lazyre.Regexp {
+	return ghostDiffLineRE
+}
+
 func (a *App) ExportAgentsConfigFile(format string) (string, error) {
 	defaultName := "agents.yaml"
 	content := slotagent.GenerateDefaultAgentsYAML()

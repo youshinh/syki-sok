@@ -25,6 +25,7 @@ type ClientConfig struct {
 	TypeSafeKey   string        `json:"typesafe_key"`
 	OpenRouterKey string        `json:"openrouter_key"`
 	OpenAIKey     string        `json:"openai_key"`
+	GeminiKey     string        `json:"gemini_key"`
 	Model         string        `json:"model"`
 	Timeout       time.Duration `json:"timeout"`
 
@@ -66,10 +67,21 @@ func NewClient(cfg ClientConfig) *Client {
 	if cfg.OpenAIKey == "" && cfg.AllowGenericEnvKeys {
 		cfg.OpenAIKey = os.Getenv("OPENAI_API_KEY")
 	}
+	if cfg.GeminiKey == "" && cfg.AllowGenericEnvKeys {
+		if k := os.Getenv("GEMINI_API_KEY"); k != "" {
+			cfg.GeminiKey = k
+		} else {
+			cfg.GeminiKey = os.Getenv("GOOGLE_API_KEY")
+		}
+	}
 	if cfg.Model == "" {
 		cfg.Model = os.Getenv("JEV_MODEL")
 		if cfg.Model == "" {
-			cfg.Model = "jev-latest"
+			if looksLikeOpenRouterKey(cfg.OpenRouterKey) || cfg.TypeSafeKey != "" || isTypeSafeEndpoint(cfg.Endpoint) {
+				cfg.Model = "jev-latest"
+			} else {
+				cfg.Model = DefaultGeminiDecisionModel
+			}
 		}
 	}
 	if cfg.Endpoint == "" {
@@ -125,7 +137,15 @@ func (c *Client) Predict(ctx context.Context, req JevPredictRequest) (*JevPredic
 		req.GrammarSchema = TaskActionEBNF
 	}
 
-	// 0. OpenAI Decisions API (e.g. gpt-6-luna) if configured.
+	// 0a. Gemini Decisions API (e.g. gemini-decision-1) if configured.
+	if endpoint, key := c.geminiDecisionTarget(c.cfg.Model); endpoint != "" {
+		if resp, err := c.predictGeminiDecision(ctx, endpoint, key, req); err == nil && len(resp.Candidates) > 0 {
+			return resp, nil
+		}
+		return c.predictLocal(req), nil
+	}
+
+	// 0b. OpenAI Decisions API (e.g. gpt-6-luna) if configured.
 	if endpoint, key := c.openAIDecisionTarget(c.cfg.Model); endpoint != "" {
 		if resp, err := c.predictOpenAIDecision(ctx, endpoint, key, req); err == nil && len(resp.Candidates) > 0 {
 			return resp, nil
@@ -356,7 +376,15 @@ func (c *Client) SystemOne(ctx context.Context, req SystemOneRequest) (*SystemOn
 		req.Model = c.cfg.Model
 	}
 
-	// 0. OpenAI Decisions API if configured.
+	// 0a. Gemini Decisions API if configured.
+	if endpoint, key := c.geminiDecisionTarget(req.Model); endpoint != "" {
+		if resp, err := c.callGeminiDecisionAPI(ctx, endpoint, key, req); err == nil && resp != nil {
+			return resp, nil
+		}
+		return c.systemOneLocal(req), nil
+	}
+
+	// 0b. OpenAI Decisions API if configured.
 	if endpoint, key := c.openAIDecisionTarget(req.Model); endpoint != "" {
 		if resp, err := c.callOpenAIDecisionAPI(ctx, endpoint, key, req); err == nil && resp != nil {
 			return resp, nil

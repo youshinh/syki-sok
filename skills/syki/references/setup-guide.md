@@ -1,4 +1,4 @@
-﻿# Configuring syki::sok on the user's behalf
+# Configuring syki::sok on the user's behalf
 
 Basis: app 2.0.9, source of 2026-09-21 (commit a85494c or later); the keys and checklist rows for the hot folder (`inbox.*`), `vision.ocrMode`, `voice.engine`, `voice.whisper.*`, `shortcuts.quickCapture` and `syki ocr` come from the source of 2026-09-24. `(unverified)` = not checked in this repository's source (OS behaviour or an external tool). Read `interfaces.md` first for what each surface does.
 
@@ -134,7 +134,7 @@ Wire formats (from `pkg/llm/audio.go`, verified in source):
 | `action.manualOnly` | bool | `false` | No auto popup; Ctrl+J only. |
 | `action.delaySec` | number | `1.5` | Pause before the auto popup; UI 0.5-10. |
 | `action.baseUrl` | string | `https://openrouter.ai/api/v1` | With the default and no key nothing leaves the machine. `https://api.typesafe.ai` (also `/v1`, `/v1/systemone`) plus a TypeSafe key uses Jev at TypeSafe (System One). Any other URL receives `POST <url>/predict` with ~2,000 chars of context. Keep the default for an OpenRouter key. |
-| `action.model` | string | `jev-latest` | Model name sent to the engine. A Jev name (`jev-latest`, `jev-*`, `typesafe/jev-*`) makes an OpenRouter key use OpenRouter's System One API; any other name with an OpenRouter key means chat completions (the model writes the candidates). |
+| `action.model` | string | `gemini-decision-1` | Model name sent to the engine. Google Gemini Decision 1 (`gemini-decision-1`, default), TypeSafe Jev (`jev-latest`), or OpenAI Decisions API (`gpt-6-luna`). A Jev name (`jev-latest`, `jev-*`, `typesafe/jev-*`) makes an OpenRouter key use OpenRouter's System One API; any other name with an OpenRouter key means chat completions (the model writes the candidates). |
 | `action.apiKey` | string | `""` | Secret. One field for both services: an `sk-or-...` key is an OpenRouter key, anything else is a TypeSafe key, and it is only sent where the Base URL says (a TypeSafe key next to the OpenRouter Base URL is sent nowhere). The Go side stores it into the Jev client as API key, OpenRouter key and TypeSafe key. Read by Go at start and on Settings Save. |
 | `general.language` | `ja` \| `en` | `ja` if the WebView language starts with `ja`, else `en` | UI language; also decides the default of `imeGuardian`. |
 | `general.theme` | string | `olive` | `olive`, `blue`, `forest`, `charcoal`. |
@@ -377,7 +377,7 @@ Verified by grepping every `os.Getenv` / `os.Setenv` / `os.Environ` in the Go so
 |---|---|---|
 | `TYPESAFE_API_KEY`, then `JEV_API_KEY` | `pkg/jev/jev_client.go` (GUI and CLI) | TypeSafe/Jev key when none is configured. With a key and no endpoint the default `https://api.typesafe.ai` is used (Jev on System One, for Quick Actions and CLI `jev dispatch`/`predict`). In the GUI a configured `action.baseUrl` and `action.apiKey` shadow it, and with the default OpenRouter Base URL a TypeSafe key is not used. |
 | `OPENROUTER_API_KEY` | headless CLI only (`AllowGenericEnvKeys`) | `syki jev predict` and `syki jev dispatch` will send the task text to OpenRouter (System One API for a Jev model, else chat completions) if this is set in the calling shell. The GUI never reads it (so unrelated exported keys do not leak note excerpts). |
-| `JEV_MODEL` | Jev client | Model name when none configured (default `jev-latest`). |
+| `JEV_MODEL` | Jev client | Model name when none configured (default `gemini-decision-1`). |
 | `JEV_API_URL` | Jev client | Endpoint when none configured. In the GUI `action.baseUrl` is normally already set (default `https://openrouter.ai/api/v1`), which shadows it. |
 | `PATH` | every external tool lookup: `git`, `ollama`, agent CLIs, `cloudflared`, `pwsh`/`powershell`/`cmd`/`sh`, Command Bar commands | Must be the PATH of the process that started syki::sok. |
 | `SHELL` | macOS PATH repair only | Login shell to probe; must be an absolute existing path, else `/bin/zsh`. |

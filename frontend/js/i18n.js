@@ -214,6 +214,7 @@ const I18N = {
     // Shortcuts Tab
     tabShortcuts: "Shortcuts",
     shortcutsHint: "Click a key button to record a new shortcut",
+    shortcutsFilterPlaceholder: "Search shortcuts by name or key...",
     shortcutPressKey: "Press key...",
     shortcutsHeaderAction: "Command / Action",
     shortcutsHeaderKey: "Shortcut Key",
@@ -698,6 +699,8 @@ const I18N = {
     visionApiKeyLabel: "Vision API Key (Cloud only):",
     visionPromptLabel: "Vision prompt instruction:",
     imageGenApiKeyLabel: "Gemini API Key (for Image Gen):",
+    apiKeyInheritedPlaceholder: "(Inherited from Text / Common API Key)",
+    apiKeyLocalPlaceholder: "(Leave empty for local models)",
 
     // Voice Input
     sectionVoiceInput: "Voice input",
@@ -1415,7 +1418,7 @@ const I18N = {
     textModelFallbackHint: "If blank: qwen2.5:latest",
     cliModelHint: "Blank = use the Text model from the AI Models tab.",
     actionApiBlockHint: "With both URL and API key blank, nothing leaves your machine — suggestions come from built-in local rules. If you fill them in, the text around your caret is sent to that API.",
-    actionModelHint: "Blank = jev-latest. Decision models: jev-latest (TypeSafe) or gpt-6-luna (OpenAI Decisions API).",
+    actionModelHint: "Blank = gemini-decision-1. Decision models: gemini-decision-1 (Google), jev-latest (TypeSafe) or gpt-6-luna (OpenAI Decisions API).",
     slotTimeoutLabel: "Agent timeout (seconds)",
     slotTimeoutHint: "How long to wait for the agent before giving up and marking the task failed.",
     slotGhostDiffLabel: "Change highlight duration (ms)",
@@ -1791,6 +1794,7 @@ const I18N = {
     // Shortcuts Tab
     tabShortcuts: "ショートカット",
     shortcutsHint: "キーをクリックして新しいショートカットを入力できます",
+    shortcutsFilterPlaceholder: "操作名やキーで絞り込み...",
     shortcutPressKey: "キーを入力...",
     shortcutsHeaderAction: "操作 / コマンド",
     shortcutsHeaderKey: "ショートカットキー",
@@ -2276,6 +2280,8 @@ const I18N = {
     visionApiKeyLabel: "Vision API Key (クラウド用):",
     visionPromptLabel: "画像解析プロンプト指示:",
     imageGenApiKeyLabel: "Gemini API Key (画像生成用):",
+    apiKeyInheritedPlaceholder: "(テキストLLMのAPIキーを自動継承)",
+    apiKeyLocalPlaceholder: "(ローカルモデル時は空欄で可)",
 
     // 音声入力
     sectionVoiceInput: "音声入力",
@@ -2993,7 +2999,7 @@ const I18N = {
     textModelFallbackHint: "空欄の場合: qwen2.5:latest",
     cliModelHint: "空欄なら『AIモデル』タブのテキスト用モデルを使います",
     actionApiBlockHint: "URL と API キーが両方空欄なら、ノートの内容は外部に送信されず、内蔵のローカル推論だけで候補を出します。入力すると、キャレット周辺のテキストがその API に送信されます。",
-    actionModelHint: "空欄なら jev-latest。判定専用モデル: jev-latest (TypeSafe) または gpt-6-luna (OpenAI Decisions API)",
+    actionModelHint: "空欄なら gemini-decision-1。判定専用モデル: gemini-decision-1 (Google)、jev-latest (TypeSafe) または gpt-6-luna (OpenAI Decisions API)",
     slotTimeoutLabel: "エージェントのタイムアウト (秒)",
     slotTimeoutHint: "この秒数までエージェントの応答を待ち、超えるとタスクを失敗として打ち切ります。",
     slotGhostDiffLabel: "変更箇所のハイライト時間 (ms)",

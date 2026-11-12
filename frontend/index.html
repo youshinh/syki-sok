@@ -1684,15 +1684,15 @@
             <small data-i18n="actionApiBlockHint">With both URL and API key blank, nothing leaves your machine — suggestions come from built-in local rules. If you fill them in, the text around your caret is sent to that API.</small>
             <div class="form-group" style="margin-top: 6px;">
               <label for="cfg-action-base-url" data-i18n="actionBaseUrlLabel">API Base URL / Endpoint:</label>
-              <input type="text" id="cfg-action-base-url" placeholder="https://api.typesafe.ai or https://api.openai.com/v1">
+              <input type="text" id="cfg-action-base-url" placeholder="https://generativelanguage.googleapis.com or https://api.openai.com/v1">
             </div>
             <div class="form-group">
               <label for="cfg-action-model" data-i18n="actionModelLabel">Model Name:</label>
-              <input type="text" id="cfg-action-model" placeholder="jev-latest or gpt-6-luna">
-              <small data-i18n="actionModelHint">Blank = jev-latest. Decision models: jev-latest or gpt-6-luna (OpenAI Decisions API).</small>
+              <input type="text" id="cfg-action-model" placeholder="gemini-decision-1 (default), jev-latest, or gpt-6-luna">
+              <small data-i18n="actionModelHint">Blank = gemini-decision-1. Decision models: gemini-decision-1 (Google), jev-latest (TypeSafe) or gpt-6-luna (OpenAI Decisions API).</small>
             </div>
             <div class="form-group">
-              <label for="cfg-action-api-key" data-i18n="actionApiKeyLabel">API Key (OpenAI / OpenRouter / TypeSafe):</label>
+              <label for="cfg-action-api-key" data-i18n="actionApiKeyLabel">API Key (Gemini / OpenAI / OpenRouter / TypeSafe):</label>
               <input type="password" id="cfg-action-api-key" placeholder="sk-... / sk-or-v1-... / typesafe key">
             </div>
 
@@ -1847,9 +1847,12 @@
 
           <!-- Shortcuts Config Pane -->
           <div id="pane-shortcuts" class="settings-pane hidden">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
               <small id="shortcuts-hint" style="color: var(--text-muted);" data-i18n="shortcutsHint">Click a key button to record a new shortcut</small>
               <button id="btn-reset-shortcuts" type="button" class="btn-secondary" style="padding: 4px 10px; font-size: 11px;" data-i18n="btnResetShortcuts">Reset to Defaults</button>
+            </div>
+            <div style="margin-bottom: 10px;">
+              <input type="text" id="cfg-shortcuts-filter" placeholder="Search shortcuts by name or key..." data-i18n-placeholder="shortcutsFilterPlaceholder" style="width: 100%; box-sizing: border-box; background: var(--bg-input); color: var(--text-main); border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 4px; font-size: 12px;">
             </div>
             <div class="shortcuts-table-wrap">
               <table class="shortcuts-table">

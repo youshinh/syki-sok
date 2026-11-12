@@ -2658,16 +2658,17 @@ recipes:
           <ul>
             <li>既定では、内蔵のローカル規則だけで候補を出します。ノートの内容は外部に送信されません。</li>
             <li>送信されるのは、下のどれかを設定した場合だけです。</li>
+            <li><strong>Google Gemini Decision 1（既定）:</strong> モデル名を <code>gemini-decision-1</code>（既定値）にして、Gemini の API キーを入力します。Google Gemini の構造化判定エンドポイントへ数ミリ秒で問い合わせて高速に候補を並べ替えます。</li>
             <li><strong>OpenAI の Decision モデル (gpt-6-luna):</strong> モデル名を <code>gpt-6-luna</code>（または <code>luna</code>）にして、OpenAI の API キー（<code>sk-…</code> / <code>sk-proj-…</code>）を入力します。Base URL を空（または <code>https://api.openai.com/v1</code>）にすると、OpenAI の Decisions API（<code>https://api.openai.com/v1/decisions</code>）へ高速に問い合わせて候補を判定・並べ替えます。</li>
             <li><strong>TypeSafe の Jev:</strong> Base URL を <code>https://api.typesafe.ai</code> にして、TypeSafe の API キーを入力します。送信先は <code>https://api.typesafe.ai/v1/systemone</code> です。</li>
-            <li><strong>OpenRouter 経由の Jev:</strong> Base URL とモデル名を既定のまま（<code>https://openrouter.ai/api/v1</code>、<code>jev-latest</code>）にして、OpenRouter の API キー（<code>sk-or-v1-…</code>）を入力します。送信先は <code>https://openrouter.ai/api/v1/systemone</code> に固定です。</li>
+            <li><strong>OpenRouter 経由の Jev:</strong> Base URL を <code>https://openrouter.ai/api/v1</code>、モデル名を <code>jev-latest</code> にして、OpenRouter の API キー（<code>sk-or-v1-…</code>）を入力します。送信先は <code>https://openrouter.ai/api/v1/systemone</code> に固定です。</li>
             <li><strong>OpenRouter のチャットモデル:</strong> モデル名を Jev 以外（例: <code>google/gemini-…</code>）にして OpenRouter のキーを入力します。候補の文面をそのモデルに書かせます（送信先は OpenRouter の <code>chat/completions</code>）。</li>
             <li><strong>自前のサーバー:</strong> Base URL を上のどれでもない URL にすると、<code>&lt;Base URL&gt;/predict</code> へ送られます。</li>
-            <li>キー欄は1つなので、キーの種類は Base URL とキーの形（OpenRouter のキーは <code>sk-or-</code> で始まります）で判断します。TypeSafe のキーを OpenRouter 用の Base URL のまま入れても、どこにも送られず、内蔵の候補になります。</li>
-            <li>Jev や OpenAI Decisions API などの判定専用モデルは文章を書きません。内蔵の候補をすべて並べて「いまのメモに最も合うのはどれか」を1回だけ尋ね、その確率分布で並べ替えます。出るのは内蔵の安全な候補だけです。</li>
-            <li>Jev が答えられなかったとき（キーの誤り、残高不足、通信エラー、5秒の待ち時間切れ、確信が低いとき）は、内蔵ルールの候補に戻ります。そのキーを別のサービスへ送り直すことはありません。</li>
+            <li>キー欄は1つなので、キーの種類は Base URL とキーの形（OpenRouter のキーは <code>sk-or-</code> で始まります）で判断します。</li>
+            <li>Gemini Decision 1、Jev や OpenAI Decisions API などの判定専用モデルは文章を書きません。内蔵の候補をすべて並べて「いまのメモに最も合うのはどれか」を1回だけ尋ね、その確率分布で並べ替えます。出るのは内蔵の安全な候補だけです。</li>
+            <li>モデルが答えられなかったとき（キーの誤り、残高不足、通信エラー、5秒の待ち時間切れ、確信が低いとき）は、内蔵ルールの候補に戻ります。そのキーを別のサービスへ送り直すことはありません。</li>
             <li>送られるのはキャレット周辺の抜粋で、キャレットの前が最大1,500文字、後ろが最大500文字（合計約2,000文字）です。メモが空のときは送りません。</li>
-            <li>Base URL とモデル名の欄には <code>https://openrouter.ai/api/v1</code> と <code>jev-latest</code> があらかじめ入力されていますが、API キーが空のままなら外部には送られません。</li>
+            <li>モデル名の欄には <code>gemini-decision-1</code> があらかじめ入力されていますが、API キーが空のままなら外部には送られません。</li>
             <li>安全性チェックの正体は AST ガードレールです。内部名称の意味は <a href="#glossary" style="color: var(--accent);">用語集</a> にまとめています。</li>
           </ul>
         </div></details>
@@ -4315,7 +4316,7 @@ syki ocr --json memo.png</code></pre>
           <li><strong>メモ入力時に自動提示する:</strong> 入力が止まったときに候補を出すかどうか。</li>
           <li><strong>手動呼び出しのみ:</strong> 自動提示をやめ、<span class="kbd">Ctrl+J</span> を押したときだけ出すようにします。</li>
           <li><strong>入力停止から自動提示までの待機時間（秒）:</strong> 自動提示までの間合いを調整します。</li>
-          <li><strong>API Base URL / モデル名 / API Key:</strong> 候補に使う Jev（またはほかのモデル）の接続先。API Key を空のままにし、Base URL を既定値（<code>https://openrouter.ai/api/v1</code>、モデル名は <code>jev-latest</code>）のままにしておくと内蔵のローカル規則を使い、キーを入力するか URL を変更するまで何も送信されません。OpenRouter のキーなら既定のまま、TypeSafe のキーなら Base URL を <code>https://api.typesafe.ai</code> にします。詳しくは <a href="#jev-action" style="color: var(--accent);">アクション候補</a> の「送信されるデータ」にあります。</li>
+          <li><strong>API Base URL / モデル名 / API Key:</strong> 候補判定に使う Decision モデル（Google Gemini Decision 1、Jev、OpenAI Decisions）の接続先。API Key を空のままにしておくと内蔵のローカル規則を使い、キーを入力するまで何も送信されません。既定モデルは <code>gemini-decision-1</code> です。Gemini、OpenRouter、OpenAI（<code>gpt-6-luna</code>）、TypeSafe AI に対応しています。詳しくは <a href="#jev-action" style="color: var(--accent);">アクション候補</a> の「送信されるデータ」にあります。</li>
         </ul>
 
         <p><strong>OS連携 (送る)</strong>（Windows のみ） — エクスプローラーの「送る」メニューの設定です。提案の設定の下にあります。macOS には、この項目も、「送る」メニューもありません。</p>

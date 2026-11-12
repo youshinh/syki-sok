@@ -2606,16 +2606,18 @@ recipes:
         <details class="more"><summary>Limits and details (data that is sent, and how Jev is used)</summary><div class="more-body">
           <ul>
             <li>By default, suggestions come from the built-in local rules only. Nothing from your note leaves your machine.</li>
-            <li>Data is sent only if you set up one of the following.</li>
-            <li><strong>Jev through OpenRouter:</strong> leave the Base URL and Model Name at their defaults (<code>https://openrouter.ai/api/v1</code>, <code>jev-latest</code>) and enter an OpenRouter API key (<code>sk-or-v1-…</code>). Requests go to <code>https://openrouter.ai/api/v1/systemone</code>, which is fixed.</li>
-            <li><strong>Jev at TypeSafe:</strong> set the Base URL to <code>https://api.typesafe.ai</code> and enter your TypeSafe API key. Requests go to <code>https://api.typesafe.ai/v1/systemone</code>.</li>
-            <li><strong>An OpenRouter chat model:</strong> set the Model Name to something other than Jev (for example <code>google/gemini-…</code>) and enter an OpenRouter key. That model is asked to write the candidate text (sent to OpenRouter's <code>chat/completions</code>).</li>
+            <li>Data is sent only if you set up one of the following decision engines:</li>
+            <li><strong>Google Gemini Decision 1 (default):</strong> leave the Model Name at <code>gemini-decision-1</code> (default) and enter a Gemini API key. Requests go to Gemini's native structured prediction endpoint for millisecond evaluation.</li>
+            <li><strong>Jev through OpenRouter:</strong> set Model Name to <code>jev-latest</code>, Base URL to <code>https://openrouter.ai/api/v1</code>, and enter an OpenRouter API key (<code>sk-or-v1-…</code>). Requests go to <code>https://openrouter.ai/api/v1/systemone</code>.</li>
+            <li><strong>OpenAI Decisions API:</strong> set Model Name to <code>gpt-6-luna</code>, Base URL to <code>https://api.openai.com/v1</code>, and enter an OpenAI key.</li>
+            <li><strong>Jev at TypeSafe:</strong> set Base URL to <code>https://api.typesafe.ai</code>, Model Name to <code>jev-latest</code>, and enter your TypeSafe API key. Requests go to <code>https://api.typesafe.ai/v1/systemone</code>.</li>
+            <li><strong>An OpenRouter chat model:</strong> set the Model Name to a chat model (for example <code>google/gemini-…</code>) and enter an OpenRouter key. That model is asked to write the candidate text (sent to OpenRouter's <code>chat/completions</code>).</li>
             <li><strong>Your own server:</strong> a Base URL that is none of the above receives <code>&lt;Base URL&gt;/predict</code>.</li>
-            <li>There is one key field, so the kind of key is judged from the Base URL and the shape of the key (OpenRouter keys start with <code>sk-or-</code>). A TypeSafe key entered next to the OpenRouter Base URL is sent nowhere; you get the built-in candidates.</li>
-            <li>Jev does not write text. All the built-in candidates are laid out and Jev is asked once which one fits your note best; its answer reorders them. Only built-in candidates are ever shown.</li>
-            <li>When Jev cannot answer (a wrong key, no credit, a network error, a 5-second timeout, or low confidence), you get the built-in rules' candidates. The key is never resent to another service.</li>
+            <li>There is one key field, so the kind of key is judged from the Base URL, model name, and the shape of the key.</li>
+            <li>Decision models do not write text. All the built-in candidates are laid out and the model is asked once which one fits your note best; its answer reorders them. Only built-in candidates are ever shown.</li>
+            <li>When the model cannot answer (a wrong key, no credit, a network error, a 5-second timeout, or low confidence), you get the built-in rules' candidates. The key is never resent to another service.</li>
             <li>What is sent is an excerpt around the caret: up to 1,500 characters before it and 500 after (about 2,000 in total). Nothing is sent for an empty note.</li>
-            <li>The Base URL and Model Name fields come pre-filled with <code>https://openrouter.ai/api/v1</code> and <code>jev-latest</code>, but while the API key is empty, nothing is sent.</li>
+            <li>The Model Name comes pre-filled with <code>gemini-decision-1</code>, but while the API key is empty, nothing is sent.</li>
             <li>The safety check is the AST guardrail. The <a href="#glossary" style="color: var(--accent);">glossary</a> explains these internal names.</li>
           </ul>
         </div></details>
@@ -4150,7 +4152,7 @@ Clipped from a web page.
           <li><strong>Suggest actions automatically while typing:</strong> whether cards appear on their own after a pause.</li>
           <li><strong>Manual trigger only (suppress auto-popup, press Ctrl+J):</strong> turn off automatic suggestions and show cards only when you press <span class="kbd">Ctrl+J</span>.</li>
           <li><strong>Quick Actions delay (seconds):</strong> how long a pause has to be before cards appear.</li>
-          <li><strong>API Base URL / Model Name / API Key:</strong> where Jev (or another model) is reached for the candidates. Leave the API Key empty and the Base URL at its default (<code>https://openrouter.ai/api/v1</code>, model <code>jev-latest</code>) to use the built-in local rules; nothing is sent until you enter a key or change the URL. With an OpenRouter key, keep the defaults; with a TypeSafe key, set the Base URL to <code>https://api.typesafe.ai</code>. Details are under "data that is sent" in <a href="#jev-action" style="color: var(--accent);">Quick Actions</a>.</li>
+          <li><strong>API Base URL / Model Name / API Key:</strong> where decision models (Gemini Decision 1, Jev, or OpenAI Decisions) are reached for action candidates. Leave the API Key empty to use the built-in local rules; nothing is sent until you enter a key. Default model is <code>gemini-decision-1</code>. Supports Gemini, OpenRouter, OpenAI (<code>gpt-6-luna</code>), and TypeSafe AI. Details are under "data that is sent" in <a href="#jev-action" style="color: var(--accent);">Quick Actions</a>.</li>
         </ul>
 
         <p><strong>OS Integration (Send To)</strong> (Windows only): the last group on the tab.</p>

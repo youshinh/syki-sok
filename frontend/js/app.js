@@ -107,7 +107,7 @@
     action: {
       enabled: true,
       baseUrl: 'https://openrouter.ai/api/v1',
-      model: 'jev-latest',
+      model: 'gemini-decision-1',
       apiKey: ''
     },
     image: {
@@ -6278,7 +6278,7 @@
         manualOnly: false,
         delaySec: 1.5,
         baseUrl: 'https://openrouter.ai/api/v1',
-        model: 'jev-latest',
+        model: 'gemini-decision-1',
         apiKey: ''
       };
     }
@@ -14862,20 +14862,39 @@ OUTPUT FORMAT:
       shortcutsHintEl.textContent = activeRecordingAction ? t('shortcutRecordingHint') : t('shortcutsHint');
     }
 
+    const filterInput = document.getElementById('cfg-shortcuts-filter');
+    const filterQuery = (filterInput && filterInput.value ? filterInput.value.trim().toLowerCase() : '');
+
     const fragment = document.createDocumentFragment();
+    let totalVisible = 0;
 
     SHORTCUT_GROUPS.forEach(group => {
+      const groupTitle = t(group.titleKey);
+      const groupMatches = filterQuery && groupTitle.toLowerCase().includes(filterQuery);
+
+      const visibleActions = group.actions.filter(act => {
+        if (act.needsBackend && !(window.backend && window.backend[act.needsBackend])) return false;
+        if (!filterQuery || groupMatches) return true;
+        const actLabel = t(act.labelKey).toLowerCase();
+        const raw = ((config.shortcuts && config.shortcuts[act.key] !== undefined)
+          ? config.shortcuts[act.key]
+          : (DEFAULT_SHORTCUTS[act.key] || '')).toLowerCase();
+        return actLabel.includes(filterQuery) || act.key.toLowerCase().includes(filterQuery) || raw.includes(filterQuery);
+      });
+
+      if (visibleActions.length === 0) return;
+
       // Category header row
       const headerTr = document.createElement('tr');
       headerTr.className = 'shortcut-category-row';
       const headerTh = document.createElement('th');
       headerTh.colSpan = 2;
-      headerTh.textContent = t(group.titleKey);
+      headerTh.textContent = groupTitle;
       headerTr.appendChild(headerTh);
       fragment.appendChild(headerTr);
 
-      group.actions.forEach(act => {
-        if (act.needsBackend && !(window.backend && window.backend[act.needsBackend])) return;
+      visibleActions.forEach(act => {
+        totalVisible++;
         const tr = document.createElement('tr');
 
         const tdAction = document.createElement('td');
@@ -14908,7 +14927,7 @@ OUTPUT FORMAT:
           } else {
             activeRecordingAction = act.key;
           }
-          renderShortcutsTable();
+          renderShortcutsTable(true);
         };
 
         tdKey.appendChild(btn);
@@ -14917,10 +14936,32 @@ OUTPUT FORMAT:
         fragment.appendChild(tr);
       });
     });
+
+    if (totalVisible === 0 && filterQuery) {
+      const emptyTr = document.createElement('tr');
+      const emptyTd = document.createElement('td');
+      emptyTd.colSpan = 2;
+      emptyTd.style.textAlign = 'center';
+      emptyTd.style.padding = '16px';
+      emptyTd.style.color = 'var(--text-muted)';
+      emptyTd.textContent = t('quickPickNoMatch') || 'No matching shortcuts';
+      emptyTr.appendChild(emptyTd);
+      fragment.appendChild(emptyTr);
+    }
+
     shortcutsListBody.innerHTML = '';
     shortcutsListBody.appendChild(fragment);
     shortcutsTableRendered = true;
     shortcutsTableDirty = false;
+  }
+
+  // Wire shortcuts filter input
+  const shortcutsFilterEl = document.getElementById('cfg-shortcuts-filter');
+  if (shortcutsFilterEl && !shortcutsFilterEl.dataset.wired) {
+    shortcutsFilterEl.dataset.wired = '1';
+    shortcutsFilterEl.addEventListener('input', () => {
+      renderShortcutsTable(true);
+    });
   }
 
   if (btnResetShortcuts) {
@@ -15412,6 +15453,33 @@ OUTPUT FORMAT:
   // Set by the import, which changes the config under the open dialog and wants every field redrawn (see openSettings).
   let settingsRefreshRequested = false;
 
+
+  function updateApiKeyPlaceholders() {
+    const mainKeyEl = document.getElementById('cfg-api-key');
+    const mainKey = mainKeyEl ? mainKeyEl.value.trim() : '';
+    const mainBaseUrlEl = document.getElementById('cfg-base-url');
+    const mainBaseUrl = mainBaseUrlEl ? mainBaseUrlEl.value.trim() : '';
+    const isLocal = !mainKey && (!mainBaseUrl || mainBaseUrl.includes('11434') || mainBaseUrl.includes('1234'));
+
+    const fields = [
+      'cfg-vision-api-key',
+      'cfg-image-api-key',
+      'cfg-auto-api-key',
+      'cfg-action-api-key',
+      'cfg-semantic-api-key'
+    ];
+
+    fields.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (mainKey) {
+        el.placeholder = t('apiKeyInheritedPlaceholder') || '(Inherited from Text / Common API Key)';
+      } else if (isLocal) {
+        el.placeholder = t('apiKeyLocalPlaceholder') || '(Leave empty for local models)';
+      }
+    });
+  }
+
   function openSettings() {
     if (contextMenu) contextMenu.classList.add('hidden');
     // A second open of a dialog that is already up (Ctrl+, again, the gear button) only brings the focus back: reading every field
@@ -15479,6 +15547,7 @@ OUTPUT FORMAT:
     }
 
     syncTextProviderSelect();
+    updateApiKeyPlaceholders();
 
     document.getElementById('cfg-auto-enabled').checked = config.autocomplete.enabled;
     document.getElementById('cfg-auto-base-url').value = config.autocomplete.baseUrl || 'http://localhost:11434';
@@ -15706,6 +15775,13 @@ OUTPUT FORMAT:
     switchSettingsTab('general');
     updateQuickActionsFieldStates();
     updateLLMProviderDetection();
+
+    const mainKeyInput = document.getElementById('cfg-api-key');
+    if (mainKeyInput && !mainKeyInput.dataset.inheritedPlaceholderWired) {
+      mainKeyInput.dataset.inheritedPlaceholderWired = '1';
+      mainKeyInput.addEventListener('input', updateApiKeyPlaceholders);
+    }
+
     settingsModal.classList.remove('hidden');
 
     // Reset tab on-demand init flags for new settings session
@@ -16591,7 +16667,7 @@ OUTPUT FORMAT:
     const saveActBaseUrlEl = document.getElementById('cfg-action-base-url');
     if (saveActBaseUrlEl) config.action.baseUrl = saveActBaseUrlEl.value.trim();
     const saveActModelEl = document.getElementById('cfg-action-model');
-    if (saveActModelEl) config.action.model = saveActModelEl.value.trim() || 'jev-latest';
+    if (saveActModelEl) config.action.model = saveActModelEl.value.trim() || 'gemini-decision-1';
     const saveActApiKeyEl = document.getElementById('cfg-action-api-key');
     if (saveActApiKeyEl) config.action.apiKey = saveActApiKeyEl.value.trim();
     updateActionStatus();
@@ -16712,6 +16788,20 @@ OUTPUT FORMAT:
           console.warn('Failed to update default_agent in agents.yaml:', e);
         });
       }
+    }
+
+    const slotSettingsChanged = config.timeout_seconds !== prev.timeout_seconds ||
+      config.hover_peek_enabled !== prev.hover_peek_enabled ||
+      config.ghost_diff_duration_ms !== prev.ghost_diff_duration_ms;
+    if (slotSettingsChanged && window.backend && window.backend.updateActiveAgentsConfigSlotSettings) {
+      window.backend.updateActiveAgentsConfigSlotSettings(
+        scrapDirInput,
+        config.timeout_seconds || 180,
+        config.hover_peek_enabled !== false,
+        config.ghost_diff_duration_ms || 4000
+      ).catch(e => {
+        console.warn('Failed to update slot settings in agents.yaml:', e);
+      });
     }
 
     if (window.SlotAgent && window.SlotAgent.updateConfig) {

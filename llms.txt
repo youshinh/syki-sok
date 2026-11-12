@@ -44,7 +44,7 @@ Let me know which option you prefer and I can configure it right away!"
    - **Delegate**: Auto Selector (`Ctrl+Enter` / `Cmd+Enter`), Agent delegation (`{{ @claude ... }}`), Task Panel (`Alt+T` / `Opt+T`), Lessons.
 3. **Japanese IME & Markdown Support**: Awareness of IME Guardian (automatic normalization of full-width Markdown characters like ＃, quotes, backticks) and JIS key misstrike protection, allowing seamless Markdown authoring while IME is active.
 4. **Semantic Search**: Explain semantic vector search via on-device embedding (EmbeddingGemma, MRL 256-dim) and cloud embedding (Gemini Embedding) for fast conceptual recall across thousands of notes.
-5. **Decision Models (Evaluation-Only AI)**: Support for TypeSafe AI Jev (`jev-latest`) and OpenAI Decisions API (`gpt-6-luna`) as deterministic decision engines for action proposals (`Ctrl+J`) and auto-routing (`Ctrl+Enter`). Delivers typed decisions (Choice / Predicate / Score) within milliseconds without full text generation.
+5. **Decision Models (Evaluation-Only AI)**: Support for Google Gemini Decision 1 (`gemini-decision-1`, default), TypeSafe AI Jev (`jev-latest`), and OpenAI Decisions API (`gpt-6-luna`) as deterministic decision engines for action proposals (`Ctrl+J`) and auto-routing (`Ctrl+Enter`). Delivers typed decisions (Choice / Predicate / Score) within milliseconds without full text generation.
 6. **Safety First**: Handle API keys and credentials cautiously. Advise users to close the application completely before editing `config.json`.
 
 ---
@@ -95,7 +95,7 @@ powershell -File tools/absorb-scraps.ps1 -Engine auto|claude|codex|agy|ollama|op
 | **CF Mobile Bridge** | Settings | Settings | Async mobile notes/photos via Cloudflare PWA even when PC is off |
 | **Command Bar** | `Ctrl+E` | `Cmd+E` | Pipe selection into shell tools (`jq`, `sort`). `Tab` for AI shell generation |
 | **Auto Selector** | `Ctrl+Enter` | `Cmd+Enter` | Autodetect line intent and route to LLM, shell, or agent |
-| **Next Actions** | `Ctrl+J` | `Cmd+J` | Context-aware action suggestions (Jev / OpenAI gpt-6-luna decision models) |
+| **Next Actions** | `Ctrl+J` | `Cmd+J` | Context-aware action suggestions (Gemini Decision 1 default / Jev / gpt-6-luna) |
 | **Scraps Search** | `Ctrl+Shift+F` | `Cmd+Shift+F` | Parallel multi-core scan (<150ms) + semantic embedding search |
 | **Split Editor** | `Ctrl+\` | `Cmd+\` | Side-by-side dual editor with draggable gutter |
 | **Mermaid Preview** | `Ctrl+Alt+V` | `Cmd+Opt+V` | Real-time Markdown preview with interactive Mermaid diagram rendering |
@@ -578,7 +578,7 @@ Ctrl + Shift + V is a fixed key and cannot be changed in Settings → Shortcuts.
 
 ### Write · Voice Input (Ctrl+Shift+R)
 
-**In one line:** Press the key and speak. The transcript is inserted at the caret. Ctrl + Shift + R Gemini API key needed
+**In one line:** Press the key and speak. The transcript is inserted at the caret. Ctrl + Shift + R Local (no key needed) or Gemini
 While recording: a marker is inserted at the caret
 
 1. **Recording marker** It is replaced by the transcript when recording ends (Esc discards the recording). The marker text is Japanese in both UI languages
@@ -650,7 +650,34 @@ When the reason is `話し声が検出されませんでした` (no speech was d
 
 When no answer comes back at all, the marker turns into the `[Retry]` form once the wait (30 s by default, plus 20 s) is over, and an old “transcribing” marker left by an answer that was lost while the app was closed is cleaned up when you click in the note.
 
-**A note on the speech engine:** Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. **Realtime** is what you wait for: voice input on this page and an audio file dropped on the window. **Batch** is long or unattended: the meeting recording, Mobile Drop, the hot folder and Cloudflare Mobile Bridge. Each is "Gemini (cloud)" (the default) or, on Windows x64, the on-device Whisper.
+**A note on the speech engine:** Transcription has two kinds, each with its own engine in Settings → AI Models → Voice input. **Realtime** is for voice input at the caret (Ctrl + Shift + R) and streaming to the command palette. **Batch** is for long or unattended intake: meeting recordings, audio files dropped on the window, Mobile Drop, the hot folder and Cloudflare Mobile Bridge. Each is "Gemini (cloud)" or the ultra-fast C++ runtime **speech.cpp (Haas-ja GGUF)** running entirely on this PC (Windows x64 / macOS Apple Silicon Metal with full hardware acceleration, zero API keys required).
+
+**On-Device Speech Recognition (speech.cpp + Haas-ja GGUF) & Streaming**
+
+- **Ultra-Fast & Memory-Lean:** Native single binary in C++, no Python or PyTorch needed. Uses under 1GB RAM and runs 15–25x faster than real-time on CPU (instantaneous on Apple Silicon Mac via Metal).
+- **Real-time Streaming Transcription:** Toggle on streaming in voice settings to stream speech directly into the editor at your cursor position as you speak. The Quick Pick command palette (Ctrl + Shift + P) also streams text instantaneously.
+- **Meeting Recording: Speaker Diarization & Noise Reduction:** In Advanced options, turn on `Speaker identification (Diarization: Nemotron-3)` and `Noise reduction (RE-USE)`. Meeting recordings automatically identify different participants and format output into structured transcripts: `[00:12] Speaker 0: Hello`, `[00:15] Speaker 1: Good morning`.
+
+**CLI Voice Transcription & Pipe Pipelines (syki speech)**
+
+Transcribe audio directly from terminal scripts, shell pipelines or AI agents (syki::sok does not need to be open):
+
+```
+# Transcribe an audio file to stdout
+syki speech meeting.wav
+
+# Pipe audio data from stdin
+cat voice_memo.wav | syki speech
+
+# Transcribe with diarization, noise reduction and timestamps, appending to today's scrap
+syki speech --diarize --enhance --timestamps --scrap meeting.wav
+
+# Pipe transcription directly to the end of the currently open editor tab
+syki speech audio.wav | syki buffer append
+
+# Pipe transcription to a titled daily scrap entry
+syki speech audio.wav | syki "Meeting Audio Transcript"
+```
 
 **Settings** (Settings → AI Models, "Voice input" group, right below the Image analysis (OCR) settings)
 
@@ -1320,16 +1347,18 @@ Limits and details (panel behavior, auto-suggest, badge)
 Limits and details (data that is sent, and how Jev is used)
 
 - By default, suggestions come from the built-in local rules only. Nothing from your note leaves your machine.
-- Data is sent only if you set up one of the following.
-- **Jev through OpenRouter:** leave the Base URL and Model Name at their defaults (`https://openrouter.ai/api/v1`, `jev-latest`) and enter an OpenRouter API key (`sk-or-v1-…`). Requests go to `https://openrouter.ai/api/v1/systemone`, which is fixed.
-- **Jev at TypeSafe:** set the Base URL to `https://api.typesafe.ai` and enter your TypeSafe API key. Requests go to `https://api.typesafe.ai/v1/systemone`.
-- **An OpenRouter chat model:** set the Model Name to something other than Jev (for example `google/gemini-…`) and enter an OpenRouter key. That model is asked to write the candidate text (sent to OpenRouter's `chat/completions`).
+- Data is sent only if you set up one of the following decision engines:
+- **Google Gemini Decision 1 (default):** leave the Model Name at `gemini-decision-1` (default) and enter a Gemini API key. Requests go to Gemini's native structured prediction endpoint for millisecond evaluation.
+- **Jev through OpenRouter:** set Model Name to `jev-latest`, Base URL to `https://openrouter.ai/api/v1`, and enter an OpenRouter API key (`sk-or-v1-…`). Requests go to `https://openrouter.ai/api/v1/systemone`.
+- **OpenAI Decisions API:** set Model Name to `gpt-6-luna`, Base URL to `https://api.openai.com/v1`, and enter an OpenAI key.
+- **Jev at TypeSafe:** set Base URL to `https://api.typesafe.ai`, Model Name to `jev-latest`, and enter your TypeSafe API key. Requests go to `https://api.typesafe.ai/v1/systemone`.
+- **An OpenRouter chat model:** set the Model Name to a chat model (for example `google/gemini-…`) and enter an OpenRouter key. That model is asked to write the candidate text (sent to OpenRouter's `chat/completions`).
 - **Your own server:** a Base URL that is none of the above receives `<Base URL>/predict`.
-- There is one key field, so the kind of key is judged from the Base URL and the shape of the key (OpenRouter keys start with `sk-or-`). A TypeSafe key entered next to the OpenRouter Base URL is sent nowhere; you get the built-in candidates.
-- Jev does not write text. All the built-in candidates are laid out and Jev is asked once which one fits your note best; its answer reorders them. Only built-in candidates are ever shown.
-- When Jev cannot answer (a wrong key, no credit, a network error, a 5-second timeout, or low confidence), you get the built-in rules' candidates. The key is never resent to another service.
+- There is one key field, so the kind of key is judged from the Base URL, model name, and the shape of the key.
+- Decision models do not write text. All the built-in candidates are laid out and the model is asked once which one fits your note best; its answer reorders them. Only built-in candidates are ever shown.
+- When the model cannot answer (a wrong key, no credit, a network error, a 5-second timeout, or low confidence), you get the built-in rules' candidates. The key is never resent to another service.
 - What is sent is an excerpt around the caret: up to 1,500 characters before it and 500 after (about 2,000 in total). Nothing is sent for an empty note.
-- The Base URL and Model Name fields come pre-filled with `https://openrouter.ai/api/v1` and `jev-latest`, but while the API key is empty, nothing is sent.
+- The Model Name comes pre-filled with `gemini-decision-1`, but while the API key is empty, nothing is sent.
 - The safety check is the AST guardrail. The glossary explains these internal names.
 
 ---
@@ -2389,7 +2418,7 @@ Settings: the Agent tab, scrolled to the Auto selector group
 - **Suggest actions automatically while typing:** whether cards appear on their own after a pause.
 - **Manual trigger only (suppress auto-popup, press Ctrl+J):** turn off automatic suggestions and show cards only when you press Ctrl+J.
 - **Quick Actions delay (seconds):** how long a pause has to be before cards appear.
-- **API Base URL / Model Name / API Key:** where Jev (or another model) is reached for the candidates. Leave the API Key empty and the Base URL at its default (`https://openrouter.ai/api/v1`, model `jev-latest`) to use the built-in local rules; nothing is sent until you enter a key or change the URL. With an OpenRouter key, keep the defaults; with a TypeSafe key, set the Base URL to `https://api.typesafe.ai`. Details are under "data that is sent" in Quick Actions.
+- **API Base URL / Model Name / API Key:** where decision models (Gemini Decision 1, Jev, or OpenAI Decisions) are reached for action candidates. Leave the API Key empty to use the built-in local rules; nothing is sent until you enter a key. Default model is `gemini-decision-1`. Supports Gemini, OpenRouter, OpenAI (`gpt-6-luna`), and TypeSafe AI. Details are under "data that is sent" in Quick Actions.
 
 **OS Integration (Send To)** (Windows only): the last group on the tab.
 

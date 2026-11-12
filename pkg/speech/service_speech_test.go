@@ -255,3 +255,34 @@ func TestSpeechLocalStatusDarwin(t *testing.T) {
 		t.Errorf("expected Ready=true, got %+v", st)
 	}
 }
+
+func TestTranscribeCloudDetectsMIMEFromPipedData(t *testing.T) {
+	oldQueryGemini := queryGeminiAudio
+	t.Cleanup(func() { queryGeminiAudio = oldQueryGemini })
+
+	var capturedMIME string
+	queryGeminiAudio = func(prompt, audioBase64, mimeType string, cfg llm.VoiceConfig) (string, error) {
+		capturedMIME = mimeType
+		return "transcribed text", nil
+	}
+
+	svc := &Service{}
+	cfg := llm.VoiceConfig{
+		Engine: "gemini",
+		APIKey: "dummy-key",
+	}
+
+	// Create fake WAV header
+	wavHeader := []byte("RIFF____WAVEfmt ")
+	text, err := svc.Transcribe(context.Background(), cfg, wavHeader, "")
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if text != "transcribed text" {
+		t.Errorf("expected 'transcribed text', got %q", text)
+	}
+	if capturedMIME != "audio/wav" {
+		t.Errorf("expected detected MIME 'audio/wav', got %q", capturedMIME)
+	}
+}
+
