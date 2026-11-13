@@ -17732,7 +17732,6 @@ OUTPUT FORMAT:
     if (type === "image/svg+xml") return "";
     if (type.startsWith("image/")) return "image";
     if (type.startsWith("audio/")) return "audio";
-    if (type === "video/mp4" || type === "video/webm") return "audio";
     return "";
   }
 

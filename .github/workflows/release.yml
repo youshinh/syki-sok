@@ -4,27 +4,87 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Release tag to build/publish (e.g., v1.1.18)'
+        required: true
+        type: string
+      target:
+        description: 'Target platform(s) to build'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - windows
+          - macos
 
 permissions:
   contents: write
 
 jobs:
+  prepare:
+    name: Prepare Release
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.meta.outputs.tag }}
+    steps:
+      - name: Resolve tag and ensure release entry exists
+        id: meta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          INPUT_TAG: ${{ inputs.tag }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          TAG="${INPUT_TAG:-$REF_NAME}"
+          if [[ ! "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+.*$ ]]; then
+            echo "::error::Invalid release tag '$TAG' (expected vX.Y.Z)"
+            exit 1
+          fi
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if ! gh release view "$TAG" >/dev/null 2>&1; then
+            echo "Creating draft release for $TAG..."
+            gh release create "$TAG" --draft --title "$TAG" --generate-notes
+          else
+            echo "Release $TAG already exists."
+          fi
+
   build-windows:
+    name: Build Windows Release
+    needs: prepare
+    if: ${{ inputs.target == '' || inputs.target == 'all' || inputs.target == 'windows' }}
     runs-on: windows-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
         with:
           go-version-file: go.mod
+          cache: true
+
+      - name: Run Go Tests
+        run: go test ./...
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Run Frontend JS Tests
+        run: node tools/run_js_tests.mjs
 
       - name: Build Windows Executable
         shell: pwsh
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
           # The version the app reports is the tag, not a number kept by hand in cmd/syki-gui/app.go (it fell behind the releases once).
-          $version = "$env:GITHUB_REF_NAME".TrimStart('v')
+          $version = "$env:RELEASE_TAG".TrimStart('v')
           go build "-ldflags=-H windowsgui -s -w -X main.AppVersion=$version" -trimpath -o syki.exe ./cmd/syki-gui
           # syki-cli.exe is the console-subsystem twin of syki.exe: PowerShell waits for it, and its exit codes and
           # output are reliable in scripts, agents and CI. syki.exe stays the one that starts the app.
@@ -40,18 +100,21 @@ jobs:
           Compress-Archive -Path syki.exe, syki-cli.exe, README.md, README_JA.md, LICENSE, dist/skills -DestinationPath syki-windows-x64.zip
 
       - name: Upload Windows Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          files: syki-windows-x64.zip
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$RELEASE_TAG" syki-windows-x64.zip --clobber
 
   build-macos:
     name: Build macOS App
+    needs: prepare
+    if: ${{ inputs.target == '' || inputs.target == 'all' || inputs.target == 'macos' }}
     runs-on: macos-latest
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -59,12 +122,22 @@ jobs:
           go-version-file: go.mod
           cache: true
 
-      - name: Run Tests
+      - name: Run Go Tests
         run: go test -v ./...
 
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 'lts/*'
+
+      - name: Run Frontend JS Tests
+        run: node tools/run_js_tests.mjs
+
       - name: Set the app version from the tag
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          VER="${GITHUB_REF_NAME#v}"
+          VER="${RELEASE_TAG#v}"
           perl -pi -e 's/(AppVersion\s*=\s*")[0-9]+\.[0-9]+\.[0-9]+(")/${1}'"$VER"'${2}/' cmd/syki-gui/app.go
           grep -n 'AppVersion = ' cmd/syki-gui/app.go
           grep -q "AppVersion = \"$VER\"" cmd/syki-gui/app.go
@@ -96,19 +169,21 @@ jobs:
           zip -r syki-macos.zip skills -x "skills/*.go"
 
       - name: Upload macOS Release Asset
-        uses: softprops/action-gh-release@v2
-        with:
-          files: syki-macos.zip
-          fail_on_unmatched_files: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: gh release upload "$RELEASE_TAG" syki-macos.zip --clobber
 
       - name: Automatically Update Homebrew Tap
-        if: env.HOMEBREW_TAP_TOKEN != ''
         env:
           HOMEBREW_TAP_TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
         run: |
-          export VER="${GITHUB_REF_NAME#v}"
+          if [ -z "$HOMEBREW_TAP_TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN is not set; skipping Homebrew Tap update."
+            exit 0
+          fi
+          export VER="${RELEASE_TAG#v}"
           export SHA=$(shasum -a 256 syki-macos.zip | awk '{print $1}')
           echo "Updating youshinh/homebrew-tap to v${VER} (SHA256: ${SHA})..."
 
@@ -136,4 +211,23 @@ jobs:
             git commit -m "chore: bump syki to v${VER}"
             git push origin main
             echo "Successfully updated youshinh/homebrew-tap to v${VER}"
+          fi
+
+  publish:
+    name: Publish Release
+    needs: [prepare, build-windows, build-macos]
+    if: ${{ !failure() && !cancelled() && (needs.build-windows.result == 'success' || needs.build-macos.result == 'success') }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish draft release if all requested builds succeeded
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          IS_DRAFT=$(gh release view "$RELEASE_TAG" --json isDraft --jq '.isDraft')
+          if [ "$IS_DRAFT" = "true" ]; then
+            gh release edit "$RELEASE_TAG" --draft=false
+            echo "Published release $RELEASE_TAG."
+          else
+            echo "Release $RELEASE_TAG is already published."
           fi

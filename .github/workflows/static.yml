@@ -2,9 +2,20 @@
 name: Deploy static content to Pages
 
 on:
-  # Runs on pushes targeting the default branch
+  # Runs on pushes targeting the default branch when static site files change
   push:
     branches: ["main"]
+    paths:
+      - "index.html"
+      - "index_ja.html"
+      - "manual.html"
+      - "manual_ja.html"
+      - "img/**"
+      - "app.png"
+      - "app.ico"
+      - "llms.txt"
+      - ".nojekyll"
+      - ".github/workflows/static.yml"
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:

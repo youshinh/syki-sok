@@ -1,7 +1,8 @@
 // One command to run every frontend JS test (frontend/js/*_test.js + tests/*.mjs)
-// in a single pass. Usage: node tools/run_js_tests.mjs  (run from the repo root).
-import { spawnSync } from 'child_process';
+// in a single pass. Usage: node tools/run_js_tests.mjs [--serial]  (run from the repo root).
+import { spawn } from 'child_process';
 import { readdirSync } from 'fs';
+import os from 'os';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
@@ -31,25 +32,48 @@ if (testFiles.length === 0) {
   process.exit(1);
 }
 
-console.log(`Running ${testFiles.length} JS test file(s)...\n`);
+const serial = process.argv.includes('--serial');
+const concurrency = serial ? 1 : Math.max(1, Math.min(os.cpus().length || 4, 8));
 
-const results = [];
+console.log(`Running ${testFiles.length} JS test file(s) (concurrency=${concurrency})...\n`);
 
-for (const relPath of testFiles) {
-  const absPath = path.join(repoRoot, relPath);
-  const res = spawnSync(process.execPath, [absPath], {
-    cwd: repoRoot,
-    encoding: 'utf8',
+function runOne(relPath) {
+  return new Promise((resolve) => {
+    const absPath = path.join(repoRoot, relPath);
+    const child = spawn(process.execPath, [absPath], {
+      cwd: repoRoot,
+      stdio: ['ignore', 'pipe', 'pipe'],
+    });
+    let output = '';
+    child.stdout.on('data', (chunk) => { output += chunk.toString('utf8'); });
+    child.stderr.on('data', (chunk) => { output += chunk.toString('utf8'); });
+    child.on('error', (err) => {
+      resolve({ relPath, passed: false, output: `${output}\n${err.message}` });
+    });
+    child.on('close', (code) => {
+      resolve({ relPath, passed: code === 0, output });
+    });
   });
+}
 
-  const passed = res.status === 0;
-  results.push({ relPath, passed });
+const results = new Array(testFiles.length);
+let nextIndex = 0;
 
+async function worker() {
+  while (true) {
+    const idx = nextIndex++;
+    if (idx >= testFiles.length) return;
+    results[idx] = await runOne(testFiles[idx]);
+  }
+}
+
+await Promise.all(Array.from({ length: Math.min(concurrency, testFiles.length) }, () => worker()));
+
+for (const { relPath, passed, output } of results) {
   if (passed) {
     console.log(`PASS  ${relPath}`);
   } else {
     console.log(`FAIL  ${relPath}`);
-    const output = `${res.stdout || ''}${res.stderr || ''}`;
     const tail = output.split('\n').filter(Boolean).slice(-20).join('\n');
     if (tail) {
       console.log('      --- last output lines ---');

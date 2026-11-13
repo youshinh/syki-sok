@@ -6678,10 +6678,10 @@ body.is-panel-dragging * {
   display: flex;
   align-items: center;
   padding: 8px 14px;
-  background: var(--bg-secondary, #252824);
-  border: 1px solid var(--accent, #889b7d);
+  background: var(--bg-modal);
+  border: 1px solid var(--accent-color);
   border-radius: 8px;
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.3);
+  box-shadow: var(--panel-shadow);
   user-select: none;
   animation: promptFadeIn 0.15s ease-out;
 }
@@ -6701,7 +6701,7 @@ body.is-panel-dragging * {
 .voice-recovery-text {
   flex: 1;
   font-size: 13px;
-  color: var(--text-primary, #e2e8f0);
+  color: var(--text-main);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -6715,8 +6715,8 @@ body.is-panel-dragging * {
 }
 
 .btn-recovery-primary {
-  background: var(--accent, #889b7d);
-  color: #fff;
+  background: var(--accent-color);
+  color: var(--text-on-accent);
   border: none;
   padding: 4px 12px;
   border-radius: 4px;
@@ -6732,8 +6732,8 @@ body.is-panel-dragging * {
 
 .btn-recovery-secondary {
   background: transparent;
-  color: var(--text-secondary, #94a3b8);
-  border: 1px solid var(--border, #334155);
+  color: var(--text-muted);
+  border: 1px solid var(--border-color);
   padding: 4px 10px;
   border-radius: 4px;
   font-size: 12px;
@@ -6742,13 +6742,13 @@ body.is-panel-dragging * {
 }
 
 .btn-recovery-secondary:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary, #e2e8f0);
+  background: var(--bg-hover-subtle);
+  color: var(--text-main);
 }
 
 .btn-recovery-close {
   background: transparent;
-  color: var(--text-muted, #64748b);
+  color: var(--text-muted);
   border: none;
   font-size: 14px;
   cursor: pointer;
@@ -6758,6 +6758,6 @@ body.is-panel-dragging * {
 }
 
 .btn-recovery-close:hover {
-  background: rgba(255, 255, 255, 0.08);
-  color: var(--text-primary, #e2e8f0);
+  background: var(--bg-hover-subtle);
+  color: var(--text-main);
 }

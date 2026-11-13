@@ -2,8 +2,13 @@ name: CI
 
 on:
   push:
+    branches: ['**']
   pull_request:
   workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   windows:
@@ -21,11 +26,9 @@ jobs:
 
       - name: go vet
         # pkg/dialog/dialog_windows.go intentionally uses unsafe.Pointer for
-        # Win32 COM/IFileDialog interop; go vet's unsafeptr analyzer flags
-        # this legitimate syscall-marshalling code. Non-fatal so it stays
-        # visible in the log without blocking CI on a known, reviewed case.
-        run: go vet ./...
-        continue-on-error: true
+        # Win32 COM/IFileDialog interop; exclude unsafeptr so real vet issues
+        # across the rest of the codebase still fail CI.
+        run: go vet -unsafeptr=false ./...
 
       - name: go build (compile gate)
         run: go build ./...
