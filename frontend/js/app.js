@@ -15775,6 +15775,9 @@ OUTPUT FORMAT:
     switchSettingsTab('general');
     updateQuickActionsFieldStates();
     updateLLMProviderDetection();
+    if (window.SettingsCompact && window.SettingsCompact.refresh) {
+      window.SettingsCompact.refresh(document);
+    }
 
     const mainKeyInput = document.getElementById('cfg-api-key');
     if (mainKeyInput && !mainKeyInput.dataset.inheritedPlaceholderWired) {

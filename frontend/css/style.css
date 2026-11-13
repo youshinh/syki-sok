@@ -6761,3 +6761,173 @@ body.is-panel-dragging * {
   background: var(--bg-hover-subtle);
   color: var(--text-main);
 }
+
+
+/* Settings v1.2.0: cross-tab search, section cards, status badges, and AI override folds */
+.settings-search-bar {
+  padding: 8px 24px 10px;
+  border-bottom: 1px solid var(--panel-line);
+  flex-shrink: 0;
+}
+
+#cfg-settings-search {
+  width: 100%;
+  height: 32px;
+  box-sizing: border-box;
+  background: var(--bg-input);
+  color: var(--text-main);
+  border: 1px solid var(--border-input);
+  border-radius: 6px;
+  padding: 0 12px;
+  font-size: 12.5px;
+}
+
+#cfg-settings-search:focus {
+  outline: none;
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 2px var(--ring-focus-input);
+}
+
+#settings-modal details.settings-section {
+  background: var(--veil-03);
+  border: 1px solid var(--panel-line);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 10px;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+#settings-modal details.settings-section[open] {
+  background: var(--veil-04);
+}
+
+#settings-modal details.settings-section:not([open]):hover {
+  border-color: var(--border-color);
+  background: var(--veil-05);
+}
+
+#settings-modal details.settings-section > summary .settings-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  border-bottom-color: transparent;
+  padding-bottom: 0;
+}
+
+#settings-modal details.settings-section[open] > summary .settings-section-header {
+  border-bottom: 1px solid var(--panel-line);
+  padding-bottom: 8px;
+}
+
+#settings-modal details.settings-section > summary .settings-section-header h4 {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+}
+
+.section-status-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 1px 8px;
+  border-radius: 10px;
+  background: var(--veil-08);
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.section-status-badge.is-on {
+  background: rgb(var(--accent-rgb) / 0.18);
+  color: var(--accent-label);
+}
+
+.section-status-badge.is-off {
+  background: var(--veil-06);
+  color: var(--text-muted);
+}
+
+details.ai-override-box {
+  margin-top: 4px;
+  border: 1px dashed var(--border-color);
+  border-radius: 6px;
+  padding: 6px 10px;
+  background: var(--veil-03);
+}
+
+details.ai-override-box > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  user-select: none;
+}
+
+details.ai-override-box > summary::-webkit-details-marker {
+  display: none;
+}
+
+details.ai-override-box > summary::before {
+  content: "▸";
+  font-size: 11px;
+  transition: transform 0.15s ease;
+  margin-right: 4px;
+}
+
+details.ai-override-box[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+details.ai-override-box > summary > span:first-child {
+  flex: 1;
+}
+
+.ai-override-badge {
+  font-size: 10.5px;
+  font-weight: 600;
+  padding: 1px 7px;
+  border-radius: 10px;
+  background: var(--veil-08);
+  color: var(--text-muted);
+}
+
+.ai-override-badge.is-custom {
+  background: rgb(var(--accent-rgb) / 0.18);
+  color: var(--accent-label);
+}
+
+.ai-override-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-line);
+}
+
+.settings-tab-btn[data-match-count]::after {
+  content: attr(data-match-count);
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  font-size: 10px;
+  line-height: 1.5;
+  border-radius: 9px;
+  background: rgb(var(--accent-rgb) / 0.22);
+  color: var(--accent-label);
+}
+
+.settings-search-miss {
+  display: none !important;
+}
+
+.settings-search-hit {
+  border-left: 2px solid var(--accent-color);
+  padding-left: 8px;
+}

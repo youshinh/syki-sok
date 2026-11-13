@@ -1,6 +1,6 @@
 # syki::sok interface reference (for agents)
 
-Basis: app version 1.1.18 (`AppVersion` in `cmd/syki-gui/app.go`), read from the source. The parts on Quick Capture, Screen Capture, the hot folder, on-device Whisper, Send To and `syki ocr` (sections 1.5, 3.7, 3.8 and 4.10, plus the rows and sentences added in sections 0, 1.0, 3.3, 4.1, 4.2, 4.6, 5 and 6) come from the source of 2026-09-24. Everything below was checked in source; statements that could not be checked are marked `(unverified)`.
+Basis: app version 1.2.0 (`AppVersion` in `cmd/syki-gui/app.go`), read from the source. The parts on Quick Capture, Screen Capture, the hot folder, on-device Whisper, Send To and `syki ocr` (sections 1.5, 3.7, 3.8 and 4.10, plus the rows and sentences added in sections 0, 1.0, 3.3, 4.1, 4.2, 4.6, 5 and 6) come from the source of 2026-09-24. Everything below was checked in source; statements that could not be checked are marked `(unverified)`.
 
 Conventions: `<cfg>` = the per-user data folder `<ConfigDir>/syki/` (Windows `%AppData%\syki\`, macOS `~/Library/Application Support/syki/`; Linux would be `$XDG_CONFIG_HOME` or `~/.config` but Linux has no window layer and is not a supported platform). `syki` = the binary (Homebrew symlink `syki`; the winget alias `syki` exists only once the package is published; in a dev tree `syki.exe` / `syki::sok.app/Contents/MacOS/syki::sok`).
 
