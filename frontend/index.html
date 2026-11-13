@@ -1045,19 +1045,19 @@
                 <select id="cfg-text-provider" class="form-select" style="flex: 1;">
                   <option value="custom">-- Custom / Manual Configuration --</option>
                   <optgroup label="Global Cloud AI">
-                    <option value="gemini">Google Gemini (Recommended / Cloud)</option>
-                    <option value="openai">OpenAI (ChatGPT / GPT-4o)</option>
-                    <option value="claude">Anthropic Claude (via OpenRouter)</option>
-                    <option value="openrouter">OpenRouter (Unified: Claude, Llama, Gemini...)</option>
-                    <option value="groq">Groq (Ultra High Speed / Llama 3.3)</option>
+                    <option value="gemini">Google Gemini (Gemini 4 Argon / 3.8 Flash)</option>
+                    <option value="openai">OpenAI (GPT-6.1 Sol / GPT-6 Astra)</option>
+                    <option value="claude">Anthropic Claude (Claude 5.5 / 5.2 Fable via OpenRouter)</option>
+                    <option value="openrouter">OpenRouter (Unified: Claude 5.5, Gemini 4, GPT-6...)</option>
+                    <option value="groq">Groq (Ultra High Speed / Llama 4)</option>
                     <option value="mistral">Mistral AI (European Open Weights)</option>
                   </optgroup>
                   <optgroup label="Japan / Frontier">
                     <option value="sakana">Sakana AI (EvoLLM / OpenRouter)</option>
                   </optgroup>
                   <optgroup label="China / Asia Top LLM">
-                    <option value="deepseek">DeepSeek (DeepSeek-V3 / R1)</option>
-                    <option value="qwen">Alibaba Qwen (DashScope / Tongyi Qianwen)</option>
+                    <option value="deepseek">DeepSeek (DeepSeek-V4 / R1)</option>
+                    <option value="qwen">Alibaba Qwen (Qwen 3.6 / DashScope)</option>
                     <option value="moonshot">Moonshot AI (Kimi / Long Context)</option>
                   </optgroup>
                   <optgroup label="Local AI (On-Device)">
@@ -1075,13 +1075,16 @@
             </div>
             <div class="form-group">
               <label for="cfg-model" data-i18n="modelNameLabel">Model Name:</label>
-              <input type="text" id="cfg-model" list="text-model-suggestions" placeholder="gemini-2.5-flash, qwen2.5:latest, gpt-4o-mini...">
+              <input type="text" id="cfg-model" list="text-model-suggestions" placeholder="gemini-4-argon, gemini-3.8-flash, gpt-6.1-sol, gemma4:latest...">
               <datalist id="text-model-suggestions">
-                <option value="gemini-2.5-flash">Gemini 2.5 Flash (Google Cloud / Fast & High Quality)</option>
-                <option value="gemini-flash-lite-latest">Gemini Flash Lite (Google Cloud / Free Tier & Light)</option>
-                <option value="qwen2.5:latest">Qwen 2.5 (Ollama / Local Japanese & Coding)</option>
-                <option value="gpt-4o-mini">GPT-4o Mini (OpenAI / Fast & Cost Effective)</option>
-                <option value="gpt-4o">GPT-4o (OpenAI / Flagship)</option>
+                <option value="gemini-4-argon">Gemini 4 Argon (Google Cloud / Coding & Reasoning)</option>
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash (Google Cloud / Fast & High Quality)</option>
+                <option value="gemini-3.5-flash-lite">Gemini 3.5 Flash-Lite (Google Cloud / Fast & Cost Effective)</option>
+                <option value="gpt-6.1-sol">GPT-6.1 Sol (OpenAI / Balanced Flagship)</option>
+                <option value="gpt-6-astra">GPT-6 Astra (OpenAI / Deep Reasoning)</option>
+                <option value="anthropic/claude-sonnet-5-5">Claude 5.5 Sonnet (Anthropic / Coding & Writing)</option>
+                <option value="gemma4:latest">Gemma 4 (Ollama / Local Google Open Weights)</option>
+                <option value="qwen3:latest">Qwen 3 (Ollama / Local Japanese & Coding)</option>
               </datalist>
               <small data-i18n="textModelFallbackHint">If blank: qwen2.5:latest</small>
             </div>
@@ -1179,8 +1182,9 @@
                   <label for="cfg-vision-model" data-i18n="visionModelLabel">Vision Model Name:</label>
                   <input type="text" id="cfg-vision-model" list="vision-model-suggestions" placeholder="gemini-flash-lite-latest">
                   <datalist id="vision-model-suggestions">
+                    <option value="gemini-3.8-flash">Gemini 3.8 Flash (Cloud / Top Multimodal OCR)</option>
                     <option value="gemini-flash-lite-latest">Gemini Flash Lite (Cloud / Fast & Free Tier)</option>
-                    <option value="qwen2.5-vl:latest">Qwen 2.5 VL (Local Ollama / Top OCR & Diagrams)</option>
+                    <option value="qwen3-vl:latest">Qwen 3 VL (Local Ollama / Top OCR & Diagrams)</option>
                   </datalist>
                 </div>
                 <div class="form-group">
@@ -1529,12 +1533,10 @@
                   <label for="cfg-image-model" data-i18n="imageModelLabel">Image Generation Model:</label>
                   <input type="text" id="cfg-image-model" list="image-model-suggestions" placeholder="gemini-3.1-flash-lite-image">
                   <datalist id="image-model-suggestions">
+                    <option value="gemini-nano-banana-2.1">Nano Banana 2.1 (Latest / Google Search Grounding)</option>
                     <option value="gemini-3.1-flash-lite-image">Nano Banana 2 Lite (Fast & Lightweight / Recommended)</option>
                     <option value="gemini-3.1-flash-image">Gemini 3.1 Flash Image (Nano Banana 2)</option>
-                    <option value="gemini-nano-banana-2.1">Nano Banana 2.1 (Interactions API / Google Search Grounding)</option>
-                    <option value="gemini-3-pro-image-preview">Nano Banana Pro (State of the art)</option>
-                    <option value="gemini-2.5-flash-image">Gemini 2.5 Flash Image (Nano Banana)</option>
-                    <option value="imagen-3.0-generate-002">Imagen 3 (Google Cloud / Realistic Art & Photos)</option>
+                    <option value="gemini-3-pro-image">Nano Banana Pro (High Fidelity)</option>
                   </datalist>
                 </div>
               </div>
@@ -1562,10 +1564,11 @@
                     <label for="cfg-semantic-model" data-i18n="semanticModelLabel">Embedding model:</label>
                     <input type="text" id="cfg-semantic-model" list="semantic-model-suggestions" placeholder="bge-m3" spellcheck="false" autocomplete="off">
                     <datalist id="semantic-model-suggestions">
+                      <option value="gemini-embedding-2">Gemini Embedding 2 (Google / Latest)</option>
+                      <option value="gemini-embedding-001">Gemini Embedding 001 (Google)</option>
                       <option value="bge-m3">bge-m3 (Ollama, Japanese and English)</option>
                       <option value="nomic-embed-text">nomic-embed-text (Ollama)</option>
                       <option value="text-embedding-3-small">text-embedding-3-small (OpenAI)</option>
-                      <option value="gemini-embedding-001">gemini-embedding-001 (Google)</option>
                     </datalist>
                   </div>
                 </div>

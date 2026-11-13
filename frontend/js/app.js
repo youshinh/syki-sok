@@ -15973,29 +15973,32 @@ OUTPUT FORMAT:
   const TEXT_PROVIDER_PRESETS = {
     gemini: {
       baseUrl: 'https://generativelanguage.googleapis.com',
-      defaultModel: 'gemini-2.5-flash',
+      defaultModel: 'gemini-3.8-flash',
       models: [
-        { id: 'gemini-2.5-flash', label: 'Gemini 2.5 Flash (Google Cloud / Fast & High Quality)' },
-        { id: 'gemini-flash-lite-latest', label: 'Gemini Flash Lite (Google Cloud / Free Tier & Light)' },
-        { id: 'gemini-2.5-pro', label: 'Gemini 2.5 Pro (Google Cloud / High Reasoning)' }
+        { id: 'gemini-4-argon', label: 'Gemini 4 Argon (Google Cloud / Coding & Reasoning)' },
+        { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Google Cloud / Fast & High Quality)' },
+        { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (Google Cloud / Free Tier & Light)' },
+        { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview (Google Cloud / Deep Reasoning)' }
       ]
     },
     openai: {
       baseUrl: 'https://api.openai.com/v1',
-      defaultModel: 'gpt-4o-mini',
+      defaultModel: 'gpt-6.1-sol',
       models: [
-        { id: 'gpt-4o-mini', label: 'GPT-4o Mini (OpenAI / Fast & Cost Effective)' },
-        { id: 'gpt-4o', label: 'GPT-4o (OpenAI / Flagship)' },
-        { id: 'o3-mini', label: 'o3-mini (OpenAI / Reasoning)' }
+        { id: 'gpt-6.1-sol', label: 'GPT-6.1 Sol (OpenAI / Balanced Flagship)' },
+        { id: 'gpt-6-astra', label: 'GPT-6 Astra (OpenAI / Complex Reasoning & Agents)' },
+        { id: 'gpt-6.1-terra', label: 'GPT-6.1 Terra (OpenAI / Visual & Writing)' },
+        { id: 'gpt-6-luna', label: 'GPT-6 Luna (OpenAI / Fast & Cost Effective)' }
       ]
     },
     claude: {
       baseUrl: 'https://openrouter.ai/api/v1',
-      defaultModel: 'anthropic/claude-3.5-sonnet',
+      defaultModel: 'anthropic/claude-sonnet-5-5',
       models: [
-        { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (Anthropic / Top Coding & Writing)' },
-        { id: 'anthropic/claude-3.5-haiku', label: 'Claude 3.5 Haiku (Anthropic / Ultra Fast)' },
-        { id: 'anthropic/claude-3.7-sonnet', label: 'Claude 3.7 Sonnet (Anthropic / Hybrid Reasoning)' }
+        { id: 'anthropic/claude-sonnet-5-5', label: 'Claude 5.5 Sonnet (Anthropic / Coding & Writing)' },
+        { id: 'anthropic/claude-haiku-5-5', label: 'Claude 5.5 Haiku (Anthropic / Ultra Fast)' },
+        { id: 'anthropic/claude-opus-5-5', label: 'Claude 5.5 Opus (Anthropic / Heavy Knowledge Work)' },
+        { id: 'anthropic/claude-fable-5-2', label: 'Claude 5.2 Fable (Anthropic / Top-Tier Reasoning)' }
       ]
     },
     sakana: {
@@ -16009,7 +16012,7 @@ OUTPUT FORMAT:
       baseUrl: 'https://api.deepseek.com/v1',
       defaultModel: 'deepseek-chat',
       models: [
-        { id: 'deepseek-chat', label: 'DeepSeek-V3 (DeepSeek / High Performance & Low Cost)' },
+        { id: 'deepseek-chat', label: 'DeepSeek-V4 (DeepSeek / High Performance & Low Cost)' },
         { id: 'deepseek-reasoner', label: 'DeepSeek-R1 (DeepSeek / Deep Reasoning)' }
       ]
     },
@@ -16017,7 +16020,7 @@ OUTPUT FORMAT:
       baseUrl: 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
       defaultModel: 'qwen-plus',
       models: [
-        { id: 'qwen-plus', label: 'Qwen Plus (Alibaba / Balanced)' },
+        { id: 'qwen-plus', label: 'Qwen 3.6 Plus (Alibaba / Balanced)' },
         { id: 'qwen-max', label: 'Qwen Max (Alibaba / Flagship)' },
         { id: 'qwen-turbo', label: 'Qwen Turbo (Alibaba / Fast)' },
         { id: 'qwen-coder-plus', label: 'Qwen Coder Plus (Alibaba / Code Specialist)' }
@@ -16043,31 +16046,32 @@ OUTPUT FORMAT:
     },
     openrouter: {
       baseUrl: 'https://openrouter.ai/api/v1',
-      defaultModel: 'google/gemini-2.5-flash',
+      defaultModel: 'google/gemini-3.8-flash',
       models: [
-        { id: 'google/gemini-2.5-flash', label: 'Gemini 2.5 Flash (OpenRouter)' },
-        { id: 'anthropic/claude-3.5-sonnet', label: 'Claude 3.5 Sonnet (OpenRouter)' },
-        { id: 'deepseek/deepseek-chat', label: 'DeepSeek V3 (OpenRouter)' },
-        { id: 'meta-llama/llama-3.3-70b-instruct', label: 'Llama 3.3 70B (Meta / OpenRouter)' },
-        { id: 'qwen/qwen-2.5-72b-instruct', label: 'Qwen 2.5 72B (Alibaba / OpenRouter)' }
+        { id: 'google/gemini-4-argon', label: 'Gemini 4 Argon (OpenRouter)' },
+        { id: 'google/gemini-3.8-flash', label: 'Gemini 3.8 Flash (OpenRouter)' },
+        { id: 'anthropic/claude-sonnet-5-5', label: 'Claude 5.5 Sonnet (OpenRouter)' },
+        { id: 'openai/gpt-6.1-sol', label: 'GPT-6.1 Sol (OpenRouter)' },
+        { id: 'deepseek/deepseek-chat', label: 'DeepSeek V4 (OpenRouter)' },
+        { id: 'meta-llama/llama-4-maverick', label: 'Llama 4 Maverick (Meta / OpenRouter)' }
       ]
     },
     groq: {
       baseUrl: 'https://api.groq.com/openai/v1',
-      defaultModel: 'llama-3.3-70b-versatile',
+      defaultModel: 'llama-4-maverick-17b-128e-instruct',
       models: [
-        { id: 'llama-3.3-70b-versatile', label: 'Llama 3.3 70B (Meta via Groq / Ultra Fast)' },
-        { id: 'mixtral-8x7b-32768', label: 'Mixtral 8x7B (Mistral via Groq)' },
-        { id: 'qwen-2.5-32b', label: 'Qwen 2.5 32B (Alibaba via Groq)' }
+        { id: 'llama-4-maverick-17b-128e-instruct', label: 'Llama 4 Maverick 17B (Meta via Groq / Ultra Fast)' },
+        { id: 'llama-4-scout-17b-16e-instruct', label: 'Llama 4 Scout 17B (Meta via Groq / Long Context)' },
+        { id: 'qwen-3-32b', label: 'Qwen 3 32B (Alibaba via Groq)' }
       ]
     },
     ollama: {
       baseUrl: 'http://localhost:11434',
-      defaultModel: 'qwen2.5:latest',
+      defaultModel: 'gemma4:latest',
       models: [
-        { id: 'qwen2.5:latest', label: 'Qwen 2.5 (Ollama / Local Japanese & Coding)' },
-        { id: 'gemma4:latest', label: 'Gemma 4 (Ollama / Google Open Weights)' },
-        { id: 'llama3.3:latest', label: 'Llama 3.3 (Ollama / Meta)' },
+        { id: 'gemma4:latest', label: 'Gemma 4 (Ollama / Local Google Open Weights)' },
+        { id: 'qwen3:latest', label: 'Qwen 3 (Ollama / Local Japanese & Coding)' },
+        { id: 'llama4:latest', label: 'Llama 4 (Ollama / Meta)' },
         { id: 'deepseek-r1:latest', label: 'DeepSeek R1 (Ollama / Reasoning)' }
       ]
     },
