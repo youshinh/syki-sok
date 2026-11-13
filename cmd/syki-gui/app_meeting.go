@@ -162,6 +162,14 @@ func (a *App) AbortMeetingRecording(reqID string) {
 	}
 }
 
+// isMeetingRecordingActive reports whether a meeting recording is currently running.
+func isMeetingRecordingActive() bool {
+	meeting.mu.Lock()
+	active := meeting.s != nil
+	meeting.mu.Unlock()
+	return active
+}
+
 // meetingShutdown stops a running recording when the app closes, so no sound device stays held.
 func meetingShutdown() {
 	if s := takeMeeting(""); s != nil {

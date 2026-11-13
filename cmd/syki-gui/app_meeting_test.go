@@ -239,3 +239,21 @@ func TestCheckMeetingAudioAsyncAnswersThePage(t *testing.T) {
 		t.Fatalf("unexpected: %s", eval)
 	}
 }
+
+func TestTrimMemorySkipsWhileMeetingRecordingActive(t *testing.T) {
+	withFakeMeeting(t, &fakeMeetingSource{name: "microphone", expect: true, level: 100}, &fakeMeetingSource{name: "PC audio", expect: false})
+	app := &App{}
+	if isMeetingRecordingActive() {
+		t.Fatalf("expected no active meeting before StartMeetingRecording")
+	}
+	if _, err := app.StartMeetingRecording("req_trim_guard", true); err != nil {
+		t.Fatalf("StartMeetingRecording: %v", err)
+	}
+	defer app.AbortMeetingRecording("req_trim_guard")
+	if !isMeetingRecordingActive() {
+		t.Fatalf("expected isMeetingRecordingActive() == true during recording")
+	}
+	if err := app.TrimMemory(); err != nil {
+		t.Fatalf("TrimMemory: %v", err)
+	}
+}

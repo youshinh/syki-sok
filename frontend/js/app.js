@@ -1387,15 +1387,21 @@
 
   // --- Autonomous Memory Reclaimer (OS WorkingSet & Go Heap Compression) ---
   let memoryTrimTimer = null;
-  function scheduleMemoryTrim(delayMs = 25000) {
+  function isVoiceRecordingNow() {
+    return !!(window.VoiceInput && typeof window.VoiceInput.isRecording === 'function' && window.VoiceInput.isRecording());
+  }
+  function scheduleMemoryTrim(delayMs = 60000) {
     clearTimeout(memoryTrimTimer);
+    if (isVoiceRecordingNow()) return;
     memoryTrimTimer = setTimeout(() => {
+      if (!document.hidden || isVoiceRecordingNow()) return;
       triggerMemoryTrimNow();
     }, delayMs);
   }
 
   function triggerMemoryTrimNow() {
     clearTimeout(memoryTrimTimer);
+    if (isVoiceRecordingNow()) return;
     if (typeof htmlPreviewImgCache !== 'undefined' && htmlPreviewImgCache.clear) {
       htmlPreviewImgCache.clear();
     }
@@ -1409,16 +1415,17 @@
     }
   }
 
-  // Auto-trim memory when window loses visibility or focus
+  // Only schedule trimming when the window is actually hidden (tray/minimized), never on transient blur,
+  // and cancel immediately when returning so warm standby summon stays instant.
   document.addEventListener('visibilitychange', () => {
     if (document.hidden) {
-      triggerMemoryTrimNow();
+      scheduleMemoryTrim(60000);
+    } else {
+      clearTimeout(memoryTrimTimer);
     }
   });
-  window.addEventListener('blur', () => {
-    scheduleMemoryTrim(5000); // 5s after window loses focus
-  });
   window.addEventListener('focus', () => {
+    clearTimeout(memoryTrimTimer);
     if (window.backend && typeof window.backend.pollCFBridgeNow === 'function') {
       window.backend.pollCFBridgeNow();
     }
@@ -15976,6 +15983,7 @@ OUTPUT FORMAT:
       defaultModel: 'gemini-3.8-flash',
       models: [
         { id: 'gemini-4-argon', label: 'Gemini 4 Argon (Google Cloud / Coding & Reasoning)' },
+        { id: 'gemini-4-hydrogen', label: 'Gemini 4 Hydrogen (Google Cloud / Fast Daily & Agentic)' },
         { id: 'gemini-3.8-flash', label: 'Gemini 3.8 Flash (Google Cloud / Fast & High Quality)' },
         { id: 'gemini-3.5-flash-lite', label: 'Gemini 3.5 Flash-Lite (Google Cloud / Free Tier & Light)' },
         { id: 'gemini-3.1-pro-preview', label: 'Gemini 3.1 Pro Preview (Google Cloud / Deep Reasoning)' }
@@ -16049,6 +16057,7 @@ OUTPUT FORMAT:
       defaultModel: 'google/gemini-3.8-flash',
       models: [
         { id: 'google/gemini-4-argon', label: 'Gemini 4 Argon (OpenRouter)' },
+        { id: 'google/gemini-4-hydrogen', label: 'Gemini 4 Hydrogen (OpenRouter)' },
         { id: 'google/gemini-3.8-flash', label: 'Gemini 3.8 Flash (OpenRouter)' },
         { id: 'anthropic/claude-sonnet-5-5', label: 'Claude 5.5 Sonnet (OpenRouter)' },
         { id: 'openai/gpt-6.1-sol', label: 'GPT-6.1 Sol (OpenRouter)' },
@@ -19614,5 +19623,41 @@ OUTPUT FORMAT:
     config
   };
 
+  function scheduleDeferredBootScripts() {
+    const url = typeof window !== 'undefined' ? window.__bootDeferredURL : '';
+    if (!url || window.__bootDeferredLoaded || window.__bootDeferredLoading) return;
+    window.__bootDeferredLoading = true;
+    const inject = () => {
+      if (window.__bootDeferredLoaded || typeof document === 'undefined' || !document.head) return;
+      const s = document.createElement('script');
+      s.src = url;
+      s.async = true;
+      s.onload = () => {
+        window.__bootDeferredLoaded = true;
+        if (window.SlotAgent) {
+          if (typeof window.SlotAgent.attachEditor === 'function') {
+            if (editorEl) window.SlotAgent.attachEditor(editorEl);
+            if (typeof editorSecondary !== 'undefined' && editorSecondary) window.SlotAgent.attachEditor(editorSecondary);
+          }
+          if (typeof window.SlotAgent.updateConfig === 'function') {
+            window.SlotAgent.updateConfig(config);
+          }
+        }
+        if (window.JevAction && typeof window.JevAction.updateConfig === 'function' && config && config.action) {
+          window.JevAction.updateConfig({
+            enabled: config.action.enabled !== false,
+            endpoint: config.action.endpoint,
+            model: config.action.model,
+            timeoutMs: config.action.timeoutMs,
+            autoTrigger: config.action.autoTrigger
+          });
+        }
+      };
+      document.head.appendChild(s);
+    };
+    setTimeout(inject, 60);
+  }
+
   initApp();
+  scheduleDeferredBootScripts();
 })();

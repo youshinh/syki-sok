@@ -88,7 +88,7 @@ type App struct {
 // a const, so that the release build can set it from the tag (-X main.AppVersion=..., and a sed of this line for macOS, which .github/workflows/release.yml
 // does): a number kept by hand here fell behind the releases (it said 0.0.8 at v0.0.16, so the update check offered the version the person already had).
 // The value below is the last release made by hand; keep it equal to the newest tag when you change this line.
-var AppVersion = "1.2.0"
+var AppVersion = "1.2.1"
 
 func (a *App) GetAppVersion() string {
 	return AppVersion
@@ -100,12 +100,14 @@ func (a *App) GetAppVersion() string {
 // every one of those pages then has to be faulted back in, which is what would break the
 // "<15ms summon" promise. Waiting a few seconds means only a genuinely idle, tray-resident
 // process pays the eviction.
-const workingSetTrimDelay = 3 * time.Second
+const workingSetTrimDelay = 2 * time.Minute
 
 var (
 	// windowVisible tracks whether the native window is currently on screen. It is set by
 	// the platform show/hide paths and read by the delayed working-set trim.
 	windowVisible int32 = 1
+	// lastHiddenUnixNano records when the window was last hidden.
+	lastHiddenUnixNano int64
 	// freeOSMemoryPending / workingSetTrimPending coalesce bursts: the frontend fires
 	// TrimMemory from both 'blur' and 'visibilitychange', which arrive together, and hiding
 	// to the tray schedules a trim of its own.
@@ -119,6 +121,7 @@ func setWindowVisible(visible bool) {
 	if visible {
 		atomic.StoreInt32(&windowVisible, 1)
 	} else {
+		atomic.StoreInt64(&lastHiddenUnixNano, time.Now().UnixNano())
 		atomic.StoreInt32(&windowVisible, 0)
 	}
 }
@@ -132,13 +135,32 @@ func isWindowVisible() bool {
 // it is safe to call from the UI thread (WM_CLOSE, the tray handler, a bound function).
 // Overlapping requests share the single pending timer.
 func scheduleWorkingSetTrim() {
+	if isMeetingRecordingActive() {
+		return
+	}
 	if !atomic.CompareAndSwapInt32(&workingSetTrimPending, 0, 1) {
 		return
 	}
 	go func() {
 		defer atomic.StoreInt32(&workingSetTrimPending, 0)
-		time.Sleep(workingSetTrimDelay)
-		if isWindowVisible() {
+		for {
+			wait := workingSetTrimDelay
+			if hiddenAt := atomic.LoadInt64(&lastHiddenUnixNano); hiddenAt > 0 {
+				elapsed := time.Since(time.Unix(0, hiddenAt))
+				if elapsed >= workingSetTrimDelay {
+					break
+				}
+				wait = workingSetTrimDelay - elapsed
+			}
+			time.Sleep(wait)
+			if isWindowVisible() || isMeetingRecordingActive() {
+				return
+			}
+			if hiddenAt := atomic.LoadInt64(&lastHiddenUnixNano); hiddenAt == 0 || time.Since(time.Unix(0, hiddenAt)) >= workingSetTrimDelay {
+				break
+			}
+		}
+		if isWindowVisible() || isMeetingRecordingActive() {
 			return
 		}
 		trimProcessWorkingSet()
@@ -153,11 +175,16 @@ func scheduleWorkingSetTrim() {
 // so both are moved off it here. The frontend calls this from 'blur' and 'visibilitychange',
 // which fire together; the CAS coalesces that burst into a single trim.
 func (a *App) TrimMemory() error {
+	if isMeetingRecordingActive() {
+		return nil
+	}
 	forgetPrintPDF()
 	if atomic.CompareAndSwapInt32(&freeOSMemoryPending, 0, 1) {
 		go func() {
 			defer atomic.StoreInt32(&freeOSMemoryPending, 0)
-			debug.FreeOSMemory()
+			if !isMeetingRecordingActive() {
+				debug.FreeOSMemory()
+			}
 		}()
 	}
 	scheduleWorkingSetTrim()

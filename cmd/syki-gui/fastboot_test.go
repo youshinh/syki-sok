@@ -230,3 +230,37 @@ func TestFastBootConcurrencyAndErrorPath(t *testing.T) {
 
 	releaseFastBootAssets()
 }
+
+// TestFastBootDeferredBundleKeepsVoiceInCore verifies that non-critical scripts
+// are split into /js/__boot_deferred.js while core voice/recording scripts stay
+// in the critical /js/__boot_bundle.js for instant meeting capture.
+func TestFastBootDeferredBundleKeepsVoiceInCore(t *testing.T) {
+	assets, err := buildFastBootAssets(frontend.FS)
+	if err != nil {
+		t.Fatalf("buildFastBootAssets: %v", err)
+	}
+	if len(assets.deferredJS) == 0 || assets.deferredURL == "" {
+		t.Fatalf("expected non-empty deferredJS and deferredURL")
+	}
+	if !strings.Contains(string(assets.indexHTML), assets.deferredURL) {
+		t.Errorf("indexHTML does not expose deferredURL %q", assets.deferredURL)
+	}
+	core := string(assets.bundleJS)
+	deferred := string(assets.deferredJS)
+	if !strings.Contains(core, "VoiceInput") {
+		t.Errorf("core bundle must retain VoiceInput for immediate recording")
+	}
+	if !strings.Contains(deferred, "SettingsCompact") {
+		t.Errorf("deferred bundle should include SettingsCompact")
+	}
+	rec := httptest.NewRecorder()
+	if !serveFastBootAsset(rec, httptest.NewRequest(http.MethodGet, fastBootDeferredPath, nil), frontend.FS) {
+		t.Fatalf("GET %s was not handled", fastBootDeferredPath)
+	}
+	if got := rec.Header().Get("Cache-Control"); got != "public, max-age=604800, immutable" {
+		t.Errorf("deferred Cache-Control = %q, want immutable", got)
+	}
+	if len(rec.Body.Bytes()) != len(assets.deferredJS) {
+		t.Errorf("deferred body len = %d, want %d", len(rec.Body.Bytes()), len(assets.deferredJS))
+	}
+}
