@@ -29,6 +29,7 @@
 
   const DEFAULT_OVERRIDE_VALUES = new Set([
     'http://localhost:11434',
+    'https://generativelanguage.googleapis.com',
     'https://openrouter.ai/api/v1',
     'gemini-decision-1',
     'jev-latest',

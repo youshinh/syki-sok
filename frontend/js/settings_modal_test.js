@@ -168,5 +168,41 @@ function makeEl(initialClasses = []) {
   assert.strictEqual(shouldAutoFillBaseUrl('https://custom.internal/v1', 'https://api.openai.com/v1'), false);
   assert.strictEqual(shouldAutoFillBaseUrl('http://localhost:1234/v1', 'http://localhost:11434'), false);
 
-  console.log('settings_modal_test: 4 passed');
+  assert.strictEqual(inferBaseUrlForModel('gemini'), 'https://generativelanguage.googleapis.com');
+  assert.strictEqual(inferBaseUrlForModel('models/gemini-3.8-flash'), 'https://generativelanguage.googleapis.com');
+  assert.strictEqual(inferBaseUrlForModel('gpt'), 'https://api.openai.com/v1');
+  assert.strictEqual(inferBaseUrlForModel('chatgpt-4o-latest'), 'https://api.openai.com/v1');
+  assert.strictEqual(inferBaseUrlForModel('claude-sonnet-4'), 'https://openrouter.ai/api/v1');
+  assert.strictEqual(inferBaseUrlForModel('jev', { kind: 'action' }), 'https://api.typesafe.ai');
+  assert.strictEqual(inferBaseUrlForModel('typesafe/jev-1.13', { kind: 'action' }), 'https://api.typesafe.ai');
+  assert.strictEqual(inferBaseUrlForModel('~typesafe/jev-latest', { kind: 'action' }), 'https://api.typesafe.ai');
+
+  // 5. open() infers baseUrl for action/text/vision when saved config leaves baseUrl empty
+  {
+    const docEls = { 'settings-modal': makeEl(['hidden']) };
+    const getOrCreateEl = (id) => {
+      if (!docEls[id]) docEls[id] = makeEl();
+      return docEls[id];
+    };
+    const modal = SykiSettingsModal.create({
+      document: {
+        getElementById: (id) => getOrCreateEl(id),
+        activeElement: null,
+      },
+      window: {},
+      getConfig: () => ({
+        general: {},
+        text: { model: 'gemini-4-argon', baseUrl: '' },
+        vision: { model: 'qwen3-vl:latest', baseUrl: '' },
+        action: { model: 'gpt-6-luna', baseUrl: '' },
+      }),
+      getElements: () => ({ settingsModal: getOrCreateEl('settings-modal') }),
+    });
+    modal.open();
+    assert.strictEqual(docEls['cfg-base-url'].value, 'https://generativelanguage.googleapis.com');
+    assert.strictEqual(docEls['cfg-vision-base-url'].value, 'http://localhost:11434');
+    assert.strictEqual(docEls['cfg-action-base-url'].value, 'https://api.openai.com/v1');
+  }
+
+  console.log('settings_modal_test: 5 passed');
 })();

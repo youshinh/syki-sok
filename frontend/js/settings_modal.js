@@ -201,8 +201,10 @@
         if (el) el.checked = !!val;
       };
 
-      setVal('cfg-base-url', (config.text && config.text.baseUrl) || '');
-      setVal('cfg-model', (config.text && config.text.model) || '');
+      const txtModel = (config.text && config.text.model) || '';
+      const txtBaseUrl = (config.text && config.text.baseUrl) || inferBaseUrlForModel(txtModel, { kind: 'llm' }) || '';
+      setVal('cfg-base-url', txtBaseUrl);
+      setVal('cfg-model', txtModel);
       setVal('cfg-api-key', (config.text && config.text.apiKey) || '');
       setVal('cfg-system-prompt', (config.text && config.text.systemPrompt) || '');
 
@@ -256,8 +258,10 @@
       setVal('cfg-auto-delay', (config.autocomplete && config.autocomplete.delayMs) || 500);
       setVal('cfg-auto-tokens', (config.autocomplete && config.autocomplete.maxTokens) || 30);
 
-      setVal('cfg-vision-base-url', (config.vision && config.vision.baseUrl) || '');
-      setVal('cfg-vision-model', (config.vision && config.vision.model) || 'gemini-flash-lite-latest');
+      const visModel = (config.vision && config.vision.model) || 'gemini-flash-lite-latest';
+      const visBaseUrl = (config.vision && config.vision.baseUrl) || inferBaseUrlForModel(visModel, { kind: 'llm' }) || '';
+      setVal('cfg-vision-base-url', visBaseUrl);
+      setVal('cfg-vision-model', visModel);
       setVal('cfg-vision-api-key', (config.vision && config.vision.apiKey) || '');
       setVal('cfg-vision-prompt', (config.vision && config.vision.prompt) || '');
 
@@ -298,8 +302,10 @@
       setChecked('cfg-action-enabled', config.action ? (config.action.enabled !== false) : true);
       setChecked('cfg-action-manual-only', config.action ? !!config.action.manualOnly : false);
       setVal('cfg-action-delay', (config.action && typeof config.action.delaySec === 'number') ? config.action.delaySec : 1.5);
-      setVal('cfg-action-base-url', (config.action && config.action.baseUrl) || '');
-      setVal('cfg-action-model', (config.action && config.action.model) || '');
+      const actModel = (config.action && config.action.model) || 'gemini-decision-1';
+      const actBaseUrl = (config.action && config.action.baseUrl) || inferBaseUrlForModel(actModel, { kind: 'action' }) || '';
+      setVal('cfg-action-base-url', actBaseUrl);
+      setVal('cfg-action-model', actModel);
       setVal('cfg-action-api-key', (config.action && config.action.apiKey) || '');
 
       setVal('cfg-image-api-key', (config.image && config.image.apiKey) || '');
@@ -528,17 +534,22 @@
     if (!m.includes(':') && OPENROUTER_PREFIXES.some((p) => m.startsWith(p))) {
       return 'https://openrouter.ai/api/v1';
     }
-    if (m.startsWith('gemini-')) {
+    if (m === 'gemini' || m.startsWith('gemini-') || m.startsWith('models/gemini-')) {
       return 'https://generativelanguage.googleapis.com';
     }
     if (
+      m === 'gpt' ||
       m.startsWith('gpt-') ||
+      m.startsWith('chatgpt-') ||
       m.startsWith('o1-') ||
       m.startsWith('o3-') ||
       m.startsWith('o4-') ||
       m.startsWith('text-embedding-')
     ) {
       return 'https://api.openai.com/v1';
+    }
+    if (m === 'claude' || m.startsWith('claude-')) {
+      return 'https://openrouter.ai/api/v1';
     }
     if (m.startsWith('deepseek-')) {
       return 'https://api.deepseek.com/v1';
@@ -549,7 +560,10 @@
     if (m.startsWith('qwen-') && !m.includes(':')) {
       return 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
     }
-    if (kind === 'action' && m.startsWith('jev-')) {
+    if (
+      kind === 'action' &&
+      (m === 'jev' || m.startsWith('jev-') || m.startsWith('typesafe/') || m.startsWith('~typesafe/'))
+    ) {
       return 'https://api.typesafe.ai';
     }
     if (m.includes(':') || LOCAL_EMBED_MODELS.has(m)) {

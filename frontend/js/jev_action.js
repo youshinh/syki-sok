@@ -837,7 +837,10 @@
       }
       if (typeof cfg.manualOnly === 'boolean') {
         isManualOnly = cfg.manualOnly;
-        if (isManualOnly) clearTimeout(debounceTimer);
+        if (isManualOnly) {
+          clearTimeout(debounceTimer);
+          predictionSeq++;
+        }
       }
       if (typeof cfg.delaySec === 'number' && !isNaN(cfg.delaySec)) {
         debounceDelayMs = Math.max(200, Math.round(cfg.delaySec * 1000));

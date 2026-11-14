@@ -172,8 +172,8 @@ func (c *Client) Predict(ctx context.Context, req JevPredictRequest) (*JevPredic
 		}
 	}
 
-	// 2. Try custom remote Jev server (TypeSafe's host has no /predict route)
-	if c.cfg.Endpoint != "" && !isOpenRouterEndpoint(c.cfg.Endpoint) && !isTypeSafeEndpoint(c.cfg.Endpoint) {
+	// 2. Try custom remote Jev server (TypeSafe's host has no /predict route, and Gemini/OpenAI endpoints use their dedicated Decisions APIs when keys exist)
+	if c.cfg.Endpoint != "" && !isOpenRouterEndpoint(c.cfg.Endpoint) && !isTypeSafeEndpoint(c.cfg.Endpoint) && !isGeminiEndpoint(c.cfg.Endpoint) && !isOpenAIEndpoint(c.cfg.Endpoint) {
 		resp, err := c.predictRemote(ctx, req)
 		if err == nil && len(resp.Candidates) > 0 {
 			return resp, nil

@@ -173,3 +173,25 @@ func TestNewClient_DefaultEndpointOnlyWithKey(t *testing.T) {
 		t.Errorf("JEV_API_KEY set: expected %q, got %q", DefaultTypeSafeEndpoint, got)
 	}
 }
+
+func TestPredict_GeminiEndpointWithoutKey_NoNetwork(t *testing.T) {
+	clearJevEnv(t)
+
+	client := NewClient(ClientConfig{
+		Endpoint: "https://generativelanguage.googleapis.com",
+		Model:    "gemini-decision-1",
+		Timeout:  2 * time.Second,
+	})
+	client.httpClient.Transport = failingRoundTripper{t: t}
+
+	resp, err := client.Predict(context.Background(), JevPredictRequest{
+		BufferContext: "今日の予定を整理したい",
+		CursorOffset:  5,
+	})
+	if err != nil {
+		t.Fatalf("local predict returned error: %v", err)
+	}
+	if len(resp.Candidates) != 3 {
+		t.Fatalf("expected 3 local candidates, got %d", len(resp.Candidates))
+	}
+}

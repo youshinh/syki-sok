@@ -6,6 +6,7 @@ import (
 	"os"
 	"regexp"
 	"testing"
+	"unsafe"
 )
 
 func TestShowAndRestoreWindowDoesNotUnconditionallyUseShowNormal(t *testing.T) {
@@ -55,5 +56,36 @@ func TestWindowPlacementWiring(t *testing.T) {
 	}
 	if !regexp.MustCompile(`restoreWindowPlacement\(hwnd\)`).MatchString(src) {
 		t.Error("runPlatformWindow must restore window placement on startup")
+	}
+}
+
+func TestCreateStructWLayoutAndCBTHookPlacement(t *testing.T) {
+	if unsafe.Sizeof(uintptr(0)) != 8 {
+		t.Skip("64-bit Win32 CREATESTRUCTW offsets test")
+	}
+	var cs createStructW
+	if got := unsafe.Offsetof(cs.cy); got != 32 {
+		t.Errorf("offsetof(cy) = %d, want 32", got)
+	}
+	if got := unsafe.Offsetof(cs.cx); got != 36 {
+		t.Errorf("offsetof(cx) = %d, want 36", got)
+	}
+	if got := unsafe.Offsetof(cs.y); got != 40 {
+		t.Errorf("offsetof(y) = %d, want 40", got)
+	}
+	if got := unsafe.Offsetof(cs.x); got != 44 {
+		t.Errorf("offsetof(x) = %d, want 44", got)
+	}
+	if got := unsafe.Offsetof(cs.style); got != 48 {
+		t.Errorf("offsetof(style) = %d, want 48", got)
+	}
+
+	data, err := os.ReadFile("window_windows.go")
+	if err != nil {
+		t.Fatal(err)
+	}
+	src := string(data)
+	if !regexp.MustCompile(`(?s)cbtCallback := windows\.NewCallback.*cbt\.lpcs\.x = initPlacement\.X.*cbt\.lpcs\.y = initPlacement\.Y.*webview2\.NewWithOptions`).MatchString(src) {
+		t.Error("runPlatformWindow must apply initPlacement inside HCBT_CREATEWND before webview2.NewWithOptions")
 	}
 }

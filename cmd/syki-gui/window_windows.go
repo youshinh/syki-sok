@@ -129,6 +129,7 @@ const (
 	GWL_STYLE    = ^uintptr(15) // -16 in 2's complement
 
 	WS_CAPTION    = 0x00C00000
+	WS_MAXIMIZE   = 0x01000000
 	WS_THICKFRAME = 0x00040000
 
 	MONITOR_DEFAULTTONULL    = 0
@@ -211,6 +212,26 @@ type NOTIFYICONDATAW struct {
 	DwInfoFlags       uint32
 	GuidItem          windows.GUID
 	HBalloonIcon      windows.Handle
+}
+
+type createStructW struct {
+	lpCreateParams uintptr
+	hInstance      uintptr
+	hMenu          uintptr
+	hwndParent     uintptr
+	cy             int32
+	cx             int32
+	y              int32
+	x              int32
+	style          int32
+	lpszName       uintptr
+	lpszClass      uintptr
+	dwExStyle      uint32
+}
+
+type cbtCreateWndW struct {
+	lpcs            *createStructW
+	hwndInsertAfter uintptr
 }
 
 var (
@@ -379,6 +400,52 @@ var (
 	startupWindowStateLoaded bool
 )
 
+func resolveWindowPlacementState(state *windowState, hwnd windows.Handle) *windowState {
+	if state == nil || state.Width <= 0 || state.Height <= 0 {
+		return nil
+	}
+	out := *state
+
+	var rc windows.Rect
+	rc.Left = out.X
+	rc.Top = out.Y
+	rc.Right = out.X + out.Width
+	rc.Bottom = out.Y + out.Height
+
+	hMon := uintptr(0)
+	if procMonitorFromRect.Find() == nil {
+		hMon, _, _ = procMonitorFromRect.Call(uintptr(unsafe.Pointer(&rc)), MONITOR_DEFAULTTONULL)
+	}
+
+	if hMon == 0 && procGetMonitorInfoW.Find() == nil {
+		// Window was on a disconnected or invalid monitor; center it on the nearest/primary monitor.
+		var monitor uintptr
+		if hwnd != 0 && procMonitorFromWindow.Find() == nil {
+			monitor, _, _ = procMonitorFromWindow.Call(uintptr(hwnd), MONITOR_DEFAULTTONEAREST)
+		} else if procMonitorFromRect.Find() == nil {
+			monitor, _, _ = procMonitorFromRect.Call(uintptr(unsafe.Pointer(&rc)), MONITOR_DEFAULTTONEAREST)
+		}
+		if monitor != 0 {
+			var mi MONITORINFO
+			mi.CbSize = uint32(unsafe.Sizeof(mi))
+			if ok, _, _ := procGetMonitorInfoW.Call(monitor, uintptr(unsafe.Pointer(&mi))); ok != 0 {
+				workW := mi.RcWork.Right - mi.RcWork.Left
+				workH := mi.RcWork.Bottom - mi.RcWork.Top
+				if out.Width > workW {
+					out.Width = workW
+				}
+				if out.Height > workH {
+					out.Height = workH
+				}
+				out.X = mi.RcWork.Left + (workW-out.Width)/2
+				out.Y = mi.RcWork.Top + (workH-out.Height)/2
+			}
+		}
+	}
+
+	return &out
+}
+
 func restoreWindowPlacement(hwnd windows.Handle) bool {
 	if hwnd == 0 {
 		return false
@@ -393,53 +460,44 @@ func restoreWindowPlacement(hwnd windows.Handle) bool {
 	} else {
 		state, err = loadWindowState()
 	}
-	if err != nil || state == nil || state.Width <= 0 || state.Height <= 0 {
+	if err != nil {
+		return false
+	}
+	resolved := resolveWindowPlacementState(state, hwnd)
+	if resolved == nil {
 		return false
 	}
 
-	var rc windows.Rect
-	rc.Left = state.X
-	rc.Top = state.Y
-	rc.Right = state.X + state.Width
-	rc.Bottom = state.Y + state.Height
-
-	hMon := uintptr(0)
-	if procMonitorFromRect.Find() == nil {
-		hMon, _, _ = procMonitorFromRect.Call(uintptr(unsafe.Pointer(&rc)), MONITOR_DEFAULTTONULL)
+	alreadyZoomed := false
+	if resolved.Maximized && procIsZoomed.Find() == nil {
+		zoomed, _, _ := procIsZoomed.Call(uintptr(hwnd))
+		alreadyZoomed = zoomed != 0
 	}
 
-	if hMon == 0 {
-		// Window was on a disconnected or invalid monitor; position it centered on the nearest/primary monitor
-		if procMonitorFromWindow.Find() == nil && procGetMonitorInfoW.Find() == nil {
-			monitor, _, _ := procMonitorFromWindow.Call(uintptr(hwnd), MONITOR_DEFAULTTONEAREST)
-			var mi MONITORINFO
-			mi.CbSize = uint32(unsafe.Sizeof(mi))
-			if ok, _, _ := procGetMonitorInfoW.Call(monitor, uintptr(unsafe.Pointer(&mi))); ok != 0 {
-				workW := mi.RcWork.Right - mi.RcWork.Left
-				workH := mi.RcWork.Bottom - mi.RcWork.Top
-				if state.Width > workW {
-					state.Width = workW
-				}
-				if state.Height > workH {
-					state.Height = workH
-				}
-				state.X = mi.RcWork.Left + (workW-state.Width)/2
-				state.Y = mi.RcWork.Top + (workH-state.Height)/2
+	alreadyPlaced := alreadyZoomed
+	if !alreadyPlaced && procGetWindowRect.Find() == nil {
+		var cur windows.Rect
+		if ok, _, _ := procGetWindowRect.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&cur))); ok != 0 {
+			if cur.Left == resolved.X && cur.Top == resolved.Y &&
+				(cur.Right-cur.Left) == resolved.Width && (cur.Bottom-cur.Top) == resolved.Height {
+				alreadyPlaced = true
 			}
 		}
 	}
 
-	_, _, _ = procSetWindowPos.Call(
-		uintptr(hwnd),
-		0,
-		uintptr(state.X),
-		uintptr(state.Y),
-		uintptr(state.Width),
-		uintptr(state.Height),
-		SWP_NOZORDER|SWP_NOACTIVATE,
-	)
+	if !alreadyPlaced {
+		_, _, _ = procSetWindowPos.Call(
+			uintptr(hwnd),
+			0,
+			uintptr(resolved.X),
+			uintptr(resolved.Y),
+			uintptr(resolved.Width),
+			uintptr(resolved.Height),
+			SWP_NOZORDER|SWP_NOACTIVATE,
+		)
+	}
 
-	if state.Maximized {
+	if resolved.Maximized && !alreadyZoomed {
 		_, _, _ = procShowWindow.Call(uintptr(hwnd), SW_SHOWMAXIMIZED)
 	}
 
@@ -972,12 +1030,39 @@ func runPlatformWindow(app *App, serverURL string) {
 	webViewDataPath := filepath.Join(dataDir, "syki-sok", "webview")
 	_ = os.MkdirAll(webViewDataPath, 0755)
 
-	// Intercept Win32 window creation via thread-scoped WH_CBT hook so we can set
+	initialWidth := uint(1050)
+	initialHeight := uint(720)
+	savedState, stateErr := loadWindowState()
+	startupWindowState, startupWindowStateErr, startupWindowStateLoaded = savedState, stateErr, true
+	initPlacement := resolveWindowPlacementState(savedState, 0)
+	if initPlacement != nil {
+		initialWidth = uint(initPlacement.Width)
+		initialHeight = uint(initPlacement.Height)
+	}
+
+	// Intercept Win32 window creation via thread-scoped WH_CBT hook so we can apply
+	// initial window placement (preventing the 1s CW_USEDEFAULT -> saved-pos jump after WebView2 embeds),
 	// the title bar's light or dark form and the background brush of the look BEFORE the window is first rendered or shown.
 	var hHook uintptr
 	hookBrush := nativeClassBrush(look)
+	topWndPlaced := false
 	cbtCallback := windows.NewCallback(func(nCode int32, wParam uintptr, lParam uintptr) uintptr {
 		if nCode == HCBT_CREATEWND && wParam != 0 {
+			if !topWndPlaced && lParam != 0 {
+				cbt := (*cbtCreateWndW)(ptr(lParam))
+				if cbt.lpcs != nil && cbt.lpcs.hwndParent == 0 {
+					topWndPlaced = true
+					if initPlacement != nil {
+						cbt.lpcs.x = initPlacement.X
+						cbt.lpcs.y = initPlacement.Y
+						cbt.lpcs.cx = initPlacement.Width
+						cbt.lpcs.cy = initPlacement.Height
+						if initPlacement.Maximized {
+							cbt.lpcs.style |= WS_MAXIMIZE
+						}
+					}
+				}
+			}
 			setWindowLookAttrs(wParam, look)
 			if hookBrush != 0 {
 				_, _, _ = procSetClassLongPtrW.Call(wParam, GCLP_HBRBACKGROUND, hookBrush)
@@ -990,15 +1075,6 @@ func runPlatformWindow(app *App, serverURL string) {
 	tid, _, _ := procGetCurrentThreadId.Call()
 	if procSetWindowsHookExW.Find() == nil && tid != 0 {
 		hHook, _, _ = procSetWindowsHookExW.Call(WH_CBT, cbtCallback, 0, tid)
-	}
-
-	initialWidth := uint(1050)
-	initialHeight := uint(720)
-	savedState, stateErr := loadWindowState()
-	startupWindowState, startupWindowStateErr, startupWindowStateLoaded = savedState, stateErr, true
-	if stateErr == nil && savedState != nil && savedState.Width > 0 && savedState.Height > 0 {
-		initialWidth = uint(savedState.Width)
-		initialHeight = uint(savedState.Height)
 	}
 
 	w := webview2.NewWithOptions(webview2.WebViewOptions{

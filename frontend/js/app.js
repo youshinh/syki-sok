@@ -14879,8 +14879,9 @@ OUTPUT FORMAT:
   function bindModelBaseUrlAutoFill(modelId, baseUrlId, kind, onApplied) {
     const modelEl = document.getElementById(modelId);
     const baseEl = document.getElementById(baseUrlId);
-    if (!modelEl || !baseEl || !window.SykiSettingsModal) return;
+    if (!modelEl || !baseEl) return;
     const apply = () => {
+      if (!window.SykiSettingsModal) return;
       const inferred = window.SykiSettingsModal.inferBaseUrlForModel(modelEl.value, { kind });
       if (!window.SykiSettingsModal.shouldAutoFillBaseUrl(baseEl.value, inferred)) return;
       if (baseEl.value.trim() === inferred) return;
@@ -14891,6 +14892,7 @@ OUTPUT FORMAT:
     };
     modelEl.addEventListener('input', apply);
     modelEl.addEventListener('change', apply);
+    modelEl.addEventListener('blur', apply);
   }
 
   bindModelBaseUrlAutoFill('cfg-model', 'cfg-base-url', 'llm', (url) => {
@@ -14917,6 +14919,10 @@ OUTPUT FORMAT:
     apiKey: settingValue('cfg-image-api-key') || borrowedApiKey(GEMINI_BASE, [visionEndpoint(), textEndpoint()])
   });
   const semanticEndpoint = () => ({ baseUrl: settingValue('cfg-semantic-base-url') || 'http://localhost:11434', apiKey: settingValue('cfg-semantic-api-key') });
+  const actionEndpoint = () => {
+    const baseUrl = settingValue('cfg-action-base-url') || settingValue('cfg-base-url') || GEMINI_BASE;
+    return { baseUrl, apiKey: settingValue('cfg-action-api-key') || borrowedApiKey(baseUrl, [textEndpoint()]) };
+  };
   const textModelField = { input: document.getElementById('cfg-model'), kind: 'text', endpoint: textEndpoint };
   [
     textModelField,
@@ -14926,7 +14932,8 @@ OUTPUT FORMAT:
     { input: document.getElementById('cfg-voice-refine-model'), kind: 'text', endpoint: visionEndpoint },
     { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
     { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint },
-    { input: document.getElementById('cfg-cli-model'), kind: 'text', endpoint: textEndpoint }
+    { input: document.getElementById('cfg-cli-model'), kind: 'text', endpoint: textEndpoint },
+    { input: document.getElementById('cfg-action-model'), kind: 'text', endpoint: actionEndpoint }
   ].forEach(field => {
     if (field.input) field.input.addEventListener('focus', () => ensureModelList().then(() => ModelList.refreshIfStale(field), () => {}));
   });
@@ -15434,6 +15441,13 @@ OUTPUT FORMAT:
     if (saveActBaseUrlEl) config.action.baseUrl = saveActBaseUrlEl.value.trim();
     const saveActModelEl = document.getElementById('cfg-action-model');
     if (saveActModelEl) config.action.model = saveActModelEl.value.trim() || 'gemini-decision-1';
+    if (!config.action.baseUrl && window.SykiSettingsModal) {
+      const inferredActUrl = window.SykiSettingsModal.inferBaseUrlForModel(config.action.model, { kind: 'action' });
+      if (inferredActUrl) {
+        config.action.baseUrl = inferredActUrl;
+        if (saveActBaseUrlEl) saveActBaseUrlEl.value = inferredActUrl;
+      }
+    }
     const saveActApiKeyEl = document.getElementById('cfg-action-api-key');
     if (saveActApiKeyEl) config.action.apiKey = saveActApiKeyEl.value.trim();
     updateActionStatus();
@@ -18172,14 +18186,8 @@ OUTPUT FORMAT:
             window.SlotAgent.updateConfig(config);
           }
         }
-        if (window.JevAction && typeof window.JevAction.updateConfig === 'function' && config && config.action) {
-          window.JevAction.updateConfig({
-            enabled: config.action.enabled !== false,
-            endpoint: config.action.endpoint,
-            model: config.action.model,
-            timeoutMs: config.action.timeoutMs,
-            autoTrigger: config.action.autoTrigger
-          });
+        if (window.JevAction) {
+          updateActionStatus();
         }
       };
       document.head.appendChild(s);
