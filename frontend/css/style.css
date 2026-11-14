@@ -6509,6 +6509,9 @@ body.tabs-top #tab-index-left .tab-index-foot {
   gap: 2px;
   border-left: 1px solid rgb(var(--ink-rgb) / 0.08);
 }
+body.tabs-top #tab-index-left .tab-index-foot:not(.has-all-tabs) {
+  display: none;
+}
 body.tabs-top #tab-index-left .tab-index-btn {
   width: 28px;
   height: 28px;
@@ -6525,6 +6528,8 @@ body.tabs-top #tab-index-left .tab-index-btn svg {
 body.tabs-top #tab-index-left .tab-index-btn:hover {
   background-color: rgb(var(--ink-rgb) / 0.08) !important;
 }
+body.tabs-top #btn-new-tab,
+body.tabs-top #btn-open-tab,
 body.tabs-top #btn-pin-tabs,
 body.tabs-top #tab-index-resizer {
   display: none !important;

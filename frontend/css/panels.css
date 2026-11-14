@@ -206,7 +206,10 @@
 }
 
 .voice-recovery-icon {
-  font-size: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-color);
   flex-shrink: 0;
 }
 

@@ -396,6 +396,28 @@ recipes:
 #     label: "議事録の雛形"
 #     kind: "text"
 #     body: "## ${date} 議事録\n\n- 参加者: $0\n- 決定事項:"
+#
+#   --- Outbound Agentic Playbook スニペット雛形 (有効化するには "# " を外してください) ---
+#   - id: "self-unfold"
+#     label: "Playbook: Self-Unfolding Plan (実行計画を結果ブロックに展開)"
+#     kind: "agent"
+#     trigger: "/unfold"
+#     body: "この目的を段階的な {{ @claude ... }} / [[ $ ... ]] のタスク行として出力し、Result Confirm で即実行できる実行計画を作って${selection?: }"
+#   - id: "tag-queue"
+#     label: "Playbook: Tag State Queue (タグ付き未処理キューを巡回処理)"
+#     kind: "agent"
+#     trigger: "/queue"
+#     body: "syki-cli scrap search --tag status-todo -- \"- [ ]\" で未処理セクションを検索し、処理後に syki-cli scrap tag remove/add で status-done へ遷移させて${selection?: }"
+#   - id: "lessons-promote"
+#     label: "Playbook: Lessons Meta-Learning (失敗学習ルールをAGENTS/SKILLへ昇格提案)"
+#     kind: "agent"
+#     trigger: "/lessons"
+#     body: "syki-cli lessons list --json を読み取り専用で確認し、AGENTS.md や SKILL.md に昇格すべき恒久ルール案を提案して${selection?: }"
+#   - id: "whitepaper-pdf"
+#     label: "Playbook: White-Paper PDF (Mermaid付きドキュメント化してPDF出力)"
+#     kind: "agent"
+#     trigger: "/pdf"
+#     body: "この内容を構造化レポートとMermaid図解に整理し、Windows環境なら syki-cli tab pdf でA4 PDFに出力する手順または結果を提示して${selection?: }"
 `
 }
 

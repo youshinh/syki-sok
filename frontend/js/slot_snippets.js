@@ -37,6 +37,10 @@
     ['agent-test', 'agent', 'any', ';test', 'テストを実行', 'テストを実行して、失敗があれば原因を説明して$0', 'Run tests', 'Run the tests and explain the cause of any failure$0'],
     ['agent-review', 'agent', 'any', ';review', 'レビューする', 'この変更をレビューして、問題点を指摘して${selection?: }$0', 'Review', 'Review these changes and point out problems${selection?: }$0'],
     ['agent-refactor', 'agent', 'any', ';refactor', 'リファクタリング', '動作を変えずにこのコードをリファクタリングして${selection?: }$0', 'Refactor', 'Refactor this code without changing its behavior${selection?: }$0'],
+    ['agent-plan', 'agent', 'any', ';plan', '段階的な実行計画に分解', 'この目的を段階的なサブタスクと検証手順に分解して実行計画を提案して${selection?: }$0', 'Break into staged execution plan', 'Break this goal into staged subtasks and verification steps${selection?: }$0'],
+    ['agent-critic', 'agent', 'any', ';critic', '過去のノートと照合して反証', '過去のScrapやWikiと照合し、この内容の矛盾点・盲点・リスクを3点指摘して${selection?: }$0', 'Critique against past notes', 'Cross-check with past scraps and wiki notes to point out 3 risks or blind spots${selection?: }$0'],
+    ['agent-ui', 'agent', 'any', ';ui', '対話型HTMLツールを別タブ生成', '単一HTMLの対話型シミュレータを作成して背景タブに開き、分割表示またはプレビューできるよう準備して${selection?: }$0', 'Build interactive HTML tool tab', 'Build a self-contained interactive HTML tool in a background tab for preview${selection?: }$0'],
+    ['agent-diagram', 'agent', 'any', ';diag', 'Mermaid図解を生成', 'この構造やフローをMermaid図解に変換して提案して${selection?: }$0', 'Generate Mermaid diagram', 'Convert this structure or flow into a Mermaid diagram${selection?: }$0'],
 
     ['cmd-date', 'command', 'win', ';date', '現在の日時', 'Get-Date -Format "yyyy-MM-dd HH:mm"', 'Current date and time', 'Get-Date -Format "yyyy-MM-dd HH:mm"'],
     ['cmd-date', 'command', 'unix', ';date', '現在の日時', 'date "+%Y-%m-%d %H:%M"', 'Current date and time', 'date "+%Y-%m-%d %H:%M"'],

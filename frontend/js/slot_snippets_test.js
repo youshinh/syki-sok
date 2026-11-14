@@ -72,7 +72,7 @@ test('loading the module is free: one global, no timers, no regexps built at loa
 test('built-ins: every snippet the contract names exists, in both languages', () => {
   const need = {
     llm: ['llm-summarize', 'llm-translate-en', 'llm-translate-ja', 'llm-proofread', 'llm-rephrase', 'llm-bullets', 'llm-table', 'llm-ideas'],
-    agent: ['agent-research', 'agent-implement', 'agent-test', 'agent-review', 'agent-refactor'],
+    agent: ['agent-research', 'agent-implement', 'agent-test', 'agent-review', 'agent-refactor', 'agent-plan', 'agent-critic', 'agent-ui', 'agent-diagram'],
     command: ['cmd-date', 'cmd-git-status', 'cmd-git-diff-stat', 'cmd-git-log', 'cmd-grep-word', 'cmd-rg-word', 'cmd-count-lines', 'cmd-sort-unique', 'cmd-jq', 'cmd-large-files'],
     text: ['text-llm-task', 'text-agent-task', 'text-command-task']
   };

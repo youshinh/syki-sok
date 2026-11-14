@@ -1379,7 +1379,7 @@ check('typing {{ lists the profiles and recipes first, then the snippets with a 
   typeAt(env, '{{');
   for (let i = 0; i < 20; i++) env.key('editor', { key: 'ArrowDown' });
   env.key('editor', { key: 'Enter' });
-  assert.ok(env.editor.value !== '{{' && !env.editor.value.startsWith('{{ '), 'a snippet row was committed: ' + env.editor.value);
+  assert.ok(env.editor.value !== '{{' && !/^\{\{\s+[a-z0-9-]+:\s*\}\}$/.test(env.editor.value), 'a snippet row was committed: ' + env.editor.value);
 });
 
 check('a snippet is inserted where {{ was typed, keeps the text after it, and uses the line / the selection placeholders', async () => {

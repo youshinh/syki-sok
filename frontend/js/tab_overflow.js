@@ -140,6 +140,7 @@
         // tabs that fit, put the focus on the button and then hid it). It goes to the caller's fallback, the editor.
         const losesFocus = !showButton && doc.activeElement === allBtn;
         allBtn.classList.toggle('hidden', !showButton);
+        if (allBtn.parentElement) allBtn.parentElement.classList.toggle('has-all-tabs', showButton);
         if (losesFocus && opts.focusFallback) opts.focusFallback();
         ms = strips.map((st) => measure(viewOf(st))); // the button took some of the strip's room
       }
@@ -350,7 +351,10 @@
       state.cursor = -1;
       applyLabels();
       // The list hangs from its button, which is shown while the list is open (the palette opens it even when the tabs fit).
-      if (allBtn) allBtn.classList.remove('hidden');
+      if (allBtn) {
+        allBtn.classList.remove('hidden');
+        if (allBtn.parentElement) allBtn.parentElement.classList.add('has-all-tabs');
+      }
       if (allBtn) { allBtn.setAttribute('aria-expanded', 'true'); allBtn.classList.add('active'); }
       panel.classList.remove('hidden'); // shown before the rows are drawn: scrolling the current row into view needs a layout
       const beside = opts.panelPlacement === 'side';

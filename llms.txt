@@ -105,6 +105,28 @@ powershell -File tools/absorb-scraps.ps1 -Engine auto|claude|codex|agy|ollama|op
 
 ---
 
+## Agentic Playbooks & Bidirectional Workflow Patterns (Inbound & Outbound)
+
+syki::sok supports symmetric agent workflows in both directions:
+- **Inbound (External Agent -> syki::sok)**: Controlling the running app, buffers, tabs, search, speech, PDF print, and tags via `syki-cli` / `syki` and loopback JSON-RPC 2.0 (`ipc-session.json` session `auth` token required for writes and most non-read calls).
+- **Outbound (syki::sok -> Invoked Agent)**: Slot agents (`{{ @agent ... }}`, `{{ @syki: ... }}`), built-in `;trigger` task snippets, multi-step `recipes:`, and the Knowledge Compiler (`Absorb` / `Lint`) invoked directly from a note buffer (`{file}`, `{instruction}`).
+
+### 7 Composable Playbooks (P1–P7)
+
+1. **P1 — Non-Intrusive Spatial Co-Authoring (Shadow Tab & Split Canvas)**: Work in background tabs without moving the user's cursor (`syki tab new --title "<t>" --background` + `buffer set|replace --tab <id> --expected-hash <h>`, or JSON-RPC `tab.new {title, content, background:true}`), control view layout via RPC `ui.set_view {split:true, preview:"side"}` (preview tracks the primary pane), and append live un-fenced Markdown entries via RPC `scrap.append {content, title, activate:false, format:"markdown"}`.
+2. **P2 — Reactive & Self-Unfolding Notes (Document-as-State)**: Emit staged task notations (`{{ @agent ... }}`, `[? ... ]`, `[[ $ ... ]]`) inside `<!-- syki:res <id> -->` blocks where they remain inert (`FindExcludedRanges` / `AutoSelector`) until activated via **Result: Confirm This Result** (`;plan`); bind tasks to top parameter lines with `ctx=above n=N` (up to 80 lines / 8000 chars); compare parallel model outputs in-note (Multi-Model Arena); embed stealth `<!-- @agent: ... -->` HTML comments stripped from preview/print/AutoSelector yet readable in `{file}`.
+3. **P3 — Markdown-Native State Machine & Hierarchical Tag Queues**: Use heading-inherited `<!-- tags: queue-..., status-... -->` comments (H2 tags inherit to H3 descendants until a sibling/higher heading or `---` rule) as a zero-DB state machine. Discover tags via `syki scrap tags --json`, poll items with a non-empty query + `--tag` (`syki scrap search -- - [ ] --tag status-todo --json`), and transition tags via `syki scrap tag remove/add --write` (closed files) or RPC `buffer.get` -> `scrap.tag_edit` (`return_text:true`) -> `buffer.set` with `expected_hash` (open tabs).
+4. **P4 — Generative UI, 5-Style Infographics & White-Paper PDF**: Write self-contained single-file `<!DOCTYPE html>` interactive simulators/dashboards into background tabs for instant HTML preview; generate Mermaid diagrams (`;diag`) rendered across 5 infographic design systems (`material`, `sketchy`, `editorial`, `terminal`, `ink`) with verbatim label fidelity (`Diagram: Generate Image with Gemini`); export light-theme A4/A3 white-paper PDFs via `syki tab pdf` / RPC `print.pdf` (Windows; HTML tabs return `-32602`).
+5. **P5 — Multimodal & Cross-Device Context Streams**: Standalone `syki speech <audio> [--diarize] [--enhance] [--timestamps] [--engine local|gemini] [--scrap] [--json]` transcribes recordings and recovers offline `⦅... [id:xxxx]⦆` `voice_cache/` queues; Quick Capture supplies `> [context: <Window Title>]` bug triage entries (Windows); RPC `buffer.select` feeds Mobile Drop (`Ctrl+Shift+U` / `Cmd+Shift+U` "Text from PC") while Mobile Drop / Cloudflare Mobile Bridge appends remote `## Mobile Drop [HH:MM:SS]` payloads.
+6. **P6 — Token-Lean Pre-Processing, Encoding & Safety Gates**: Prune large notes with `syki agent prune --query "<q>" --file <path>` (`- [ ]` tasks boosted +2), pre-check shell commands locally via AST guard (`syki jev verify --mode unattended` / `jev score`), enforce strict CP932/Shift_JIS deliverables via `syki buffer save --encoding sjis` (fail-closed with exact codepoint/line/col), and run instant scratchpad BI via `Ctrl+V` HTML-to-Markdown tables + `Ctrl+E` / RPC `filter.run` (`duckdb -box`, `jq`, `sort -u`).
+7. **P7 — Compounding Knowledge & Meta-Learning Loop**: Inspect read-only `syki lessons list --json` / RPC `lessons.list` to propose durable rule promotions into `AGENTS.md` / `SKILL.md` (never write `lessons/*.md`); run Socratic critiques (`;critic` / `[! ... !]`) backed by `syki scrap search --ranked|--semantic`; compile `<!-- syki:res -->` analyses, ADRs, and postmortems into `wiki/` + `INDEX.md <= 150` lines via `Absorb` / `Lint` (`scraps/AGENTS.md`).
+
+### Outbound Slot Snippets (`;trigger` + Tab) & Agent Rules
+- **Built-in Agent Snippets**: `;plan` (staged execution plan), `;critic` (wiki/scrap cross-checked critique), `;ui` (self-contained HTML tool in companion tab), `;diag` (Mermaid diagram generation), plus `;research`, `;impl`, `;test`, `;review`, `;refactor`.
+- **Execution Rules for Outbound Agents (`{{ @agent }}`)**: Read `{file}` including `<!-- @agent: ... -->` hints; return primary results on `stdout` (do NOT overwrite open `{file}` directly on disk so `<!-- syki:res -->`, Ghost Diff, and Confirm stay intact); use `syki-cli` / JSON-RPC with `--expected-hash` only for companion tabs (`;ui`) or closed-file state tags; load `skills/syki/SKILL.md` (or `{{ @syki: ... }}`) for full interface specs.
+
+---
+
 
 ## 01 Getting Started: Core Philosophy
 
