@@ -230,7 +230,7 @@
   // in the same order; each marks the note its own page has open, and a click on a strip changes that strip's page (handleTabClick). Every
   // strip has elements of its own: a note that is open in both pages has a tab in each. (Declared here, early, like tabEls.)
   const tabStrips = [
-    { side: 'left', pane: 'primary', root: document.getElementById('tab-index-left'), listEl: document.getElementById('tabs-list'), els: tabEls, selected: () => (document.body.classList.contains('tabs-top') && isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary' ? secondaryTabId : activeTabId) },
+    { side: 'left', pane: 'primary', root: document.getElementById('tab-index-left'), listEl: document.getElementById('tabs-list'), els: tabEls, selected: () => activeTabId },
     { side: 'right', pane: 'secondary', root: document.getElementById('tab-index-right'), listEl: document.getElementById('tabs-list-right'), els: new Map(), selected: () => secondaryTabId }
   ];
   let stripMode = ''; // what the workspace says now: 'left' | 'both' | 'none' (TabStrip.stripsFor); '' before the first draw
@@ -2456,6 +2456,7 @@
       return;
     }
 
+    if (pane && document.body.classList.contains('tabs-top')) pane = undefined;
     const target = pane || paneForSelect();
     if (target === 'secondary' && secondaryViewMode === 'editor') {
       if (tabId === secondaryTabId) {
@@ -2868,7 +2869,10 @@
   function drawStrip(strip) {
     const { listEl, els } = strip;
     const selectedId = strip.selected();
-    const selectedIndex = tabs.findIndex((x) => x.id === selectedId);
+    const effectiveId = (strip.side === 'left' && document.body.classList.contains('tabs-top') && isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary')
+      ? secondaryTabId
+      : selectedId;
+    const selectedIndex = tabs.findIndex((x) => x.id === effectiveId);
     // A tab with the keyboard focus keeps it when the list had to change shape (a tab closed or moved): the element is the same, but
     // taking it out of the list and putting it back drops the focus.
     const focused = document.activeElement;
@@ -3008,7 +3012,7 @@
         }
       } else if (apply) {
         // Normal click without drag threshold
-        handleTabClick(tabId, e.altKey, document.body.classList.contains('tabs-top') ? undefined : strip.pane);
+        handleTabClick(tabId, e.altKey, strip.pane);
       }
     };
     const onPointerUp = () => finish(true);
@@ -3046,7 +3050,7 @@
       if (id === null || e.ctrlKey || e.metaKey) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleTabClick(id, e.altKey, document.body.classList.contains('tabs-top') ? undefined : strip.pane);
+        handleTabClick(id, e.altKey, strip.pane);
         return;
       }
       if (e.altKey) return;
