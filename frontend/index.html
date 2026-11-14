@@ -1151,7 +1151,13 @@
                 </div>
                 <div class="form-group">
                   <label for="cfg-auto-model" data-i18n="modelNameLabel">Model Name:</label>
-                  <input type="text" id="cfg-auto-model" placeholder="gemini-flash-lite-latest, google/gemma-4-12b-qat, qwen2.5:latest etc.">
+                  <input type="text" id="cfg-auto-model" list="auto-model-suggestions" placeholder="gemini-flash-lite-latest, google/gemma-4-12b-qat, qwen2.5:latest etc.">
+                  <datalist id="auto-model-suggestions">
+                    <option value="qwen2.5:latest">Qwen 2.5 (Ollama / Local)</option>
+                    <option value="gemma4:latest">Gemma 4 (Ollama / Local)</option>
+                    <option value="gemini-flash-lite-latest">Gemini Flash Lite (Google Cloud)</option>
+                    <option value="gpt-6-luna">GPT-6 Luna (OpenAI)</option>
+                  </datalist>
                 </div>
                 <div class="form-group">
                   <label for="cfg-auto-api-key" data-i18n="apiKeyLabel">API Key (for cloud APIs):</label>
@@ -1391,7 +1397,12 @@
             <div class="form-row" style="display: flex; gap: 12px;">
               <div class="form-group" style="flex: 2;">
                 <label for="cfg-voice-refine-model" data-i18n="voiceRefineModelLabel">Refine model:</label>
-                <input type="text" id="cfg-voice-refine-model" placeholder="gemini-flash-lite-latest" spellcheck="false" autocomplete="off">
+                <input type="text" id="cfg-voice-refine-model" list="voice-refine-model-suggestions" placeholder="gemini-flash-lite-latest" spellcheck="false" autocomplete="off">
+                <datalist id="voice-refine-model-suggestions">
+                  <option value="gemini-flash-lite-latest">Gemini Flash Lite (Fast &amp; Low Latency)</option>
+                  <option value="gemini-3.8-flash">Gemini 3.8 Flash (High Quality)</option>
+                  <option value="gemini-4-hydrogen">Gemini 4 Hydrogen (Fast Daily)</option>
+                </datalist>
               </div>
               <div class="form-group" style="flex: 1;">
                 <label for="cfg-voice-refine-timeout" data-i18n="voiceRefineTimeoutLabel">Refine timeout (s):</label>
@@ -1611,7 +1622,13 @@
             </div>
             <div class="form-group">
               <label for="cfg-cli-model" data-i18n="cliModelLabel">CLI Model Name:</label>
-              <input type="text" id="cfg-cli-model" placeholder="e.g. qwen2.5-coder:latest">
+              <input type="text" id="cfg-cli-model" list="cli-model-suggestions" placeholder="e.g. qwen2.5-coder:latest">
+              <datalist id="cli-model-suggestions">
+                <option value="qwen2.5-coder:latest">Qwen 2.5 Coder (Ollama / Local)</option>
+                <option value="gemini-4-argon">Gemini 4 Argon (Google Cloud)</option>
+                <option value="gemini-3.8-flash">Gemini 3.8 Flash (Google Cloud)</option>
+                <option value="gpt-6.1-sol">GPT-6.1 Sol (OpenAI)</option>
+              </datalist>
               <small data-i18n="cliModelHint">Blank = use the Text model from the AI Models tab.</small>
             </div>
             <div class="form-group inline-group">
@@ -1722,7 +1739,14 @@
                 </div>
                 <div class="form-group">
                   <label for="cfg-action-model" data-i18n="actionModelLabel">Model Name:</label>
-                  <input type="text" id="cfg-action-model" placeholder="gemini-decision-1 (default), jev-latest, or gpt-6-luna">
+                  <input type="text" id="cfg-action-model" list="action-model-suggestions" placeholder="gemini-decision-1 (default), jev-latest, or gpt-6-luna">
+                  <datalist id="action-model-suggestions">
+                    <option value="gemini-decision-1">Gemini Decision 1 (Google Cloud)</option>
+                    <option value="gpt-6-luna">GPT-6 Luna (OpenAI Decisions API)</option>
+                    <option value="jev-latest">Jev Latest (TypeSafe)</option>
+                    <option value="google/gemini-3.8-flash">Gemini 3.8 Flash (OpenRouter)</option>
+                    <option value="openai/gpt-6-luna">GPT-6 Luna (OpenRouter)</option>
+                  </datalist>
                   <small data-i18n="actionModelHint">Blank = gemini-decision-1. Decision models: gemini-decision-1 (Google), jev-latest (TypeSafe) or gpt-6-luna (OpenAI Decisions API).</small>
                 </div>
                 <div class="form-group">

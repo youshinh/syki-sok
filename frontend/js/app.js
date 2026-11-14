@@ -14876,6 +14876,32 @@ OUTPUT FORMAT:
     });
   }
 
+  function bindModelBaseUrlAutoFill(modelId, baseUrlId, kind, onApplied) {
+    const modelEl = document.getElementById(modelId);
+    const baseEl = document.getElementById(baseUrlId);
+    if (!modelEl || !baseEl || !window.SykiSettingsModal) return;
+    const apply = () => {
+      const inferred = window.SykiSettingsModal.inferBaseUrlForModel(modelEl.value, { kind });
+      if (!window.SykiSettingsModal.shouldAutoFillBaseUrl(baseEl.value, inferred)) return;
+      if (baseEl.value.trim() === inferred) return;
+      baseEl.value = inferred;
+      baseEl.dispatchEvent(new Event('input', { bubbles: true }));
+      baseEl.dispatchEvent(new Event('change', { bubbles: true }));
+      if (onApplied) onApplied(inferred);
+    };
+    modelEl.addEventListener('input', apply);
+    modelEl.addEventListener('change', apply);
+  }
+
+  bindModelBaseUrlAutoFill('cfg-model', 'cfg-base-url', 'llm', (url) => {
+    syncTextProviderDropdown(url);
+    debouncedUpdateLLMProviderDetection();
+  });
+  bindModelBaseUrlAutoFill('cfg-auto-model', 'cfg-auto-base-url', 'llm');
+  bindModelBaseUrlAutoFill('cfg-vision-model', 'cfg-vision-base-url', 'llm');
+  bindModelBaseUrlAutoFill('cfg-semantic-model', 'cfg-semantic-base-url', 'embed');
+  bindModelBaseUrlAutoFill('cfg-action-model', 'cfg-action-base-url', 'action');
+
   // The model fields read their suggestions from the provider (frontend/js/model_list.js, loaded on the first focus of one of them); the
   // options of index.html are the fallback.
   const GEMINI_BASE = 'https://generativelanguage.googleapis.com';
@@ -14897,8 +14923,10 @@ OUTPUT FORMAT:
     { input: document.getElementById('cfg-vision-model'), kind: 'text', endpoint: visionEndpoint },
     { input: document.getElementById('cfg-voice-model-rt'), kind: 'voice', endpoint: visionEndpoint },
     { input: document.getElementById('cfg-voice-model-bt'), kind: 'voice', endpoint: visionEndpoint },
+    { input: document.getElementById('cfg-voice-refine-model'), kind: 'text', endpoint: visionEndpoint },
     { input: document.getElementById('cfg-image-model'), kind: 'image', endpoint: imageEndpoint },
-    { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint }
+    { input: document.getElementById('cfg-semantic-model'), kind: 'embed', endpoint: semanticEndpoint },
+    { input: document.getElementById('cfg-cli-model'), kind: 'text', endpoint: textEndpoint }
   ].forEach(field => {
     if (field.input) field.input.addEventListener('focus', () => ensureModelList().then(() => ModelList.refreshIfStale(field), () => {}));
   });

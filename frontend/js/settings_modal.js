@@ -490,7 +490,91 @@
     };
   }
 
-  const api = { create };
+  const KNOWN_PRESET_BASE_URLS = new Set([
+    'http://localhost:11434',
+    'http://127.0.0.1:11434',
+    'https://generativelanguage.googleapis.com',
+    'https://api.openai.com/v1',
+    'https://openrouter.ai/api/v1',
+    'https://api.deepseek.com/v1',
+    'https://api.mistral.ai/v1',
+    'https://dashscope-intl.aliyuncs.com/compatible-mode/v1',
+    'https://api.typesafe.ai',
+  ]);
+
+  const LOCAL_EMBED_MODELS = new Set([
+    'bge-m3',
+    'nomic-embed-text',
+    'mxbai-embed-large',
+    'snowflake-arctic-embed',
+  ]);
+
+  const OPENROUTER_PREFIXES = [
+    'google/',
+    'openai/',
+    'anthropic/',
+    'meta-llama/',
+    'deepseek/',
+    'sakana/',
+    'qwen/',
+    'mistralai/',
+  ];
+
+  function inferBaseUrlForModel(model, opts) {
+    const m = String(model == null ? '' : model).trim().toLowerCase();
+    if (!m) return null;
+    const kind = opts && opts.kind ? opts.kind : 'llm';
+
+    if (!m.includes(':') && OPENROUTER_PREFIXES.some((p) => m.startsWith(p))) {
+      return 'https://openrouter.ai/api/v1';
+    }
+    if (m.startsWith('gemini-')) {
+      return 'https://generativelanguage.googleapis.com';
+    }
+    if (
+      m.startsWith('gpt-') ||
+      m.startsWith('o1-') ||
+      m.startsWith('o3-') ||
+      m.startsWith('o4-') ||
+      m.startsWith('text-embedding-')
+    ) {
+      return 'https://api.openai.com/v1';
+    }
+    if (m.startsWith('deepseek-')) {
+      return 'https://api.deepseek.com/v1';
+    }
+    if (m.startsWith('mistral-') || m.startsWith('codestral-')) {
+      return 'https://api.mistral.ai/v1';
+    }
+    if (m.startsWith('qwen-') && !m.includes(':')) {
+      return 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1';
+    }
+    if (kind === 'action' && m.startsWith('jev-')) {
+      return 'https://api.typesafe.ai';
+    }
+    if (m.includes(':') || LOCAL_EMBED_MODELS.has(m)) {
+      return 'http://localhost:11434';
+    }
+    return null;
+  }
+
+  function shouldAutoFillBaseUrl(currentBaseUrl, inferredBaseUrl) {
+    if (!inferredBaseUrl) return false;
+    const current = String(currentBaseUrl == null ? '' : currentBaseUrl)
+      .trim()
+      .toLowerCase()
+      .replace(/\/+$/, '');
+    if (current === '') return true;
+    if (
+      inferredBaseUrl === 'http://localhost:11434' &&
+      (current === 'http://localhost:1234/v1' || current === 'http://127.0.0.1:1234/v1')
+    ) {
+      return false;
+    }
+    return KNOWN_PRESET_BASE_URLS.has(current);
+  }
+
+  const api = { create, inferBaseUrlForModel, shouldAutoFillBaseUrl };
   global.SykiSettingsModal = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

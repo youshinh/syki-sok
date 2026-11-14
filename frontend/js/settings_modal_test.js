@@ -146,5 +146,27 @@ function makeEl(initialClasses = []) {
 
   assert.strictEqual(lastProvider, 'openai');
   assert.strictEqual(lineEl.classList.contains('hidden'), false);
-  console.log('settings_modal_test: 3 passed');
+
+  // 4. inferBaseUrlForModel & shouldAutoFillBaseUrl
+  const { inferBaseUrlForModel, shouldAutoFillBaseUrl } = SykiSettingsModal;
+  assert.strictEqual(inferBaseUrlForModel('gemini-decision-1', { kind: 'action' }), 'https://generativelanguage.googleapis.com');
+  assert.strictEqual(inferBaseUrlForModel('gemini-3.8-flash'), 'https://generativelanguage.googleapis.com');
+  assert.strictEqual(inferBaseUrlForModel('gemini-embedding-2', { kind: 'embed' }), 'https://generativelanguage.googleapis.com');
+  assert.strictEqual(inferBaseUrlForModel('gpt-6-luna', { kind: 'action' }), 'https://api.openai.com/v1');
+  assert.strictEqual(inferBaseUrlForModel('gpt-6.1-sol'), 'https://api.openai.com/v1');
+  assert.strictEqual(inferBaseUrlForModel('text-embedding-3-small', { kind: 'embed' }), 'https://api.openai.com/v1');
+  assert.strictEqual(inferBaseUrlForModel('google/gemini-3.8-flash'), 'https://openrouter.ai/api/v1');
+  assert.strictEqual(inferBaseUrlForModel('anthropic/claude-sonnet-5-5'), 'https://openrouter.ai/api/v1');
+  assert.strictEqual(inferBaseUrlForModel('jev-latest', { kind: 'action' }), 'https://api.typesafe.ai');
+  assert.strictEqual(inferBaseUrlForModel('gemma4:latest'), 'http://localhost:11434');
+  assert.strictEqual(inferBaseUrlForModel('qwen3-vl:latest'), 'http://localhost:11434');
+  assert.strictEqual(inferBaseUrlForModel('bge-m3', { kind: 'embed' }), 'http://localhost:11434');
+  assert.strictEqual(inferBaseUrlForModel(''), null);
+
+  assert.strictEqual(shouldAutoFillBaseUrl('', 'https://generativelanguage.googleapis.com'), true);
+  assert.strictEqual(shouldAutoFillBaseUrl('http://localhost:11434', 'https://api.openai.com/v1'), true);
+  assert.strictEqual(shouldAutoFillBaseUrl('https://custom.internal/v1', 'https://api.openai.com/v1'), false);
+  assert.strictEqual(shouldAutoFillBaseUrl('http://localhost:1234/v1', 'http://localhost:11434'), false);
+
+  console.log('settings_modal_test: 4 passed');
 })();
