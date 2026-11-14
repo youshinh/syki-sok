@@ -1277,12 +1277,12 @@
             </div>
             <h3>Local-First AI (Ghost Text)</h3>
             <p>
-              Pair with offline Ollama / vLLM instances without data leakage. Press <code>Ctrl+→</code> to accept high-speed predictive completions. Optional cloud models available for complex reasoning.
+              Press <code>Tab</code> (or <code>→</code>) to accept the full Ghost Text completion, or <code>Ctrl+→</code> to accept one word at a time. Pair with offline local models such as Ollama / Gemma 4 / vLLM instances without data leakage, or cloud APIs for complex reasoning.
             </p>
           </div>
           <ul class="feature-tag-list">
-            <li>Local / Offline</li>
-            <li>Ollama / vLLM</li>
+            <li>Tab / → to Accept</li>
+            <li>Ollama / Gemma 4 / vLLM</li>
             <li>Ghost Text</li>
           </ul>
         </div>
@@ -1319,13 +1319,15 @@
             </div>
             <h3>Parallel Scrap Search</h3>
             <p>
-              Harnesses <code>runtime.NumCPU()</code> worker threads and a zero-allocation parallel scanner to search across all daily scraps (<code>scraps/YYYY-MM-DD.md</code>) instantaneously. Switch to <strong>Meaning</strong> (experimental, off by default) to find notes that say it in other words, and press <strong>Deep search</strong> to have your AI model answer from those notes with links to the sources, after a dialog that shows what would be sent and where. A <strong>Filter</strong> narrows any of these to a period and to tags you write into your notes or add from the command palette.
+              Harnesses <code>runtime.NumCPU()</code> worker threads and a zero-allocation parallel scanner to search across all daily scraps (<code>scraps/YYYY-MM-DD.md</code>) instantaneously. Switch to <strong>Meaning</strong> (experimental, off by default) to find notes that say it in other words, powered by idle background semantic indexing with on-device EmbeddingGemma or cloud Gemini Embedding. Press <strong>Deep search</strong> to have your AI model answer from those notes with links to the sources, after a dialog that shows what would be sent and where, with model and output-length selectors and a live progress display. A <strong>Filter</strong> narrows any of these to a period and to tags you write into your notes or add from the command palette.
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>Parallel Scan</li>
+            <li>Idle Semantic Index</li>
             <li>150ms Debounce</li>
             <li>Auto Highlight</li>
+            <li>EmbeddingGemma / Gemini</li>
             <li>Meaning &amp; Deep Search</li>
           </ul>
         </div>
@@ -1447,13 +1449,13 @@
             </div>
             <h3>Voice Input</h3>
             <p>
-              Start dictation from the toolbar microphone, the right-click menu, the command palette or a configurable shortcut (<code>Ctrl+Shift+R</code> by default); a marker at the caret tracks progress while you keep typing elsewhere. Recording stops after a few seconds of silence or a second press of the shortcut, and <code>Esc</code> discards it. The default model is Gemini 3.5 Transcribe, and it needs an API key in Settings, shared with image OCR.
+              Start dictation from the toolbar microphone, the right-click menu, the command palette or a configurable shortcut (<code>Ctrl+Shift+R</code> by default); a marker at the caret tracks progress while you keep typing elsewhere. Recording stops after a few seconds of silence or a second press of the shortcut, and <code>Esc</code> discards it. The built-in default engine is <strong>speech.cpp (Haas-ja GGUF)</strong>, running locally with hardware acceleration on Windows x64 and macOS Apple Silicon (Metal), no API key needed, supporting real-time streaming, speaker diarization, noise reduction, VAD and recovery of pending recordings. Cloud <strong>Gemini 3.5 Transcribe</strong> stays selectable in Settings.
             </p>
           </div>
           <ul class="feature-tag-list">
             <li>Ctrl+Shift+R</li>
-            <li>Gemini 3.5 Transcribe</li>
-            <li>Esc to discard</li>
+            <li>speech.cpp (Haas-ja)</li>
+            <li>Diarization &amp; Stream</li>
           </ul>
         </div>
 
@@ -1710,15 +1712,15 @@
                 <path d="M21 19a2 2 0 0 1-2 2h-1a2 2 0 0 1-2-2v-3a2 2 0 0 1 2-2h3zM3 19a2 2 0 0 0 2 2h1a2 2 0 0 0 2-2v-3a2 2 0 0 0-2-2H3z"></path>
               </svg>
             </div>
-            <h3>On-Device Whisper (Windows x64)</h3>
+            <h3>On-Device Speech (speech.cpp) &amp; syki speech CLI</h3>
             <p>
-              Transcribe hot-folder audio and Mobile Bridge voice notes on your own PC, offline. Choose Whisper as the speech engine in Settings &rarr; AI Models &rarr; Voice; the Whisper program (about 9 MB) and a model (Japanese-specialised kotoba-whisper by default, about 513 MB) are downloaded on demand, with progress and resume. Audio leaves the PC only if you turn on the Gemini retry. Windows x64 only; live voice input and Mobile Drop keep using Gemini.
+              Transcribe live voice, hot-folder audio and Mobile Bridge notes offline via <code>speech.cpp</code> (Haas-ja GGUF) on Windows x64 and macOS Apple Silicon (Metal), with optional diarization, noise-reduction and VAD add-ons (kotoba-whisper is also supported on Windows x64). Choose the speech engine in Settings &rarr; AI Models &rarr; Voice; the runtime and models are downloaded on demand, with progress and resume. Also supports standalone and piped CLI transcription via <code>syki speech [audio]</code>.
             </p>
           </div>
           <ul class="feature-tag-list">
-            <li>Offline</li>
-            <li>kotoba-whisper</li>
-            <li>Windows x64 only</li>
+            <li>Offline (Win &amp; Mac)</li>
+            <li>speech.cpp / Haas-ja</li>
+            <li>syki speech CLI</li>
           </ul>
         </div>
 
@@ -1808,10 +1810,74 @@
             <li>LLM Wiki</li>
           </ul>
         </div>
+
+        <!-- Feature 28 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+                <path d="M21 12a9 9 0 0 1-9 9"></path>
+              </svg>
+            </div>
+            <h3>Embedded Agent Terminal (PTY) &amp; Harness Loop</h3>
+            <p>
+              Open an embedded PTY pane (<code>Ctrl+Alt+T</code>) for Claude Code, Codex or Antigravity; send selections or lines with <code>Ctrl+Shift+Enter</code>; link notes and sessions bidirectionally with <code>syki-pty://&lt;id&gt;</code>; run isolated-worktree Maker-Checker autonomous loops from <code>## [ ]</code> note blocks.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Ctrl+Alt+T</li>
+            <li>syki-pty://</li>
+            <li>Maker-Checker Loop</li>
+          </ul>
+        </div>
+
+        <!-- Feature 29 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                <polyline points="21 15 16 10 5 21"></polyline>
+              </svg>
+            </div>
+            <h3>Selection Image Gen &amp; High-Res Diagram PNG</h3>
+            <p>
+              Generate AI images and infographics directly from selected text with auto-classification (Gemini / Nano Banana), or render Mermaid diagrams locally to high-res PNG and copy natively to the clipboard (including Excel <code>CF_DIB</code> support).
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>Image Generation</li>
+            <li>Local High-Res PNG</li>
+            <li>Excel CF_DIB</li>
+          </ul>
+        </div>
+
+        <!-- Feature 30 -->
+        <div class="feature-card">
+          <div>
+            <div class="feature-icon-wrap">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+              </svg>
+            </div>
+            <h3>FastBoot &amp; Revamped Settings UX</h3>
+            <p>
+              FastBoot inlining, batched RPC bindings and deferred initialization for instant cold starts and zero-lag IME typing. Revamped Settings with cross-tab search, status badges, automatic API Base URL inference, and an experimental top tab bar with retract delay slider.
+            </p>
+          </div>
+          <ul class="feature-tag-list">
+            <li>FastBoot</li>
+            <li>Zero-Lag IME</li>
+            <li>Settings Search</li>
+          </ul>
+        </div>
       </div>
 
       <p class="section-desc" style="max-width: 720px; margin: 32px auto 0; text-align: center; font-size: 14px;">
-        <strong>Windows and macOS.</strong> Quick Capture, Screen Capture, the Send To entry and on-device Whisper are Windows-only for now. The Hot Folder and <code>syki ocr</code> also run on macOS, with cloud OCR and Gemini transcription only. Link underlines and line numbers are shared web code, expected to behave the same on macOS but not yet verified on a real Mac. The print panel is Windows-only: on macOS the printer button opens the system print dialog (PDF &gt; Save as PDF), also not yet verified on a real Mac.
+        <strong>Windows and macOS.</strong> <code>speech.cpp (Haas-ja)</code> runs offline on both Windows x64 and macOS Apple Silicon (Metal), while on-device Whisper, Quick Capture, Screen Capture, the Send To entry and the custom print panel remain Windows-only for now. The Hot Folder and <code>syki ocr</code> also run on macOS, with cloud OCR and Gemini transcription only. Link underlines and line numbers are shared web code, expected to behave the same on macOS but not yet verified on a real Mac. On macOS the printer button opens the system print dialog (PDF &gt; Save as PDF), also not yet verified on a real Mac.
       </p>
     </div>
   </section>
@@ -2239,7 +2305,10 @@
         <div class="shortcut-row">
           <span class="shortcut-desc">Accept Ghost Text Suggestion</span>
           <div class="kbd-wrap">
+            <kbd>Tab</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
             <kbd>Ctrl</kbd><kbd>&rarr;</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin-left:4px;">1 word</span>
           </div>
         </div>
         <div class="shortcut-row">
@@ -2264,6 +2333,28 @@
           <span class="shortcut-desc">Command Bar (CLI Filters / AI CLI Agent, Tab switches)</span>
           <div class="kbd-wrap">
             <kbd>Ctrl</kbd><kbd>E</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Embedded Agent Terminal (PTY Pane)</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Alt</kbd><kbd>T</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>⌥</kbd><kbd>⌘</kbd><kbd>T</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Send Selection / Line to Active PTY Session</span>
+          <div class="kbd-wrap">
+            <kbd>Ctrl</kbd><kbd>Shift</kbd><kbd>Enter</kbd>
+          </div>
+        </div>
+        <div class="shortcut-row">
+          <span class="shortcut-desc">Task Panel &amp; Agent Lessons</span>
+          <div class="kbd-wrap">
+            <kbd>Alt</kbd><kbd>T</kbd>
+            <span style="color:var(--text-tertiary); font-size:12px; margin:0 4px;">/</span>
+            <kbd>⌥</kbd><kbd>T</kbd>
           </div>
         </div>
         <div class="shortcut-row">
@@ -2359,8 +2450,10 @@
        │
        ├─► CLI Pipes &amp; TCP IPC (127.0.0.1:49152)
        ├─► Air-Gapped Local LLM Engine (Ollama / vLLM / LM Studio)
+       ├─► Embedded Agent PTY &amp; Autonomous Harness Loop (Worktree Maker-Checker)
        ├─► Daily Scraps Aggregator (scraps/YYYY-MM-DD.md)
        ├─► Hot Folder (images / audio &rarr; OCR / transcription &rarr; scraps)
+       ├─► On-Device Speech Engine (speech.cpp / Haas-ja GGUF + syki speech CLI)
        ├─► Cloudflare Mobile Bridge (Mobile PWA &rarr; D1 Encrypted Queue &rarr; Scraps)
        ├─► Parallel Grep Engine (runtime.NumCPU() Zero-Allocation Scan)
        ├─► Background Git Sync / Multi-PC Google Drive Sync
