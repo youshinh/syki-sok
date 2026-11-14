@@ -19,6 +19,24 @@ const (
 	fastBootDeferredPath = "/js/__boot_deferred.js"
 )
 
+// fastBootPolicy centralizes code-level FastBoot tuning knobs so bundle paths,
+// buffer pre-allocation, cache TTL, and deferred script selection live in one struct.
+type fastBootPolicy struct {
+	BundlePath              string
+	DeferredPath            string
+	CoreBufInitialCap       int
+	ImmutableCacheMaxAgeSec int
+	DeferredScripts         map[string]bool
+}
+
+var defaultFastBootPolicy = fastBootPolicy{
+	BundlePath:              fastBootBundlePath,
+	DeferredPath:            fastBootDeferredPath,
+	CoreBufInitialCap:       1800000,
+	ImmutableCacheMaxAgeSec: 604800,
+	DeferredScripts:         fastBootDeferredScripts,
+}
+
 type fastBootAssets struct {
 	indexHTML   []byte
 	bundleJS    []byte
@@ -171,7 +189,7 @@ func compactFastBootCSS(raw string) string {
 // boot bundle and an optional background-deferred bundle (tagged data-boot-defer).
 func buildFastBootScriptBundle(fsys fs.FS, html string) (bundleJS []byte, bundleURL string, deferredJS []byte, deferredURL string, err error) {
 	var coreBuf, defBuf bytes.Buffer
-	coreBuf.Grow(1800000)
+	coreBuf.Grow(defaultFastBootPolicy.CoreBufInitialCap)
 	coreCount, defCount := 0, 0
 	for _, m := range fastBootScriptTagRe.FindAllStringSubmatch(html, -1) {
 		fullTag, src := m[0], m[1]
@@ -180,7 +198,7 @@ func buildFastBootScriptBundle(fsys fs.FS, html string) (bundleJS []byte, bundle
 		if err != nil {
 			return nil, "", nil, "", fmt.Errorf("read %s: %w", src, err)
 		}
-		if fastBootDeferredScripts[cleanPath] || strings.Contains(strings.ToLower(fullTag), "data-boot-defer") {
+		if defaultFastBootPolicy.DeferredScripts[cleanPath] || strings.Contains(strings.ToLower(fullTag), "data-boot-defer") {
 			if defCount > 0 {
 				defBuf.WriteString("\n;\n")
 			}
@@ -314,8 +332,8 @@ func serveFastBootAsset(w http.ResponseWriter, r *http.Request, fsys fs.FS) bool
 		return false
 	}
 	isDoc := r.URL.Path == "/" || r.URL.Path == "/index.html"
-	isBundle := r.URL.Path == fastBootBundlePath
-	isDeferred := r.URL.Path == fastBootDeferredPath
+	isBundle := r.URL.Path == defaultFastBootPolicy.BundlePath
+	isDeferred := r.URL.Path == defaultFastBootPolicy.DeferredPath
 	if !isDoc && !isBundle && !isDeferred {
 		return false
 	}
@@ -330,7 +348,7 @@ func serveFastBootAsset(w http.ResponseWriter, r *http.Request, fsys fs.FS) bool
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 	if isBundle || isDeferred {
 		w.Header().Set("Content-Type", "application/javascript; charset=utf-8")
-		w.Header().Set("Cache-Control", "public, max-age=604800, immutable")
+		w.Header().Set("Cache-Control", fmt.Sprintf("public, max-age=%d, immutable", defaultFastBootPolicy.ImmutableCacheMaxAgeSec))
 		if r.Method == http.MethodGet {
 			if isDeferred {
 				w.Write(assets.deferredJS)

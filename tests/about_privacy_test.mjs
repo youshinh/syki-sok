@@ -15,7 +15,7 @@ const read = (p) => fs.readFileSync(path.resolve(p), 'utf-8').replace(/\r\n/g, '
 const appCode = read('frontend/js/app.js');
 const i18nCode = read('frontend/js/i18n.js');
 const indexHtml = read('frontend/index.html');
-const styleCss = withTokens(read('frontend/css/style.css')); // the colours of the tokens put back (tests/lib/css_tokens_lib.mjs)
+const styleCss = withTokens(read('frontend/css/style.css') + '\n' + read('frontend/css/panels.css') + '\n' + read('frontend/css/modals.css')); // the colours of the tokens put back (tests/lib/css_tokens_lib.mjs)
 const chromeLayoutCode = read('frontend/js/chrome_layout.js');
 const mermaidToneCode = read('frontend/js/mermaid_tone.js');
 const llmErrorCode = read('frontend/js/llm_error.js');
@@ -313,7 +313,7 @@ check('I2: the timer is not even armed when the setting is off, and is checked a
   const start = appCode.indexOf('// Check for app updates asynchronously in background');
   assert.ok(start > 0);
   const block = appCode.slice(start, appCode.indexOf('})();', start));
-  assert.ok(/if \(updateCheckAtStartup\(\)\) \{\s*setTimeout\(\(\) => \{\s*if \(updateCheckAtStartup\(\)\) checkForAppUpdates\(\);\s*\}, 2500\);\s*\}/.test(block), block);
+  assert.ok(/if \(updateCheckAtStartup\(\)\) \{\s*setTimeout\(\(\) => \{\s*if \(updateCheckAtStartup\(\)\) checkForAppUpdates\(\);\s*\}, (?:2500|BOOT_POLICY\.updateCheckDelayMs)\);\s*\}/.test(block), block);
   const fetches = appCode.match(/fetch\(/g) || [];
   const gh = appCode.split('\n').filter((l) => l.includes('api.github.com') && !l.trim().startsWith('//'));
   assert.equal(gh.length, 1, 'the URL is written once: ' + gh.join(' | '));

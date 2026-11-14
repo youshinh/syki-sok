@@ -15,7 +15,7 @@ const html = read('frontend/index.html');
 const appJs = read('frontend/js/app.js');
 const i18nJs = read('frontend/js/i18n.js');
 const packJs = read('frontend/js/config_pack.js');
-const css = read('frontend/css/style.css');
+const css = read('frontend/css/style.css') + '\n' + read('frontend/css/panels.css') + '\n' + read('frontend/css/modals.css');
 
 let failures = 0;
 let chain = Promise.resolve();

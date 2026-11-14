@@ -17,6 +17,18 @@
 :root {
   --canvas-bg: #1e1e1e;
   --canvas-fg: #dcdde3;
+  /* Shared 6-tier z-index scale for global chrome, floating panels, modals, popovers, toasts, and critical overlays */
+  --z-chrome: 100;
+  --z-floating: 250;
+  --z-modal: 1000;
+  --z-popover: 2000;
+  --z-toast: 9500;
+  --z-critical: 10000;
+  /* Shared UI radius tokens */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+  --radius-pill: 999px;
 }
 :root.look-paper {
   --canvas-bg: #fbfbf9;

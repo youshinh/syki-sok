@@ -264,3 +264,18 @@ func TestFastBootDeferredBundleKeepsVoiceInCore(t *testing.T) {
 		t.Errorf("deferred body len = %d, want %d", len(rec.Body.Bytes()), len(assets.deferredJS))
 	}
 }
+
+func TestDefaultFastBootPolicy(t *testing.T) {
+	if defaultFastBootPolicy.BundlePath != fastBootBundlePath {
+		t.Errorf("BundlePath = %q, want %q", defaultFastBootPolicy.BundlePath, fastBootBundlePath)
+	}
+	if defaultFastBootPolicy.DeferredPath != fastBootDeferredPath {
+		t.Errorf("DeferredPath = %q, want %q", defaultFastBootPolicy.DeferredPath, fastBootDeferredPath)
+	}
+	if defaultFastBootPolicy.CoreBufInitialCap <= 0 || defaultFastBootPolicy.ImmutableCacheMaxAgeSec <= 0 {
+		t.Errorf("invalid policy numeric bounds: cap=%d maxAge=%d", defaultFastBootPolicy.CoreBufInitialCap, defaultFastBootPolicy.ImmutableCacheMaxAgeSec)
+	}
+	if len(defaultFastBootPolicy.DeferredScripts) == 0 {
+		t.Errorf("DeferredScripts must not be empty")
+	}
+}

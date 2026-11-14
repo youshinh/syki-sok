@@ -9,7 +9,7 @@ const SC = require('../frontend/js/settings_compact.js');
 const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 
 const html = read('frontend/index.html');
-const css = read('frontend/css/style.css');
+const css = read('frontend/css/style.css') + '\n' + read('frontend/css/panels.css') + '\n' + read('frontend/css/modals.css');
 const i18nSrc = read('frontend/js/i18n.js');
 const appJs = read('frontend/js/app.js') + '\n' + read('frontend/js/settings_modal.js');
 

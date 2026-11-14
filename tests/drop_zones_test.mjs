@@ -65,7 +65,7 @@ assert.ok(/zone === 'link' \? dropLinkEditor\(\) : \(zone === 'open' \? null : e
 assert.ok(/dropZones\.onDragOver\(e\)/.test(app) && /if \(dropZones\) dropZones\.hide\(\);/.test(app), 'dragover shows them, dragend and drop hide them');
 assert.ok(/js\/drop_zones\.js/.test(read('frontend/index.html')), 'the page loads the module');
 
-const css = read('frontend/css/style.css');
+const css = read('frontend/css/style.css') + '\n' + read('frontend/css/panels.css') + '\n' + read('frontend/css/modals.css');
 const block = css.slice(css.indexOf('/* ---- Drop zones'));
 assert.ok(/\.drop-zone \{[\s\S]*?backdrop-filter: blur\(16px\)/.test(block) && /-webkit-backdrop-filter: blur\(16px\)/.test(block), 'frosted glass, with the -webkit- prefix for macOS');
 assert.ok(/prefers-reduced-transparency: reduce[\s\S]*backdrop-filter: none/.test(block), 'solid for a person who asked for less transparency');

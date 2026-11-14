@@ -2,6 +2,17 @@
 (function () {
   'use strict';
 
+  // Code-level startup pacing parameters (non-user-facing tuning knobs for boot responsiveness).
+  const BOOT_POLICY = Object.freeze(Object.assign({
+    deferredScriptDelayMs: 60,
+    backgroundSyncDelayMs: 60,
+    workspaceRestoreDelayMs: 300,
+    voiceRecoveryDelayMs: 1200,
+    diskVerifyDelayMs: 1700,
+    updateCheckDelayMs: 2500,
+    agentNoticeDelayMs: 4000
+  }, (typeof window !== 'undefined' && window.__SYKI_BOOT_POLICY && typeof window.__SYKI_BOOT_POLICY === 'object') ? window.__SYKI_BOOT_POLICY : {}));
+
   // State
   let tabs = [];
   let activeTabId = null;
@@ -16864,7 +16875,7 @@ OUTPUT FORMAT:
     }
 
     // 2. Background Asynchronous Verification & Sync:
-    setTimeout(announceAgentIssues, 4000); // well after the first paint and the config sync
+    setTimeout(announceAgentIssues, BOOT_POLICY.agentNoticeDelayMs); // well after the first paint and the config sync
     const runBackgroundStartupSync = () => {
       loadPlatformCapabilities();
       (async () => {
@@ -16938,12 +16949,12 @@ OUTPUT FORMAT:
       if (sessionUnreadable && !restored) showMessage(t('sessionUnreadable'), 10000, { important: true });
 
       // The restored tabs are checked against their files once the window is up (a file may have changed while the app was closed).
-      setTimeout(verifyRestoredTabsAgainstDisk, 1700);
+      setTimeout(verifyRestoredTabsAgainstDisk, BOOT_POLICY.diskVerifyDelayMs);
 
       // Restore saved workspace folder if any (defer non-critical heavy scan well after first paint and input responsiveness)
       const savedFolder = localStorage.getItem('syki_workspace_folder');
       if (savedFolder) {
-        setTimeout(() => { loadWorkspaceFolder(savedFolder, true); }, 300);
+        setTimeout(() => { loadWorkspaceFolder(savedFolder, true); }, BOOT_POLICY.workspaceRestoreDelayMs);
       }
 
       // Background asynchronous sync of configuration
@@ -16961,17 +16972,17 @@ OUTPUT FORMAT:
       if (updateCheckAtStartup()) {
         setTimeout(() => {
           if (updateCheckAtStartup()) checkForAppUpdates();
-        }, 2500);
+        }, BOOT_POLICY.updateCheckDelayMs);
       }
       })();
     };
     if (document && document.readyState === 'loading') {
-      setTimeout(runBackgroundStartupSync, 60);
+      setTimeout(runBackgroundStartupSync, BOOT_POLICY.backgroundSyncDelayMs);
     } else {
       runBackgroundStartupSync();
     }
 
-    setTimeout(checkPendingVoiceCaches, 1200);
+    setTimeout(checkPendingVoiceCaches, BOOT_POLICY.voiceRecoveryDelayMs);
   }
 
   // Asynchronous background update checker (Zero impact on startup)
@@ -18145,7 +18156,7 @@ OUTPUT FORMAT:
       };
       document.head.appendChild(s);
     };
-    setTimeout(inject, 60);
+    setTimeout(inject, BOOT_POLICY.deferredScriptDelayMs);
   }
 
   initApp();

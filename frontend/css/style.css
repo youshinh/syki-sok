@@ -41,7 +41,7 @@ body.dark-theme {
 /* Header & Tabs. The header and the status bar are overlays that the text scrolls under: their position, height, tint and fade are in
    css/chrome.css (loaded after this sheet), and so are the paddings of the text boxes and the places panels take under and over them. */
 #header {
-  z-index: 100;
+  z-index: var(--z-chrome);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -650,7 +650,7 @@ body.tab-dock-off .tab-index.dock-live {
    with a divider and a count chip, 36px rows (the tab you are on marked with a check), the hint line under it. */
 .tab-list-panel {
   position: fixed;
-  z-index: 2000;
+  z-index: var(--z-popover);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1830,7 +1830,7 @@ span.katex-error {
   max-width: calc(100vw - 16px);
   color: var(--text-main);
   font-size: 13px;
-  z-index: 1000;
+  z-index: var(--z-modal);
   overflow: hidden;
   animation: status-ai-pop-in 0.12s ease-out;
 }
@@ -2273,7 +2273,7 @@ span.katex-error {
   box-shadow: var(--shadow-menu);
   border-radius: 4px;
   padding: 4px 0;
-  z-index: 1000;
+  z-index: var(--z-modal);
   min-width: 210px;
   max-height: calc(100vh - 16px);
   overflow-y: auto;
@@ -2357,7 +2357,7 @@ span.katex-error {
   max-height: calc(100vh - 32px);
   overflow-y: auto;
   overflow-x: hidden;
-  z-index: 1010;
+  z-index: calc(var(--z-modal) + 10);
 }
 
 .submenu-item {
@@ -2483,7 +2483,7 @@ span.katex-error {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 2000;
+  z-index: var(--z-popover);
 }
 
 .modal-backdrop.hidden {
@@ -3725,7 +3725,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   right: 0;
   margin: 0 auto;
   width: min(var(--panel-width, 560px), calc(100% - 32px));
-  z-index: 2500;
+  z-index: calc(var(--z-popover) + 500);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -4647,7 +4647,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
 /* Non-blocking Quick Snippet Selector Overlay */
 #slot-quick-selector {
   position: absolute;
-  z-index: 10000;
+  z-index: var(--z-critical);
   min-width: 280px;
   max-width: 360px;
   padding: 6px;
@@ -4665,7 +4665,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
    {{ }}-style block so Ctrl+Enter isn't the only, undiscoverable way to execute it. */
 #slot-run-button {
   position: fixed;
-  z-index: 9999;
+  z-index: calc(var(--z-critical) - 1);
   display: none;
   background: var(--accent-color);
   color: var(--text-on-accent);
@@ -4834,7 +4834,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   width: min(var(--panel-width, 560px), calc(100% - 32px));
   padding: 0;
   overflow: hidden;
-  z-index: 1000;
+  z-index: var(--z-modal);
   color: var(--text-main);
 }
 
@@ -5091,7 +5091,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   border: 1px solid var(--border-color);
   border-radius: 8px;
   box-shadow: var(--shadow-tasks);
-  z-index: 1000;
+  z-index: var(--z-modal);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -5387,95 +5387,7 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   overflow-wrap: anywhere;
 }
 
-/* --- Settings package (export / import) dialog: js/config_pack.js --- */
-#pack-modal .modal-card {
-  width: 560px;
-  max-height: 88vh;
-  display: flex;
-  flex-direction: column;
-}
-
-#pack-modal .modal-header,
-#pack-modal .modal-footer {
-  flex: none;
-}
-
-#pack-body {
-  flex: 1 1 auto;
-  min-height: 0;
-  overflow-y: auto;
-  gap: 12px;
-}
-
-#pack-modal .btn-primary:disabled,
-#pack-modal .btn-secondary:disabled,
-#pack-modal .btn-icon:disabled {
-  opacity: 0.45;
-  cursor: default;
-}
-
-/* ---- Help menu (the ? button) and About syki (js/about_dialog.js) ----
-   The same measures and parts as the other dialogs (docs/design/settings-dialog.md): 560px wide, a 48px header, 36px rows, 28px buttons,
-   section names in the bright accent over a rule, a filled main button and outlined or pale secondary ones. The body scrolls; the
-   header and footer stay. */
-.help-menu {
-  position: fixed;
-  z-index: 1500;
-  box-sizing: border-box;
-  width: 264px;
-  max-width: calc(100vw - 16px);
-  padding: 4px;
-  background: var(--bg-modal);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  box-shadow: var(--panel-shadow);
-  font-size: 13px;
-}
-.help-menu-item {
-  display: block;
-  width: 100%;
-  height: 36px;
-  padding: 0 12px;
-  border: 0;
-  border-radius: 4px;
-  background: transparent;
-  color: var(--text-main);
-  font: inherit;
-  text-align: left;
-  cursor: pointer;
-}
-.help-menu-item:hover,
-.help-menu-item:focus-visible {
-  background: var(--bg-context-hover);
-  color: var(--text-active);
-}
-.help-menu-update {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: 6px;
-  margin-bottom: 4px;
-  padding: 8px 12px 12px;
-  border-bottom: 1px solid var(--panel-line);
-}
-.help-menu-label {
-  color: var(--accent-label, var(--accent-color));
-  font-size: 12px;
-  font-weight: 600;
-}
-.help-menu-update-text {
-  font-size: 12px;
-  line-height: 1.5;
-  color: var(--text-main);
-}
-.help-menu-update .btn-secondary {
-  height: 28px;
-  padding: 0 12px;
-  font-size: 12px;
-  background: transparent;
-  border: 1px solid var(--border-button);
-}
-
+/* --- Settings package (export / import) dialog & Help menu moved to css/modals.css & css/panels.css --- */
 #about-modal .modal-card {
   display: flex;
   flex-direction: column;
@@ -6475,492 +6387,4 @@ body.is-panel-dragging * {
   }
 }
 
-/* ---- Drop zones (js/drop_zones.js): the two places a dragged file can go, shown while it is dragged over the window ----
-   Frosted glass: the page shows blurred through the two cards (the blur of the glass bars and panels above); an engine without
-   backdrop-filter, and a person who asked for less transparency, get a nearly solid card. The one under the pointer is outlined in the
-   accent colour. The two share the window in halves; "link" is gone when there is no editor to put a link in. */
-.drop-overlay {
-  position: fixed;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  z-index: 10000;
-  display: none;
-  gap: 18px;
-  padding: 28px;
-  box-sizing: border-box;
-  background: rgb(var(--page-rgb) / 0.35);
-}
-
-.drop-overlay.is-on {
-  display: flex;
-}
-
-.drop-zone {
-  flex: 1 1 0;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
-  padding: 24px;
-  text-align: center;
-  color: var(--text-main);
-  background: rgb(var(--sheet-rgb) / 0.9);
-  border: 1px solid var(--border-color);
-  border-radius: 18px;
-  transition: box-shadow 0.12s ease, transform 0.12s ease, border-color 0.12s ease;
-}
-
-.drop-zone.is-gone {
-  display: none;
-}
-
-.drop-zone.is-hot {
-  border-color: var(--accent-color);
-  box-shadow: inset 0 0 0 2px var(--accent-color);
-  transform: scale(1.01);
-}
-
-.drop-zone-icon {
-  display: block;
-  line-height: 0;
-  color: var(--text-muted);
-}
-
-.drop-zone.is-hot .drop-zone-icon {
-  color: var(--accent-color);
-}
-
-.drop-zone-title {
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.drop-zone-sub {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .drop-overlay {
-    -webkit-backdrop-filter: blur(6px);
-    backdrop-filter: blur(6px);
-  }
-
-  .drop-zone {
-    background: rgb(var(--sheet-rgb) / 0.55);
-    -webkit-backdrop-filter: blur(16px) saturate(1.2);
-    backdrop-filter: blur(16px) saturate(1.2);
-  }
-
-  .drop-zone.is-hot {
-    background: rgb(var(--sheet-rgb) / 0.7);
-  }
-}
-
-@media (max-width: 640px) {
-  .drop-overlay {
-    flex-direction: column;
-    padding: 16px;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .drop-zone {
-    transition: none;
-  }
-
-  .drop-zone.is-hot {
-    transform: none;
-  }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .drop-overlay,
-  .drop-zone {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-  }
-
-  .drop-zone,
-  .drop-zone.is-hot {
-    background: rgb(var(--sheet-rgb) / 0.97) !important;
-  }
-}
-
-/* ---- Immersive exit (js/immersive_exit.js): the round button that leaves Zen mode and full screen ----
-   It stands above the top edge, near the middle, and is lowered when the pointer goes there (the way a browser's full screen does it).
-   Frosted glass like the drop zones and the glass bars; solid for an engine without backdrop-filter and for less transparency. Shown
-   only in Zen mode and full screen (the script adds is-available); raised off screen, not display:none, so that Tab can still reach it. */
-.immersive-exit {
-  position: fixed;
-  top: 0;
-  left: 50%;
-  z-index: 9500;
-  display: none;
-  align-items: center;
-  justify-content: center;
-  width: 38px;
-  height: 38px;
-  padding: 0;
-  color: var(--text-main);
-  background: rgb(var(--sheet-rgb) / 0.92);
-  border: 1px solid var(--border-color);
-  border-radius: 50%;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transform: translate(-50%, -64px);
-  transition: transform 0.22s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.18s ease;
-}
-
-.immersive-exit.is-available {
-  display: flex;
-}
-
-.immersive-exit.is-down,
-.immersive-exit:focus-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translate(-50%, 12px);
-}
-
-.immersive-exit:hover {
-  border-color: var(--accent-color);
-  color: var(--accent-color);
-}
-
-@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
-  .immersive-exit {
-    background: rgb(var(--sheet-rgb) / 0.55);
-    -webkit-backdrop-filter: blur(12px) saturate(1.2);
-    backdrop-filter: blur(12px) saturate(1.2);
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .immersive-exit {
-    transform: translate(-50%, 12px);
-    transition: opacity 0.12s ease;
-  }
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .immersive-exit {
-    -webkit-backdrop-filter: none !important;
-    backdrop-filter: none !important;
-    background: rgb(var(--sheet-rgb) / 0.97) !important;
-  }
-}
-
-/* ---- The microphone button of the ask / rewrite / command bars (js/bar_voice.js) ---- */
-.bar-voice-btn {
-  flex: 0 0 auto;
-}
-
-.bar-voice-btn.is-recording {
-  color: var(--coral);
-  animation: bar-voice-pulse 1.2s ease-in-out infinite;
-}
-
-.bar-voice-btn.is-busy {
-  color: var(--text-muted);
-}
-
-.bar-voice-spin {
-  animation: bar-voice-turn 0.9s linear infinite;
-}
-
-.bar-voice-status {
-  padding: 2px 12px 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.bar-voice-status.is-error {
-  color: var(--coral);
-}
-
-@keyframes bar-voice-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.45; }
-}
-
-@keyframes bar-voice-turn {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .bar-voice-btn.is-recording,
-  .bar-voice-spin {
-    animation: none;
-  }
-}
-
-/* Pending Voice Recovery Bar (AAA) */
-.voice-recovery-bar {
-  position: fixed;
-  top: 40%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(640px, calc(100% - 32px));
-  z-index: 250;
-  display: flex;
-  align-items: center;
-  padding: 8px 14px;
-  background: var(--bg-modal);
-  border: 1px solid var(--accent-color);
-  border-radius: 8px;
-  box-shadow: var(--panel-shadow);
-  user-select: none;
-  animation: promptFadeIn 0.15s ease-out;
-}
-
-.voice-recovery-row {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  gap: 12px;
-}
-
-.voice-recovery-icon {
-  font-size: 16px;
-  flex-shrink: 0;
-}
-
-.voice-recovery-text {
-  flex: 1;
-  font-size: 13px;
-  color: var(--text-main);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.voice-recovery-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.btn-recovery-primary {
-  background: var(--accent-color);
-  color: var(--text-on-accent);
-  border: none;
-  padding: 4px 12px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  font-weight: 500;
-  transition: filter 0.15s ease;
-}
-
-.btn-recovery-primary:hover {
-  filter: brightness(1.12);
-}
-
-.btn-recovery-secondary {
-  background: transparent;
-  color: var(--text-muted);
-  border: 1px solid var(--border-color);
-  padding: 4px 10px;
-  border-radius: 4px;
-  font-size: 12px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-}
-
-.btn-recovery-secondary:hover {
-  background: var(--bg-hover-subtle);
-  color: var(--text-main);
-}
-
-.btn-recovery-close {
-  background: transparent;
-  color: var(--text-muted);
-  border: none;
-  font-size: 14px;
-  cursor: pointer;
-  padding: 4px 6px;
-  border-radius: 4px;
-  line-height: 1;
-}
-
-.btn-recovery-close:hover {
-  background: var(--bg-hover-subtle);
-  color: var(--text-main);
-}
-
-
-/* Settings v1.2.0: cross-tab search, section cards, status badges, and AI override folds */
-.settings-search-bar {
-  padding: 8px 24px 10px;
-  border-bottom: 1px solid var(--panel-line);
-  flex-shrink: 0;
-}
-
-#cfg-settings-search {
-  width: 100%;
-  height: 32px;
-  box-sizing: border-box;
-  background: var(--bg-input);
-  color: var(--text-main);
-  border: 1px solid var(--border-input);
-  border-radius: 6px;
-  padding: 0 12px;
-  font-size: 12.5px;
-}
-
-#cfg-settings-search:focus {
-  outline: none;
-  border-color: var(--accent-color);
-  box-shadow: 0 0 0 2px var(--ring-focus-input);
-}
-
-#settings-modal details.settings-section {
-  background: var(--veil-03);
-  border: 1px solid var(--panel-line);
-  border-radius: 8px;
-  padding: 10px 14px;
-  margin-top: 10px;
-  transition: border-color 0.15s ease, background 0.15s ease;
-}
-
-#settings-modal details.settings-section[open] {
-  background: var(--veil-04);
-}
-
-#settings-modal details.settings-section:not([open]):hover {
-  border-color: var(--border-color);
-  background: var(--veil-05);
-}
-
-#settings-modal details.settings-section > summary .settings-section-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  width: 100%;
-  border-bottom-color: transparent;
-  padding-bottom: 0;
-}
-
-#settings-modal details.settings-section[open] > summary .settings-section-header {
-  border-bottom: 1px solid var(--panel-line);
-  padding-bottom: 8px;
-}
-
-#settings-modal details.settings-section > summary .settings-section-header h4 {
-  flex: 1;
-  min-width: 0;
-  margin: 0;
-}
-
-.section-status-badge {
-  font-size: 10.5px;
-  font-weight: 600;
-  line-height: 1.4;
-  padding: 1px 8px;
-  border-radius: 10px;
-  background: var(--veil-08);
-  color: var(--text-muted);
-  white-space: nowrap;
-  flex-shrink: 0;
-}
-
-.section-status-badge.is-on {
-  background: rgb(var(--accent-rgb) / 0.18);
-  color: var(--accent-label);
-}
-
-.section-status-badge.is-off {
-  background: var(--veil-06);
-  color: var(--text-muted);
-}
-
-details.ai-override-box {
-  margin-top: 4px;
-  border: 1px dashed var(--border-color);
-  border-radius: 6px;
-  padding: 6px 10px;
-  background: var(--veil-03);
-}
-
-details.ai-override-box > summary {
-  cursor: pointer;
-  list-style: none;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  font-size: 12px;
-  font-weight: 500;
-  color: var(--text-muted);
-  user-select: none;
-}
-
-details.ai-override-box > summary::-webkit-details-marker {
-  display: none;
-}
-
-details.ai-override-box > summary::before {
-  content: "▸";
-  font-size: 11px;
-  transition: transform 0.15s ease;
-  margin-right: 4px;
-}
-
-details.ai-override-box[open] > summary::before {
-  transform: rotate(90deg);
-}
-
-details.ai-override-box > summary > span:first-child {
-  flex: 1;
-}
-
-.ai-override-badge {
-  font-size: 10.5px;
-  font-weight: 600;
-  padding: 1px 7px;
-  border-radius: 10px;
-  background: var(--veil-08);
-  color: var(--text-muted);
-}
-
-.ai-override-badge.is-custom {
-  background: rgb(var(--accent-rgb) / 0.18);
-  color: var(--accent-label);
-}
-
-.ai-override-body {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  margin-top: 10px;
-  padding-top: 8px;
-  border-top: 1px solid var(--panel-line);
-}
-
-.settings-tab-btn[data-match-count]::after {
-  content: attr(data-match-count);
-  display: inline-block;
-  margin-left: 6px;
-  padding: 0 6px;
-  font-size: 10px;
-  line-height: 1.5;
-  border-radius: 9px;
-  background: rgb(var(--accent-rgb) / 0.22);
-  color: var(--accent-label);
-}
-
-.settings-search-miss {
-  display: none !important;
-}
-
-.settings-search-hit {
-  border-left: 2px solid var(--accent-color);
-  padding-left: 8px;
-}
+/* ---- Drop zones, Immersive exit, Bar voice, Voice recovery, Settings v1.2.0 moved to css/modals.css & css/panels.css ---- */

@@ -73,7 +73,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  z-index: 100;
+  z-index: var(--z-chrome);
   height: var(--ov-bottom);
   background: rgb(var(--bar-bottom-rgb) / var(--bar-a));
 }

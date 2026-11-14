@@ -67,7 +67,7 @@ assert.ok(/classList\.contains\('zen-mode'\) \|\| document\.body\.classList\.con
 assert.ok(/if \(document\.body\.classList\.contains\('is-fullscreen'\)\) toggleFullscreen\(\);\s*if \(document\.body\.classList\.contains\('zen-mode'\)\) toggleZenMode\(\);/.test(app), 'it leaves whichever is on');
 assert.ok(/js\/immersive_exit\.js/.test(read('frontend/index.html')), 'the page loads it');
 
-const css = read('frontend/css/style.css');
+const css = read('frontend/css/style.css') + '\n' + read('frontend/css/panels.css') + '\n' + read('frontend/css/modals.css');
 const block = css.slice(css.indexOf('/* ---- Immersive exit'));
 assert.ok(/transform: translate\(-50%, -64px\)/.test(block) && /translate\(-50%, 12px\)/.test(block) && /cubic-bezier/.test(block), 'it lowers from above the top edge');
 assert.ok(/-webkit-backdrop-filter: blur\(12px\)/.test(block) && /prefers-reduced-transparency/.test(block) && /prefers-reduced-motion/.test(block), 'glass, with the fallbacks');
