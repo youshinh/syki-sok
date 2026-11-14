@@ -90,13 +90,14 @@
   // ---- DOM ----------------------------------------------------------------------------------------------------------------------
 
   // opts: { strips: [{ el, listEl, footEl?, scrollEl? }], hitWidth (px, or a function giving it), fullWidth(): px, strength?(): 20..100 (the share of the full magnification,
-  // default 100), instant?(): true when the system asks for less motion: the tabs then take their size at once instead of easing to it }.
+  // default 100), instant?(): true when the system asks for less motion: the tabs then take their size at once instead of easing to it,
+  // hideDelay?(): ms to wait after the pointer leaves before collapsing (default 0) }.
   // Returns { destroy, enter }.
   function create(opts) {
     const win = global;
     const states = opts.strips.map((s) => ({
       s, hover: false, h: 0, y: 0, m: new WeakMap(), written: new WeakMap(), styled: new Set(), live: false,
-      centres: null, count: -1, prevTs: 0
+      centres: null, count: -1, prevTs: 0, hideTimer: 0
     }));
     // The thin width (Settings can change it) and the open width, read when a pointer arrives: a style read inside a frame would flush the style every frame.
     let hit = 0;
@@ -195,7 +196,30 @@
 
     function kick() { if (!raf) raf = win.requestAnimationFrame(frame); }
 
+    function cancelHide(st) {
+      if (st.hideTimer) { win.clearTimeout(st.hideTimer); st.hideTimer = 0; }
+    }
+
+    function scheduleHide(st) {
+      if (!st.hover) return;
+      const raw = opts.hideDelay ? Number(opts.hideDelay()) : 0;
+      const delay = isFinite(raw) && raw > 0 ? raw : 0;
+      if (delay <= 0) {
+        cancelHide(st);
+        st.hover = false;
+        kick();
+        return;
+      }
+      if (st.hideTimer) return;
+      st.hideTimer = win.setTimeout(() => {
+        st.hideTimer = 0;
+        st.hover = false;
+        kick();
+      }, delay);
+    }
+
     function begin(st, e) {
+      cancelHide(st);
       st.hover = true;
       st.y = e.clientY;
       // The loop sleeps when everything has settled. The first frame after it wakes is a normal frame, not one that covers the whole time asleep:
@@ -210,7 +234,7 @@
     states.forEach((st) => {
       on(st.s.el, 'pointerenter', (e) => { if (e.pointerType !== 'touch') begin(st, e); });
       on(st.s.el, 'pointermove', (e) => { if (e.pointerType !== 'touch') begin(st, e); });
-      on(st.s.el, 'pointerleave', () => { st.hover = false; kick(); });
+      on(st.s.el, 'pointerleave', () => { scheduleHide(st); });
       // The column scrolling (the wheel) moves every row: measure again at the next frame.
       const scroller = st.s.scrollEl || st.s.listEl.parentNode;
       if (scroller) on(scroller, 'scroll', () => { st.centres = null; kick(); }, { passive: true });
@@ -226,8 +250,7 @@
         const pad = 8;
         if (e.clientX < rect.left - pad || e.clientX > rect.right + pad ||
             e.clientY < rect.top - pad || e.clientY > rect.bottom + pad) {
-          st.hover = false;
-          kick();
+          scheduleHide(st);
         }
       });
     }, { passive: true });
@@ -250,7 +273,7 @@
         listeners.forEach(([el, type, fn, o]) => el.removeEventListener(type, fn, o));
         if (raf) win.cancelAnimationFrame(raf);
         raf = 0;
-        states.forEach(clear);
+        states.forEach((st) => { cancelHide(st); clear(st); });
       }
     };
   }

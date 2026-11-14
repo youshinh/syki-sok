@@ -221,7 +221,13 @@
       <!-- Pending Voice Recovery Bar (AAA) -->
       <div id="voice-recovery-bar" class="voice-recovery-bar hidden" role="region" aria-label="未処理録音の復元">
         <div class="voice-recovery-row">
-          <span class="voice-recovery-icon">🎙️</span>
+          <span class="voice-recovery-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="9" y="2" width="6" height="12" rx="3"></rect>
+              <path d="M5 10a7 7 0 0 0 14 0"></path>
+              <line x1="12" y1="19" x2="12" y2="22"></line>
+            </svg>
+          </span>
           <span id="voice-recovery-text" class="voice-recovery-text">未処理の録音があります</span>
           <div class="voice-recovery-actions">
             <button type="button" id="btn-voice-recovery-transcribe" class="btn-recovery-primary">文字起こし</button>
@@ -871,6 +877,10 @@
             <div class="settings-subhead" data-i18n="subheadIndexTabs">Index tabs</div>
             <div class="form-group inline-group" style="margin-top: 10px;">
               <label>
+                <input type="checkbox" id="cfg-tab-bar-top"> <span data-i18n="tabBarTopLabel">Show tabs as a top bar (experimental)</span>
+              </label>
+              <small data-i18n="tabBarTopHint">Places tabs horizontally below the header instead of at the window edge. Uncheck to restore the side edge tabs.</small>
+              <label style="display: flex; align-items: center; gap: 8px; margin-top: 8px;">
                 <input type="checkbox" id="cfg-tab-dock" checked> <span data-i18n="tabDockLabel">Magnify the index tabs under the pointer</span>
               </label>
               <small data-i18n="tabDockHint">The tabs at the window's edge come out wide enough to read when the pointer reaches them, and the one under the pointer comes out the furthest, like the Mac Dock. Off: they open all at once.</small>
@@ -889,6 +899,12 @@
                 <output id="cfg-tab-strip-width-value" for="cfg-tab-strip-width">24px</output>
               </div>
               <small data-i18n="tabStripWidthHint">How wide the strip at the window's edge is while it is closed. The narrowest, 12px, is the old width; a wider one is easier to reach with the pointer, and covers the line numbers.</small>
+              <div class="settings-slider-row">
+                <label for="cfg-tab-hide-delay" data-i18n="tabHideDelayLabel">Retract delay</label>
+                <input type="range" id="cfg-tab-hide-delay" min="0" max="1500" step="50" value="300">
+                <output id="cfg-tab-hide-delay-value" for="cfg-tab-hide-delay">300ms</output>
+              </div>
+              <small data-i18n="tabHideDelayHint">How long the index tabs stay open after the pointer leaves them. A longer delay prevents accidental closing when moving the mouse.</small>
             </div>
             <div class="settings-subhead" data-i18n="subheadStartup">Language &amp; start-up</div>
             <div class="form-group">

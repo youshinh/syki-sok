@@ -211,6 +211,8 @@
       setChecked('cfg-inherit-to-all', config.general ? (config.general.inheritTextConnection !== false) : true);
       setVal('cfg-rewrite-history-dir', (config.general && config.general.rewriteHistoryDir) || 'history');
 
+      const tabBarTopEl = byId('cfg-tab-bar-top');
+      if (tabBarTopEl) tabBarTopEl.checked = !!(config.general && config.general.tabBarTop);
       const tabDockEl = byId('cfg-tab-dock');
       if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
       const tabStripWidthEl = byId('cfg-tab-strip-width');
@@ -222,6 +224,19 @@
         if (!tabStripWidthEl.dataset.wired) {
           tabStripWidthEl.dataset.wired = '1';
           tabStripWidthEl.addEventListener('input', showWidth);
+        }
+      }
+      const tabHideDelayEl = byId('cfg-tab-hide-delay');
+      if (tabHideDelayEl) {
+        const rawDelay = config.general && config.general.tabHideDelayMs;
+        const delay = typeof rawDelay === 'number' && isFinite(rawDelay) ? rawDelay : 300;
+        tabHideDelayEl.value = String(Math.max(0, Math.min(1500, Math.round(delay / 50) * 50)));
+        const delayOut = byId('cfg-tab-hide-delay-value');
+        const showDelay = () => { if (delayOut) delayOut.textContent = tabHideDelayEl.value + 'ms'; };
+        showDelay();
+        if (!tabHideDelayEl.dataset.wired) {
+          tabHideDelayEl.dataset.wired = '1';
+          tabHideDelayEl.addEventListener('input', showDelay);
         }
       }
       const tabDockOsEl = byId('cfg-tab-dock-follow-os');

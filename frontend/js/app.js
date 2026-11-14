@@ -152,10 +152,12 @@
       imeGuardianReverse: true,
       aiCorrection: true,
       cursorAura: true,
+      tabBarTop: false, // experimental: show tabs horizontally under the header instead of at the window edge
       tabDock: true,
       tabDockFollowOs: false, // true: the system's "reduce motion" makes the magnification switch at once instead of easing
       tabStripWidth: 24, // 12..48 (px): the width of the fill of a collapsed index tab strip; its hit area is half as wide again (css --tab-fill-w, --tab-hit-w). The layout does not move with it: a wider strip covers the line numbers
       tabDockStrength: 100, // 20..100: the share of the full magnification (js/tab_dock.js)
+      tabHideDelayMs: 300, // 0..1500 (ms): how long the index tabs stay open after the pointer leaves them
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
@@ -228,7 +230,7 @@
   // in the same order; each marks the note its own page has open, and a click on a strip changes that strip's page (handleTabClick). Every
   // strip has elements of its own: a note that is open in both pages has a tab in each. (Declared here, early, like tabEls.)
   const tabStrips = [
-    { side: 'left', pane: 'primary', root: document.getElementById('tab-index-left'), listEl: document.getElementById('tabs-list'), els: tabEls, selected: () => activeTabId },
+    { side: 'left', pane: 'primary', root: document.getElementById('tab-index-left'), listEl: document.getElementById('tabs-list'), els: tabEls, selected: () => (document.body.classList.contains('tabs-top') && isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary' ? secondaryTabId : activeTabId) },
     { side: 'right', pane: 'secondary', root: document.getElementById('tab-index-right'), listEl: document.getElementById('tabs-list-right'), els: new Map(), selected: () => secondaryTabId }
   ];
   let stripMode = ''; // what the workspace says now: 'left' | 'both' | 'none' (TabStrip.stripsFor); '' before the first draw
@@ -550,6 +552,12 @@
     }
   }
 
+  function applyTabBarTop() {
+    const on = !!(config.general && config.general.tabBarTop);
+    document.body.classList.toggle('tabs-top', on);
+    if (on && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
+  }
+
   function applyTabDock() {
     const off = !!(config.general && config.general.tabDock === false);
     document.body.classList.toggle('tab-dock-off', off);
@@ -558,6 +566,7 @@
 
   function applyTheme() {
     appearancePreviewing = false;
+    applyTabBarTop();
     applyTabDock();
     applyTabStripWidth();
     if (window.Appearance) {
@@ -2316,18 +2325,22 @@
   }
 
   function updatePaneFocusClasses() {
+    let changed = false;
     if (editorPane) {
       const wantPrimary = !isSplitMode || activePane === 'primary';
       if (editorPane.classList.contains('pane-focused') !== wantPrimary) {
         editorPane.classList.toggle('pane-focused', wantPrimary);
+        changed = true;
       }
     }
     if (secondaryPane) {
       const wantSecondary = isSplitMode && activePane === 'secondary';
       if (secondaryPane.classList.contains('pane-focused') !== wantSecondary) {
         secondaryPane.classList.toggle('pane-focused', wantSecondary);
+        changed = true;
       }
     }
+    if (changed && document.body.classList.contains('tabs-top') && typeof drawTabs === 'function') drawTabs();
   }
 
   function selectTab(tabId) {
@@ -2995,7 +3008,7 @@
         }
       } else if (apply) {
         // Normal click without drag threshold
-        handleTabClick(tabId, e.altKey, strip.pane);
+        handleTabClick(tabId, e.altKey, document.body.classList.contains('tabs-top') ? undefined : strip.pane);
       }
     };
     const onPointerUp = () => finish(true);
@@ -3033,7 +3046,7 @@
       if (id === null || e.ctrlKey || e.metaKey) return;
       if (e.key === 'Enter' || e.key === ' ') {
         e.preventDefault();
-        handleTabClick(id, e.altKey, strip.pane);
+        handleTabClick(id, e.altKey, document.body.classList.contains('tabs-top') ? undefined : strip.pane);
         return;
       }
       if (e.altKey) return;
@@ -7169,7 +7182,7 @@
     const reduced = () => !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
     strips.forEach((el) => {
       el.addEventListener('pointerenter', (e) => {
-        if (tabDock || tabDockLoading || isTabsPinned || e.pointerType === 'touch') return;
+        if (tabDock || tabDockLoading || isTabsPinned || (config.general && config.general.tabBarTop) || e.pointerType === 'touch') return;
         if (config.general && config.general.tabDock === false) return;
         tabDockLoading = true;
         loadScript('js/tab_dock.js?v=1.0.1').then(() => {
@@ -7181,12 +7194,25 @@
             hitWidth: () => parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-hit-w')) || 36,
             strength: () => (config.general && config.general.tabDockStrength) || 100,
             instant: () => !!(config.general && config.general.tabDockFollowOs) && reduced(),
+            hideDelay: () => {
+              const v = config.general && config.general.tabHideDelayMs;
+              return typeof v === 'number' && isFinite(v) ? v : 300;
+            },
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
           });
           tabDock.enter(el, e);
         }, (err) => { tabDockLoading = false; console.warn('tab_dock.js did not load:', err); });
       });
     });
+  }
+
+  const tabsScrollTopEl = document.getElementById('tabs-scroll');
+  if (tabsScrollTopEl) {
+    tabsScrollTopEl.addEventListener('wheel', (e) => {
+      if (!document.body.classList.contains('tabs-top') || !e.deltaY) return;
+      tabsScrollTopEl.scrollLeft += e.deltaY;
+      e.preventDefault();
+    }, { passive: false });
   }
 
   // The width of the pinned strip, dragged at its edge: --tab-pinned-w on the page (css/style.css), kept in the browser's storage as a
@@ -15367,6 +15393,11 @@ OUTPUT FORMAT:
     if (saveRewriteHistDirEl) {
       config.general.rewriteHistoryDir = saveRewriteHistDirEl.value.trim() || 'history';
     }
+    const saveTabBarTopEl = document.getElementById('cfg-tab-bar-top');
+    if (saveTabBarTopEl) {
+      config.general.tabBarTop = saveTabBarTopEl.checked;
+      applyTabBarTop();
+    }
     const saveTabDockEl = document.getElementById('cfg-tab-dock');
     if (saveTabDockEl) {
       config.general.tabDock = saveTabDockEl.checked;
@@ -15379,6 +15410,11 @@ OUTPUT FORMAT:
       if (saveOsEl) config.general.tabDockFollowOs = saveOsEl.checked;
       const saveStrengthEl = document.getElementById('cfg-tab-dock-strength');
       if (saveStrengthEl) config.general.tabDockStrength = Math.max(20, Math.min(100, parseInt(saveStrengthEl.value, 10) || 100));
+      const saveHideDelayEl = document.getElementById('cfg-tab-hide-delay');
+      if (saveHideDelayEl) {
+        const v = parseInt(saveHideDelayEl.value, 10);
+        config.general.tabHideDelayMs = Math.max(0, Math.min(1500, isFinite(v) ? v : 300));
+      }
       applyTabDock();
     }
     const saveRewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
