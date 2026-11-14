@@ -43,13 +43,26 @@ const (
 // every statement of fact ends with the numbers of its sources in square brackets, no URL, no file name, and a few quotations copied
 // word for word, one per line after "> ".
 func BuildPrompt(query string, sources []Source, lang string) string {
+	return BuildPromptWithLength(query, sources, lang, "standard")
+}
+
+// BuildPromptWithLength builds the deep-search prompt with a target answer length:
+// "short", "standard" (default), or "long".
+func BuildPromptWithLength(query string, sources []Source, lang, length string) string {
 	answerIn, evidence := "English", evidenceEN
 	if lang == "ja" {
 		answerIn, evidence = "Japanese", evidenceJA
 	}
 	var sb strings.Builder
 	sb.WriteString("You answer a question using ONLY the user's own notes, given below as numbered sources.\n\nRules:\n")
-	fmt.Fprintf(&sb, "1. Write the answer in %s. Be concise and concrete.\n", answerIn)
+	switch strings.ToLower(strings.TrimSpace(length)) {
+	case "short":
+		fmt.Fprintf(&sb, "1. Write the answer in %s. Be very concise and summarize only the core points briefly (around 200-400 characters).\n", answerIn)
+	case "long":
+		fmt.Fprintf(&sb, "1. Write the answer in %s. Provide a thorough, detailed, and well-structured explanation covering all relevant facts, background context, nuances, and chronological details found in the sources.\n", answerIn)
+	default:
+		fmt.Fprintf(&sb, "1. Write the answer in %s. Be concise and concrete.\n", answerIn)
+	}
 	sb.WriteString("2. End every sentence that states a fact with the number of the source it comes from, in square brackets: [1] or [2][5]. " +
 		"Use only the numbers of the sources below. Never write a URL, a file name or a path. " +
 		"Cite each sentence with the sources of THAT sentence only, not all of them at the end; the shape (the numbers are only an illustration): " +

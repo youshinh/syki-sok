@@ -2102,6 +2102,16 @@
             <button type="button" id="scraps-mode-meaning" class="scraps-mode-btn" aria-pressed="false" data-i18n="scrapsModeMeaning" data-i18n-title="scrapsModeMeaningTitle" title="Find notes close in meaning, even when they use other words">Meaning</button>
           </div>
           <input type="text" id="scraps-search-input" class="quick-pick-input" placeholder="Search daily scraps in milliseconds... (Ctrl+Shift+F, Esc to close)" data-i18n-placeholder="scrapsSearchPlaceholder" spellcheck="false">
+          <select id="scraps-deep-model" class="scraps-deep-model hidden" aria-label="Deep search model" title="Model for deep search"></select>
+          <div id="scraps-deep-length" class="scraps-mode scraps-deep-length hidden" role="group" aria-label="Answer length">
+            <button type="button" class="scraps-mode-btn" data-length="short" aria-pressed="false" data-i18n="deepSearchLenShort">Short</button>
+            <button type="button" class="scraps-mode-btn active" data-length="standard" aria-pressed="true" data-i18n="deepSearchLenStandard">Standard</button>
+            <button type="button" class="scraps-mode-btn" data-length="long" aria-pressed="false" data-i18n="deepSearchLenLong">Long</button>
+          </div>
+          <label id="scraps-deep-skip-wrap" class="scraps-deep-skip-wrap hidden" title="Skip confirmation dialog when destination is already approved">
+            <input type="checkbox" id="chk-deep-skip-confirm">
+            <span data-i18n="deepSearchSkipConfirm">Skip confirm</span>
+          </label>
           <button type="button" id="btn-scraps-deep" class="scraps-deep-btn hidden" data-i18n="deepSearchButton">Deep search</button>
         </div>
         <!-- Filter (a period and tags that narrow every search): shown when the backend can list the tags; the area is built and the tags are asked

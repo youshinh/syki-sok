@@ -67,6 +67,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_tagEditAsync", app.TagEditAsync)
 	_ = w.Bind("backend_deepSearchPlanAsync", app.DeepSearchPlanAsync)
 	_ = w.Bind("backend_deepSearchRunAsync", app.DeepSearchRunAsync)
+	_ = w.Bind("backend_deepSearchRunWithModelAsync", app.DeepSearchRunWithModelAsync)
 	_ = w.Bind("backend_cancelDeepSearch", app.CancelDeepSearch)
 	_ = w.Bind("backend_lessonPlanAsync", app.LessonPlanAsync)
 	_ = w.Bind("backend_lessonRunAsync", app.LessonRunAsync)

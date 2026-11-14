@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"syki-sok/pkg/cli"
@@ -133,6 +134,73 @@ func (a *App) SemanticUpdateAsync(reqID, sectionJSON string, rebuild, yes bool) 
 		}
 		a.dispatchDeepSearchResult(reqID, res, nil)
 	}()
+}
+
+// StartIdleSemanticIndexer periodically checks for unindexed scrap files when the app
+// is idle (not recording a meeting) and updates the semantic index silently.
+func (a *App) StartIdleSemanticIndexer() {
+	go func() {
+		const initialDelay = 25 * time.Second
+		const pollInterval = 3 * time.Minute
+		timer := time.NewTimer(initialDelay)
+		defer timer.Stop()
+		for {
+			<-timer.C
+			if atomic.LoadInt32(&a.isDestroyed) != 0 {
+				return
+			}
+			a.runIdleSemanticUpdateOnce()
+			timer.Reset(pollInterval)
+		}
+	}()
+}
+
+func (a *App) runIdleSemanticUpdateOnce() {
+	if atomic.LoadInt32(&a.isDestroyed) != 0 || isMeetingRecordingActive() {
+		return
+	}
+	sc, scrapDir, idxDir := cli.SemanticConfigWith(nil)
+	if !sc.Enabled || !sc.ConsentGiven() {
+		return
+	}
+	if llm.IsOllamaURL(sc.Model.BaseURL) && !llm.CheckOllamaHealth(sc.Model.BaseURL) {
+		return
+	}
+	pend, err := semindex.PendingFiles(scrapDir, idxDir)
+	if err != nil || len(pend) == 0 {
+		return
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	semanticRun.mu.Lock()
+	if semanticRun.cancel != nil {
+		semanticRun.mu.Unlock()
+		return
+	}
+	semanticRun.cancel = cancel
+	semanticRun.mu.Unlock()
+	defer func() {
+		semanticRun.mu.Lock()
+		semanticRun.cancel = nil
+		semanticRun.mu.Unlock()
+		a.dispatchEval("if (window.__onSemanticIdleProgress) { window.__onSemanticIdleProgress({ running: false }); }")
+	}()
+
+	var last time.Time
+	progress := func(p semindex.Progress) {
+		if isMeetingRecordingActive() || atomic.LoadInt32(&a.isDestroyed) != 0 {
+			cancel()
+			return
+		}
+		now := time.Now()
+		if now.Sub(last) < semanticProgressEvery && p.FilesDone < p.FilesTotal {
+			return
+		}
+		last = now
+		a.dispatchEval(fmt.Sprintf("if (window.__semanticProgress) { window.__semanticProgress(%d, %d, %d, %d); } if (window.__onSemanticIdleProgress) { window.__onSemanticIdleProgress({ running: true, filesDone: %d, filesTotal: %d, textsEmbedded: %d, textsTotal: %d }); }", p.FilesDone, p.FilesTotal, p.TextsEmbedded, p.TextsTotal, p.FilesDone, p.FilesTotal, p.TextsEmbedded, p.TextsTotal))
+	}
+	_, _ = cli.SemanticIndexRun(ctx, nil, cli.IndexRun{Progress: progress})
 }
 
 // CancelSemanticUpdate stops the run in progress; it tells whether one was going.

@@ -4341,6 +4341,39 @@ details.settings-section:not([open]) > summary .settings-section-header { margin
   opacity: 0.6;
   cursor: default;
 }
+.scraps-deep-model {
+  flex-shrink: 0;
+  height: 28px;
+  max-width: 170px;
+  padding: 0 6px;
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-header);
+  color: var(--text-main);
+  font: inherit;
+  font-size: 11px;
+}
+.scraps-deep-skip-wrap {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+}
+.scraps-deep-skip-wrap input {
+  margin: 0;
+}
+.scraps-deep-length {
+  flex-shrink: 0;
+}
+.scraps-deep-length .scraps-mode-btn {
+  padding: 2px 7px;
+  font-size: 11px;
+}
 
 .scraps-search-status {
   display: flex;

@@ -12265,13 +12265,138 @@ OUTPUT FORMAT:
 
   // ---- Deep search: excerpts of the hits go to the AI, the answer with source links goes into a NEW note --------------------------
 
+  function populateDeepSearchModelSelect() {
+    const sel = document.getElementById('scraps-deep-model');
+    if (!sel) return;
+    const baseModel = (config.text && config.text.model) ? String(config.text.model).trim() : '';
+    const baseUrl = (config.text && config.text.baseUrl) ? String(config.text.baseUrl).trim() : '';
+    let prov = 'gemini';
+    if (baseUrl.includes('openrouter.ai')) prov = 'openrouter';
+    else if (baseUrl.includes('openai.com')) prov = 'openai';
+    else if (baseUrl.includes('11434')) prov = 'ollama';
+    else if (baseUrl.includes('1234')) prov = 'lmstudio';
+    else if (baseUrl.includes('groq.com')) prov = 'groq';
+    else if (baseUrl.includes('deepseek.com')) prov = 'deepseek';
+    else if (baseUrl.includes('dashscope')) prov = 'qwen';
+
+    const opts = [];
+    const seen = new Set();
+    const addOpt = (val, label) => {
+      if (seen.has(val)) return;
+      seen.add(val);
+      opts.push({ val, label });
+    };
+    addOpt('', baseModel ? `Default (${baseModel})` : 'Default (Settings)');
+    const preset = (typeof TEXT_PROVIDER_PRESETS !== 'undefined' && TEXT_PROVIDER_PRESETS[prov]) ? TEXT_PROVIDER_PRESETS[prov] : null;
+    if (preset && Array.isArray(preset.models)) {
+      preset.models.forEach((m) => addOpt(m.id, m.id));
+    }
+    if (prov === 'gemini' || !baseUrl) {
+      addOpt('gemini-4-argon', 'gemini-4-argon');
+      addOpt('gemini-4-hydrogen', 'gemini-4-hydrogen');
+      addOpt('gemini-3.8-flash', 'gemini-3.8-flash');
+    }
+
+    let saved = '';
+    try { saved = localStorage.getItem('syki_deep_model') || ''; } catch (_) {}
+    if (saved && !seen.has(saved)) addOpt(saved, saved);
+
+    sel.textContent = '';
+    opts.forEach((o) => {
+      const opt = document.createElement('option');
+      opt.value = o.val;
+      opt.textContent = o.label;
+      sel.appendChild(opt);
+    });
+    sel.value = saved;
+    if (!sel.dataset.wired) {
+      sel.dataset.wired = '1';
+      sel.addEventListener('change', () => {
+        try { localStorage.setItem('syki_deep_model', sel.value || ''); } catch (_) {}
+      });
+    }
+  }
+
+  function getSelectedDeepModel() {
+    const sel = document.getElementById('scraps-deep-model');
+    return sel ? String(sel.value || '').trim() : '';
+  }
+
+  function isDeepSkipConfirmEnabled() {
+    const chk = document.getElementById('chk-deep-skip-confirm');
+    return !!(chk && chk.checked);
+  }
+
+  function getSelectedDeepLength() {
+    const grp = document.getElementById('scraps-deep-length');
+    if (!grp) return 'standard';
+    const active = grp.querySelector('.scraps-mode-btn.active');
+    const v = active ? String(active.getAttribute('data-length') || '') : '';
+    return (v === 'short' || v === 'long') ? v : 'standard';
+  }
+
+  function syncDeepLengthButtons() {
+    const grp = document.getElementById('scraps-deep-length');
+    if (!grp) return;
+    let saved = 'standard';
+    try {
+      const s = localStorage.getItem('syki_deep_length');
+      if (s === 'short' || s === 'standard' || s === 'long') saved = s;
+    } catch (_) {}
+    const btns = grp.querySelectorAll('.scraps-mode-btn[data-length]');
+    btns.forEach((b) => {
+      const on = b.getAttribute('data-length') === saved;
+      b.classList.toggle('active', on);
+      b.setAttribute('aria-pressed', on ? 'true' : 'false');
+    });
+    if (!grp.dataset.wired) {
+      grp.dataset.wired = '1';
+      btns.forEach((b) => {
+        b.addEventListener('click', () => {
+          const val = b.getAttribute('data-length') || 'standard';
+          try { localStorage.setItem('syki_deep_length', val); } catch (_) {}
+          btns.forEach((x) => {
+            const on = x === b;
+            x.classList.toggle('active', on);
+            x.setAttribute('aria-pressed', on ? 'true' : 'false');
+          });
+        });
+      });
+    }
+  }
+
   // The button is for a fresh meaning list that has at least one hit.
   function updateScrapsDeepButton() {
     const btn = document.getElementById('btn-scraps-deep');
     if (!btn) return;
-    btn.classList.toggle('hidden', !(scrapsMeaningMode() && !scrapsSearchStale && scrapsSearchFlattened.length > 0));
+    const visible = !!(scrapsMeaningMode() && !scrapsSearchStale && scrapsSearchFlattened.length > 0);
+    btn.classList.toggle('hidden', !visible);
     btn.disabled = deepSearchPlanning;
     btn.textContent = t(deepSearchPlanning ? 'deepSearchPreparing' : 'deepSearchButton');
+
+    const sel = document.getElementById('scraps-deep-model');
+    if (sel) {
+      if (visible) populateDeepSearchModelSelect();
+      sel.classList.toggle('hidden', !visible);
+      sel.disabled = deepSearchPlanning;
+    }
+    const lenGrp = document.getElementById('scraps-deep-length');
+    if (lenGrp) {
+      if (visible) syncDeepLengthButtons();
+      lenGrp.classList.toggle('hidden', !visible);
+    }
+    const skipWrap = document.getElementById('scraps-deep-skip-wrap');
+    const skipChk = document.getElementById('chk-deep-skip-confirm');
+    if (skipWrap && skipChk) {
+      if (!skipChk.dataset.wired) {
+        skipChk.dataset.wired = '1';
+        try { skipChk.checked = localStorage.getItem('syki_deep_skip_confirm') === '1'; } catch (_) {}
+        skipChk.addEventListener('change', () => {
+          try { localStorage.setItem('syki_deep_skip_confirm', skipChk.checked ? '1' : '0'); } catch (_) {}
+        });
+      }
+      skipWrap.classList.toggle('hidden', !visible);
+    }
   }
 
   // Whatever is being prepared is no longer wanted (the panel closed, the mode or the text changed): its answer will be dropped.
@@ -12318,7 +12443,16 @@ OUTPUT FORMAT:
       setScrapsSearchStatus(t('deepSearchNoSources'));
       return;
     }
-    showDeepSearchDialog(got.plan, q, false, limit);
+    const selectedModel = getSelectedDeepModel();
+    const selectedLength = getSelectedDeepLength();
+    const dest = got.plan.destination || {};
+    const cloud = dest.local !== true;
+    const alreadyApproved = !cloud || dest.consent_given === true;
+    if (isDeepSkipConfirmEnabled() && alreadyApproved) {
+      runDeepSearch(got.plan, q, limit, selectedModel, selectedLength);
+      return;
+    }
+    showDeepSearchDialog(got.plan, q, false, limit, selectedModel, selectedLength);
   }
 
   // The plan from the backend: { plan } or { failure: the reason in one line }.
@@ -12341,10 +12475,11 @@ OUTPUT FORMAT:
 
   // The confirmation: how many notes and characters, to which model and host, what was left out, the sources (folded), and for a
   // cloud host that is not allowed yet the question itself. Cancel has the focus; an Enter right after it appeared is ignored.
-  function showDeepSearchDialog(plan, query, forceConsent, limit) {
+  function showDeepSearchDialog(plan, query, forceConsent, limit, modelOverride, lengthOverride) {
     const modal = document.getElementById('deep-search-modal');
     if (!modal) return;
     const dest = plan.destination || {};
+    const effectiveModel = String(modelOverride || dest.model || '');
     const stats = plan.stats || {};
     const sources = plan.sources || [];
     const ja = (config.general && config.general.language) === 'ja';
@@ -12357,8 +12492,8 @@ OUTPUT FORMAT:
 
     const chars = Number(stats.total_chars) > 0 ? stats.total_chars : sources.reduce((sum, s) => sum + (Number(s.chars) || 0), 0);
     const destText = cloud
-      ? t('deepSearchDestCloud', { model: String(dest.model || ''), host: host })
-      : t('deepSearchDestLocal', { model: String(dest.model || '') });
+      ? t('deepSearchDestCloud', { model: effectiveModel, host: host })
+      : t('deepSearchDestLocal', { model: effectiveModel });
     const summary = el('deep-search-summary');
     summary.textContent = t('deepSearchSummary', { count: fmt(sources.length), chars: fmt(chars), dest: destText });
     summary.setAttribute('data-kind', cloud ? 'cloud' : 'local');
@@ -12406,7 +12541,7 @@ OUTPUT FORMAT:
     run.textContent = t(needsConsent ? 'deepSearchAllowRun' : 'deepSearchRun');
     run.disabled = false;
 
-    deepDialogHeld = { plan: plan, query: query, limit: limit, needsConsent: needsConsent, key: key };
+    deepDialogHeld = { plan: plan, query: query, limit: limit, needsConsent: needsConsent, key: key, modelOverride: modelOverride || '', lengthOverride: lengthOverride || '' };
     deepDialogShownAt = Date.now();
     deepDialogOpen = true;
     modal.classList.remove('hidden');
@@ -12475,7 +12610,7 @@ OUTPUT FORMAT:
       }
     }
     closeDeepSearchDialog(false);
-    runDeepSearch(held.plan, held.query, held.limit);
+    runDeepSearch(held.plan, held.query, held.limit, held.modelOverride || '', held.lengthOverride || '');
   }
 
   // The tab's name: the backend's title without characters a file name cannot hold, ".md" added.
@@ -12486,14 +12621,40 @@ OUTPUT FORMAT:
 
   // The run: a background task (listed in the task panel, cancellable) that ends in ONE new, unsaved tab holding the answer. The
   // search panel gives way at once, since the AI may take a while; nothing is created when it is cancelled or fails.
-  function runDeepSearch(plan, query, limit) {
+  window.__onSemanticIdleProgress = function (p) {
+    if (!p || !scrapsSearchModal || scrapsSearchModal.classList.contains('hidden')) return;
+    if (!scrapsMeaningMode()) return;
+    if (p.running) {
+      setScrapsSearchStatus(t('semanticIdleProgress', { files: String(p.filesDone || 0), filesTotal: String(p.filesTotal || 0) }));
+    } else if (scrapsSearchStatusText && scrapsSearchStatusText.textContent && scrapsSearchStatusText.textContent.indexOf('/') !== -1) {
+      setScrapsSearchStatus('');
+    }
+  };
+
+  function runDeepSearch(plan, query, limit, modelOverride, lengthOverride) {
     const planId = String(plan.plan_id);
     const taskId = genReqId('deepsearch_');
     const lang = (config.general && config.general.language) === 'ja' ? 'ja' : 'en';
     const state = { canceled: false };
+    const effectiveModel = String(modelOverride || (plan.destination && plan.destination.model) || '');
+    const srcCount = Array.isArray(plan.sources) ? plan.sources.length : 0;
     const finish = (status, error) => {
+      if (window.__onDeepSearchProgress === onProgress) window.__onDeepSearchProgress = null;
       if (window.TaskManager && window.TaskManager.updateTask) window.TaskManager.updateTask(taskId, { status: status, error: error });
     };
+    const onProgress = (p) => {
+      if (state.canceled || !p) return;
+      const msg = t('deepSearchProgress', {
+        model: String(p.model || effectiveModel || ''),
+        sec: String(p.elapsedSec || 0),
+        sources: String(p.sources || srcCount)
+      });
+      showMessage(msg, 2500);
+      if (window.TaskManager && window.TaskManager.updateTask) {
+        window.TaskManager.updateTask(taskId, { instruction: msg });
+      }
+    };
+    window.__onDeepSearchProgress = onProgress;
     if (window.TaskManager && window.TaskManager.addTask) {
       window.TaskManager.addTask({
         id: taskId,
@@ -12510,10 +12671,11 @@ OUTPUT FORMAT:
       });
     }
     closeScrapsSearchModal();
+    onProgress({ elapsedSec: 0, sources: srcCount, model: effectiveModel });
 
     let call;
     try {
-      call = Promise.resolve(window.backend.deepSearchRun(planId, lang));
+      call = Promise.resolve(window.backend.deepSearchRun(planId, lang, modelOverride || '', lengthOverride || ''));
     } catch (err) {
       call = Promise.reject(err);
     }

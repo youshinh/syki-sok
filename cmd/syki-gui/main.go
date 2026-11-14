@@ -183,6 +183,7 @@ func main() {
 		app.InitJevEngine()
 		app.InitCFBridge()
 		app.InitInboxWatcher()
+		app.StartIdleSemanticIndexer()
 	}()
 
 	// A macOS .app launched from Finder, the Dock or Spotlight inherits launchd's PATH

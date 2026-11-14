@@ -1266,7 +1266,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			deepSearchPlan: (query, limit, filter) => { var f = filter ? JSON.stringify(filter) : ''; return window.__sykiAsync('deepSearchPlan_', 30000, (reqID) => window.backend_deepSearchPlanAsync(reqID, query, limit || 10, f)); },
 			scrapFilterOptions: () => window.__sykiAsync('scrapFilterOptions_', 30000, (reqID) => window.backend_scrapFilterOptionsAsync(reqID)),
 			tagEdit: (request) => window.__sykiAsync('tagEdit_', 30000, (reqID) => window.backend_tagEditAsync(reqID, JSON.stringify(request || {}))),
-			deepSearchRun: (planId, lang) => window.__sykiAsync('deepSearchRun_', 600000, (reqID) => window.backend_deepSearchRunAsync(reqID, planId, lang || '')),
+			deepSearchRun: (planId, lang, model, length) => window.__sykiAsync('deepSearchRun_', 600000, (reqID) => ((model || length) ? window.backend_deepSearchRunWithModelAsync(reqID, planId, lang || '', model || '', length || '') : window.backend_deepSearchRunAsync(reqID, planId, lang || ''))),
 			cancelDeepSearch: (planId) => window.backend_cancelDeepSearch(planId),
 			lessonPlan: (request) => window.__sykiAsync('lessonPlan_', 30000, (reqID) => window.backend_lessonPlanAsync(reqID, JSON.stringify(request || {}))),
 			lessonRun: (planId) => window.__sykiAsync('lessonRun_', 120000, (reqID) => window.backend_lessonRunAsync(reqID, planId || '')),

@@ -342,12 +342,19 @@ func deepNumCtx(promptTokens int) int {
 // runDeepSearch sends a plan's excerpts to the text model and lays the answer out as a note. Nothing goes out unless the model's
 // host is this machine or the person has allowed it (checked here again, whatever the window believes).
 func (a *App) runDeepSearch(planID, lang string) (deepRunJSON, error) {
+	return a.runDeepSearchWithModel(planID, lang, "", "")
+}
+
+func (a *App) runDeepSearchWithModel(planID, lang, modelOverride, length string) (deepRunJSON, error) {
 	var out deepRunJSON
 	plan := deepPlans.get(planID, time.Now())
 	if plan == nil {
 		return out, errors.New("plan_expired")
 	}
 	text := a.deepTextSettings()
+	if m := strings.TrimSpace(modelOverride); m != "" {
+		text.Model = m
+	}
 	if !text.configured() {
 		return out, errors.New("model_not_configured")
 	}
@@ -373,7 +380,7 @@ func (a *App) runDeepSearch(planID, lang string) (deepRunJSON, error) {
 		plan.mu.Unlock()
 	}()
 
-	prompt := deepsearch.BuildPrompt(plan.query, plan.sources, lang)
+	prompt := deepsearch.BuildPromptWithLength(plan.query, plan.sources, lang, length)
 	cfg := text.Config
 	cfg.SystemPrompt = "" // the ask bar's instructions have no place here: the prompt carries the rules
 	cfg.Temperature = 0.2
@@ -394,11 +401,22 @@ func (a *App) runDeepSearch(planID, lang string) (deepRunJSON, error) {
 		t, err := llm.Query(prompt, cfg)
 		done <- answer{t, err}
 	}()
+	started := time.Now()
+	a.dispatchEval(fmt.Sprintf("if (window.__onDeepSearchProgress) { window.__onDeepSearchProgress({ stage: 'querying', elapsedSec: 0, sources: %d, model: %q }); }", len(plan.sources), text.Model))
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
 	var ans answer
-	select {
-	case ans = <-done:
-	case <-ctx.Done(): // the request to the model cannot be taken back; its answer is dropped
-		return out, errors.New("cancelled")
+waitLoop:
+	for {
+		select {
+		case ans = <-done:
+			break waitLoop
+		case <-ticker.C:
+			elapsed := int(time.Since(started).Seconds())
+			a.dispatchEval(fmt.Sprintf("if (window.__onDeepSearchProgress) { window.__onDeepSearchProgress({ stage: 'querying', elapsedSec: %d, sources: %d, model: %q }); }", elapsed, len(plan.sources), text.Model))
+		case <-ctx.Done(): // the request to the model cannot be taken back; its answer is dropped
+			return out, errors.New("cancelled")
+		}
 	}
 	if ctx.Err() != nil {
 		return out, errors.New("cancelled")
@@ -427,8 +445,13 @@ func (a *App) runDeepSearch(planID, lang string) (deepRunJSON, error) {
 
 // DeepSearchRunAsync is runDeepSearch on a goroutine; the result goes to window.__onDeepSearchResult.
 func (a *App) DeepSearchRunAsync(reqID, planID, lang string) {
+	a.DeepSearchRunWithModelAsync(reqID, planID, lang, "", "")
+}
+
+// DeepSearchRunWithModelAsync runs a planned deep search with optional per-run model and length overrides.
+func (a *App) DeepSearchRunWithModelAsync(reqID, planID, lang, modelOverride, length string) {
 	go func() {
-		out, err := a.runDeepSearch(planID, lang)
+		out, err := a.runDeepSearchWithModel(planID, lang, modelOverride, length)
 		a.dispatchDeepSearchResult(reqID, out, err)
 	}()
 }
