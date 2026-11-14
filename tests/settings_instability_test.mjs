@@ -4,6 +4,7 @@ import fs from 'fs';
 console.log("=== Testing Settings UI & Shortcut Stability ===");
 
 const appJs = fs.readFileSync('frontend/js/app.js', 'utf8');
+const settingsModalJs = fs.readFileSync('frontend/js/settings_modal.js', 'utf8');
 
 // 1. Verify that activeRecordingAction has fail-safe check in keydown handler
 assert.ok(
@@ -13,13 +14,13 @@ assert.ok(
 
 // 2. Verify that switchSettingsTab clears activeRecordingAction when leaving shortcuts
 assert.ok(
-  /if\s*\(tabName\s*!==\s*'shortcuts'\s*&&\s*activeRecordingAction\)/.test(appJs),
+  /if\s*\(tabName\s*!==\s*'shortcuts'\s*&&\s*deps\.getRecordingAction/.test(settingsModalJs),
   "switchSettingsTab MUST clear activeRecordingAction when switching away from shortcuts tab"
 );
 
 // 3. Verify that settingsModal is displayed (un-hidden) BEFORE running heavy background IPCs
-const openSettingsMatch = appJs.match(/function openSettings\(\) \{([\s\S]*?)\n  \}/);
-assert.ok(openSettingsMatch, "openSettings function must exist");
+const openSettingsMatch = settingsModalJs.match(/function open\(\) \{([\s\S]*?)\n    \}/);
+assert.ok(openSettingsMatch, "open function must exist in settings_modal.js");
 const openBody = openSettingsMatch[1];
 
 const unhideIdx = openBody.indexOf("settingsModal.classList.remove('hidden')");

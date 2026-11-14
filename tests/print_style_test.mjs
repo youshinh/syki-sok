@@ -92,7 +92,7 @@ check('app.js: the diagram keeps its source for printing; the press opens the pa
   assert.match(rpc, /await window\.PrintPreview\.prepare\(previewPane, /, 'the same preparation as the button');
   assert.match(rpc, /await window\.backend\.printSavePdf\(asked, outPath\)/, 'the same engine call as the panel\'s Save as PDF');
   assert.match(rpc, /\} finally \{\s*if \(restoreDiagrams\) restoreDiagrams\(\);[\s\S]*rpcPrintBusy = false;/, 'the diagrams, the view and the flag come back in finally');
-  assert.match(app, /printPdf: function \(tabId, settings, outPath\) \{\s*return printPdfForRpc\(tabId, settings, outPath\);/);
+  assert.match(read('frontend/js/rpc_bridge.js'), /printPdf: function \(tabId, settings, outPath\) \{\s*return port\.printPdfForRpc\(tabId, settings, outPath\);/);
   assert.match(block, /const resetMermaid = \(\) => \{ mermaidAppliedTone = null; applyMermaidTone\(\); \};/, 'Mermaid goes back to the tone of the settings');
   // the panel: its scripts are loaded on the first press; it knows the note's name and place; closing ends the press
   assert.match(block, /if \(isMac \|\| !\(window\.backend && window\.backend\.printPreview\)\) \{\s*await printWithSystemDialog\(\);/, 'without the PDF backend, and on a Mac (whose PDF is made by the system dialog), the system dialog alone');
@@ -130,10 +130,11 @@ check('the print panel: modules, the markup (settings on the right), the PDF ser
   assert.match(mac, /CGFloat margin = 20\.0 \* 72\.0 \/ 25\.4;/, '20 mm');
   assert.match(mac, /runOperationModalForWindow:gWindow/);
   assert.match(mac, /\[panel setOptions:\(\[panel options\] \| NSPrintPanelShowsPaperSize \| NSPrintPanelShowsOrientation \| NSPrintPanelShowsScaling\)\];/, 'the panel offers the paper, the orientation and the scale (it shows only copies, pages and the preview unless asked)');
+  const common = read('cmd/syki-gui/bind_common.go');
+  assert.match(common, /window\.__onPrintPdfResult = function \(reqID, result, errMsg\) \{\s*window\.__sykiSettle\(reqID, result, errMsg\);/, 'bind_common.go: the answers settle the promises');
+  for (const fn of ['printPreview', 'printPickPdfPath', 'printSavePdf', 'printPreviewClose']) assert.ok(common.includes(fn + ':'), 'bind_common.go has window.backend.' + fn);
   for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
-    const src = read(f);
-    assert.match(src, /window\.__onPrintPdfResult = function \(reqID, result, errMsg\) \{\s*window\.__sykiSettle\(reqID, result, errMsg\);/, f + ': the answers settle the promises');
-    for (const fn of ['printPreview', 'printPickPdfPath', 'printSavePdf', 'printPreviewClose']) assert.ok(src.includes(fn + ':'), f + ' has window.backend.' + fn);
+    assert.ok(read(f).includes('buildCommonBridgeInitJS('), f + ' uses buildCommonBridgeInitJS');
   }
   assert.match(read('cmd/syki-gui/main.go'), /r\.URL\.Path == "\/api\/print\/preview\.pdf"/, 'the app\'s own server serves the preview PDF');
 });

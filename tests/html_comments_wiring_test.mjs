@@ -77,8 +77,8 @@ check('general.commentStyle: default line, a select in Settings, loaded and save
   assert.match(select, /<option value="line" data-i18n="commentStyleLine">/);
   assert.match(select, /<option value="block" data-i18n="commentStyleBlock">/);
   assert.ok(html.indexOf('id="cfg-comment-style"') > html.indexOf('data-i18n="sectionEditor"'), 'in the Editor section');
-  const open = appJs.slice(appJs.indexOf('showAppearanceControls(window.Appearance'), appJs.indexOf("function restoreLiveConfigFromSnapshot"));
-  assert.match(open, /commentStyleSelect\.value = config\.general\.commentStyle === 'block' \? 'block' : 'line'/);
+  const settingsModalJs = read('frontend/js/settings_modal.js');
+  assert.match(settingsModalJs, /setVal\('cfg-comment-style', \(config\.general && config\.general\.commentStyle === 'block'\) \? 'block' : 'line'\);/);
   assert.match(appJs, /config\.general\.commentStyle = commentStyleSaveSelect\.value === 'block' \? 'block' : 'line'/);
 });
 

@@ -247,14 +247,15 @@ func TestBackendShimArgumentCounts(t *testing.T) {
 	windowsTargets := buildBindTargets(windowsSrc, commonSrc)
 	darwinTargets := buildBindTargets(darwinSrc, commonSrc)
 
+	commonJS := buildCommonBridgeInitJS(nil)
 	platforms := []struct {
 		name    string
 		file    string
 		src     string
 		targets map[string]string
 	}{
-		{"windows", "window_windows.go", windowsSrc, windowsTargets},
-		{"darwin", "window_darwin.go", darwinSrc, darwinTargets},
+		{"windows", "bind_common.go+window_windows.go", commonJS + "\n" + windowsSrc, windowsTargets},
+		{"darwin", "bind_common.go+window_darwin.go", commonJS + "\n" + darwinSrc, darwinTargets},
 	}
 
 	checked := 0
@@ -304,5 +305,25 @@ func TestBackendShimArgumentCounts(t *testing.T) {
 	t.Logf("checked %d forwarding calls; skipped %d (inline closures / non-plain binds / spreads):", checked, len(skipped))
 	for _, s := range skipped {
 		t.Logf("  skip: %s", s)
+	}
+}
+
+func TestBuildCommonBridgeInitJS(t *testing.T) {
+	base := buildCommonBridgeInitJS(nil)
+	if !strings.Contains(base, "window.backend = {") || !strings.Contains(base, "window.__sykiAsync") {
+		t.Fatal("buildCommonBridgeInitJS(nil) missing core bridge definitions")
+	}
+	if strings.Contains(base, "printSystem:") || strings.Contains(base, "openQuickCapture:") {
+		t.Fatal("buildCommonBridgeInitJS(nil) must not contain platform-only methods")
+	}
+	if strings.Contains(base, ",\n\t\t};") {
+		t.Fatal("buildCommonBridgeInitJS(nil) has trailing comma before closing brace")
+	}
+	withExtra := buildCommonBridgeInitJS([]string{
+		"foo: () => window.backend_foo(),",
+		"",
+	})
+	if !strings.Contains(withExtra, ",\n\t\t\tfoo: () => window.backend_foo()\n\t\t};") {
+		t.Fatalf("buildCommonBridgeInitJS did not append extra method cleanly")
 	}
 }

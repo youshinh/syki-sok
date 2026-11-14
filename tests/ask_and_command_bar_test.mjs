@@ -534,6 +534,8 @@ async function createEnv(opts = {}) {
   vm.runInContext(mermaidToneCode, context);
   vm.runInContext(llmErrorCode, context);
   if (opts.panelFade) vm.runInContext(panelFadeCode, context); // the bars close themselves when focus leaves them (panel_fade.js)
+  vm.runInContext(read('frontend/js/rpc_bridge.js'), context);
+  vm.runInContext(read('frontend/js/settings_modal.js'), context);
   vm.runInContext(appCode, context);
   await flush();
 
@@ -1440,9 +1442,9 @@ check('the placement is a setting: default below, the select is in Settings and 
   assert.equal(fresh.config.cli.resultPlacement, 'below', 'the default');
   const html = read('frontend/index.html');
   assert.match(html, /<select id="cfg-cli-result-placement"[^>]*>[\s\S]*value="below"[\s\S]*value="replace"[\s\S]*<\/select>/);
-  const app = read('frontend/js/app.js');
-  assert.match(app, /cfg-cli-result-placement'\);\s*if \(cliResultPlacementEl\) cliResultPlacementEl\.value = cliResultPlacement\(\);/, 'loaded into the dialog');
-  assert.match(app, /config\.cli\.resultPlacement = saveCliResultPlacementEl\.value === 'replace' \? 'replace' : 'below'/, 'saved from the dialog');
+  const appAndModal = read('frontend/js/app.js') + '\n' + read('frontend/js/settings_modal.js');
+  assert.match(appAndModal, /cfg-cli-result-placement'[^;\n]*cliResultPlacement\(\)/, 'loaded into the dialog');
+  assert.match(appAndModal, /config\.cli\.resultPlacement = saveCliResultPlacementEl\.value === 'replace' \? 'replace' : 'below'/, 'saved from the dialog');
   for (const lang of ['en', 'ja']) {
     for (const key of ['cliResultPlacementLabel', 'cliResultPlacementBelow', 'cliResultPlacementReplace', 'cliResultPlacementHint']) {
       assert.ok(I18N[lang][key] && I18N[lang][key].length > 3, `${lang}.${key}`);

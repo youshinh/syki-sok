@@ -194,6 +194,7 @@ async function createEnv(opts = {}) {
   vm.runInContext(mermaidToneCode, context);
   vm.runInContext(llmErrorCode, context);
   if (opts.firstRun !== false) vm.runInContext(firstRunCode, context);
+  vm.runInContext(read('frontend/js/settings_modal.js'), context);
   vm.runInContext(appCode, context);
   await flush();
 

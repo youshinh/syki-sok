@@ -115,6 +115,7 @@ function run(source, opts = {}) {
   vm.runInContext(tabStripCode, context);
   vm.runInContext(previewImagesCode, context); // the preview installs its picture rule from here
   if (opts.viewLayout !== false) vm.runInContext(viewLayoutCode, context);
+  vm.runInContext(read('frontend/js/rpc_bridge.js'), context);
   vm.runInContext(source, context);
   return { elements, window: context.window, helper: context.window.__testHelper, body: documentMock.body };
 }

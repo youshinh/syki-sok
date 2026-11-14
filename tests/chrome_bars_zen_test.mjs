@@ -28,7 +28,7 @@ const noComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
 const html = read('frontend/index.html');
 const chromeRaw = read('frontend/css/chrome.css');
 const styleRaw = read('frontend/css/style.css');
-const appJs = read('frontend/js/app.js');
+const appJs = read('frontend/js/app.js') + '\n' + read('frontend/js/search_workbench.js');
 const I18N = new Function(read('frontend/js/i18n.js') + '\nreturn I18N;')();
 
 let failed = 0;
@@ -117,7 +117,7 @@ check('Settings: the bars and auto-hide are read from their controls, shown, and
   assert.match(appJs, /if \(el\('cfg-auto-hide'\)\) el\('cfg-auto-hide'\)\.checked = ap\.autoHide !== false;/);
   assert.match(appJs, /el\('cfg-bars'\)\.onchange = previewAppearance;/);
   assert.match(appJs, /el\('cfg-auto-hide'\)\.onchange = previewAppearance;/);
-  assert.match(appJs, /if \(themeChanged \|\| appearancePreviewing\) applyTheme\(\);/, 'Cancel puts the saved setting back (applyTheme -> applyAppearance -> configure)');
+  assert.match(appJs + '\n' + read('frontend/js/settings_modal.js'), /if \(\(themeChanged \|\| previewing\) && deps\.applyTheme\) deps\.applyTheme\(\);/, 'Cancel puts the saved setting back (applyTheme -> applyAppearance -> configure)');
 });
 
 // ---- 2. Zen mode ---------------------------------------------------------------------------------------------------------------------------

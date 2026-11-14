@@ -25,7 +25,7 @@ const noComments = (css) => css.replace(/\/\*[\s\S]*?\*\//g, '');
 const SRC = {
   html: read('frontend/index.html'),
   style: read('frontend/css/style.css'),
-  app: read('frontend/js/app.js'),
+  app: read('frontend/js/app.js') + '\n' + read('frontend/js/settings_modal.js'),
   i18n: read('frontend/js/i18n.js')
 };
 const cap = (w) => w.charAt(0).toUpperCase() + w.slice(1);
@@ -67,7 +67,7 @@ function problems(src) {
   need(/if \(el\('cfg-split-boundary'\)\) next\.splitBoundary = el\('cfg-split-boundary'\)\.value;/, 'readAppearanceControls does not read the divider');
   need(/if \(el\('cfg-split-boundary'\)\) el\('cfg-split-boundary'\)\.value = ap\.splitBoundary;/, 'showAppearanceControls does not show the saved divider');
   need(/if \(el\('cfg-split-boundary'\)\) el\('cfg-split-boundary'\)\.onchange = previewAppearance;/, 'a change of the divider is not previewed at once');
-  need(/if \(themeChanged \|\| appearancePreviewing\) applyTheme\(\);/, 'Cancel does not put the saved setting back');
+  need(/if \(\(themeChanged \|\| previewing\) && deps\.applyTheme\) deps\.applyTheme\(\);/, 'Cancel does not put the saved setting back');
 
   // 3. the CSS
   const css = noComments(src.style);

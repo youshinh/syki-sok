@@ -65,6 +65,15 @@ var fastBootDeferredScripts = map[string]bool{
 	"js/first_run.js":           true,
 	"js/goto_line.js":           true,
 	"js/line_operations.js":     true,
+	"js/search_workbench.js":    true,
+	"js/file_anchor.js":         true,
+	"js/settings_modal.js":      true,
+	"js/comment_toggle.js":      true,
+	"js/result_blocks.js":       true,
+	"js/rpc_bridge.js":          true,
+	"js/html_comments.js":       true,
+	"js/secret_strip.js":        true,
+	"js/builtin_ai.js":          true,
 }
 
 var (

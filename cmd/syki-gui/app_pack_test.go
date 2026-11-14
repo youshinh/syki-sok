@@ -1087,6 +1087,15 @@ func TestPackBindingsOnBothPlatforms(t *testing.T) {
 			t.Errorf("%s must be bound on both platforms", bind)
 		}
 		js := strings.ToLower(name[:1]) + name[1:] + ":"
+		var commonLine string
+		for _, l := range strings.Split(common, "\n") {
+			if tl := strings.TrimSpace(l); strings.HasPrefix(tl, js) {
+				commonLine = tl
+			}
+		}
+		if commonLine != "" && strings.Contains(win, "buildCommonBridgeInitJS(") && strings.Contains(mac, "buildCommonBridgeInitJS(") {
+			continue
+		}
 		var lines [2]string
 		for i, src := range []string{win, mac} {
 			for _, l := range strings.Split(src, "\n") {

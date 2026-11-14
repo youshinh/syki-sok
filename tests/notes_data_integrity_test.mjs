@@ -19,6 +19,8 @@ const SRC = {
   noteTitle: read('frontend/js/note_title.js'),
   noteHash: read('frontend/js/note_hash.js'),
   firstRun: read('frontend/js/first_run.js'),
+  rpcBridge: read('frontend/js/rpc_bridge.js'),
+  searchWorkbench: read('frontend/js/search_workbench.js'),
   app: read('frontend/js/app.js')
 };
 const I18N = vm.runInNewContext(SRC.i18n + '\n;I18N');
@@ -236,7 +238,7 @@ async function createEnv(opts = {}) {
     console: { log() {}, warn() {}, error(...a) { if (opts.showErrors) console.error(...a); } }
   };
   vm.createContext(context);
-  for (const code of [SRC.i18n, SRC.noteTitle, SRC.noteHash, SRC.firstRun, SRC.app]) {
+  for (const code of [SRC.i18n, SRC.noteTitle, SRC.noteHash, SRC.firstRun, SRC.rpcBridge, SRC.searchWorkbench, SRC.app]) {
     vm.runInContext(code, context);
     await flush();
   }

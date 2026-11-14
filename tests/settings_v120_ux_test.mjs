@@ -11,7 +11,7 @@ const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 const html = read('frontend/index.html');
 const css = read('frontend/css/style.css');
 const i18nSrc = read('frontend/js/i18n.js');
-const appJs = read('frontend/js/app.js');
+const appJs = read('frontend/js/app.js') + '\n' + read('frontend/js/settings_modal.js');
 
 // 1. Markup & styling contracts for v1.2.0 UX
 {
@@ -25,7 +25,7 @@ const appJs = read('frontend/js/app.js');
     assert.ok(prevOverride !== -1 && prevOverride > prevClose, `${id} sits inside an ai-override-box`);
   }
   assert.ok(/\.settings-search-bar\b/.test(css) && /\.section-status-badge\b/.test(css) && /details\.ai-override-box\b/.test(css), 'v1.2.0 CSS classes exist in style.css');
-  assert.ok(/SettingsCompact\.refresh\(document\)/.test(appJs), 'app.js calls SettingsCompact.refresh(document) in openSettings');
+  assert.ok(/SettingsCompact\.refresh\((document|doc)\)/.test(appJs), 'app.js / settings_modal.js calls SettingsCompact.refresh in openSettings');
 
   const I18N = new Function(i18nSrc + '\nreturn I18N;')();
   for (const k of ['settingsSearchPlaceholder', 'settingsSearchNoMatch', 'aiOverrideSummary', 'badgeOn', 'badgeOff', 'badgeInherited', 'badgeCustom']) {

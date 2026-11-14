@@ -51,11 +51,14 @@ import "embed"
 //go:embed js/print_panel.js
 //go:embed js/print_preview.js
 //go:embed js/result_blocks.js
+//go:embed js/rpc_bridge.js
 //go:embed js/scrap_quote.js
 //go:embed js/scraps_filter.js
+//go:embed js/search_workbench.js
 //go:embed js/secret_strip.js
 //go:embed js/semantic_settings.js
 //go:embed js/settings_compact.js
+//go:embed js/settings_modal.js
 //go:embed js/slot_agent.js
 //go:embed js/slot_snippets.js
 //go:embed js/speech_settings.js

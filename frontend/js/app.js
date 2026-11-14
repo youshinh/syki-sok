@@ -586,13 +586,23 @@
   let shortcutsTableRendered = false;
   let shortcutsTableDirty = true;
 
-  function applyLanguage() {
+  let deferredModalI18nPending = false;
+  function applyLanguage(opts) {
+    const deferHiddenModals = !!(opts && opts.deferHiddenModals);
     if (typeof window !== 'undefined') window.__sykiApplyLangRan = true;
     const lang = (config.general && config.general.language) || 'en';
     if (document.documentElement.lang !== lang) document.documentElement.lang = lang;
 
+    const skipHiddenModal = (el) => {
+      if (!deferHiddenModals || typeof el.closest !== 'function') return false;
+      const modal = el.closest('.modal-backdrop.hidden');
+      if (modal) { deferredModalI18nPending = true; return true; }
+      return false;
+    };
+
     // Translate all elements with data-i18n
     document.querySelectorAll('[data-i18n]').forEach(el => {
+      if (skipHiddenModal(el)) return;
       const key = el.getAttribute('data-i18n');
       const val = t(key);
       if (val !== key && el.textContent !== val) {
@@ -602,6 +612,7 @@
 
     // Translate titles
     document.querySelectorAll('[data-i18n-title]').forEach(el => {
+      if (skipHiddenModal(el)) return;
       const key = el.getAttribute('data-i18n-title');
       const val = t(key);
       if (val !== key && el.title !== val) {
@@ -611,6 +622,7 @@
 
     // Translate placeholders
     document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+      if (skipHiddenModal(el)) return;
       const key = el.getAttribute('data-i18n-placeholder');
       const val = t(key);
       if (val !== key && el.placeholder !== val) {
@@ -11650,408 +11662,6 @@ OUTPUT FORMAT:
     }
   });
 
-  // --- Feature 4: Ultra-fast Scraps In-Memory Search Modal (Ctrl+Shift+F) ---
-  let scrapsSearchDebounceTimer = null;
-  let scrapsSearchFlattened = [];
-  let scrapsSearchSelectedIndex = 0;
-  // The editor that had the caret when the search opened: Tab quotes the chosen line into it.
-  let scrapsSearchTarget = null;
-  // Numbers the searches, so a slow answer to an earlier query never replaces a newer one.
-  let scrapsSearchSeq = 0;
-  // True from an edit of the query until the answer for it is shown: the list on screen answers an older query, so Enter / Tab
-  // must not open one of its lines (the query box says something else).
-  let scrapsSearchStale = false;
-  // Meaning search and Deep search (docs/design/deep-search-2026-10.md): all inert until Settings > Semantic search is on. The markup
-  // stays hidden and nothing is wired until the panel first opens with it on (wireScrapsSemanticUi).
-  const SCRAPS_MODE_KEY = 'syki_scraps_search_mode'; // sessionStorage: the choice lasts for this session only
-  const SCRAPS_MORE_LIMIT = 30;       // "Show more" asks for this many notes (the first ask is 10)
-  const DEEP_CONFIRM_GUARD_MS = 350;  // an Enter this soon after the dialog appeared is the key that raised it, not an answer
-  let scrapsSemanticWired = false;
-  let scrapsSearchMode = 'exact';     // 'exact' | 'meaning'
-  let scrapsSearchModeLoaded = false;
-  let scrapsSearchLimit = 10;         // how many notes the meaning search asks for: 10, then SCRAPS_MORE_LIMIT
-  let scrapsStatusShown = false;
-  let deepSearchToken = 0;            // counts the Deep search plans: one that comes back after the panel closed or the text changed is dropped
-  let deepSearchPlanning = false;     // a plan is being prepared (the button says so and waits)
-  let deepDialogOpen = false;
-  let deepDialogShownAt = 0;
-  let deepDialogHeld = null;          // { plan, query, needsConsent, key } of the dialog on screen
-  // The filter row (a period and tags that narrow every search; frontend/js/scraps_filter.js). Nothing of it is built until it is opened.
-  const scrapsFilterBox = document.getElementById('scraps-filter');
-  let scrapsFilterState = null;       // { period, tags }: made when the row first shows, kept while the app is open (not saved)
-  let scrapsFilterWired = false;
-  let scrapsFilterAreaOpen = false;
-  let scrapsFilterLoad = { status: 'idle', options: null, message: '' }; // the tag list of this opening of the panel
-  let scrapsFilterLoadSeq = 0;
-  let scrapsSearchFilterSent = null;  // the filter (object, or null) the list on screen was searched with
-  let deepPlanFilter = null;          // the filter of the Deep search being prepared: a plan that expired is prepared again with it
-
-  function runScrapsSearch(q) {
-    if (scrapsMeaningMode()) { runScrapsSemanticSearch(q); return; }
-    const seq = ++scrapsSearchSeq;
-    if (!(window.backend && window.backend.searchScraps)) return;
-    Promise.resolve(window.backend.searchScraps(q, 100, scrapsFilterForSearch())).then((results) => {
-      if (seq === scrapsSearchSeq) renderScrapsSearchResults(results || []);
-    }).catch((err) => {
-      console.error('searchScraps failed:', err);
-      if (seq === scrapsSearchSeq) scrapsSearchStale = false;
-    });
-  }
-
-  // The query or the filter was changed: the list on screen answers something else until the answer for the new one is shown. It is asked for
-  // once the changing has paused (the meaning search embeds the text first, so it waits a little longer).
-  function queueScrapsSearch(q) {
-    scrapsSearchStale = true;
-    if (scrapsSemanticWired) scrapsSearchTyped();
-    clearTimeout(scrapsSearchDebounceTimer);
-    scrapsSearchDebounceTimer = setTimeout(() => runScrapsSearch(q), scrapsMeaningMode() ? 400 : 150);
-  }
-
-  // Also the toolbar button's click handler, so it takes no argument.
-  function openScrapsSearchModal() {
-    if (!scrapsSearchModal) return;
-    // Before focus moves into the search box: the selection, or the word before the caret, is the first query.
-    const seed = getSearchSeed(true);
-    scrapsSearchTarget = getActiveEditor();
-    scrapsSearchModal.classList.remove('hidden');
-    scrapsSearchSelectedIndex = 0;
-    scrapsSearchFlattened = [];
-    clearTimeout(scrapsSearchDebounceTimer);
-    scrapsSearchSeq++;
-    openScrapsSearchExtras();
-    openScrapsFilterRow();
-    if (scrapsSearchInput) {
-      scrapsSearchInput.value = seed;
-      setTimeout(() => {
-        scrapsSearchInput.focus();
-        scrapsSearchInput.select();
-      }, 40);
-    }
-    renderScrapsSearchResults([]);
-    if (seed) runScrapsSearch(seed);
-  }
-
-  // Tab in the search: put the chosen line into the note at the caret (replacing a selection, like a paste,
-  // and undoable with Ctrl+Z) instead of opening its file.
-  function quoteScrapLine(item) {
-    const text = window.ScrapQuote.quoteText(item && item.match);
-    if (!text) return;
-    const editor = scrapsSearchTarget;
-    // The preview covering the editor: there is no visible caret to insert at.
-    if (!editor || editor.getClientRects().length === 0) {
-      showMessage(t('scrapsSearchNoEditor'), 3000);
-      return;
-    }
-    closeScrapsSearchModal();
-    insertTextWithUndo(text, editor);
-    const tab = getActiveTab();
-    if (tab) onEditorInput(editor, tab, true);
-  }
-
-  function closeScrapsSearchModal() {
-    if (!scrapsSearchModal) return;
-    if (scrapsSemanticWired) closeScrapsSearchExtras();
-    scrapsSearchModal.classList.add('hidden');
-    const editor = getActiveEditor();
-    if (editor) editor.focus();
-  }
-
-  if (scrapsSearchModal) {
-    scrapsSearchModal.addEventListener('click', (e) => {
-      if (e.target === scrapsSearchModal) {
-        closeScrapsSearchModal();
-      }
-    });
-  }
-
-  if (btnSearchScraps) {
-    btnSearchScraps.onclick = openScrapsSearchModal;
-  }
-
-  if (scrapsSearchInput) {
-    scrapsSearchInput.addEventListener('input', () => {
-      const q = scrapsSearchInput.value.trim();
-      clearTimeout(scrapsSearchDebounceTimer);
-      if (!q) {
-        scrapsSearchFlattened = [];
-        if (scrapsMeaningMode()) scrapsSearchSeq++; // a slow meaning answer to the text that was just erased must not bring its list back
-        if (scrapsSemanticWired) scrapsSearchTyped();
-        renderScrapsSearchResults([]);
-        return;
-      }
-      queueScrapsSearch(q);
-    });
-
-    scrapsSearchInput.addEventListener('keydown', (e) => {
-      // While an IME composition is open, Enter / Tab / arrows / Esc belong to the IME (confirming a
-      // conversion must neither jump to a result nor insert one).
-      if (e.isComposing || e.keyCode === 229) return;
-      if (e.key === 'Escape') {
-        e.preventDefault();
-        e.stopPropagation(); // one Esc closes one panel (see the ask bar)
-        closeScrapsSearchModal();
-      } else if (e.key === 'ArrowDown') {
-        e.preventDefault();
-        if (scrapsSearchFlattened.length > 0) {
-          scrapsSearchSelectedIndex = (scrapsSearchSelectedIndex + 1) % scrapsSearchFlattened.length;
-          updateScrapsSearchSelection();
-        }
-      } else if (e.key === 'ArrowUp') {
-        e.preventDefault();
-        if (scrapsSearchFlattened.length > 0) {
-          scrapsSearchSelectedIndex = (scrapsSearchSelectedIndex - 1 + scrapsSearchFlattened.length) % scrapsSearchFlattened.length;
-          updateScrapsSearchSelection();
-        }
-      } else if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.shiftKey && scrapsMeaningMode()) {
-        // Meaning mode only: Ctrl+Enter is Deep search (everywhere else it opens the note, like Enter)
-        e.preventDefault();
-        e.stopPropagation();
-        startDeepSearch();
-      } else if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        if (!scrapsSearchStale && scrapsSearchFlattened.length > 0 && scrapsSearchFlattened[scrapsSearchSelectedIndex]) {
-          const item = scrapsSearchFlattened[scrapsSearchSelectedIndex];
-          jumpToScrap(item.filePath, item.fileName, item.match.lineNumber);
-          closeScrapsSearchModal();
-        }
-      } else if ((e.key === 'Tab' && !e.shiftKey) || (e.key === 'Enter' && e.shiftKey)) {
-        // Tab (or Shift+Enter): quote the chosen line into the note. Shift+Tab keeps its usual meaning.
-        // stopPropagation: focus moves to the editor below, and the key must not then reach the
-        // document-level key handlers as if it had been pressed there (Shift+Enter would add a line break).
-        e.preventDefault();
-        e.stopPropagation();
-        if (!scrapsSearchStale && scrapsSearchFlattened.length > 0 && scrapsSearchFlattened[scrapsSearchSelectedIndex]) {
-          quoteScrapLine(scrapsSearchFlattened[scrapsSearchSelectedIndex]);
-        }
-      }
-    });
-  }
-
-  // view (the meaning search only): { notes: [the backend's sentences], truncated, limit }. The same list is drawn; the notes go above it as
-  // quiet lines, a match shows the lines it spans, and "Show more" ends it when the backend had more. A score is never shown.
-  function renderScrapsSearchResults(results, view) {
-    scrapsSearchFlattened = [];
-    scrapsSearchSelectedIndex = 0;
-    scrapsSearchStale = false;
-
-    results.forEach(res => {
-      if (res.matches) {
-        res.matches.forEach(m => {
-          scrapsSearchFlattened.push({
-            filePath: res.filePath,
-            fileName: res.fileName,
-            match: m
-          });
-        });
-      }
-    });
-    if (scrapsSemanticWired) updateScrapsDeepButton();
-
-    if (!scrapsSearchResults) return;
-    // Meaning search: the counts the backend sends as numbers are said here, in the UI language; its own notes (English: what has no
-    // count, such as why the model could not answer) follow them.
-    const noteTexts = [];
-    if (view) {
-      if (view.semantic === false) noteTexts.push(t('scrapsSearchWordsFallback'));
-      if (view.pending > 0) noteTexts.push(t('scrapsSearchPending', { n: view.pending }));
-      if (view.leftOut > 0) noteTexts.push(t('scrapsSearchLeftOut', { n: view.leftOut }));
-      (view.notes || []).forEach((n) => noteTexts.push(n));
-    }
-    const notesHtml = noteTexts.map((n) => `<div class="scraps-search-note">${escapeHtml(n)}</div>`).join('');
-
-    if (scrapsSearchFlattened.length === 0) {
-      const q = scrapsSearchInput ? scrapsSearchInput.value.trim() : '';
-      // With a filter chosen the list is empty because of it: say so (the key is the filter module's decision)
-      const emptyKey = window.ScrapsFilter ? window.ScrapsFilter.emptyMessageKey(scrapsSearchFilterSent, !!q) : q ? 'scrapsSearchNoResults' : 'scrapsSearchEmpty';
-      scrapsSearchResults.innerHTML = `${notesHtml}<div class="scraps-search-empty">${escapeHtml(t(emptyKey))}</div>`;
-      return;
-    }
-
-    scrapsSearchResults.innerHTML = scrapsSearchFlattened.map((item, idx) => {
-      const isSelected = idx === 0 ? 'active' : '';
-      const previewText = item.match.snippet || item.match.lineText;
-      const endLine = item.match.endLine;
-      const lines = view && endLine > item.match.lineNumber ? `${item.match.lineNumber}–${endLine}` : String(item.match.lineNumber);
-      const heading = view && item.match.heading ? ` title="${escapeHtml(item.match.heading)}"` : '';
-      return `
-        <div class="scraps-match-item ${isSelected}" data-idx="${idx}"${heading}>
-          <div class="scraps-match-header">
-            <span class="scraps-match-file">${escapeHtml(item.fileName)}</span>
-            <span class="scraps-match-line">Ln ${lines}</span>
-          </div>
-          <div class="scraps-match-snippet">${escapeHtml(previewText)}</div>
-        </div>
-      `;
-    }).join('');
-
-    if (view) {
-      // Meaning search: its own notes (cut-off count, a switch to words, files not indexed yet) instead of the word search's label
-      if (notesHtml) scrapsSearchResults.insertAdjacentHTML('afterbegin', notesHtml);
-      if (view.truncated && view.limit < SCRAPS_MORE_LIMIT) {
-        scrapsSearchResults.insertAdjacentHTML('beforeend',
-          `<div class="scraps-search-more"><button type="button" id="btn-scraps-more" class="btn-secondary">${escapeHtml(t('scrapsSearchMore'))}</button></div>`);
-        const more = document.getElementById('btn-scraps-more');
-        if (more) more.onclick = showMoreScrapsMeaning;
-      }
-    }
-
-    // No line holds the whole text: the backend listed the notes that hold its words, best first (a match then carries a score).
-    // Say so, so that the list is not read as "lines that contain what I typed".
-    if (!view && scrapsSearchFlattened.some((item) => item.match && item.match.score > 0)) {
-      const everyOnePartial = scrapsSearchFlattened.every((item) => item.match && item.match.partial);
-      scrapsSearchResults.insertAdjacentHTML('afterbegin',
-        `<div class="scraps-search-note">${escapeHtml(t(everyOnePartial ? 'scrapsSearchPartialNote' : 'scrapsSearchRankedNote'))}</div>`);
-    }
-
-    scrapsSearchResults.querySelectorAll('.scraps-match-item').forEach(el => {
-      el.onclick = () => {
-        const idx = parseInt(el.getAttribute('data-idx'), 10);
-        if (!isNaN(idx) && scrapsSearchFlattened[idx]) {
-          const item = scrapsSearchFlattened[idx];
-          jumpToScrap(item.filePath, item.fileName, item.match.lineNumber);
-          closeScrapsSearchModal();
-        }
-      };
-    });
-  }
-
-  function updateScrapsSearchSelection() {
-    if (!scrapsSearchResults) return;
-    const items = scrapsSearchResults.querySelectorAll('.scraps-match-item');
-    items.forEach((el, idx) => {
-      const isActive = idx === scrapsSearchSelectedIndex;
-      el.classList.toggle('active', isActive);
-      if (isActive) {
-        el.scrollIntoView({ block: 'nearest' });
-      }
-    });
-  }
-
-  // ---- The filter row (docs/design/tag-filter-2026-10.md section 5) ----------------------------------------------------------------
-  // A period and tags that narrow the exact search, the meaning search and the Deep search alike. The row is there when the backend can list
-  // the tags (an older one has no scrapFilterOptions: no row, every search goes as it always did). The area under it is built and the tags
-  // are asked for when the person opens it, at most once per opening of the panel; a person who never opens it pays one click handler.
-
-  function scrapsFilterSupported() {
-    return !!(window.ScrapsFilter && scrapsFilterBox && window.backend && typeof window.backend.scrapFilterOptions === 'function');
-  }
-
-  // The filter of the search that is starting: an object, or null when nothing is chosen. Remembered as what the list on screen is for, so
-  // that Deep search and the empty-list sentence speak of the same filter (the period is worked out now, from the clock).
-  function scrapsFilterForSearch() {
-    scrapsSearchFilterSent = scrapsFilterState ? window.ScrapsFilter.toRequest(scrapsFilterState, new Date()) : null;
-    return scrapsSearchFilterSent;
-  }
-
-  // Each time the panel opens: the row shows (or not), the area starts closed, and the tags are asked for again if it is opened.
-  function openScrapsFilterRow() {
-    scrapsSearchFilterSent = null;
-    scrapsFilterLoadSeq++; // an answer to an earlier opening is not wanted
-    scrapsFilterLoad = { status: 'idle', options: null, message: '' };
-    scrapsFilterAreaOpen = false;
-    if (!scrapsFilterSupported()) {
-      scrapsFilterState = null;
-      if (scrapsFilterBox) scrapsFilterBox.classList.add('hidden');
-      return;
-    }
-    if (!scrapsFilterState) scrapsFilterState = window.ScrapsFilter.create();
-    if (!scrapsFilterWired) {
-      scrapsFilterWired = true;
-      scrapsFilterBox.addEventListener('click', onScrapsFilterClick);
-    }
-    scrapsFilterBox.classList.remove('hidden');
-    paintScrapsFilter();
-  }
-
-  // The button (its count, lit while something is chosen, open or closed) and the area, brought in step with the state.
-  function paintScrapsFilter() {
-    const F = window.ScrapsFilter;
-    const label = F.countLabel(scrapsFilterState);
-    const btn = document.getElementById('btn-scraps-filter');
-    if (btn) {
-      btn.classList.toggle('on', label !== '');
-      btn.setAttribute('aria-expanded', scrapsFilterAreaOpen ? 'true' : 'false');
-    }
-    const count = document.getElementById('scraps-filter-count');
-    if (count) count.textContent = label;
-    const area = document.getElementById('scraps-filter-area');
-    if (!area) return;
-    area.classList.toggle('hidden', !scrapsFilterAreaOpen);
-    if (scrapsFilterAreaOpen) {
-      area.innerHTML = F.areaHtml({ state: scrapsFilterState, status: scrapsFilterLoad.status, options: scrapsFilterLoad.options, message: scrapsFilterLoad.message }, t);
-    }
-  }
-
-  function toggleScrapsFilterArea() {
-    scrapsFilterAreaOpen = !scrapsFilterAreaOpen;
-    if (scrapsFilterAreaOpen && scrapsFilterLoad.status === 'idle') loadScrapsFilterOptions();
-    else paintScrapsFilter();
-  }
-
-  // {tags: [{tag, files, entries}], files, undated} from the backend, once per opening of the panel (a failure stays until the next one).
-  function loadScrapsFilterOptions() {
-    const seq = ++scrapsFilterLoadSeq;
-    scrapsFilterLoad = { status: 'loading', options: null, message: '' };
-    paintScrapsFilter();
-    let call;
-    try {
-      call = Promise.resolve(window.backend.scrapFilterOptions());
-    } catch (err) {
-      call = Promise.reject(err);
-    }
-    call.then((raw) => {
-      if (seq !== scrapsFilterLoadSeq) return;
-      let answer = raw;
-      if (typeof answer === 'string') {
-        try { answer = JSON.parse(answer); } catch (e) { answer = null; }
-      }
-      scrapsFilterLoad = { status: 'ready', options: window.ScrapsFilter.normalizeOptions(answer), message: '' };
-      paintScrapsFilter();
-    }, (err) => {
-      if (seq !== scrapsFilterLoadSeq) return;
-      scrapsFilterLoad = { status: 'failed', options: null, message: oneLineFailure(err, false) };
-      paintScrapsFilter();
-    });
-  }
-
-  // One handler for the whole row and area. The buttons are out of the Tab order (Tab in the box quotes the line) and take no keys, so after
-  // any click the caret goes back to the box, where Tab, Enter and Esc mean what they always did.
-  function onScrapsFilterClick(e) {
-    const el = e.target && e.target.closest ? e.target.closest('[data-filter-toggle],[data-filter-period],[data-filter-tag],[data-filter-clear]') : null;
-    if (scrapsSearchInput) scrapsSearchInput.focus();
-    if (!el || el.disabled) return;
-    if (el.hasAttribute('data-filter-toggle')) {
-      toggleScrapsFilterArea();
-      return;
-    }
-    const F = window.ScrapsFilter;
-    const before = scrapsFilterState;
-    if (el.hasAttribute('data-filter-period')) scrapsFilterState = F.setPeriod(before, el.getAttribute('data-filter-period'));
-    else if (el.hasAttribute('data-filter-tag')) scrapsFilterState = F.toggleTag(before, el.getAttribute('data-filter-tag'));
-    else if (F.isActive(before)) scrapsFilterState = F.clear();
-    if (scrapsFilterState !== before) onScrapsFilterChanged();
-  }
-
-  // The filter changed: search again, by the same road as typing.
-  function onScrapsFilterChanged() {
-    paintScrapsFilter();
-    const q = scrapsSearchInput ? scrapsSearchInput.value.trim() : '';
-    if (!q) return;
-    scrapsSearchSeq++; // an answer still on its way was searched with the old filter
-    queueScrapsSearch(q);
-  }
-
-  // ---- Meaning search ("Exact | Meaning" in the notes search) -------------------------------------------------------------------
-
-  function scrapsSemanticEnabled() {
-    return !!(config.semantic && config.semantic.enabled === true);
-  }
-
-  // True while the panel searches by meaning. For a person who never turned the feature on this is one comparison.
-  function scrapsMeaningMode() {
-    return scrapsSearchMode === 'meaning' && scrapsSemanticEnabled();
-  }
-
   // A failure in one line, secrets taken out. llm: the text model's failure (worded by kind, like the ask bar); otherwise the
   // message as the backend gave it (the embedding model's, or a setting that is off).
   function oneLineFailure(err, llm) {
@@ -12067,696 +11677,49 @@ OUTPUT FORMAT:
     return m ? m[0] : '';
   }
 
-  // Called each time the panel opens. With Semantic search off it reads one setting and shows nothing.
-  function openScrapsSearchExtras() {
-    scrapsSearchLimit = 10;
-    if (!scrapsSemanticEnabled()) {
-      if (scrapsSemanticWired) { // it was on and has been turned off: the plain panel again
-        scrapsSearchMode = 'exact';
-        paintScrapsSearchMode();
+
+  let searchWorkbench = null;
+  function ensureSearchWorkbench() {
+    if (searchWorkbench) return searchWorkbench;
+    if (typeof window === 'undefined' || !window.SykiSearchWorkbench) return null;
+    searchWorkbench = window.SykiSearchWorkbench.create({
+      t: t,
+      getConfig: function () { return config; },
+      escapeHtml: escapeHtml,
+      showMessage: showMessage,
+      oneLineFailure: oneLineFailure,
+      backendErrorCode: backendErrorCode,
+      getActiveEditor: getActiveEditor,
+      getActiveTab: getActiveTab,
+      getSearchSeed: getSearchSeed,
+      insertTextWithUndo: insertTextWithUndo,
+      onEditorInput: onEditorInput,
+      findTabByPath: findTabByPath,
+      createTab: createTab,
+      selectTab: selectTab,
+      showTab: showTab,
+      renderTabs: renderTabs,
+      saveSessionDebounced: saveSessionDebounced,
+      gotoLineNumber: gotoLineNumber,
+      flashEditorLine: flashEditorLine,
+      openAiModelsSettings: openAiModelsSettings,
+      rememberCloudConsent: rememberCloudConsent,
+      onDeepDialogChange: function (open) { deepDialogOpen = open; },
+      dom: {
+        scrapsSearchModal: scrapsSearchModal,
+        scrapsSearchInput: scrapsSearchInput,
+        scrapsSearchResults: scrapsSearchResults,
+        btnSearchScraps: btnSearchScraps
       }
-      return;
-    }
-    wireScrapsSemanticUi();
-    if (!scrapsSearchModeLoaded) {
-      scrapsSearchModeLoaded = true;
-      try {
-        if (sessionStorage.getItem(SCRAPS_MODE_KEY) === 'meaning') scrapsSearchMode = 'meaning';
-      } catch (e) { /* no storage: the panel starts in Exact, as it always does */ }
-    }
-    invalidateDeepPlan();
-    setScrapsSearchStatus('');
-    paintScrapsSearchMode();
-  }
-
-  function closeScrapsSearchExtras() {
-    invalidateDeepPlan();
-    setScrapsSearchStatus('');
-    if (deepDialogOpen) closeDeepSearchDialog(false);
-  }
-
-  function wireScrapsSemanticUi() {
-    if (scrapsSemanticWired) return;
-    scrapsSemanticWired = true;
-    const on = (id, fn) => {
-      const el = document.getElementById(id);
-      if (el) el.addEventListener('click', fn);
-    };
-    on('scraps-mode-exact', () => setScrapsSearchMode('exact'));
-    on('scraps-mode-meaning', () => setScrapsSearchMode('meaning'));
-    on('btn-scraps-deep', () => startDeepSearch());
-    on('deep-search-cancel', cancelDeepSearchDialog);
-    on('deep-search-close', cancelDeepSearchDialog);
-    on('deep-search-run', confirmDeepSearchDialog);
-    const modal = document.getElementById('deep-search-modal');
-    if (modal) modal.addEventListener('click', (e) => { if (e.target === modal) cancelDeepSearchDialog(e); });
-    // Esc on one of the panel's buttons (the switch, Deep search, Show more) closes the panel, as it does in the box (which handles
-    // it itself and stops it there)
-    if (scrapsSearchModal) {
-      scrapsSearchModal.addEventListener('keydown', (e) => {
-        if (e.key !== 'Escape' || e.isComposing) return;
-        e.preventDefault();
-        e.stopPropagation();
-        closeScrapsSearchModal();
-      });
-    }
-  }
-
-  // Shows or hides the switch, and brings the label, hint, placeholder and button in step with the mode.
-  function paintScrapsSearchMode() {
-    const bar = document.getElementById('scraps-search-mode');
-    if (!bar) return;
-    const enabled = scrapsSemanticEnabled();
-    const meaning = enabled && scrapsSearchMode === 'meaning';
-    const mod = isMac ? 'Cmd' : 'Ctrl';
-    bar.classList.toggle('hidden', !enabled);
-    bar.setAttribute('aria-label', t('scrapsModeLabel'));
-    [['scraps-mode-exact', !meaning], ['scraps-mode-meaning', meaning]].forEach(([id, active]) => {
-      const btn = document.getElementById(id);
-      if (!btn) return;
-      btn.classList.toggle('active', active);
-      btn.setAttribute('aria-pressed', active ? 'true' : 'false');
     });
-    if (scrapsSearchInput) scrapsSearchInput.placeholder = t(meaning ? 'scrapsSearchPlaceholderMeaning' : 'scrapsSearchPlaceholder');
-    const hint = document.getElementById('scraps-search-hint');
-    if (hint) hint.textContent = meaning ? t('scrapsSearchHintMeaning', { mod: mod }) : t('scrapsSearchHint');
-    const deep = document.getElementById('btn-scraps-deep');
-    if (deep) deep.title = t('deepSearchButtonTitle', { mod: mod });
-    updateScrapsDeepButton();
+    return searchWorkbench;
   }
-
-  function setScrapsSearchMode(mode) {
-    const next = mode === 'meaning' ? 'meaning' : 'exact';
-    if (scrapsSearchInput) scrapsSearchInput.focus();
-    if (next === scrapsSearchMode) return;
-    scrapsSearchMode = next;
-    try {
-      sessionStorage.setItem(SCRAPS_MODE_KEY, next);
-    } catch (e) { /* the choice is just not remembered */ }
-    scrapsSearchLimit = 10;
-    clearTimeout(scrapsSearchDebounceTimer);
-    scrapsSearchSeq++; // an answer still on its way belongs to the other kind of search
-    invalidateDeepPlan();
-    setScrapsSearchStatus('');
-    paintScrapsSearchMode();
-    scrapsSearchFlattened = [];
-    scrapsSearchSelectedIndex = 0;
-    const q = scrapsSearchInput ? scrapsSearchInput.value.trim() : '';
-    if (!q) {
-      renderScrapsSearchResults([]);
-      return;
-    }
-    if (scrapsSearchResults) scrapsSearchResults.innerHTML = ''; // the other kind's list (and its "Show more") must not stay
-    scrapsSearchStale = true;
-    updateScrapsDeepButton();
-    runScrapsSearch(q);
-  }
-
-  // The query was edited: what was prepared for the old text is dropped, and the button waits for the new list.
-  function scrapsSearchTyped() {
-    scrapsSearchLimit = 10;
-    invalidateDeepPlan();
-    setScrapsSearchStatus('');
-    updateScrapsDeepButton();
-  }
-
-  // The quiet line under the header: a failure of Deep search, or the way to set the AI model up (action: { label, run }). '' clears it.
-  function setScrapsSearchStatus(text, action) {
-    if (!text && !scrapsStatusShown) return;
-    const box = document.getElementById('scraps-search-status');
-    if (!box) return;
-    const label = document.getElementById('scraps-search-status-text');
-    const btn = document.getElementById('btn-scraps-status-action');
-    scrapsStatusShown = !!text;
-    if (label) label.textContent = text || '';
-    box.classList.toggle('hidden', !text);
-    if (btn) {
-      btn.classList.toggle('hidden', !(text && action));
-      btn.textContent = text && action ? action.label : '';
-      btn.onclick = text && action ? action.run : null;
-    }
-  }
-
-  function runScrapsSemanticSearch(q) {
-    const seq = ++scrapsSearchSeq;
-    const limit = scrapsSearchLimit;
-    if (!(window.backend && window.backend.searchScrapsSemantic)) {
-      showScrapsMeaningFailure(t('scrapsSearchMeaningUnavailable'));
-      return;
-    }
-    // Embedding the text takes a moment: with no list on screen yet, say what is going on (an older list stays, flagged stale)
-    if (scrapsSearchResults && scrapsSearchFlattened.length === 0) {
-      scrapsSearchResults.innerHTML = `<div class="scraps-search-empty">${escapeHtml(t('scrapsSearchBusy'))}</div>`;
-    }
-    let call;
-    try {
-      call = Promise.resolve(window.backend.searchScrapsSemantic(q, limit, scrapsFilterForSearch()));
-    } catch (err) {
-      call = Promise.reject(err);
-    }
-    call.then((raw) => {
-      if (seq !== scrapsSearchSeq) return;
-      let answer = raw;
-      if (typeof answer === 'string') {
-        try { answer = JSON.parse(answer); } catch (e) { answer = null; }
-      }
-      if (!answer || typeof answer !== 'object') answer = {};
-      renderScrapsSearchResults(Array.isArray(answer.results) ? answer.results : [], {
-        notes: (Array.isArray(answer.notes) ? answer.notes : []).filter((n) => typeof n === 'string' && n.trim() !== ''),
-        truncated: answer.truncated === true,
-        semantic: answer.semantic !== false,
-        pending: Number(answer.pending) || 0,
-        leftOut: Number(answer.leftOut) || 0,
-        limit: limit
-      });
-    }).catch((err) => {
-      if (seq !== scrapsSearchSeq) return;
-      // "superseded": the backend dropped this search for a newer one, whose answer is the one to show. No sentence for that.
-      if (backendErrorCode(err) === 'superseded') return;
-      showScrapsMeaningFailure(t('scrapsSearchMeaningFailed', { message: oneLineFailure(err, false) }));
-    });
-  }
-
-  // The meaning search could not answer (the feature is off, a cloud host is not allowed, no model ...): the message on one line in
-  // place of the list. The switch stays, so the person can go back to Exact.
-  function showScrapsMeaningFailure(text) {
-    scrapsSearchFlattened = [];
-    scrapsSearchSelectedIndex = 0;
-    scrapsSearchStale = false;
-    updateScrapsDeepButton();
-    if (scrapsSearchResults) {
-      scrapsSearchResults.innerHTML = `<div class="scraps-search-empty scraps-search-error" role="alert">${escapeHtml(text)}</div>`;
-    }
-  }
-
-  function showMoreScrapsMeaning() {
-    const q = scrapsSearchInput ? scrapsSearchInput.value.trim() : '';
-    if (!q || !scrapsMeaningMode()) return;
-    scrapsSearchLimit = SCRAPS_MORE_LIMIT;
-    scrapsSearchStale = true; // the list on screen is the shorter one until the longer one arrives
-    updateScrapsDeepButton();
-    if (scrapsSearchInput) scrapsSearchInput.focus();
-    runScrapsSemanticSearch(q);
-  }
-
-  // ---- Deep search: excerpts of the hits go to the AI, the answer with source links goes into a NEW note --------------------------
-
-  function populateDeepSearchModelSelect() {
-    const sel = document.getElementById('scraps-deep-model');
-    if (!sel) return;
-    const baseModel = (config.text && config.text.model) ? String(config.text.model).trim() : '';
-    const baseUrl = (config.text && config.text.baseUrl) ? String(config.text.baseUrl).trim() : '';
-    let prov = 'gemini';
-    if (baseUrl.includes('openrouter.ai')) prov = 'openrouter';
-    else if (baseUrl.includes('openai.com')) prov = 'openai';
-    else if (baseUrl.includes('11434')) prov = 'ollama';
-    else if (baseUrl.includes('1234')) prov = 'lmstudio';
-    else if (baseUrl.includes('groq.com')) prov = 'groq';
-    else if (baseUrl.includes('deepseek.com')) prov = 'deepseek';
-    else if (baseUrl.includes('dashscope')) prov = 'qwen';
-
-    const opts = [];
-    const seen = new Set();
-    const addOpt = (val, label) => {
-      if (seen.has(val)) return;
-      seen.add(val);
-      opts.push({ val, label });
-    };
-    addOpt('', baseModel ? `Default (${baseModel})` : 'Default (Settings)');
-    const preset = (typeof TEXT_PROVIDER_PRESETS !== 'undefined' && TEXT_PROVIDER_PRESETS[prov]) ? TEXT_PROVIDER_PRESETS[prov] : null;
-    if (preset && Array.isArray(preset.models)) {
-      preset.models.forEach((m) => addOpt(m.id, m.id));
-    }
-    if (prov === 'gemini' || !baseUrl) {
-      addOpt('gemini-4-argon', 'gemini-4-argon');
-      addOpt('gemini-4-hydrogen', 'gemini-4-hydrogen');
-      addOpt('gemini-3.8-flash', 'gemini-3.8-flash');
-    }
-
-    let saved = '';
-    try { saved = localStorage.getItem('syki_deep_model') || ''; } catch (_) {}
-    if (saved && !seen.has(saved)) addOpt(saved, saved);
-
-    sel.textContent = '';
-    opts.forEach((o) => {
-      const opt = document.createElement('option');
-      opt.value = o.val;
-      opt.textContent = o.label;
-      sel.appendChild(opt);
-    });
-    sel.value = saved;
-    if (!sel.dataset.wired) {
-      sel.dataset.wired = '1';
-      sel.addEventListener('change', () => {
-        try { localStorage.setItem('syki_deep_model', sel.value || ''); } catch (_) {}
-      });
-    }
-  }
-
-  function getSelectedDeepModel() {
-    const sel = document.getElementById('scraps-deep-model');
-    return sel ? String(sel.value || '').trim() : '';
-  }
-
-  function isDeepSkipConfirmEnabled() {
-    const chk = document.getElementById('chk-deep-skip-confirm');
-    return !!(chk && chk.checked);
-  }
-
-  function getSelectedDeepLength() {
-    const grp = document.getElementById('scraps-deep-length');
-    if (!grp) return 'standard';
-    const active = grp.querySelector('.scraps-mode-btn.active');
-    const v = active ? String(active.getAttribute('data-length') || '') : '';
-    return (v === 'short' || v === 'long') ? v : 'standard';
-  }
-
-  function syncDeepLengthButtons() {
-    const grp = document.getElementById('scraps-deep-length');
-    if (!grp) return;
-    let saved = 'standard';
-    try {
-      const s = localStorage.getItem('syki_deep_length');
-      if (s === 'short' || s === 'standard' || s === 'long') saved = s;
-    } catch (_) {}
-    const btns = grp.querySelectorAll('.scraps-mode-btn[data-length]');
-    btns.forEach((b) => {
-      const on = b.getAttribute('data-length') === saved;
-      b.classList.toggle('active', on);
-      b.setAttribute('aria-pressed', on ? 'true' : 'false');
-    });
-    if (!grp.dataset.wired) {
-      grp.dataset.wired = '1';
-      btns.forEach((b) => {
-        b.addEventListener('click', () => {
-          const val = b.getAttribute('data-length') || 'standard';
-          try { localStorage.setItem('syki_deep_length', val); } catch (_) {}
-          btns.forEach((x) => {
-            const on = x === b;
-            x.classList.toggle('active', on);
-            x.setAttribute('aria-pressed', on ? 'true' : 'false');
-          });
-        });
-      });
-    }
-  }
-
-  // The button is for a fresh meaning list that has at least one hit.
-  function updateScrapsDeepButton() {
-    const btn = document.getElementById('btn-scraps-deep');
-    if (!btn) return;
-    const visible = !!(scrapsMeaningMode() && !scrapsSearchStale && scrapsSearchFlattened.length > 0);
-    btn.classList.toggle('hidden', !visible);
-    btn.disabled = deepSearchPlanning;
-    btn.textContent = t(deepSearchPlanning ? 'deepSearchPreparing' : 'deepSearchButton');
-
-    const sel = document.getElementById('scraps-deep-model');
-    if (sel) {
-      if (visible) populateDeepSearchModelSelect();
-      sel.classList.toggle('hidden', !visible);
-      sel.disabled = deepSearchPlanning;
-    }
-    const lenGrp = document.getElementById('scraps-deep-length');
-    if (lenGrp) {
-      if (visible) syncDeepLengthButtons();
-      lenGrp.classList.toggle('hidden', !visible);
-    }
-    const skipWrap = document.getElementById('scraps-deep-skip-wrap');
-    const skipChk = document.getElementById('chk-deep-skip-confirm');
-    if (skipWrap && skipChk) {
-      if (!skipChk.dataset.wired) {
-        skipChk.dataset.wired = '1';
-        try { skipChk.checked = localStorage.getItem('syki_deep_skip_confirm') === '1'; } catch (_) {}
-        skipChk.addEventListener('change', () => {
-          try { localStorage.setItem('syki_deep_skip_confirm', skipChk.checked ? '1' : '0'); } catch (_) {}
-        });
-      }
-      skipWrap.classList.toggle('hidden', !visible);
-    }
-  }
-
-  // Whatever is being prepared is no longer wanted (the panel closed, the mode or the text changed): its answer will be dropped.
-  function invalidateDeepPlan() {
-    deepSearchToken++;
-    if (deepSearchPlanning) {
-      deepSearchPlanning = false;
-      updateScrapsDeepButton();
-    }
-  }
-
-  // Button / Ctrl+Enter: ask the backend for the plan (it searches and builds the excerpts; nothing is sent to the AI yet), then
-  // show what would be sent and to whom.
-  async function startDeepSearch() {
-    if (deepSearchPlanning || deepDialogOpen || !scrapsMeaningMode() || scrapsSearchStale || scrapsSearchFlattened.length === 0) return;
-    const q = scrapsSearchInput ? scrapsSearchInput.value.trim() : '';
-    if (!q || !(window.backend && window.backend.deepSearchPlan)) return;
-    const token = ++deepSearchToken;
-    deepSearchPlanning = true;
-    setScrapsSearchStatus('');
-    updateScrapsDeepButton();
-    const limit = scrapsSearchLimit;
-    deepPlanFilter = scrapsSearchFilterSent; // the filter the list on screen was searched with: the excerpts come from the same notes
-    const got = await fetchDeepPlan(q, limit, deepPlanFilter);
-    if (token !== deepSearchToken) return; // the panel was closed or the text edited meanwhile: nobody waits for this plan any more
-    deepSearchPlanning = false;
-    updateScrapsDeepButton();
-    // (the button was disabled while the plan was prepared, which takes the focus from it: it goes back to the box)
-    if (scrapsSearchInput && (got.failure || deepPlanBlocker(got.plan))) scrapsSearchInput.focus();
-    if (got.failure) {
-      setScrapsSearchStatus(t('deepSearchFailed', { message: got.failure }));
-      return;
-    }
-    const blocker = deepPlanBlocker(got.plan);
-    if (blocker === 'model') {
-      // The same words and the same way out as the ask bar when no model is set up
-      setScrapsSearchStatus(t('askSetupNeeded'), {
-        label: t('askSetupButton'),
-        run: () => { closeScrapsSearchModal(); openAiModelsSettings('text'); }
-      });
-      return;
-    }
-    if (blocker === 'none') {
-      setScrapsSearchStatus(t('deepSearchNoSources'));
-      return;
-    }
-    const selectedModel = getSelectedDeepModel();
-    const selectedLength = getSelectedDeepLength();
-    const dest = got.plan.destination || {};
-    const cloud = dest.local !== true;
-    const alreadyApproved = !cloud || dest.consent_given === true;
-    if (isDeepSkipConfirmEnabled() && alreadyApproved) {
-      runDeepSearch(got.plan, q, limit, selectedModel, selectedLength);
-      return;
-    }
-    showDeepSearchDialog(got.plan, q, false, limit, selectedModel, selectedLength);
-  }
-
-  // The plan from the backend: { plan } or { failure: the reason in one line }.
-  async function fetchDeepPlan(query, limit, filter) {
-    try {
-      let plan = await window.backend.deepSearchPlan(query, limit, filter || null);
-      if (typeof plan === 'string') plan = JSON.parse(plan);
-      return plan && typeof plan === 'object' ? { plan: plan } : { failure: '?' };
-    } catch (err) {
-      return { failure: oneLineFailure(err, false) || '?' };
-    }
-  }
-
-  // Why a plan cannot be run: 'model' (no text model is set up), 'none' (no note to send: the backend then gives plan_id "" and no sources), or ''.
-  function deepPlanBlocker(plan) {
-    if (plan.model_configured === false) return 'model';
-    if (!plan.plan_id || !Array.isArray(plan.sources) || plan.sources.length === 0) return 'none';
-    return '';
-  }
-
-  // The confirmation: how many notes and characters, to which model and host, what was left out, the sources (folded), and for a
-  // cloud host that is not allowed yet the question itself. Cancel has the focus; an Enter right after it appeared is ignored.
-  function showDeepSearchDialog(plan, query, forceConsent, limit, modelOverride, lengthOverride) {
-    const modal = document.getElementById('deep-search-modal');
-    if (!modal) return;
-    const dest = plan.destination || {};
-    const effectiveModel = String(modelOverride || dest.model || '');
-    const stats = plan.stats || {};
-    const sources = plan.sources || [];
-    const ja = (config.general && config.general.language) === 'ja';
-    const fmt = (n) => (Number(n) || 0).toLocaleString(ja ? 'ja-JP' : 'en-US');
-    const cloud = dest.local !== true;
-    const needsConsent = cloud && (dest.consent_given !== true || forceConsent === true);
-    const key = String(dest.consent_key || dest.host || '');
-    const host = String(dest.host || dest.consent_key || '');
-    const el = (id) => document.getElementById(id);
-
-    const chars = Number(stats.total_chars) > 0 ? stats.total_chars : sources.reduce((sum, s) => sum + (Number(s.chars) || 0), 0);
-    const destText = cloud
-      ? t('deepSearchDestCloud', { model: effectiveModel, host: host })
-      : t('deepSearchDestLocal', { model: effectiveModel });
-    const summary = el('deep-search-summary');
-    summary.textContent = t('deepSearchSummary', { count: fmt(sources.length), chars: fmt(chars), dest: destText });
-    summary.setAttribute('data-kind', cloud ? 'cloud' : 'local');
-    const q = String(query || '').replace(/\s+/g, ' ').trim();
-    el('deep-search-query').textContent = t('deepSearchQuery', { query: q.length > 160 ? q.substring(0, 160) + '…' : q });
-
-    el('deep-search-sources-summary').textContent = t('deepSearchSources', { count: fmt(sources.length) });
-    const list = el('deep-search-source-list');
-    list.textContent = '';
-    sources.forEach((src) => {
-      const li = document.createElement('li');
-      const label = String(src.label || src.rel || '');
-      const date = src.date && label.indexOf(String(src.date)) === -1 ? String(src.date) : '';
-      li.appendChild(document.createTextNode(label));
-      const meta = document.createElement('span');
-      meta.className = 'deep-search-source-meta';
-      meta.textContent = ' · ' + (date ? date + ' · ' : '') + t('deepSearchSourceChars', { chars: fmt(src.chars) });
-      li.appendChild(meta);
-      list.appendChild(li);
-    });
-    el('deep-search-sources').open = false;
-
-    const facts = [];
-    if (Number(stats.masked) > 0) facts.push(t('deepSearchMasked', { n: fmt(stats.masked) }));
-    const left = [];
-    [['ignored', 'deepSearchLeftIgnored'], ['ai', 'deepSearchLeftAi'], ['unreadable', 'deepSearchLeftUnreadable'], ['budget', 'deepSearchLeftBudget']].forEach(([field, textKey]) => {
-      if (Number(stats[field]) > 0) left.push(t(textKey, { n: fmt(stats[field]) }));
-    });
-    if (left.length) facts.push(t('deepSearchLeftOut', { list: left.join(ja ? '、' : ', ') }));
-    if (plan.semantic === false) facts.push(t('deepSearchWordsOnly'));
-    if (Number(plan.est_tokens) > 0) facts.push(t('deepSearchTokens', { tokens: fmt(plan.est_tokens) }));
-    (Array.isArray(plan.notes) ? plan.notes : []).forEach((n) => { if (typeof n === 'string' && n.trim()) facts.push(n); });
-    const factsBox = el('deep-search-facts');
-    factsBox.textContent = '';
-    facts.forEach((text) => {
-      const line = document.createElement('div');
-      line.textContent = text;
-      factsBox.appendChild(line);
-    });
-
-    const consent = el('deep-search-consent');
-    consent.classList.toggle('hidden', !needsConsent);
-    consent.textContent = needsConsent ? t('deepSearchConsent', { host: host }) : '';
-    const run = el('deep-search-run');
-    run.textContent = t(needsConsent ? 'deepSearchAllowRun' : 'deepSearchRun');
-    run.disabled = false;
-
-    deepDialogHeld = { plan: plan, query: query, limit: limit, needsConsent: needsConsent, key: key, modelOverride: modelOverride || '', lengthOverride: lengthOverride || '' };
-    deepDialogShownAt = Date.now();
-    deepDialogOpen = true;
-    modal.classList.remove('hidden');
-    document.addEventListener('keydown', deepSearchKeydown, true);
-    el('deep-search-cancel').focus();
-  }
-
-  // While the dialog is up (added when it opens, removed when it closes): Esc cancels, and an Enter that arrives within the guard
-  // time is swallowed (a key still held from the shortcut that raised the dialog must not answer it).
-  function deepSearchKeydown(e) {
-    if (!deepDialogOpen) return;
-    if (e.key === 'Escape') {
-      e.preventDefault();
-      e.stopPropagation();
-      closeDeepSearchDialog(true);
-    } else if (e.key === 'Enter' && Date.now() - deepDialogShownAt < DEEP_CONFIRM_GUARD_MS) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  }
-
-  // refocus: put the caret back in the search box (the panel is still there), or in the note when the panel has gone.
-  function closeDeepSearchDialog(refocus) {
-    const modal = document.getElementById('deep-search-modal');
-    if (modal) modal.classList.add('hidden');
-    document.removeEventListener('keydown', deepSearchKeydown, true);
-    deepDialogOpen = false;
-    deepDialogHeld = null;
-    if (!refocus) return;
-    if (scrapsSearchModal && !scrapsSearchModal.classList.contains('hidden') && scrapsSearchInput) {
-      scrapsSearchInput.focus();
-    } else {
-      const editor = getActiveEditor();
-      if (editor) editor.focus();
-    }
-  }
-
-  function cancelDeepSearchDialog(evt) {
-    if (!deepDialogOpen) return;
-    if (evt && evt.detail === 0 && Date.now() - deepDialogShownAt < DEEP_CONFIRM_GUARD_MS) return;
-    closeDeepSearchDialog(true);
-  }
-
-  async function confirmDeepSearchDialog(evt) {
-    if (!deepDialogOpen || !deepDialogHeld) return;
-    if (evt && evt.detail === 0 && Date.now() - deepDialogShownAt < DEEP_CONFIRM_GUARD_MS) return;
-    const held = deepDialogHeld;
-    if (held.needsConsent) {
-      // "Allow and run": the host is remembered like an answer in the ask bar (general.cloudConsent), and the answer is in config.json
-      // before the run asks the backend, which reads it from there and refuses (consent_required) otherwise.
-      const run = document.getElementById('deep-search-run');
-      if (run) run.disabled = true;
-      let saved = true;
-      if (held.key) {
-        try {
-          saved = (await rememberCloudConsent(held.key)) !== false;
-        } catch (e) {
-          saved = false;
-        }
-      }
-      if (!deepDialogOpen || deepDialogHeld !== held) return; // cancelled while it was being saved
-      if (!saved) {
-        // config.json could not be written (the save has said so): the backend would refuse, so nothing is sent. The dialog stays.
-        if (run) run.disabled = false;
-        return;
-      }
-    }
-    closeDeepSearchDialog(false);
-    runDeepSearch(held.plan, held.query, held.limit, held.modelOverride || '', held.lengthOverride || '');
-  }
-
-  // The tab's name: the backend's title without characters a file name cannot hold, ".md" added.
-  function deepSearchTabTitle(title) {
-    const base = String(title || '').replace(/[\\/:*?"<>|\r\n\t]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\.md$/i, '').substring(0, 80).trim();
-    return (base || t('deepSearchDefaultTitle')) + '.md';
-  }
-
-  // The run: a background task (listed in the task panel, cancellable) that ends in ONE new, unsaved tab holding the answer. The
-  // search panel gives way at once, since the AI may take a while; nothing is created when it is cancelled or fails.
-  window.__onSemanticIdleProgress = function (p) {
-    if (!p || !scrapsSearchModal || scrapsSearchModal.classList.contains('hidden')) return;
-    if (!scrapsMeaningMode()) return;
-    if (p.running) {
-      setScrapsSearchStatus(t('semanticIdleProgress', { files: String(p.filesDone || 0), filesTotal: String(p.filesTotal || 0) }));
-    } else if (scrapsSearchStatusText && scrapsSearchStatusText.textContent && scrapsSearchStatusText.textContent.indexOf('/') !== -1) {
-      setScrapsSearchStatus('');
-    }
-  };
-
-  function runDeepSearch(plan, query, limit, modelOverride, lengthOverride) {
-    const planId = String(plan.plan_id);
-    const taskId = genReqId('deepsearch_');
-    const lang = (config.general && config.general.language) === 'ja' ? 'ja' : 'en';
-    const state = { canceled: false };
-    const effectiveModel = String(modelOverride || (plan.destination && plan.destination.model) || '');
-    const srcCount = Array.isArray(plan.sources) ? plan.sources.length : 0;
-    const finish = (status, error) => {
-      if (window.__onDeepSearchProgress === onProgress) window.__onDeepSearchProgress = null;
-      if (window.TaskManager && window.TaskManager.updateTask) window.TaskManager.updateTask(taskId, { status: status, error: error });
-    };
-    const onProgress = (p) => {
-      if (state.canceled || !p) return;
-      const msg = t('deepSearchProgress', {
-        model: String(p.model || effectiveModel || ''),
-        sec: String(p.elapsedSec || 0),
-        sources: String(p.sources || srcCount)
-      });
-      showMessage(msg, 2500);
-      if (window.TaskManager && window.TaskManager.updateTask) {
-        window.TaskManager.updateTask(taskId, { instruction: msg });
-      }
-    };
-    window.__onDeepSearchProgress = onProgress;
-    if (window.TaskManager && window.TaskManager.addTask) {
-      window.TaskManager.addTask({
-        id: taskId,
-        type: 'deepsearch',
-        agent: t('deepSearchButton'),
-        instruction: String(query || '').replace(/\s+/g, ' ').trim().substring(0, 80),
-        onCancel: () => {
-          state.canceled = true;
-          try {
-            const stopped = window.backend.cancelDeepSearch(planId);
-            if (stopped && typeof stopped.catch === 'function') stopped.catch(() => {});
-          } catch (e) { /* nothing left to stop */ }
-        }
-      });
-    }
-    closeScrapsSearchModal();
-    onProgress({ elapsedSec: 0, sources: srcCount, model: effectiveModel });
-
-    let call;
-    try {
-      call = Promise.resolve(window.backend.deepSearchRun(planId, lang, modelOverride || '', lengthOverride || ''));
-    } catch (err) {
-      call = Promise.reject(err);
-    }
-    call.then((res) => {
-      if (state.canceled) return; // cancelled in the task list: the answer is thrown away
-      const markdown = res && typeof res.markdown === 'string' ? res.markdown : '';
-      if (!markdown.trim()) throw new Error(t('llmEmptyAnswer'));
-      const tab = createTab(deepSearchTabTitle(res.title), markdown, '', undefined, true);
-      tab.cursorPos = 0; // the answer is read from its top
-      tab.isDirty = true; // not a file yet: closing it asks first, and the person chooses where it is saved
-      showTab(tab.id);
-      renderTabs();
-      saveSessionDebounced();
-      finish('completed');
-      showMessage(t('deepSearchDone'), 5000);
-    }).catch((err) => {
-      if (state.canceled) return;
-      const code = backendErrorCode(err);
-      if (code === 'cancelled' || code === 'canceled') {
-        finish('canceled');
-        return;
-      }
-      if (code === 'consent_required') {
-        // Nothing was sent: the backend has no answer for that host. Ask again, in the dialog.
-        finish('failed', t('deepSearchConsent', { host: String((plan.destination && (plan.destination.host || plan.destination.consent_key)) || '') }));
-        showDeepSearchDialog(plan, query, true, limit);
-        return;
-      }
-      if (code === 'plan_expired') {
-        finish('failed', t('deepSearchExpired'));
-        replanDeepSearch(query, limit);
-        return;
-      }
-      if (code === 'model_not_configured') {
-        finish('failed', t('askLlmNotConfigured'));
-        showMessage(t('askLlmNotConfigured'), 6000);
-        return;
-      }
-      const line = oneLineFailure(err, true);
-      finish('failed', line);
-      showMessage(t('deepSearchFailed', { message: line }), 8000, { important: true });
-    });
-  }
-
-  // The plan went stale (it lives 15 minutes, and a run uses it up): prepare it again from the same text and ask again.
-  async function replanDeepSearch(query, limit) {
-    showMessage(t('deepSearchExpired'), 4000);
-    const got = await fetchDeepPlan(query, limit || 10, deepPlanFilter);
-    if (deepDialogOpen) return;
-    if (got.failure) {
-      showMessage(t('deepSearchFailed', { message: got.failure }), 8000, { important: true });
-      return;
-    }
-    const blocker = deepPlanBlocker(got.plan);
-    if (blocker) {
-      showMessage(t(blocker === 'model' ? 'askLlmNotConfigured' : 'deepSearchNoSources'), 6000);
-      return;
-    }
-    showDeepSearchDialog(got.plan, query, false, limit);
-  }
-
-  async function jumpToScrap(filePath, fileName, lineNumber) {
-    // The tab that shows THIS file (same path), never another note that only has the same name: the date-named scrap exists in every folder.
-    let targetTab = findTabByPath(filePath);
-    if (!targetTab) {
-      let content = '';
-      if (window.backend && window.backend.readFileByPath) {
-        try {
-          const res = await window.backend.readFileByPath(filePath);
-          if (res) content = res.content;
-        } catch (e) {
-          console.warn('Failed to read scrap file:', e);
-        }
-      }
-      targetTab = createTab(fileName, content, filePath);
-      targetTab.isAutoTitle = false;
-      targetTab.isScrap = true;
-    }
-    selectTab(targetTab.id);
-
-    setTimeout(() => {
-      gotoLineNumber(lineNumber);
-      flashEditorLine(lineNumber);
-    }, 60);
-  }
+  let deepDialogOpen = false;
+  ensureSearchWorkbench();
+  if (btnSearchScraps) btnSearchScraps.onclick = openScrapsSearchModal;
+  function openScrapsSearchModal() { const wb = ensureSearchWorkbench(); return wb ? wb.open() : undefined; }
+  function closeScrapsSearchModal() { const wb = ensureSearchWorkbench(); return wb ? wb.close() : undefined; }
+  function setScrapsSearchMode(mode) { const wb = ensureSearchWorkbench(); return wb ? wb.setMode(mode) : undefined; }
 
   // Brings the tab that shows a scrap file up to date after something appended to that file (CLI pipe, Quick Capture, hot folder,
   // Discord). A tab with unsaved text is never overwritten and never marked saved: what was typed there is not on disk, so the tab
@@ -14351,91 +13314,82 @@ OUTPUT FORMAT:
     };
   }
 
-  let settingsTabTaskTimer = null;
-  let modelTabInitialized = false;
-  let syncTabInitialized = false;
-  let agentTabInitialized = false;
+  let settingsModalController = null;
+  function ensureSettingsModal() {
+    if (settingsModalController) return settingsModalController;
+    if (typeof window === 'undefined' || !window.SykiSettingsModal) return null;
+    settingsModalController = window.SykiSettingsModal.create({
+      document,
+      window,
+      getConfig: () => config,
+      getSnapshot: () => openedConfigSnapshot,
+      setSnapshot: (snap) => { openedConfigSnapshot = snap; },
+      consumeRefreshRequested: () => {
+        const requested = settingsRefreshRequested;
+        settingsRefreshRequested = false;
+        return requested;
+      },
+      getElements: () => ({
+        settingsModal,
+        contextMenu,
+        tabBtnGeneral,
+        tabBtnModel,
+        tabBtnAgent,
+        tabBtnSync,
+        tabBtnShortcuts,
+        paneGeneral,
+        paneText,
+        paneImage,
+        paneModel,
+        paneAgent,
+        paneSync,
+        paneShortcuts,
+      }),
+      getRecordingAction: () => activeRecordingAction,
+      clearRecordingAction: () => { activeRecordingAction = null; },
+      isShortcutsDirtyOrUnrendered: () => !shortcutsTableRendered || shortcutsTableDirty || activeRecordingAction,
+      renderShortcutsTable: () => renderShortcutsTable(),
+      updateOllamaStatus: () => updateOllamaStatus(),
+      checkActiveAgentsConfigStatus: () => checkActiveAgentsConfigStatus(),
+      checkGitInstalledStatusUI: () => checkGitInstalledStatusUI(),
+      updateGitRepoStatusUI: (dir) => updateGitRepoStatusUI(dir),
+      syncTextProviderSelect: () => syncTextProviderSelect(),
+      updateApiKeyPlaceholders: () => updateApiKeyPlaceholders(),
+      listToText: (arr, sep) => listToText(arr, sep),
+      voiceRefineEnabled: () => voiceRefineEnabled(),
+      initMeetingAudioSettings: () => initMeetingAudioSettings(),
+      cliResultPlacement: () => cliResultPlacement(),
+      showAppearanceControls: (v) => showAppearanceControls(v),
+      updateImeGuardianCapabilityHint: () => updateImeGuardianCapabilityHint(),
+      applyTrayCapabilityUI: () => applyTrayCapabilityUI(),
+      updateQuickActionsFieldStates: () => updateQuickActionsFieldStates(),
+      renderCloudConsentRow: () => renderCloudConsentRow(),
+      getAutoSelectorConfig: () => getAutoSelectorConfig(),
+      updateAutoSelectorFieldStates: () => updateAutoSelectorFieldStates(),
+      updateCFBridgeFieldStates: () => updateCFBridgeFieldStates(),
+      updateCheckAtStartup: () => updateCheckAtStartup(),
+      getPlatformCapabilities: () => platformCapabilities,
+      isMac: () => isMac,
+      getIsAppearancePreviewing: () => appearancePreviewing,
+      clearShortcutParseCache: () => clearShortcutParseCache(),
+      updateShortcutLabels: () => updateShortcutLabels(),
+      refreshSendToStatus: () => refreshSendToStatus(),
+      refreshFileTypesStatus: () => refreshFileTypesStatus(),
+      applyLanguage: () => applyLanguage(),
+      applyTheme: () => applyTheme(),
+      applyChromeLayout: () => applyChromeLayout(),
+      getActiveEditor: () => getActiveEditor(),
+      t,
+      oneLineFailure: (e) => oneLineFailure(e, false),
+      setLastDetectedProvider: (v) => { lastDetectedProvider = v; },
+      renderProviderDetectLine: () => renderProviderDetectLine(),
+    });
+    return settingsModalController;
+  }
 
   function switchSettingsTab(tabName) {
-    // Normalize legacy tab names
-    if (tabName === 'text') tabName = 'general';
-    if (tabName === 'autocomplete' || tabName === 'vision' || tabName === 'image') tabName = 'model';
-    if (tabName === 'cli') tabName = 'agent';
-    if (tabName === 'scraps') tabName = 'sync';
-    if (tabName === 'keys') tabName = 'shortcuts';
-
-    // 0ms immediate UI switch: toggle tab highlight & pane visibility without blocking
-    if (tabBtnGeneral) tabBtnGeneral.classList.toggle('active', tabName === 'general');
-    if (tabBtnModel) tabBtnModel.classList.toggle('active', tabName === 'model');
-    if (tabBtnAgent) tabBtnAgent.classList.toggle('active', tabName === 'agent');
-    if (tabBtnSync) tabBtnSync.classList.toggle('active', tabName === 'sync');
-    if (tabBtnShortcuts) tabBtnShortcuts.classList.toggle('active', tabName === 'shortcuts');
-
-    if (paneGeneral) paneGeneral.classList.toggle('hidden', tabName !== 'general');
-    if (paneText) paneText.classList.toggle('hidden', true);
-    if (paneImage) paneImage.classList.toggle('hidden', true);
-    if (paneModel) paneModel.classList.toggle('hidden', tabName !== 'model');
-    if (paneAgent) paneAgent.classList.toggle('hidden', tabName !== 'agent');
-    if (paneSync) paneSync.classList.toggle('hidden', tabName !== 'sync');
-    if (paneShortcuts) paneShortcuts.classList.toggle('hidden', tabName !== 'shortcuts');
-
-    const modalBody = settingsModal ? settingsModal.querySelector('.modal-body') : null;
-    if (modalBody) {
-      modalBody.classList.toggle('tab-shortcuts-active', tabName === 'shortcuts');
-    }
-
-    if (tabName !== 'shortcuts' && activeRecordingAction) {
-      activeRecordingAction = null;
-    }
-
-    // Shortcuts: once rendered, switching to it is purely a 0ms un-hide operation.
-    if (tabName === 'shortcuts') {
-      if (!shortcutsTableRendered || shortcutsTableDirty || activeRecordingAction) {
-        renderShortcutsTable();
-      }
-      return;
-    }
-
-    // Heavy IPC tasks deferred and initialized purely ON DEMAND (only on first tab visit)
-    if (settingsTabTaskTimer) {
-      clearTimeout(settingsTabTaskTimer);
-      settingsTabTaskTimer = null;
-    }
-    settingsTabTaskTimer = setTimeout(() => {
-      settingsTabTaskTimer = null;
-      if (tabName === 'model') {
-        if (!modelTabInitialized) {
-          modelTabInitialized = true;
-          if (window.SpeechSettings) {
-            window.SpeechSettings.init({ t, backend: window.backend, doc: document });
-            window.SpeechSettings.load(config);
-          }
-          if (window.SemanticSettings) {
-            window.SemanticSettings.init({ t, backend: window.backend, doc: document, oneLine: (e) => oneLineFailure(e, false) });
-            window.SemanticSettings.load(config);
-          }
-        }
-        const prov = (config.text && config.text.provider) || '';
-        const url = (config.text && config.text.baseUrl) || '';
-        if (prov === 'ollama' || url.includes('11434')) {
-          updateOllamaStatus();
-        }
-      } else if (tabName === 'agent') {
-        if (!agentTabInitialized) {
-          agentTabInitialized = true;
-          checkActiveAgentsConfigStatus();
-        }
-      } else if (tabName === 'sync') {
-        if (!syncTabInitialized) {
-          syncTabInitialized = true;
-          checkGitInstalledStatusUI();
-          const scrapDirInput = document.getElementById('cfg-scrap-dir');
-          if (scrapDirInput) {
-            updateGitRepoStatusUI(scrapDirInput.value.trim());
-          }
-        }
-      }
-    }, 20);
+    const ctrl = ensureSettingsModal();
+    if (ctrl) ctrl.switchTab(tabName);
   }
 
   // --- Dynamic Keyboard Shortcuts Engine ---
@@ -15646,393 +14600,18 @@ OUTPUT FORMAT:
   }
 
   function openSettings() {
-    if (contextMenu) contextMenu.classList.add('hidden');
-    // A second open of a dialog that is already up (Ctrl+, again, the gear button) only brings the focus back: reading every field
-    // from the config again would wipe what was typed, and the new snapshot would make Cancel keep a language or theme tried since.
-    if (settingsModal && !settingsModal.classList.contains('hidden') && !settingsRefreshRequested) {
-      if (tabBtnGeneral && !settingsModal.contains(document.activeElement)) tabBtnGeneral.focus();
-      return;
-    }
-    settingsRefreshRequested = false;
-    try {
-      openedConfigSnapshot = JSON.parse(JSON.stringify(config));
-    } catch (e) {
-      openedConfigSnapshot = Object.assign({}, config);
-    }
-
-    document.getElementById('cfg-base-url').value = config.text.baseUrl || '';
-    document.getElementById('cfg-model').value = config.text.model || '';
-    document.getElementById('cfg-api-key').value = config.text.apiKey || '';
-    document.getElementById('cfg-system-prompt').value = config.text.systemPrompt || '';
-
-    const inheritToAllEl = document.getElementById('cfg-inherit-to-all');
-    if (inheritToAllEl) {
-      inheritToAllEl.checked = config.general ? (config.general.inheritTextConnection !== false) : true;
-    }
-    const rewriteHistDirEl = document.getElementById('cfg-rewrite-history-dir');
-    if (rewriteHistDirEl) {
-      rewriteHistDirEl.value = (config.general && config.general.rewriteHistoryDir) || 'history';
-    }
-    const tabDockEl = document.getElementById('cfg-tab-dock');
-    if (tabDockEl) tabDockEl.checked = !(config.general && config.general.tabDock === false);
-    const tabStripWidthEl = document.getElementById('cfg-tab-strip-width');
-    if (tabStripWidthEl) {
-      tabStripWidthEl.value = String(Math.max(12, Math.min(48, Math.round(Number(config.general && config.general.tabStripWidth) || 24))));
-      const widthOut = document.getElementById('cfg-tab-strip-width-value');
-      const showWidth = () => { if (widthOut) widthOut.textContent = tabStripWidthEl.value + 'px'; };
-      showWidth();
-      if (!tabStripWidthEl.dataset.wired) {
-        tabStripWidthEl.dataset.wired = '1';
-        tabStripWidthEl.addEventListener('input', showWidth);
-      }
-    }
-    const tabDockOsEl = document.getElementById('cfg-tab-dock-follow-os');
-    if (tabDockOsEl) tabDockOsEl.checked = !!(config.general && config.general.tabDockFollowOs);
-    const tabDockStrengthEl = document.getElementById('cfg-tab-dock-strength');
-    if (tabDockStrengthEl) {
-      const strength = (config.general && Number(config.general.tabDockStrength)) || 100;
-      tabDockStrengthEl.value = String(Math.max(20, Math.min(100, strength)));
-      tabDockStrengthEl.disabled = !tabDockEl.checked;
-      if (tabDockOsEl) tabDockOsEl.disabled = !tabDockEl.checked;
-      const out = document.getElementById('cfg-tab-dock-strength-value');
-      const show = () => { if (out) out.textContent = tabDockStrengthEl.value + '%'; };
-      show();
-      if (!tabDockStrengthEl.dataset.wired) {
-        tabDockStrengthEl.dataset.wired = '1';
-        tabDockStrengthEl.addEventListener('input', show);
-        tabDockEl.addEventListener('change', () => {
-          tabDockStrengthEl.disabled = !tabDockEl.checked;
-          if (tabDockOsEl) tabDockOsEl.disabled = !tabDockEl.checked;
-        });
-      }
-    }
-    const rewriteHistLinkEl = document.getElementById('cfg-rewrite-history-link');
-    if (rewriteHistLinkEl) {
-      rewriteHistLinkEl.checked = config.general ? (config.general.rewriteHistoryLink !== false) : true;
-    }
-
-    syncTextProviderSelect();
-    updateApiKeyPlaceholders();
-
-    document.getElementById('cfg-auto-enabled').checked = config.autocomplete.enabled;
-    document.getElementById('cfg-auto-base-url').value = config.autocomplete.baseUrl || 'http://localhost:11434';
-    document.getElementById('cfg-auto-model').value = config.autocomplete.model || 'qwen2.5:latest';
-    document.getElementById('cfg-auto-api-key').value = config.autocomplete.apiKey || '';
-    document.getElementById('cfg-auto-delay').value = config.autocomplete.delayMs || 500;
-    document.getElementById('cfg-auto-tokens').value = config.autocomplete.maxTokens || 30;
-
-    document.getElementById('cfg-vision-base-url').value = config.vision.baseUrl || '';
-    document.getElementById('cfg-vision-model').value = config.vision.model || 'gemini-flash-lite-latest';
-    document.getElementById('cfg-vision-api-key').value = config.vision.apiKey || '';
-    document.getElementById('cfg-vision-prompt').value = config.vision.prompt || '';
-
-    // The Gemini model and API style of each kind of transcription (js/voice_profiles.js): realtime (-rt) and batch (-bt). A config saved
-    // before the two existed has one of each, which both start from.
-    [['-rt', 'realtime'], ['-bt', 'batch']].forEach(([sfx, name]) => {
-      const prof = window.VoiceProfiles ? window.VoiceProfiles.resolve(config.voice, name) : { model: config.voice && config.voice.model, apiStyle: config.voice && config.voice.apiStyle };
-      const voiceModelEl = document.getElementById('cfg-voice-model' + sfx);
-      if (voiceModelEl) voiceModelEl.value = prof.model || 'gemini-3.5-transcribe';
-      const voiceStyleEl = document.getElementById('cfg-voice-api-style' + sfx);
-      if (voiceStyleEl) voiceStyleEl.value = (prof.apiStyle === 'interactions' || prof.apiStyle === 'generateContent') ? prof.apiStyle : 'auto';
-    });
-    const voiceLanguageEl = document.getElementById('cfg-voice-language');
-    if (voiceLanguageEl) voiceLanguageEl.value = listToText(config.voice && config.voice.languageCodes, ', ');
-    const voiceModeEl = document.getElementById('cfg-voice-mode');
-    if (voiceModeEl) voiceModeEl.value = (config.voice && config.voice.mode === 'verbatim') ? 'verbatim' : 'smart';
-    const voiceVocabularyEl = document.getElementById('cfg-voice-vocabulary');
-    if (voiceVocabularyEl) voiceVocabularyEl.value = listToText(config.voice && config.voice.customVocabulary, '\n');
-    const voiceSilenceEl = document.getElementById('cfg-voice-silence');
-    if (voiceSilenceEl) voiceSilenceEl.value = (config.voice && config.voice.silence_timeout_sec) || 5;
-    const barVoiceEl = document.getElementById('cfg-bar-voice');
-    if (barVoiceEl) barVoiceEl.checked = !(config.general && config.general.barVoice === false);
-    const barSilenceEl = document.getElementById('cfg-voice-bar-silence');
-    if (barSilenceEl) barSilenceEl.value = (config.voice && config.voice.barSilenceSec) || 1.5;
-    const voiceRefine = (config.voice && config.voice.refine) || {};
-    const voiceRefineEnabledEl = document.getElementById('cfg-voice-refine-enabled');
-    if (voiceRefineEnabledEl) voiceRefineEnabledEl.checked = voiceRefineEnabled();
-    initMeetingAudioSettings();
-    const voiceRefineModelEl = document.getElementById('cfg-voice-refine-model');
-    if (voiceRefineModelEl) voiceRefineModelEl.value = voiceRefine.model || 'gemini-flash-lite-latest';
-    const voiceRefineTimeoutEl = document.getElementById('cfg-voice-refine-timeout');
-    if (voiceRefineTimeoutEl) voiceRefineTimeoutEl.value = voiceRefine.timeoutSec || 5;
-    const voicePromptEl = document.getElementById('cfg-voice-prompt');
-    if (voicePromptEl) voicePromptEl.value = (config.voice && config.voice.prompt) || '';
-    const voiceCredentialHintEl = document.getElementById('cfg-voice-credential-hint');
-    if (voiceCredentialHintEl) {
-      voiceCredentialHintEl.classList.toggle('hidden', !!(config.voice && config.voice.apiKey));
-    }
-
-    const cliModelEl = document.getElementById('cfg-cli-model');
-    if (cliModelEl) cliModelEl.value = (config.cli && config.cli.model) || '';
-    const cliBaseUrlEl = document.getElementById('cfg-cli-base-url');
-    if (cliBaseUrlEl) cliBaseUrlEl.value = (config.cli && config.cli.baseUrl) || '';
-    const cliApiKeyEl = document.getElementById('cfg-cli-api-key');
-    if (cliApiKeyEl) cliApiKeyEl.value = (config.cli && config.cli.apiKey) || '';
-    const cliSysPromptEl = document.getElementById('cfg-cli-system-prompt');
-    if (cliSysPromptEl) cliSysPromptEl.value = (config.cli && config.cli.systemPrompt) || '';
-    const cliOpenNewTabEl = document.getElementById('cfg-cli-open-new-tab');
-    if (cliOpenNewTabEl) cliOpenNewTabEl.checked = config.cli ? (config.cli.openResultInNewTab !== false) : true;
-    const cliResultPlacementEl = document.getElementById('cfg-cli-result-placement');
-    if (cliResultPlacementEl) cliResultPlacementEl.value = cliResultPlacement();
-    const cliOpenErrorTabEl = document.getElementById('cfg-cli-open-error-tab');
-    if (cliOpenErrorTabEl) cliOpenErrorTabEl.checked = config.cli ? (config.cli.openErrorInNewTab !== false) : true;
-
-    const actEnabledEl = document.getElementById('cfg-action-enabled');
-    if (actEnabledEl) actEnabledEl.checked = config.action ? (config.action.enabled !== false) : true;
-    const actManualOnlyEl = document.getElementById('cfg-action-manual-only');
-    if (actManualOnlyEl) actManualOnlyEl.checked = config.action ? !!config.action.manualOnly : false;
-    const actDelayEl = document.getElementById('cfg-action-delay');
-    if (actDelayEl) actDelayEl.value = (config.action && typeof config.action.delaySec === 'number') ? config.action.delaySec : 1.5;
-    const actBaseUrlEl = document.getElementById('cfg-action-base-url');
-    if (actBaseUrlEl) actBaseUrlEl.value = (config.action && config.action.baseUrl) || '';
-    const actModelEl = document.getElementById('cfg-action-model');
-    if (actModelEl) actModelEl.value = (config.action && config.action.model) || '';
-    const actApiKeyEl = document.getElementById('cfg-action-api-key');
-    if (actApiKeyEl) actApiKeyEl.value = (config.action && config.action.apiKey) || '';
-
-    const imgApiKeyInput = document.getElementById('cfg-image-api-key');
-    if (imgApiKeyInput) imgApiKeyInput.value = (config.image && config.image.apiKey) || '';
-    const imgModelInput = document.getElementById('cfg-image-model');
-    if (imgModelInput) {
-      const rawModel = config.image && config.image.model;
-      imgModelInput.value = rawModel ? rawModel.trim() : 'gemini-3.1-flash-lite-image';
-    }
-    const imgAspectSelect = document.getElementById('cfg-image-aspect-ratio');
-    if (imgAspectSelect) imgAspectSelect.value = (config.image && config.image.aspectRatio) || '16:9';
-    const imgResSelect = document.getElementById('cfg-image-resolution');
-    if (imgResSelect) imgResSelect.value = (config.image && config.image.resolution) || '1024';
-
-    showAppearanceControls(window.Appearance ? window.Appearance.fromConfig(config) : null);
-    const mermaidToneSelect = document.getElementById('cfg-mermaid-tone');
-    if (mermaidToneSelect) {
-      mermaidToneSelect.value = window.MermaidTone.normalizeTone(config.general.mermaidTone);
-    }
-    const diagramDetailSelect = document.getElementById('cfg-diagram-detail');
-    if (diagramDetailSelect) {
-      diagramDetailSelect.value = config.general.diagramDetail || 'balanced';
-    }
-    const diagramStyleSelect = document.getElementById('cfg-diagram-style');
-    if (diagramStyleSelect) {
-      diagramStyleSelect.value = config.general.diagramStyle || 'material';
-    }
-    document.getElementById('cfg-language').value = config.general.language || 'en';
-    document.getElementById('cfg-restore-session').checked = config.general.restoreSession !== false;
-    document.getElementById('cfg-autosave').checked = config.general.autoSave;
-    const noteDirEl = document.getElementById('cfg-default-note-dir');
-    if (noteDirEl) noteDirEl.value = config.general.defaultNoteDir || '';
-    document.getElementById('cfg-paste-image-ocr').checked = config.general.pasteImageOcr;
-    const pasteHtmlMdEl = document.getElementById('cfg-paste-html-md');
-    if (pasteHtmlMdEl) pasteHtmlMdEl.checked = config.general.pasteHtmlAsMarkdown !== false;
-    const imeGuardianCheckbox = document.getElementById('cfg-ime-guardian');
-    if (imeGuardianCheckbox) {
-      imeGuardianCheckbox.checked = !!(config.general && config.general.imeGuardian);
-    }
-    const imeRetypeGroup = document.getElementById('ime-retype-group');
-    if (imeRetypeGroup) imeRetypeGroup.classList.toggle('hidden', !(window.backend && window.backend.retypeWithImeAsync));
-    const imeReverseGroup = document.getElementById('ime-reverse-group');
-    if (imeReverseGroup) imeReverseGroup.classList.toggle('hidden', !(window.backend && window.backend.retypeWithImeAsync));
-    const imeReverseCheckbox = document.getElementById('cfg-ime-reverse');
-    if (imeReverseCheckbox) imeReverseCheckbox.checked = !!(config.general && config.general.imeGuardianReverse);
-    const imeRetypeCheckbox = document.getElementById('cfg-ime-retype');
-    if (imeRetypeCheckbox) imeRetypeCheckbox.checked = !!(config.general && config.general.imeGuardianRetype);
-    // Refresh the OS-capability hints (persistent IME hint, tray/Dock disable)
-    // in case platformCapabilities resolved after the last render.
-    updateImeGuardianCapabilityHint();
-    applyTrayCapabilityUI();
-    const aiCorrectionCheckbox = document.getElementById('cfg-ai-correction');
-    if (aiCorrectionCheckbox) {
-      aiCorrectionCheckbox.checked = config.general.aiCorrection !== false;
-    }
-    const cursorAuraCheckbox = document.getElementById('cfg-cursor-aura');
-    if (cursorAuraCheckbox) {
-      cursorAuraCheckbox.checked = config.general.cursorAura !== false;
-    }
-    const commentStyleSelect = document.getElementById('cfg-comment-style');
-    if (commentStyleSelect) {
-      commentStyleSelect.value = config.general.commentStyle === 'block' ? 'block' : 'line';
-    }
-    const trimWebViewEl = document.getElementById('cfg-trim-webview');
-    if (trimWebViewEl) trimWebViewEl.checked = config.general.trimWebViewWhenHidden !== false;
-    const webViewGpuEl = document.getElementById('cfg-webview-inproc-gpu');
-    if (webViewGpuEl) webViewGpuEl.checked = config.general.webViewInProcessGpu === true;
-    const trayResidentCheckbox = document.getElementById('cfg-tray-resident');
-    if (trayResidentCheckbox) {
-      trayResidentCheckbox.checked = config.general.trayResident !== false;
-    }
-    const splitViewOnStartupCheckbox = document.getElementById('cfg-split-view-on-startup');
-    if (splitViewOnStartupCheckbox) {
-      splitViewOnStartupCheckbox.checked = !!(config.general && config.general.splitViewOnStartup);
-    }
-    const checkUpdatesCheckbox = document.getElementById('cfg-check-updates');
-    if (checkUpdatesCheckbox) checkUpdatesCheckbox.checked = updateCheckAtStartup();
-    renderCloudConsentRow();
-
-    // Slot & Autonomous Agent Settings (v2.2.0)
-    const slotTimeoutEl = document.getElementById('cfg-slot-timeout');
-    if (slotTimeoutEl) slotTimeoutEl.value = config.timeout_seconds || 180;
-    const ghostDiffEl = document.getElementById('cfg-slot-ghost-diff-ms');
-    if (ghostDiffEl) ghostDiffEl.value = config.ghost_diff_duration_ms || 4000;
-    const hoverPeekEl = document.getElementById('cfg-slot-hover-peek');
-    if (hoverPeekEl) hoverPeekEl.checked = config.hover_peek_enabled !== false;
-    const defaultAgentEl = document.getElementById('cfg-default-agent');
-    if (defaultAgentEl) defaultAgentEl.value = config.default_agent || 'claude-code';
-    checkActiveAgentsConfigStatus();
-
-    const autoSelEnabledEl = document.getElementById('cfg-autosel-enabled');
-    if (autoSelEnabledEl) autoSelEnabledEl.checked = getAutoSelectorConfig().enabled;
-    const autoSelConfirmEl = document.getElementById('cfg-autosel-agent-confirm');
-    if (autoSelConfirmEl) autoSelConfirmEl.checked = getAutoSelectorConfig().agentConfirm;
-    updateAutoSelectorFieldStates();
-
-    // Scraps & Background Git Sync Settings
-    const scrapDirEl = document.getElementById('cfg-scrap-dir');
-    if (scrapDirEl) {
-      scrapDirEl.value = (config.scraps && config.scraps.scrapDir) || config.scrap_dir || '~/Documents/syki-sok/scraps';
-    }
-    const gitSyncEnabledEl = document.getElementById('cfg-git-sync-enabled');
-    if (gitSyncEnabledEl) {
-      gitSyncEnabledEl.checked = config.scraps ? (config.scraps.gitSyncEnabled !== false) : (config.git_sync_enabled !== false);
-    }
-    const gitDebounceEl = document.getElementById('cfg-git-debounce');
-    if (gitDebounceEl) {
-      gitDebounceEl.value = (config.scraps && config.scraps.gitSyncDebounceSeconds) || config.git_sync_debounce_seconds || 30;
-    }
-    const gitBranchEl = document.getElementById('cfg-git-remote-branch');
-    if (gitBranchEl) {
-      gitBranchEl.value = (config.scraps && config.scraps.gitRemoteBranch) || config.git_remote_branch || 'main';
-    }
-    const gitRemoteUrlEl = document.getElementById('cfg-git-remote-url');
-    if (gitRemoteUrlEl) {
-      gitRemoteUrlEl.value = (config.scraps && config.scraps.gitRemoteUrl) || '';
-    }
-    const maxPipeSizeEl = document.getElementById('cfg-max-pipe-size');
-    if (maxPipeSizeEl) {
-      maxPipeSizeEl.value = (config.scraps && config.scraps.maxPipeSizeMB) || config.max_pipe_size_mb || 10;
-    }
-
-    // CF Mobile Bridge
-    const cfEnabledEl = document.getElementById('cfg-cf-enabled');
-    if (cfEnabledEl) cfEnabledEl.checked = !!(config.cfBridge && config.cfBridge.enabled);
-    const cfEndpointEl = document.getElementById('cfg-cf-endpoint');
-    if (cfEndpointEl) cfEndpointEl.value = (config.cfBridge && config.cfBridge.endpoint) || '';
-    const cfTokenEl = document.getElementById('cfg-cf-token');
-    if (cfTokenEl) cfTokenEl.value = (config.cfBridge && config.cfBridge.token) || '';
-    const cfIntervalEl = document.getElementById('cfg-cf-poll-interval');
-    if (cfIntervalEl) cfIntervalEl.value = (config.cfBridge && config.cfBridge.pollIntervalSeconds) || 30;
-    const cfHintEl = document.getElementById('cf-test-result-hint');
-    if (cfHintEl) cfHintEl.textContent = '';
-    updateCFBridgeFieldStates();
-
-    // Inbox (Hot Folder)
-    const inboxEnabledEl = document.getElementById('cfg-inbox-enabled');
-    if (inboxEnabledEl) inboxEnabledEl.checked = !!(config.inbox && config.inbox.enabled);
-    const inboxDirEl = document.getElementById('cfg-inbox-dir');
-    if (inboxDirEl) inboxDirEl.value = (config.inbox && config.inbox.dir) || '';
-    const ocrOnDeviceEl = document.getElementById('cfg-ocr-on-device');
-    if (ocrOnDeviceEl) {
-      ocrOnDeviceEl.checked = !!(config.vision && config.vision.ocrMode === 'on-device');
-      // The on-device OCR is Windows.Media.Ocr; there is no macOS engine behind it, so "on-device only"
-      // would make every image fail there. Do not offer it.
-      const ocrGroup = ocrOnDeviceEl.closest ? ocrOnDeviceEl.closest('.form-group') : null;
-      if (ocrGroup && ocrGroup.classList) ocrGroup.classList.toggle('hidden', isMac || platformCapabilities.os === 'darwin');
-    }
-
-    switchSettingsTab('general');
-    updateQuickActionsFieldStates();
-    updateLLMProviderDetection();
-    if (window.SettingsCompact && window.SettingsCompact.refresh) {
-      window.SettingsCompact.refresh(document);
-    }
-
-    const mainKeyInput = document.getElementById('cfg-api-key');
-    if (mainKeyInput && !mainKeyInput.dataset.inheritedPlaceholderWired) {
-      mainKeyInput.dataset.inheritedPlaceholderWired = '1';
-      mainKeyInput.addEventListener('input', updateApiKeyPlaceholders);
-    }
-
-    settingsModal.classList.remove('hidden');
-
-    // Reset tab on-demand init flags for new settings session
-    modelTabInitialized = false;
-    syncTabInitialized = false;
-    agentTabInitialized = false;
-
-    // Lightweight tasks only; heavy tasks (Git status on cloud folders, Speech/Semantic status)
-    // are deferred strictly to when their respective tabs are actively opened.
-    setTimeout(() => {
-      refreshSendToStatus();
-      refreshFileTypesStatus();
-      updateShortcutLabels();
-    }, 20);
-    // Match the other modals in this app: move focus into the dialog on open, and
-    // back to the editor on close.
-    setTimeout(() => {
-      // The tab that is showing, not always the first: the AI item of the status bar, the ask bar and the palette switch the tab right
-      // after opening, and focus left on a tab that is not showing put a keyboard user in the wrong place.
-      const shown = [tabBtnGeneral, tabBtnModel, tabBtnAgent, tabBtnSync, tabBtnShortcuts].find((b) => b && b.classList && b.classList.contains('active'));
-      const target = shown || tabBtnGeneral;
-      if (target) target.focus();
-    }, 50);
+    const ctrl = ensureSettingsModal();
+    if (ctrl) ctrl.open();
   }
 
   function closeSettings() {
-    activeRecordingAction = null;
-    settingsModal.classList.add('hidden');
-    const editor = getActiveEditor();
-    if (editor) editor.focus();
+    const ctrl = ensureSettingsModal();
+    if (ctrl) ctrl.close();
   }
 
-  // Restores config fields that were mutated live (applied immediately while
-  // the dialog was open, before Save) back to the snapshot taken at open time.
-  // Called only on Cancel/×/Esc — never after a real Save.
   function restoreLiveConfigFromSnapshot() {
-    const snap = openedConfigSnapshot;
-    if (!snap) return;
-    let languageChanged = false;
-    let themeChanged = false;
-    if (config.general && snap.general) {
-      if (config.general.language !== snap.general.language) {
-        config.general.language = snap.general.language;
-        languageChanged = true;
-      }
-      if (config.general.theme !== snap.general.theme) {
-        config.general.theme = snap.general.theme;
-        themeChanged = true;
-      }
-    }
-    if (config.default_agent !== snap.default_agent) {
-      config.default_agent = snap.default_agent;
-      if (window.SlotAgent && window.SlotAgent.updateConfig) {
-        window.SlotAgent.updateConfig(config);
-      }
-    }
-    // Shortcut recording mutates config.shortcuts in place (matchShortcut()
-    // reads it live), so an unsaved recording would otherwise stay active
-    // for the rest of the session even after Cancel.
-    if (snap.shortcuts && JSON.stringify(config.shortcuts) !== JSON.stringify(snap.shortcuts)) {
-      config.shortcuts = Object.assign({}, snap.shortcuts);
-      clearShortcutParseCache();
-      updateShortcutLabels();
-    }
-    // Toolbar / right-click layout edits are applied live too: put the saved arrangement back.
-    let layoutChanged = false;
-    if (config.general && snap.general) {
-      for (const key of ['toolbarLayout', 'contextMenuLayout']) {
-        if (JSON.stringify(config.general[key]) !== JSON.stringify(snap.general[key])) {
-          config.general[key] = snap.general[key]
-            ? JSON.parse(JSON.stringify(snap.general[key]))
-            : { order: [], hidden: [] };
-          layoutChanged = true;
-        }
-      }
-    }
-    // "Forget" in Settings > General clears the allowed cloud hosts in memory; Cancel puts them back (Save is what writes them).
-    if (config.general && snap.general && JSON.stringify(config.general.cloudConsent) !== JSON.stringify(snap.general.cloudConsent)) {
-      config.general.cloudConsent = snap.general.cloudConsent ? JSON.parse(JSON.stringify(snap.general.cloudConsent)) : {};
-    }
-    if (languageChanged) applyLanguage();
-    if (themeChanged || appearancePreviewing) applyTheme(); // the look, accent or font shown by the dialog but never saved
-    if (layoutChanged) applyChromeLayout();
+    const ctrl = ensureSettingsModal();
+    if (ctrl) ctrl.restoreLiveConfigFromSnapshot();
   }
 
   // Cancel / × / Esc path: undo anything applied live, then hide the dialog.
@@ -16087,38 +14666,12 @@ OUTPUT FORMAT:
   // silently guess Ollama/Gemini/OpenAI from the URL shape with no feedback.
   // This surfaces what was actually detected, using the backend's own
   // heuristic (never re-implemented here).
-  let providerDetectReqToken = 0;
   // The provider the last detection found ('' = none we know), null = no line is showing. A var, not a let: applyLanguage()
   // reads it through renderProviderDetectLine(), and it may run before this line has.
   var lastDetectedProvider = null;
-  async function updateLLMProviderDetection() {
-    const lineEl = document.getElementById('text-provider-detect-line');
-    if (!lineEl) return;
-    if (!(window.backend && window.backend.detectLLMProvider)) {
-      lastDetectedProvider = null;
-      lineEl.classList.add('hidden');
-      return;
-    }
-    const baseUrlEl = document.getElementById('cfg-base-url');
-    const apiKeyEl = document.getElementById('cfg-api-key');
-    const baseUrl = baseUrlEl ? baseUrlEl.value.trim() : '';
-    const apiKey = apiKeyEl ? apiKeyEl.value.trim() : '';
-    if (!baseUrl) {
-      lastDetectedProvider = null;
-      lineEl.classList.add('hidden');
-      return;
-    }
-    const myToken = ++providerDetectReqToken;
-    try {
-      const provider = await window.backend.detectLLMProvider(baseUrl, apiKey);
-      if (myToken !== providerDetectReqToken) return; // stale response, URL changed since
-      lastDetectedProvider = provider == null ? '' : String(provider);
-      renderProviderDetectLine();
-      lineEl.classList.remove('hidden');
-    } catch (e) {
-      lastDetectedProvider = null;
-      lineEl.classList.add('hidden');
-    }
+  function updateLLMProviderDetection() {
+    const ctrl = ensureSettingsModal();
+    if (ctrl) return ctrl.updateProviderDetection();
   }
 
   // Writes the protocol line from the provider that was detected last, so that a change of the UI language can write it
@@ -17339,7 +15892,7 @@ OUTPUT FORMAT:
     applyCalmToolbarForNewProfile();
     applyTheme();
     if (typeof window !== 'undefined') window.__sykiApplyLangRan = false;
-    applyLanguage();
+    applyLanguage({ deferHiddenModals: true });
     applyChromeLayout(); // synchronous, before the first paint: no flash of hidden icons
     if (typeof window === 'undefined' || !window.__sykiApplyLangRan) {
       updateShortcutLabels();
@@ -18265,8 +16818,6 @@ OUTPUT FORMAT:
     if (!restored || tabs.length === 0) {
       createTab();
     }
-    initTabResizer();
-    initTabDock();
     try {
       if (localStorage.getItem('syki-tabs-pinned') === '1') {
         setPinTabs(true);
@@ -18293,11 +16844,24 @@ OUTPUT FORMAT:
       insertTextWithUndo(earlyChars, editorEl);
     }
 
-    triggerCursorAuraDebounced();
-    // Cheap listener registration only (hover-preview mousemove, scroll, keydown); no
-    // per-file work happens until an actual drag/click/hover occurs.
-    if (window.FileAnchor) window.FileAnchor.init();
-    initDraggablePanels();
+    // Defer non-critical chrome listeners (resizers, tab dock, draggable panels, cursor aura,
+    // hidden modal i18n) until after first paint, editor focus, and early key/voice replay.
+    const scheduleIdleChromeInit = () => {
+      initTabResizer();
+      initTabDock();
+      initDraggablePanels();
+      initPaneResizer();
+      triggerCursorAuraDebounced();
+      if (deferredModalI18nPending) {
+        deferredModalI18nPending = false;
+        applyLanguage();
+      }
+    };
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => setTimeout(scheduleIdleChromeInit, 0));
+    } else {
+      setTimeout(scheduleIdleChromeInit, 0);
+    }
 
     // 2. Background Asynchronous Verification & Sync:
     setTimeout(announceAgentIssues, 4000); // well after the first paint and the config sync
@@ -18408,7 +16972,6 @@ OUTPUT FORMAT:
     }
 
     setTimeout(checkPendingVoiceCaches, 1200);
-    initPaneResizer();
   }
 
   // Asynchronous background update checker (Zero impact on startup)
@@ -18769,17 +17332,17 @@ OUTPUT FORMAT:
 
   // An error the caller must see as a JSON-RPC error of its own carries its kind as a "[kind] " prefix; the Go side
   // (jsErrorResponse) maps not_found to -32002, conflict to -32001 and invalid_params to -32602. Any other error is -32603.
-  function rpcFail(kind, message) {
+  const rpcFail = function (kind, message) {
+    if (typeof window !== 'undefined' && window.SykiRpcBridge) return window.SykiRpcBridge.rpcFail(kind, message);
     const err = new Error('[' + kind + '] ' + message);
     err.rpcKind = kind;
     throw err;
-  }
-
-  // The hash of a note text: first 8 bytes of SHA-256 of its UTF-8, the same as computeHash in app_rpc.go (note_hash.js).
-  function rpcHash(text) {
+  };
+  const rpcHash = function (text) {
+    if (typeof window !== 'undefined' && window.SykiRpcBridge) return window.SykiRpcBridge.rpcHash(text);
     if (!window.NoteHash) throw new Error('note_hash.js is not loaded');
     return window.NoteHash.hash16(text);
-  }
+  };
 
   // The tab an RPC call names: no id = the tab that is active in the primary pane (as before); an id that names no tab is an error.
   function resolveTab(tabId) {
@@ -18795,9 +17358,10 @@ OUTPUT FORMAT:
 
   // Text in the editor has LF line endings (a textarea hands back LF whatever it was given), so RPC text is made LF too:
   // a tab that is not on screen then holds exactly what it will show, and its hash does not change when it is selected.
-  function lfText(text) {
+  const lfText = function (text) {
+    if (typeof window !== 'undefined' && window.SykiRpcBridge) return window.SykiRpcBridge.lfText(text);
     return String(text == null ? '' : text).replace(/\r\n?/g, '\n');
-  }
+  };
 
   // 1-based line / column (a column counts UTF-16 units, lines split on \n) -> offsets into the text, clamped, end >= start.
   function rangeOffsets(content, startLine, startCol, endLine, endCol) {
@@ -19106,31 +17670,6 @@ OUTPUT FORMAT:
   // (window.__sykiRPC.getCursor / setCursor / getUiState / setUiState / openPanel / getTasks / cancelTask below).
   // Nothing here runs until an RPC call arrives.
 
-  // 1-based line and column of an offset into `text` (a column counts UTF-16 units, lines split on \n): what the status bar shows.
-  function rpcLineCol(text, offset) {
-    const at = Math.max(0, Math.min(offset, text.length));
-    const lastNewline = at > 0 ? text.lastIndexOf('\n', at - 1) : -1; // (lastIndexOf clamps a negative start to 0: see updateStatusBar)
-    return { line: 1 + countNewlines(text, at), col: at - lastNewline };
-  }
-
-  // The caret / selection of a tab as offsets into its LF text. A tab on screen (either pane) is read from its textarea. Any other
-  // tab has no textarea: the tab model remembers ONE offset for it (cursorPos, written when the tab is left, and what selectTab puts
-  // the caret at when the tab is shown again; the end of the text when none was ever written), so the range comes back collapsed.
-  function rpcCaretOf(tab, text) {
-    const editor = editorForTab(tab.id);
-    let start;
-    let end;
-    if (editor) {
-      start = editor.selectionStart;
-      end = editor.selectionEnd;
-    } else {
-      start = end = Number.isFinite(tab.cursorPos) ? tab.cursorPos : text.length;
-    }
-    start = Math.max(0, Math.min(start, text.length));
-    end = Math.max(start, Math.min(end, text.length));
-    return { start: start, end: end };
-  }
-
   // Scrolls `editor` so the line of `offset` is in view (a third of the way down when it was not), only when the editor has a box
   // (a preview covering it does not). Never takes the focus. In a huge note the pixel position is an estimate, see revealCaretInHugeNote.
   function rpcRevealOffset(editor, offset) {
@@ -19321,162 +17860,37 @@ OUTPUT FORMAT:
   }
 
   // Expose programmatic RPC interface for CLI, Unix pipe, and Agent operations
-  window.__sykiRPC = {
-    getBuffer: function (tabId) {
-      const targetTab = resolveTab(tabId);
-      const content = getTabText(targetTab.id) || '';
-      const lines = content.split('\n');
-      return {
-        tabId: targetTab.id,
-        title: targetTab.title || 'Untitled',
-        path: targetTab.path || '',
-        content: content,
-        length: content.length,
-        lineCount: lines.length,
-        isActive: targetTab.id === activeTabId,
-        isModified: !!targetTab.isDirty
-      };
+  function ensureRpcBridge() {
+    if (typeof window === 'undefined') return null;
+    if (window.__sykiRPC) return window.__sykiRPC;
+    if (!window.SykiRpcBridge) return null;
+    window.__sykiRPC = window.SykiRpcBridge.create({
+    resolveTab: resolveTab,
+    getTab: getTab,
+    getTabText: getTabText,
+    writeTabText: writeTabText,
+    editorForTab: editorForTab,
+    getTabs: function () { return tabs; },
+    getViewState: function () {
+      return { activeTabId: activeTabId, isSplitMode: isSplitMode, secondaryTabId: secondaryTabId };
     },
-
-    // The RPC writes (buffer.set / append / replace): ONE call checks expected_hash / expected_generation against the live text
-    // and writes, so nothing can slip in between the check and the write. req: { tabId, mode: 'set' | 'append' | 'replace',
-    // content, range?: {startLine, startCol, endLine, endCol}, expectedHash?, expectedGeneration?, currentGeneration? }
-    // (currentGeneration is the process-wide counter the Go side owns: it counts RPC writes only).
-    // A tab that is not on screen is written too, without being selected. Errors: not_found, conflict (see rpcFail).
-    writeText: function (req) {
-      req = req || {};
-      const tab = resolveTab(req.tabId);
-      const previousHash = rpcHash(getTabText(tab.id));
-      if (req.expectedHash && req.expectedHash !== previousHash) {
-        rpcFail('conflict', 'conflict: expected hash ' + req.expectedHash + ' but buffer is at ' + previousHash);
-      }
-      if (req.expectedGeneration > 0 && req.expectedGeneration !== req.currentGeneration) {
-        rpcFail('conflict', 'conflict: expected generation ' + req.expectedGeneration + ' but buffer is at ' + req.currentGeneration);
-      }
-      writeTabText(tab, req.content, req.mode, req.range);
-      return { tab_id: tab.id, previous_hash: previousHash, hash: rpcHash(getTabText(tab.id)) };
-    },
-
-    // The older positional forms of the same writes (no lock). They no longer switch tabs or take the focus.
-    setBuffer: function (text, tabId) {
-      writeTabText(resolveTab(tabId), text, 'set');
-      return true;
-    },
-
-    appendBuffer: function (text, tabId) {
-      writeTabText(resolveTab(tabId), text, 'append');
-      return true;
-    },
-
-    replaceRange: function (startLine, startCol, endLine, endCol, text, tabId) {
-      writeTabText(resolveTab(tabId), text, 'replace', { startLine: startLine, startCol: startCol, endLine: endLine, endCol: endCol });
-      return true;
-    },
-
-    getTabs: function () {
-      return tabs.map(t => ({
-        id: t.id,
-        title: t.title || 'Untitled',
-        path: t.path || '',
-        isActive: t.id === activeTabId,
-        isModified: !!t.isDirty,
-        // added for tab.list: how the file is read and written, whether it is in the "changed on disk" conflict, a scrap, and where it shows
-        encoding: t.encoding || 'utf-8',
-        eol: t.eol === 'crlf' ? 'crlf' : 'lf',
-        diskConflict: !!t.diskConflict,
-        isScrap: !!t.isScrap,
-        pane: t.id === activeTabId ? 'primary' : (isSplitMode && secondaryTabId === t.id ? 'secondary' : null)
-      }));
-    },
-
-    // An id that names no tab is an error (not_found), not a tab-less window.
-    switchTab: function (tabId) {
-      selectTab(resolveTab(tabId).id);
-      return true;
-    },
-
-    // Folder the active note lives in ('' when unknown). Mobile Drop asks for it (over RPC) to
-    // save a photo or voice note it could not OCR / transcribe next to the note.
-    getNoteDir: function () {
-      return getNoteDir();
-    },
-    // The folder of the note shown in `editor` (the primary or the secondary pane): what a relative link written in that note is read against.
-    getNoteDirForEditor: function (editor) {
-      return getNoteDir(getTab(getTabIdForEditor(editor)));
-    },
-
-    newTab: function (title, content, path) {
-      createTab(title, content, path);
-      return true;
-    },
-
-    // RPC tab.new. spec: { title?, path?, content?, encoding?, background? }. With a path (the Go side has read and decoded
-    // the file) a file that is already open in some tab is not opened again: that tab comes back with existing:true (and is
-    // shown unless background). background: the new tab is added to the bar and nothing is selected or focused.
-    openTab: function (spec) {
-      spec = spec || {};
-      const background = !!spec.background;
-      const existing = spec.path ? findTabByPath(spec.path) : null;
-      if (existing) {
-        // the text the Go side has just read from the file replaces the tab's when the tab has no unsaved text (see adoptDiskText)
-        adoptDiskText(existing, typeof spec.content === 'string' ? lfText(spec.content) : undefined, spec.content);
-        if (!background) showTab(existing.id);
-        return { id: existing.id, title: existing.title || '', path: existing.path || '', existing: true };
-      }
-      const tab = createTab(
-        spec.title || undefined,
-        typeof spec.content === 'string' ? lfText(spec.content) : undefined,
-        spec.path || '',
-        spec.encoding || undefined,
-        background
-      );
-      // the page was given LF text: the file's own line ending is in what Go read
-      if (spec.path && typeof spec.content === 'string') rememberDiskText(tab, lfText(spec.content), spec.content);
-      return { id: tab.id, title: tab.title || '', path: tab.path || '', existing: false };
-    },
-
-    closeTab: function (tabId) {
-      closeTab(tabId || activeTabId);
-      return true;
-    },
-
-    // RPC tab.close: see closeTabForRpc. Resolves to {closed, reason?}.
-    closeTabChecked: function (tabId, ifSaved) {
-      return closeTabForRpc(tabId, !!ifSaved);
-    },
-
-    // RPC buffer.save, step 1: what the Go side needs to validate and write. The text is the live one (editor or tab).
-    prepareSave: function (tabId) {
-      const tab = resolveTab(tabId);
-      const content = getTabText(tab.id);
-      return {
-        tab_id: tab.id,
-        content: content,
-        hash: rpcHash(content),
-        path: tab.path || '',
-        encoding: tab.encoding || 'UTF-8',
-        title: tab.title || '',
-        eol: tab.eol || '',
-        disk_sig: tab.diskSig || ''
-      };
-    },
-
-    // RPC buffer.save, step 2, after the file was written: bind the tab to it the way the GUI's Save As does (path, title,
-    // encoding, clean) and start watching it if it is the active file (as selectTab does). If the text is no longer the one
-    // that was written (the user edited during the save) nothing is bound: conflict. info: { path, encoding, hash, bytes }.
-    commitSave: function (tabId, info) {
-      info = info || {};
-      const tab = getTab(tabId);
-      if (!tab) rpcFail('not_found', 'no such tab: ' + tabId + ' (it was closed while saving; the file was written)');
-      if (rpcHash(getTabText(tab.id)) !== info.hash) {
-        rpcFail('conflict', 'the note was edited while it was being saved (the file holds the earlier text)');
-      }
+    selectTab: selectTab,
+    getNoteDir: getNoteDir,
+    getTabIdForEditor: getTabIdForEditor,
+    createTab: createTab,
+    findTabByPath: findTabByPath,
+    adoptDiskText: adoptDiskText,
+    showTab: showTab,
+    rememberDiskText: rememberDiskText,
+    closeTab: closeTab,
+    closeTabForRpc: closeTabForRpc,
+    commitSaveForTab: function (tab, info) {
       releasePathFromOtherTabs(tab, info.path);
       tab.path = info.path;
       tab.title = String(info.path).split(/[\\/]/).pop();
       tab.isAutoTitle = false;
       tab.encoding = info.encoding || tab.encoding;
-      if (info.sig) { tab.diskSig = info.sig; tab.diskConflict = false; } // the file now holds exactly the text that was written
+      if (info.sig) { tab.diskSig = info.sig; tab.diskConflict = false; }
       tab.isDirty = false;
       if (tab.id === activeTabId) {
         if (statEncoding) statEncoding.textContent = tab.encoding;
@@ -19489,7 +17903,6 @@ OUTPUT FORMAT:
       showMessage(`${t('saveSuccess')}${tab.title}`, 2500);
       return { tab_id: tab.id, path: tab.path, title: tab.title };
     },
-
     toggleSplit: async function () {
       if (typeof toggleSplitMode === 'function') {
         await toggleSplitMode();
@@ -19497,8 +17910,6 @@ OUTPUT FORMAT:
       }
       return false;
     },
-
-    // Selection CLI interface (机能 2): `syki buffer get --selection` / `replace-selection`.
     getSelection: function (tabId) {
       let editor = getActiveEditor();
       let resolvedTabId = getTabIdForEditor(editor);
@@ -19510,7 +17921,6 @@ OUTPUT FORMAT:
           editor = editorSecondary;
           resolvedTabId = secondaryTabId;
         } else {
-          // Only a tab that is on screen has a live selection; any other existing tab is brought forward first.
           if (!getTab(tabId)) rpcFail('not_found', 'no such tab: ' + tabId);
           selectTab(tabId);
           editor = editorEl;
@@ -19528,7 +17938,6 @@ OUTPUT FORMAT:
         hasSelection: end > start
       };
     },
-
     replaceSelection: function (text, tabId, expectedStart, expectedEnd) {
       let editor = getActiveEditor();
       let resolvedTabId = getTabIdForEditor(editor);
@@ -19545,15 +17954,10 @@ OUTPUT FORMAT:
         resolvedTabId = tabId;
       }
       if (!editor) return { replaced: false, start: 0, end: 0, reason: 'no active editor' };
-
-      // Re-check the live selection against the caller's expected bounds so a caret move
-      // between the RPC's read and this write cannot silently clobber the wrong text. Both
-      // negative (buffer.replace_selection never sends them) skips the check.
       if (expectedStart >= 0 && expectedEnd >= 0 &&
         (editor.selectionStart !== expectedStart || editor.selectionEnd !== expectedEnd)) {
         return { replaced: false, start: editor.selectionStart, end: editor.selectionEnd, reason: 'selection changed before replace could be applied' };
       }
-
       editor.focus();
       let success = false;
       try {
@@ -19576,51 +17980,8 @@ OUTPUT FORMAT:
       if (typeof saveSessionDebounced === 'function') saveSessionDebounced();
       return { replaced: true, start: newStart, end: newEnd, reason: '' };
     },
-
-    // RPC buffer.cursor: where the caret / selection of a tab is. Reads only: it selects nothing, focuses nothing, scrolls nothing.
-    // A tab on screen is read from its textarea, any other tab from the one offset the tab model remembers (see rpcCaretOf).
-    // Offsets are UTF-16 units into the tab's LF text; line / col (and endLine / endCol) are 1-based. Errors: not_found.
-    getCursor: function (tabId) {
-      const tab = resolveTab(tabId);
-      const text = getTabText(tab.id) || '';
-      const caret = rpcCaretOf(tab, text);
-      const from = rpcLineCol(text, caret.start);
-      const to = caret.end === caret.start ? from : rpcLineCol(text, caret.end);
-      return {
-        tabId: tab.id,
-        start: caret.start,
-        end: caret.end,
-        hasSelection: caret.end > caret.start,
-        line: from.line,
-        col: from.col,
-        endLine: to.line,
-        endCol: to.col,
-        length: text.length
-      };
-    },
-
-    // RPC buffer.select: puts the caret (or, with end > start, a selection) in a tab. Offsets are clamped to the text, end defaults to
-    // start, start > end is swapped. opts: { scroll?: boolean (default true), focus?: boolean (default false) }.
-    // The focus is taken only when opts.focus is true; otherwise nothing the person is typing in moves. Where the tab is:
-    //   - on screen (the primary pane, the split editor): its textarea is changed in place, and scrolled to when opts.scroll;
-    //   - not on screen: getSelection / replaceSelection bring such a tab forward (selectTab, which also focuses it). That is kept
-    //     for opts.focus true. Without it the tab is left where it is and the offset is stored in the tab model (cursorPos, what
-    //     selectTab restores when the tab is next shown), which holds one offset: the result then has end === start. No scroll.
-    // Errors: not_found (unknown tab), invalid_params (start or end is not a number).
-    setCursor: function (tabId, start, end, opts) {
-      const tab = resolveTab(tabId);
-      opts = opts && typeof opts === 'object' ? opts : {};
-      const asOffset = (value, name) => {
-        if (typeof value !== 'number' || !Number.isFinite(value)) rpcFail('invalid_params', name + ' must be a number');
-        return Math.trunc(value);
-      };
-      const text = getTabText(tab.id) || '';
-      const clamp = (n) => Math.max(0, Math.min(n, text.length));
-      let a = clamp(asOffset(start, 'start'));
-      let b = end === undefined || end === null ? a : clamp(asOffset(end, 'end'));
-      if (a > b) { const swap = a; a = b; b = swap; }
+    setCursorForTab: function (tab, text, a, b, opts, lineColFn) {
       const focus = opts.focus === true;
-
       let editor = editorForTab(tab.id);
       if (!editor && focus) {
         selectTab(tab.id);
@@ -19629,68 +17990,30 @@ OUTPUT FORMAT:
       if (!editor) {
         tab.cursorPos = a;
         saveSessionDebounced();
-        const at = rpcLineCol(text, a);
+        const at = lineColFn(text, a);
         return { tabId: tab.id, start: a, end: a, line: at.line, col: at.col };
       }
-
       editor.setSelectionRange(a, b);
       if (editor === getActiveEditor()) {
-        clearGhostText(); // a suggestion drawn for the old caret can no longer be accepted
+        clearGhostText();
         updateStatusBar();
       }
-      if (focus) editor.focus(); // (the editor's focus handler makes its pane the active one)
+      if (focus) editor.focus();
       if (opts.scroll !== false) {
         rpcRevealOffset(editor, a);
-        if (focus) revealCaretInHugeNote(editor); // an estimated position can miss in a huge note; this one takes the focus, so only when asked
+        if (focus) revealCaretInHugeNote(editor);
       }
-      const at = rpcLineCol(editor.value, editor.selectionStart);
+      const at = lineColFn(editor.value, editor.selectionStart);
       return { tabId: tab.id, start: editor.selectionStart, end: editor.selectionEnd, line: at.line, col: at.col };
     },
-
-    // RPC ui.state: { activeTabId, splitMode, secondaryTabId, preview: 'off' | 'full' | 'side', zen, fullscreen } (see rpcUiState).
-    getUiState: function () {
-      return rpcUiState();
-    },
-
-    // RPC ui.set_view: see setUiStateForRpc. ASYNC (the preview functions wait for the renderer): resolves to the new state, the same shape
-    // as getUiState. Errors: invalid_params.
-    setUiState: function (spec) {
-      return setUiStateForRpc(spec);
-    },
-
-    // RPC print.pdf: see printPdfForRpc. ASYNC: resolves to { path, bytes, pages, tab_id }. The window is not left changed.
-    printPdf: function (tabId, settings, outPath) {
-      return printPdfForRpc(tabId, settings, outPath);
-    },
-
-    // RPC ui.open_panel: see openPanelForRpc. Errors: invalid_params (unknown name), not_found (the panel's module is not loaded).
-    openPanel: function (name, opts) {
-      return openPanelForRpc(name, opts);
-    },
-
-    // RPC task.list: { running: [...], recent: [...] }, each { id, kind, label, status, startedAt, finishedAt?, error?, cancellable }
-    // (task_manager.js snapshot: no instruction or output text). Times are epoch milliseconds.
-    getTasks: function () {
-      const manager = window.TaskManager;
-      return manager && typeof manager.snapshot === 'function' ? manager.snapshot() : { running: [], recent: [] };
-    },
-
-    // RPC task.cancel: stops a running task the way the Task panel's Cancel button does (TaskManager.cancelTask: the task's own
-    // cancel, the backend's cancel, then it moves to the history as 'canceled'). { cancelled: true } or
-    // { cancelled: false, reason: 'not_found' | 'not_running' | 'not_cancellable' }. not_cancellable: nothing here can stop the work
-    // (a task with no cancel of its own that is not an agent run), so it is left alone rather than only hidden from the list.
-    cancelTask: function (id) {
-      if (typeof id !== 'string' || id === '') rpcFail('invalid_params', 'task id is required');
-      const manager = window.TaskManager;
-      if (!manager || typeof manager.snapshot !== 'function') return { cancelled: false, reason: 'not_found' };
-      const before = manager.snapshot();
-      const task = before.running.find((x) => x.id === id);
-      if (!task) return { cancelled: false, reason: before.recent.some((x) => x.id === id) ? 'not_running' : 'not_found' };
-      if (!task.cancellable) return { cancelled: false, reason: 'not_cancellable' };
-      manager.cancelTask(id);
-      return manager.snapshot().running.some((x) => x.id === id) ? { cancelled: false, reason: 'not_cancellable' } : { cancelled: true };
-    }
-  };
+    rpcUiState: rpcUiState,
+    setUiStateForRpc: setUiStateForRpc,
+    printPdfForRpc: printPdfForRpc,
+    openPanelForRpc: openPanelForRpc
+  });
+    return window.__sykiRPC;
+  }
+  ensureRpcBridge();
 
   // Directory component of a note path, tolerating both '/' (POSIX) and '\' (Windows)
   // separators regardless of the platform this instance is running on.
@@ -19792,6 +18115,15 @@ OUTPUT FORMAT:
       s.async = true;
       s.onload = () => {
         window.__bootDeferredLoaded = true;
+        ensureRpcBridge();
+        ensureSearchWorkbench();
+        if (window.FileAnchor) {
+          if (typeof window.FileAnchor.init === 'function') window.FileAnchor.init();
+          if (typeof window.FileAnchor.scheduleMarks === 'function') window.FileAnchor.scheduleMarks();
+        }
+        if (window.ResultBlocks && typeof scheduleUpdateLineNumbers === 'function') {
+          scheduleUpdateLineNumbers(true);
+        }
         if (window.SlotAgent) {
           if (typeof window.SlotAgent.attachEditor === 'function') {
             if (editorEl) window.SlotAgent.attachEditor(editorEl);

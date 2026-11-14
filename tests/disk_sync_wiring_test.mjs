@@ -26,8 +26,9 @@ check('a file the tab knows is saved through saveFileChecked, with the fingerpri
 
 check('the bound backend has saveFileChecked on every platform', () => {
   assert.ok(/Bind\("backend_saveFileChecked", app\.SaveFileChecked\)/.test(bindCommon));
+  assert.ok(/saveFileChecked: \(path, content, enc, expectSig\) => window\.backend_saveFileChecked\(/.test(bindCommon), 'bind_common.go');
   for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
-    assert.ok(/saveFileChecked: \(path, content, enc, expectSig\) => window\.backend_saveFileChecked\(/.test(read(f)), f);
+    assert.ok(read(f).includes('buildCommonBridgeInitJS('), f);
   }
 });
 

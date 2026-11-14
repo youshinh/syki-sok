@@ -14,7 +14,7 @@ const require = createRequire(import.meta.url);
 const read = (p) => fs.readFileSync(p, 'utf8').replace(/\r\n/g, '\n');
 const css = withTokens(read('frontend/css/style.css')).replace(/\/\*[\s\S]*?\*\//g, '');
 const html = read('frontend/index.html');
-const app = read('frontend/js/app.js');
+const app = read('frontend/js/app.js') + '\n' + read('frontend/js/settings_modal.js');
 const I18N = new Function(read('frontend/js/i18n.js') + '\nreturn I18N;')();
 const A11Y = require('../frontend/js/a11y.js');
 const ChromeOverlay = require('../frontend/js/chrome_overlay.js');
@@ -98,7 +98,7 @@ const ChromeOverlay = require('../frontend/js/chrome_overlay.js');
   assert.ok(/if \(seed && !\(wasOpen && findInput\.value\)\) findInput\.value = seed;/.test(app), 'Find keeps a query the user already typed');
   assert.ok(/if \(contextMenu && !contextMenu\.classList\.contains\('hidden'\)\) \{\s*contextMenu\.classList\.add\('hidden'\);\s*return;/.test(app), 'Esc closes the context menu');
   assert.ok(/quickPickModal\.addEventListener\('mousedown', \(e\) => \{\s*if \(e\.target === quickPickModal\) closeQuickPick\(\);/.test(app), 'a click on the dimmed backdrop closes the palette');
-  assert.ok(/function openSettings\(\) \{\s*if \(contextMenu\) contextMenu\.classList\.add\('hidden'\);/.test(app), 'Settings closes a context menu left behind');
+  assert.ok(/function open\(\) \{[\s\S]{0,400}if \(contextMenu\) contextMenu\.classList\.add\('hidden'\);/.test(app), 'Settings closes a context menu left behind');
   console.log('PASS: palette basics, tab tooltips, quiet start-up, find keeps the query, Esc and backdrop close.');
 }
 

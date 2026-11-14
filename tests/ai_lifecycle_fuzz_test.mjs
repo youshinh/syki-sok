@@ -96,7 +96,7 @@ function mulberry32(seed) {
 // The environment: app.js in a vm with a hand-made DOM (compiled once, one fresh context per sequence)
 // ---------------------------------------------------------------------------------------------------
 const read = (p) => fs.readFileSync(path.resolve(p), 'utf-8').replace(/\r\n/g, '\n');
-const SCRIPT_FILES = ['frontend/js/i18n.js', 'frontend/js/chrome_layout.js', 'frontend/js/mermaid_tone.js', 'frontend/js/llm_error.js', 'frontend/js/app.js'];
+const SCRIPT_FILES = ['frontend/js/i18n.js', 'frontend/js/chrome_layout.js', 'frontend/js/mermaid_tone.js', 'frontend/js/llm_error.js', 'frontend/js/rpc_bridge.js', 'frontend/js/app.js'];
 // FUZZ_APP_JS=<file> runs the fuzz against another copy of app.js: how to check that the invariants notice a broken lifecycle (mutation check).
 const scripts = SCRIPT_FILES.map((file) => new vm.Script(file === 'frontend/js/app.js' && process.env.FUZZ_APP_JS ? read(process.env.FUZZ_APP_JS) : read(file), { filename: file }));
 const i18nCtx = {};

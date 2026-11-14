@@ -23,10 +23,12 @@ function extractFn(src, header) {
 
 // ---- 1. native side --------------------------------------------------------------------------
 {
+  const commonGo = read('cmd/syki-gui/bind_common.go');
+  assert(/toggleFullscreen: \(\) => window\.backend_toggleFullscreen\(\)/.test(commonGo), 'common: the shim exposes toggleFullscreen');
+  assert(/toggleMaximize: \(\) => window\.backend_toggleMaximize\(\)/.test(commonGo), 'common: maximize is still there');
   for (const [name, go] of [['windows', winGo], ['darwin', macGo]]) {
     assert(/_ = w\.Bind\("backend_toggleFullscreen"/.test(go), `${name}: backend_toggleFullscreen is bound`);
-    assert(/toggleFullscreen: \(\) => window\.backend_toggleFullscreen\(\)/.test(go), `${name}: the shim exposes toggleFullscreen`);
-    assert(/toggleMaximize: \(\) => window\.backend_toggleMaximize\(\)/.test(go), `${name}: maximize is still there`);
+    assert(go.includes('buildCommonBridgeInitJS('), `${name}: uses buildCommonBridgeInitJS`);
   }
   // No native F11 handler any more: it was handed the key code alone, so it took Shift+F11 (Zen mode) too and could not follow a
   // user's own binding. The page decides; the WebView only has to let the keys through.

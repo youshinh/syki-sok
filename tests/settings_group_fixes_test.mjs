@@ -188,6 +188,7 @@ async function createEnv(opts = {}) {
   vm.runInContext(chromeLayoutCode, context);
   vm.runInContext(mermaidToneCode, context);
   vm.runInContext(llmErrorCode, context);
+  vm.runInContext(read('frontend/js/settings_modal.js'), context);
   vm.runInContext(appCode, context);
   await flush();
 
@@ -509,8 +510,9 @@ check('C6-05: Ctrl+, while Settings is open keeps what was typed and what Cancel
 check('C6-05: the import (which changes the config under the open dialog) still redraws every field', () => {
   const apply = appCode.slice(appCode.indexOf('function applyImportedConfig('), appCode.indexOf('function applyImportedConfig(') + 3500);
   assert.ok(/settingsRefreshRequested = true;\s*openSettings\(\);/.test(apply), 'applyImportedConfig asks for a refresh before it calls openSettings');
-  const open = appCode.slice(appCode.indexOf('function openSettings() {'), appCode.indexOf('function openSettings() {') + 1200);
-  assert.ok(/!settingsRefreshRequested\) \{[\s\S]*?return;\s*\}\s*settingsRefreshRequested = false;/.test(open), 'a second open returns early unless a refresh was asked for, and the request is used up');
+  const settingsModalCode = read('frontend/js/settings_modal.js');
+  const open = settingsModalCode.slice(settingsModalCode.indexOf('function open() {'), settingsModalCode.indexOf('function open() {') + 1200);
+  assert.ok(/const refreshRequested = deps\.consumeRefreshRequested[\s\S]*?!refreshRequested\) \{[\s\S]*?return;\s*\}/.test(open), 'a second open returns early unless a refresh was asked for, and the request is used up');
 });
 
 let failed = 0;

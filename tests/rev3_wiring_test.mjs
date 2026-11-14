@@ -38,9 +38,10 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
     assert(winGo.includes(`w.Bind("${name}"`) || commonGo.includes(`w.Bind("${name}"`), `window_windows.go (or bind_common.go) must bind ${name}`);
     assert(macGo.includes(`w.Bind("${name}"`) || commonGo.includes(`w.Bind("${name}"`), `window_darwin.go (or bind_common.go) must bind ${name}`);
   }
+  assert(winGo.includes('buildCommonBridgeInitJS('), 'window_windows.go must use buildCommonBridgeInitJS');
+  assert(macGo.includes('buildCommonBridgeInitJS('), 'window_darwin.go must use buildCommonBridgeInitJS');
   for (const name of newShims) {
-    assert(new RegExp(`\\b${name}:\\s*\\(`).test(winGo), `window_windows.go window.backend shim missing ${name}`);
-    assert(new RegExp(`\\b${name}:\\s*\\(`).test(macGo), `window_darwin.go window.backend shim missing ${name}`);
+    assert(new RegExp(`\\b${name}:\\s*\\(`).test(commonGo), `bind_common.go window.backend shim missing ${name}`);
   }
   console.log('PASS: every new backend method is bound and shimmed on both platforms.');
 }
@@ -165,7 +166,8 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
       'readClipboard looks for a picture in the async clipboard');
     assert(/await savePastedImageBlob\(imageBlob, editor, 'pasteImageSaved'(?:, pasteTabId)?\);/.test(appJs), 'and saves it like a picture that came in the event');
     assert(/showMessage\(t\('pasteClipboardUnreadable'\), 5000, \{ important: true \}\)/.test(appJs), 'a refused clipboard read says so instead of doing nothing');
-    assert(/id="cfg-paste-html-md"/.test(indexHtml) && /cfg-paste-html-md'\);\s*if \(pasteHtmlMdEl\) pasteHtmlMdEl\.checked = config\.general\.pasteHtmlAsMarkdown !== false;/.test(appJs)
+    const settingsModalJs = fs.readFileSync('frontend/js/settings_modal.js', 'utf8').replace(/\r\n/g, '\n');
+    assert(/id="cfg-paste-html-md"/.test(indexHtml) && /setChecked\('cfg-paste-html-md', !config\.general \|\| config\.general\.pasteHtmlAsMarkdown !== false\)/.test(settingsModalJs)
       && /config\.general\.pasteHtmlAsMarkdown = savePasteHtmlMdEl\.checked/.test(appJs), 'the setting is in the dialog, loaded and saved');
     const ctx = {};
     vm.createContext(ctx);
@@ -232,10 +234,11 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
 
 // ---- 9. Selection RPC: getSelection / replaceSelection behave against a mock textarea ------
 {
-  const start = appJs.indexOf('window.__sykiRPC = {');
-  const end = appJs.indexOf('\n  };', start) + 4;
+  const marker = 'getSelection: function (tabId) {';
+  const start = appJs.indexOf(marker);
+  const end = appJs.indexOf('setCursorForTab: function', start);
   assert(start > 0 && end > start, '__sykiRPC block not found');
-  const rpcSrc = appJs.slice(start, end);
+  const rpcSrc = 'window.__sykiRPC = {\n    ' + appJs.slice(start, end).trim().replace(/,$/, '') + '\n  };';
 
   function makeEditor(value, start, end) {
     return {
@@ -391,10 +394,11 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   assert(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(group), 'no emoji in the voice settings group');
 
   // Load / save code for every field.
-  const openStart = appJs.indexOf('function openSettings()');
+  const settingsModalJs = fs.readFileSync('frontend/js/settings_modal.js', 'utf8').replace(/\r\n/g, '\n');
+  const openStart = settingsModalJs.indexOf('function open()');
   const saveStart = appJs.indexOf("document.getElementById('btn-save-settings').onclick");
-  assert(openStart > 0 && saveStart > openStart);
-  const openSrc = appJs.slice(openStart, appJs.indexOf("const cliModelEl = document.getElementById('cfg-cli-model')", openStart));
+  assert(openStart > 0 && saveStart > 0);
+  const openSrc = settingsModalJs.slice(openStart, settingsModalJs.indexOf("setVal('cfg-cli-model'", openStart));
   const saveSrc = appJs.slice(saveStart, appJs.indexOf('if (!config.cli) config.cli = {};', saveStart));
   for (const id of ['cfg-voice-language', 'cfg-voice-mode', 'cfg-voice-vocabulary']) {
     assert(openSrc.includes(`'${id}'`), `openSettings must load #${id}`);
@@ -406,8 +410,8 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
     assert(src.includes("'cfg-voice-model' + sfx") && src.includes("'cfg-voice-api-style' + sfx"), 'the model and API style of each profile');
   }
   assert(/config\.voice\.languageCodes = textToList\(/.test(saveSrc) && /config\.voice\.customVocabulary = textToList\(/.test(saveSrc));
-  assert(/listToText\(config\.voice && config\.voice\.languageCodes, ', '\)/.test(openSrc));
-  assert(/listToText\(config\.voice && config\.voice\.customVocabulary, '\\n'\)/.test(openSrc));
+  assert(/(?:deps\.)?listToText\(config\.voice && config\.voice\.languageCodes, ', '\)/.test(openSrc));
+  assert(/(?:deps\.)?listToText\(config\.voice && config\.voice\.customVocabulary, '\\n'\)/.test(openSrc));
   assert(/modelEl\.value\.trim\(\) \|\| 'gemini-3\.5-transcribe'/.test(saveSrc), 'an emptied model field falls back to the new default');
 
   // The text <-> list conversions, run for real.
@@ -438,7 +442,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   const startFn = appJs.slice(appJs.indexOf('async function startMobileDrop()'), appJs.indexOf('function cancelMobileDrop()'));
   assert(startFn.includes("window.VoiceInput.configJSON(config, { timeout: 0, profile: 'batch' })"), 'Mobile Drop builds the voice config through VoiceInput.configJSON, as the batch profile');
   assert(!/Object\.assign\(\{\}, config\.voice/.test(startFn), 'no second, inline voice-config builder');
-  assert(/getNoteDir: function \(\) \{\s*return getNoteDir\(\);\s*\}/.test(appJs), 'window.__sykiRPC.getNoteDir is what the Go side asks for');
+  assert(/getNoteDir: getNoteDir,/.test(appJs) && /getNoteDir: function \(\) \{\s*return port\.getNoteDir\(\);\s*\}/.test(fs.readFileSync('frontend/js/rpc_bridge.js', 'utf8')), 'window.__sykiRPC.getNoteDir is what the Go side asks for');
   assert(/mobileDropReceivedFallback', \{ count: kept \}/.test(appJs), 'the received callback reports the kept items');
   console.log('PASS: Mobile Drop shares the voice-config builder and exposes getNoteDir over RPC.');
 }
@@ -598,7 +602,7 @@ const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
   assert(!/id="stat-voice-refine"/.test(indexHtml), 'the separate Mic badge is gone from the bar');
   assert(statusAiJs.includes("makeSwitch('stat-voice-refine')") && /bind\(voice\.btn, actions\.voice\)/.test(statusAiJs), 'the popover has the voice switch');
   assert(/voice: toggleVoiceRefine,/.test(appJs), 'the switch toggles the setting');
-  const applyLang = appJs.slice(appJs.indexOf('function applyLanguage()'), appJs.indexOf('function applyLanguage()') + 3000);
+  const applyLang = appJs.slice(appJs.indexOf('function applyLanguage('), appJs.indexOf('function applyLanguage(') + 3000);
   assert(applyLang.includes('updateActionStatus();'), 'a language change redraws the AI item (updateActionStatus does)');
   assert(/function updateActionStatus\(\) \{[\s\S]*?refreshStatusAI\(\);\s*\}/.test(appJs), 'updateActionStatus redraws the AI item');
   assert(/if \(config\.general\.language !== prevGeneral\.language\) \{\s*applyLanguage\(\);\s*\}[^}]*?refreshStatusAI\(\);/.test(appJs), 'saving the settings redraws the AI item');

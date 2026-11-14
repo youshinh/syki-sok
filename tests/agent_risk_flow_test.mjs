@@ -14,7 +14,7 @@ const read = (p) => fs.readFileSync(path.resolve(p), 'utf-8').replace(/\r\n/g, '
 const SRC = [
   'frontend/js/i18n.js', 'frontend/js/task_manager.js', 'frontend/js/auto_selector.js', 'frontend/js/slot_snippets.js',
   'frontend/js/agent_risk.js', 'frontend/js/slot_agent.js', 'frontend/js/chrome_layout.js', 'frontend/js/mermaid_tone.js',
-  'frontend/js/app.js'
+  'frontend/js/settings_modal.js', 'frontend/js/app.js'
 ].map(read);
 
 const i18nContext = {};

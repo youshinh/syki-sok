@@ -221,6 +221,7 @@ async function createEnv(opts = {}) {
   const aboutOpens = [];
   windowMock.AboutDialog.open = async (host) => { aboutOpens.push(host); return true; };
   if (opts.beforeApp) opts.beforeApp({ windowMock, documentMock, context });
+  vm.runInContext(read('frontend/js/settings_modal.js'), context);
   vm.runInContext(appCode, context);
   await flush();
 
@@ -909,9 +910,10 @@ check('about_dialog.js: loading it does nothing (no listener, no DOM access, no 
 check('Go: backend_getAppInfo is bound once for both platforms and reaches the page as window.backend.getAppInfo with no arguments', () => {
   const common = read('cmd/syki-gui/bind_common.go');
   assert.equal((common.match(/w\.Bind\("backend_getAppInfo", app\.GetAppInfo\)/g) || []).length, 1);
+  assert.ok(/getAppInfo: \(\) => window\.backend_getAppInfo\(\),/.test(common), 'cmd/syki-gui/bind_common.go');
   for (const f of ['cmd/syki-gui/window_windows.go', 'cmd/syki-gui/window_darwin.go']) {
     const src = read(f);
-    assert.ok(/getAppInfo: \(\) => window\.backend_getAppInfo\(\),/.test(src), f);
+    assert.ok(src.includes('buildCommonBridgeInitJS('), f + ' uses buildCommonBridgeInitJS');
     assert.ok(!/w\.Bind\("backend_getAppInfo"/.test(src), f + ' does not bind it a second time');
   }
   const go = read('cmd/syki-gui/app_about.go');

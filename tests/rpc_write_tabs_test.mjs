@@ -20,6 +20,7 @@ const SRC = {
   noteTitle: read('frontend/js/note_title.js'),
   noteHash: read('frontend/js/note_hash.js'),
   tabStrip: read('frontend/js/tab_strip.js'),
+  rpcBridge: read('frontend/js/rpc_bridge.js'),
   app: read('frontend/js/app.js')
 };
 const indexHtml = read('frontend/index.html');
@@ -232,7 +233,7 @@ async function createEnv(opts = {}) {
     console: { log() {}, warn() {}, error(...a) { if (opts.showErrors) console.error(...a); } }
   };
   vm.createContext(context);
-  const order = opts.withoutHash ? [SRC.i18n, SRC.noteTitle, SRC.tabStrip, SRC.app] : [SRC.i18n, SRC.noteTitle, SRC.noteHash, SRC.tabStrip, SRC.app];
+  const order = opts.withoutHash ? [SRC.i18n, SRC.noteTitle, SRC.tabStrip, SRC.rpcBridge, SRC.app] : [SRC.i18n, SRC.noteTitle, SRC.noteHash, SRC.tabStrip, SRC.rpcBridge, SRC.app];
   for (const code of order) {
     vm.runInContext(code, context);
     await flush();
@@ -978,7 +979,7 @@ check('wiring: index.html loads note_hash.js before app.js; toggling autosave of
   const closeTabSrc = SRC.app.match(/async function closeTab\(tabId, e\) \{[\s\S]*?\n  \}/)[0];
   assert.ok(/removeTab\(tabId\);\n  \}$/.test(closeTabSrc), 'closeTab prompts, then removes');
   assert.ok(!/tabs\.splice/.test(closeTabSrc), 'closeTab no longer keeps an index across the prompt');
-  const rpcBlock = SRC.app.slice(SRC.app.indexOf('window.__sykiRPC = {'));
+  const rpcBlock = SRC.rpcBridge;
   assert.ok(/writeText: function \(req\)/.test(rpcBlock) && !/writeText: async/.test(rpcBlock), 'writeText is synchronous');
 });
 

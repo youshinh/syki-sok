@@ -22,6 +22,9 @@ const SRC = {
   slotAgent: read('frontend/js/slot_agent.js'),
   chromeLayout: read('frontend/js/chrome_layout.js'),
   tabStrip: read('frontend/js/tab_strip.js'),
+  rpcBridge: read('frontend/js/rpc_bridge.js'),
+  searchWorkbench: read('frontend/js/search_workbench.js'),
+  settingsModal: read('frontend/js/settings_modal.js'),
   app: read('frontend/js/app.js')
 };
 
@@ -316,7 +319,7 @@ async function createEnv(opts = {}) {
   Object.assign(context, opts.globals || {}); // more browser globals a test needs (FileReader, ...)
   vm.createContext(context);
   // the order of the page: i18n, task manager, the pure modules, slot agent, then the app
-  const pageOrder = [SRC.i18n, SRC.taskManager, SRC.htmlComments, SRC.commentToggle, SRC.autoSelector, SRC.snippets, SRC.slotAgent, SRC.chromeLayout, SRC.tabStrip, SRC.app];
+  const pageOrder = [SRC.i18n, SRC.taskManager, SRC.htmlComments, SRC.commentToggle, SRC.autoSelector, SRC.snippets, SRC.slotAgent, SRC.chromeLayout, SRC.tabStrip, SRC.rpcBridge, SRC.searchWorkbench, SRC.settingsModal, SRC.app];
   for (const code of opts.withoutComments ? pageOrder.filter((c) => c !== SRC.htmlComments && c !== SRC.commentToggle) : pageOrder) {
     vm.runInContext(code, context);
     await flush();

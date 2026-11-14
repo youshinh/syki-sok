@@ -237,8 +237,8 @@ await check('Save also writes the accent into general.theme (an older version re
   const save = appJs.slice(appJs.indexOf("document.getElementById('btn-save-settings').onclick"));
   assert.match(save, /config\.appearance = readAppearanceControls\(\);\s*config\.general\.theme = window\.Appearance\.legacyThemeFor\(config\.appearance, config\.general\.theme\);/);
   assert.match(save, /if \(config\.general\.theme !== prevGeneral\.theme \|\| appearancePreviewing \|\| appearanceSignature\(\) !== prevAppearanceSignature\) \{\s*applyTheme\(\);/);
-  const cancel = extract(appJs, 'restoreLiveConfigFromSnapshot');
-  assert.match(cancel, /if \(themeChanged \|\| appearancePreviewing\) applyTheme\(\);/, 'Cancel puts the saved look back when a preview was up');
+  const cancel = read('frontend/js/settings_modal.js');
+  assert.match(cancel, /if \(\(themeChanged \|\| previewing\) && deps\.applyTheme\) deps\.applyTheme\(\);/, 'Cancel puts the saved look back when a preview was up');
 });
 
 await check('the editor font: the five editor rules read --editor-font-user in front of their own list, and appearance.js puts the chosen font in front of the editor list', () => {

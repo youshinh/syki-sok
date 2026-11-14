@@ -6,6 +6,7 @@ import { createRequire } from 'module';
 console.log('=== Toolbar / right-click layout: wiring tests ===');
 
 const appJs = fs.readFileSync('frontend/js/app.js', 'utf8').replace(/\r\n/g, '\n');
+const settingsModalJs = fs.readFileSync('frontend/js/settings_modal.js', 'utf8').replace(/\r\n/g, '\n');
 const i18nJs = fs.readFileSync('frontend/js/i18n.js', 'utf8');
 const indexHtml = fs.readFileSync('frontend/index.html', 'utf8').replace(/\r\n/g, '\n');
 
@@ -42,10 +43,12 @@ const body = (name) => {
   const end = appJs.indexOf('\n  }\n', start);
   return appJs.slice(start, end);
 };
-for (const fn of ['loadLocalConfigSync', 'syncBackendConfig', 'applyImportedConfig', 'restoreLiveConfigFromSnapshot']) {
+for (const fn of ['loadLocalConfigSync', 'syncBackendConfig', 'applyImportedConfig']) {
   assert(body(fn).includes('applyChromeLayout()'), `${fn} must (re)apply the layout`);
 }
-assert(/toolbarLayout[\s\S]{0,120}contextMenuLayout/.test(body('restoreLiveConfigFromSnapshot')), 'Cancel restores both layouts');
+const restoreBody = settingsModalJs.slice(settingsModalJs.indexOf('function restoreLiveConfigFromSnapshot('), settingsModalJs.indexOf('function cancel('));
+assert(restoreBody.includes('deps.applyChromeLayout()'), 'restoreLiveConfigFromSnapshot must (re)apply the layout');
+assert(/toolbarLayout[\s\S]{0,120}contextMenuLayout/.test(restoreBody), 'Cancel restores both layouts');
 const ctxStart = appJs.indexOf("window.addEventListener('contextmenu'");
 assert(ctxStart > 0, 'the window-level contextmenu handler must exist');
 assert(/hasVisibleItems\('context'\)[\s\S]{0,160}return;/.test(appJs.slice(ctxStart, ctxStart + 500)),

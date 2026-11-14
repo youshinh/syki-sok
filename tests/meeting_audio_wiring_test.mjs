@@ -39,7 +39,7 @@ assert.ok(/参加者/.test(I18N.ja.voiceSystemAudioConsent), 'and so does the Ja
 for (const name of ['meetingRecordingSupported', 'checkMeetingAudioAsync', 'startMeetingRecording', 'stopMeetingRecordingAsync', 'abortMeetingRecording']) {
   const Name = name[0].toUpperCase() + name.slice(1);
   assert.ok(bind.includes(`"backend_${name}", app.${Name}`), name + ' is bound');
-  assert.ok(winGo.includes(`${name}:`) && macGo.includes(`${name}:`), name + ' is exposed to the page on both platforms');
+  assert.ok(bind.includes(`${name}:`) && winGo.includes('buildCommonBridgeInitJS(') && macGo.includes('buildCommonBridgeInitJS('), name + ' is exposed to the page on both platforms');
 }
 assert.ok(/meetingShutdown\(\)/.test(winGo), 'the devices are released when the window closes');
 console.log('PASS: the switch, its strings, the default, the bindings and the shutdown hook.');

@@ -490,9 +490,10 @@ check('recorder hint text updates while recording (Press keys to set / Backspace
 // Settings Cancel/Esc/x restores anything applied live (language, theme,
 // default_agent, and shortcuts mutated in-memory while recording)
 // ---------------------------------------------------------------------------
+const settingsModalCode = fs.readFileSync(path.resolve('frontend/js/settings_modal.js'), 'utf-8').replace(/\r\n/g, '\n');
 check('a dedicated restore function reverts language/theme/default_agent/shortcuts from the open-time snapshot', () => {
-  assert.ok(appCode.includes('function restoreLiveConfigFromSnapshot()'), 'restoreLiveConfigFromSnapshot exists');
-  const fn = extractFunction(appCode, 'restoreLiveConfigFromSnapshot');
+  assert.ok(settingsModalCode.includes('function restoreLiveConfigFromSnapshot()'), 'restoreLiveConfigFromSnapshot exists');
+  const fn = extractFunction(settingsModalCode, 'restoreLiveConfigFromSnapshot');
   assert.ok(fn.includes('config.general.language'), 'restores language');
   assert.ok(fn.includes('config.general.theme'), 'restores theme');
   assert.ok(fn.includes('config.default_agent'), 'restores default_agent (agents.yaml write is deferred to Save)');
@@ -544,9 +545,9 @@ check('Quick Actions enabled=false mutes manual-only/base-url/model/api-key, and
   // file) because a legitimate second call site - e.g. the status-bar badge's cycle handler
   // re-syncing the dialog's field states if it happens to be open - can appear earlier in the
   // file without invalidating this check.
-  const openSettingsStart = appCode.indexOf('function openSettings()');
+  const openSettingsStart = appCode.indexOf('function ensureSettingsModal()');
   assert.ok(openSettingsStart !== -1, 'openSettings function exists');
-  let callSiteAfterOpen = false;
+  let callSiteAfterOpen = settingsModalCode.includes('deps.updateQuickActionsFieldStates()');
   let searchFrom = 0;
   for (;;) {
     const idx = appCode.indexOf('updateQuickActionsFieldStates();', searchFrom);

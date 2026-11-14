@@ -258,8 +258,9 @@ check('B29: renderProviderDetectLine writes the protocol line again from the pro
 check('B29: applyLanguage redraws the protocol line; detection stores the provider instead of writing text once; a tab close button follows the language', () => {
   const apply = functionSource('applyLanguage');
   assert.ok(/renderProviderDetectLine\(\);/.test(apply), 'applyLanguage() re-renders the protocol line');
-  const detect = functionSource('updateLLMProviderDetection');
-  assert.ok(/lastDetectedProvider = provider/.test(detect) && /renderProviderDetectLine\(\)/.test(detect), 'detection remembers the provider and renders through the one function');
+  const settingsModal = read('frontend/js/settings_modal.js');
+  const detect = settingsModal.slice(settingsModal.indexOf('async function updateProviderDetection('), settingsModal.indexOf('function open('));
+  assert.ok(/setLastDetectedProvider\(provider == null \? '' : String\(provider\)\)/.test(detect) && /renderProviderDetectLine\(\)/.test(detect), 'detection remembers the provider and renders through the one function');
   assert.ok(/\n  var lastDetectedProvider = null;/.test(app), 'the remembered provider is a var: applyLanguage() may read it before its declaration has run');
   assert.ok(!/lineEl\.textContent = /.test(detect), 'detection no longer writes translated text that a language change cannot redo');
   const tabs = app.slice(app.indexOf("closeEl.className = 'tab-close';"), app.indexOf("closeEl.className = 'tab-close';") + 400);

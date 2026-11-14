@@ -21,6 +21,7 @@ const SRC = {
   snippets: read('frontend/js/slot_snippets.js'),
   slotAgent: read('frontend/js/slot_agent.js'),
   chromeLayout: read('frontend/js/chrome_layout.js'),
+  rpcBridge: read('frontend/js/rpc_bridge.js'),
   app: read('frontend/js/app.js')
 };
 
@@ -296,7 +297,7 @@ async function createEnv(opts = {}) {
   };
   vm.createContext(context);
   // the order of the page: i18n, task manager, the pure modules, slot agent, then the app
-  const pageOrder = [SRC.i18n, SRC.taskManager, SRC.htmlComments, SRC.commentToggle, SRC.autoSelector, SRC.snippets, SRC.slotAgent, SRC.chromeLayout, SRC.app];
+  const pageOrder = [SRC.i18n, SRC.taskManager, SRC.htmlComments, SRC.commentToggle, SRC.autoSelector, SRC.snippets, SRC.slotAgent, SRC.chromeLayout, SRC.rpcBridge, SRC.app];
   for (const code of opts.withoutComments ? pageOrder.filter((c) => c !== SRC.htmlComments && c !== SRC.commentToggle) : pageOrder) {
     vm.runInContext(code, context);
     await flush();

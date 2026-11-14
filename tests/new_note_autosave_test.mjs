@@ -53,7 +53,8 @@ assert.ok(/const startAt = tab\.path \|\| joinDefaultNoteDir\(suggestedName\);/.
 
 // Settings: the folder is loaded, saved, and has a browse button.
 assert.ok(/id="cfg-default-note-dir"/.test(html) && /id="btn-browse-note-dir"/.test(html), 'the folder field and its Browse button');
-assert.ok(/noteDirEl\.value = config\.general\.defaultNoteDir \|\| ''/.test(app) && /config\.general\.defaultNoteDir = saveNoteDirEl\.value\.trim\(\)/.test(app), 'loaded and saved');
+const settingsModal = fs.readFileSync(new URL('../frontend/js/settings_modal.js', import.meta.url), 'utf8');
+assert.ok(/setVal\('cfg-default-note-dir', \(config\.general && config\.general\.defaultNoteDir\) \|\| ''\)/.test(settingsModal) && /config\.general\.defaultNoteDir = saveNoteDirEl\.value\.trim\(\)/.test(app), 'loaded and saved');
 assert.ok(/defaultNoteDir: ''/.test(app), 'empty by default: the daily scraps folder');
 
 // Dropped media and the five-file question.

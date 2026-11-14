@@ -452,8 +452,9 @@ check('C9-12 / C13-09: Set up goes through openAiModelsSettings (first field get
   const open = fnSrc('openAiModelsSettings');
   assert.match(open, /const cloud = part === 'cloud' \|\| part === 'text';/);
   assert.match(open, /part === 'text' \? 'cfg-base-url' : cloud \? 'cfg-api-key' : 'btn-setup-ollama'/);
-  const settings = fnSrc('openSettings');
-  assert.match(settings, /\[tabBtnGeneral, tabBtnModel, tabBtnAgent, tabBtnSync, tabBtnShortcuts\]\.find\(\(b\) => b && b\.classList && b\.classList\.contains\('active'\)\)/);
+  const settingsModalSrc = read('frontend/js/settings_modal.js');
+  const settings = settingsModalSrc.slice(settingsModalSrc.indexOf('function open() {'), settingsModalSrc.indexOf('function close() {'));
+  assert.match(settings, /\[tabBtnGeneral, tabBtnModel, tabBtnAgent, tabBtnSync, tabBtnShortcuts\]\.find\(\s*\(b\) => b && b\.classList && b\.classList\.contains\('active'\)\s*\)/);
   assert.ok(!/setTimeout\(\(\) => \{\s*if \(tabBtnGeneral\) tabBtnGeneral\.focus\(\);\s*\}, 50\);/.test(settings), 'not always the General tab');
 });
 

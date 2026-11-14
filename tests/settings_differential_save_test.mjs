@@ -4,10 +4,11 @@ import assert from 'assert';
 console.log("=== Testing Differential Save & Optimistic UI Logic in app.js ===");
 
 const appJs = fs.readFileSync('frontend/js/app.js', 'utf8');
+const settingsModalJs = fs.readFileSync('frontend/js/settings_modal.js', 'utf8');
 
 // 1. Check openedConfigSnapshot exists in openSettings
 assert(appJs.includes('let openedConfigSnapshot = null;'), 'openedConfigSnapshot variable declared');
-assert(appJs.includes('openedConfigSnapshot = JSON.parse(JSON.stringify(config));'), 'openedConfigSnapshot captured in openSettings');
+assert(settingsModalJs.includes('snap = JSON.parse(JSON.stringify(config));') && appJs.includes('setSnapshot: (snap) => { openedConfigSnapshot = snap; }'), 'openedConfigSnapshot captured in openSettings');
 console.log("PASS: Configuration snapshot initialization verified.");
 
 // 2. Check differential git remote logic
