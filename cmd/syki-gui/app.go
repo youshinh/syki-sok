@@ -167,6 +167,11 @@ func scheduleWorkingSetTrim() {
 	}()
 }
 
+// CopyPNGToClipboard writes a PNG data URL to the OS native clipboard.
+func (a *App) CopyPNGToClipboard(dataURL string) error {
+	return copyPNGToClipboardNative(dataURL)
+}
+
 // TrimMemory releases OS memory and schedules process working set compression.
 //
 // This is a bound function, which means it runs INLINE ON THE UI THREAD. debug.FreeOSMemory

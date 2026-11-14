@@ -56,6 +56,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_generateImageAsync", app.GenerateImageAsync)
 	_ = w.Bind("backend_autocompleteAsync", app.AutocompleteAsync)
 	_ = w.Bind("backend_trimMemory", app.TrimMemory)
+	_ = w.Bind("backend_copyPNGToClipboard", app.CopyPNGToClipboard)
 	_ = w.Bind("backend_uiReady", app.MarkUIReady)
 	_ = w.Bind("backend_closeWindow", app.CloseWindow)
 	_ = w.Bind("backend_updateGlobalShortcut", app.UpdateGlobalShortcut)

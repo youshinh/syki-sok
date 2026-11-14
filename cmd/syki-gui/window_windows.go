@@ -1237,6 +1237,7 @@ func runPlatformWindow(app *App, serverURL string) {
 			generateImageAsync: (reqID, prompt, configJson, notePath) => window.backend_generateImageAsync(reqID, prompt, configJson, notePath || ""),
 			autocompleteAsync: (reqID, prefix, suffix, configJson) => window.backend_autocompleteAsync(reqID, prefix, suffix, configJson),
 			trimMemory: () => window.backend_trimMemory(),
+			copyPNGToClipboard: (dataUrl) => window.backend_copyPNGToClipboard(dataUrl),
 			closeWindow: () => window.backend_closeWindow(),
 			minimizeWindow: () => window.backend_minimizeWindow(),
 			toggleFullscreen: () => window.backend_toggleFullscreen(),

@@ -1265,8 +1265,8 @@
     }
 
     const svgXml = new XMLSerializer().serializeToString(svgClone);
-    const svgBlob = new Blob([svgXml], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
+    const svgBase64 = btoa(unescape(encodeURIComponent(svgXml)));
+    const url = 'data:image/svg+xml;base64,' + svgBase64;
 
     return new Promise((resolve, reject) => {
       const img = new Image();
@@ -1283,7 +1283,6 @@
           canvas.height = Math.round(height * scale);
           const ctx = canvas.getContext('2d');
           if (!ctx) {
-            URL.revokeObjectURL(url);
             reject(new Error('Failed to get canvas 2d context'));
             return;
           }
@@ -1296,46 +1295,49 @@
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = 'high';
           ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-          URL.revokeObjectURL(url);
           resolve(canvas);
         } catch (err) {
-          URL.revokeObjectURL(url);
           reject(err);
         }
       };
-      img.onerror = (e) => {
-        URL.revokeObjectURL(url);
+      img.onerror = () => {
         reject(new Error('Failed to render SVG image'));
       };
       img.src = url;
     });
   }
 
+  async function writeCanvasPngToClipboard(canvas) {
+    if (window.backend && typeof window.backend.copyPNGToClipboard === 'function') {
+      const dataUrl = canvas.toDataURL('image/png');
+      await window.backend.copyPNGToClipboard(dataUrl);
+      return true;
+    }
+    if (canvas.toBlob && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
+      const blob = await new Promise((resolve) => canvas.toBlob(resolve, 'image/png'));
+      if (blob) {
+        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        return true;
+      }
+    }
+    return false;
+  }
+
   // Copy Mermaid diagram as PNG to clipboard
   async function copyMermaidDiagramAsPng(container) {
     try {
       const canvas = await rasterizeMermaidSvgToCanvas(container);
-      if (canvas.toBlob && navigator.clipboard && typeof ClipboardItem !== 'undefined') {
-        canvas.toBlob(async (blob) => {
-          if (!blob) {
-            showMessage(t('mermaidExportError', { err: 'Blob conversion failed' }), 3000, { important: true });
-            return;
-          }
-          try {
-            await navigator.clipboard.write([
-              new ClipboardItem({ 'image/png': blob })
-            ]);
-            showMessage(t('mermaidCopiedImage'), 3000);
-          } catch (clipErr) {
-            // Fallback: download if clipboard item refused
-            downloadCanvasAsPng(canvas, 'diagram.png');
-            showMessage('Clipboard access restricted. Downloaded as PNG file instead.', 3000);
-          }
-        }, 'image/png');
-      } else {
-        downloadCanvasAsPng(canvas, 'diagram.png');
-        showMessage('Clipboard image not supported. Downloaded as PNG file.', 3000);
+      try {
+        const ok = await writeCanvasPngToClipboard(canvas);
+        if (ok) {
+          showMessage(t('mermaidCopiedImage'), 3000);
+          return;
+        }
+      } catch (clipErr) {
+        console.warn('Clipboard write failed:', clipErr);
       }
+      downloadCanvasAsPng(canvas, 'diagram.png');
+      showMessage('Clipboard access restricted. Downloaded as PNG file instead.', 3000);
     } catch (err) {
       console.warn('Copy diagram error:', err);
       showMessage(t('mermaidExportError', { err: err.message || String(err) }), 4000, { important: true });
@@ -9737,16 +9739,10 @@ OUTPUT FORMAT:
       }
 
       let copiedToClipboard = false;
-      if (canvas.toBlob && navigator.clipboard && typeof ClipboardItem !== "undefined") {
-        try {
-          const blob = await new Promise((resolve) => canvas.toBlob(resolve, "image/png"));
-          if (blob) {
-            await navigator.clipboard.write([new ClipboardItem({ "image/png": blob })]);
-            copiedToClipboard = true;
-          }
-        } catch (clipErr) {
-          console.warn("Clipboard write failed:", clipErr);
-        }
+      try {
+        copiedToClipboard = await writeCanvasPngToClipboard(canvas);
+      } catch (clipErr) {
+        console.warn("Clipboard write failed:", clipErr);
       }
 
       const dataUrl = canvas.toDataURL("image/png");
