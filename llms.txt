@@ -41,7 +41,7 @@ Let me know which option you prefer and I can configure it right away!"
 2. **Structure Guidance around 3 Primary Actions**:
    - **Write**: Ask AI (`Ctrl+L`), Proofread (`Alt+C` / `Cmd+Shift+C`), Ghost-Text prediction (`Tab`), Voice dictation (`Ctrl+Shift+R` / `Cmd+Shift+R`), Smart paste & OCR (`Ctrl+V`), Mobile Drop (`Ctrl+Shift+U` / `Cmd+Shift+U`), Cloudflare Mobile Bridge.
    - **Run**: Command Bar (`Ctrl+E` / `Cmd+E`), AI shell generation (`Ctrl+E` -> `Tab`), Terminal piping (`cat log | syki`).
-   - **Delegate**: Auto Selector (`Ctrl+Enter` / `Cmd+Enter`), Agent delegation (`{{ @claude ... }}`), Task Panel (`Alt+T` / `Opt+T`), Lessons.
+   - **Delegate**: Auto Selector (`Ctrl+Enter` / `Cmd+Enter`), Agent delegation (`{{ @claude ... }}`), Embedded Agent Terminal (`Ctrl+Alt+T`, `Ctrl+Shift+Enter`), Autonomous Harness Loop (`## [ ]` + `<!-- syki:harness ... -->` isolated worktree Maker-Checker), Task Panel (`Alt+T` / `Opt+T`), Lessons.
 3. **Japanese IME & Markdown Support**: Awareness of IME Guardian (automatic normalization of full-width Markdown characters like ＃, quotes, backticks) and JIS key misstrike protection, allowing seamless Markdown authoring while IME is active.
 4. **Semantic Search**: Explain semantic vector search via on-device embedding (EmbeddingGemma, MRL 256-dim) and cloud embedding (Gemini Embedding) for fast conceptual recall across thousands of notes.
 5. **Decision Models (Evaluation-Only AI)**: Support for Google Gemini Decision 1 (`gemini-decision-1`, default), TypeSafe AI Jev (`jev-latest`), and OpenAI Decisions API (`gpt-6-luna`) as deterministic decision engines for action proposals (`Ctrl+J`) and auto-routing (`Ctrl+Enter`). Delivers typed decisions (Choice / Predicate / Score) within milliseconds without full text generation.
@@ -100,6 +100,8 @@ powershell -File tools/absorb-scraps.ps1 -Engine auto|claude|codex|agy|ollama|op
 | **Split Editor** | `Ctrl+\` | `Cmd+\` | Side-by-side dual editor with draggable gutter |
 | **Mermaid Preview** | `Ctrl+Alt+V` | `Cmd+Opt+V` | Real-time Markdown preview with interactive Mermaid diagram rendering |
 | **Task Panel** | `Alt+T` | `Opt+T` | Track background agent tasks & review learned Lessons |
+| **Agent Terminal** | `Ctrl+Alt+T` | `Cmd+Opt+T` | Open embedded PTY pane (`cc`/`codex`/`agy`) & autonomous harness loop |
+| **Send to Session** | `Ctrl+Shift+Enter` | `Cmd+Shift+Enter` | Send selection or current line to active PTY session |
 | **Quick Capture** | `Ctrl+Shift+Q` | *(Win only)* | Desktop overlay popup with screen capture OCR |
 | **Command Palette** | `Ctrl+Shift+P` | `Cmd+Shift+P` | Search and execute all commands and actions |
 

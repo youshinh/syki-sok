@@ -18,6 +18,7 @@
 | **音声入力** | `Ctrl+Shift+R` | 完全ローカル（speech.cpp / Haas-ja）・ストリーミング・会議話者識別（Diarization）。 |
 | **画像 ＆ OCR** | `Ctrl+Shift+U` | スマートOCRペースト ＆ アプリ不要のスマホQRドロップ。 |
 | **エージェント連携** | `Ctrl+Enter` | `{{ @claude ... }}` バックグラウンド自律タスク実行。 |
+| **エージェントターミナル & 自律ループ** | `Ctrl+Alt+T` | 内蔵 PTY ペイン（`cc`/`codex`/`agy`）と分離 worktree 上の Maker-Checker 自律ループ。 |
 | **シェル・パイプ** | `Ctrl+E` | 選択テキストを `jq` や `sort`、CLIスクリプトに流し込む。 |
 | **呼び出し** | `Ctrl+Alt+M` | 15ms未満で前面復帰（Goネイティブ / 待機メモリ 5–15MB）。 |
 | **外部API / CLI** | `stdin / rpc` | `syki speech`、`cat log | syki` パイプ受け、完全な JSON-RPC 連携。 |
