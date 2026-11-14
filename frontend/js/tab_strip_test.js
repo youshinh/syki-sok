@@ -16,8 +16,9 @@ check('stripsFor: one page and the note with its preview beside it have the left
   assert.deepStrictEqual(TS.stripsFor({ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'preview' }), { mode: 'left', left: true, right: false });
 });
 
-check('stripsFor: two note pages have a strip each, the preview alone has none', () => {
+check('stripsFor: two note pages or agent pane have a strip each, the preview alone has none', () => {
   assert.deepStrictEqual(TS.stripsFor({ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'editor' }), { mode: 'both', left: true, right: true });
+  assert.deepStrictEqual(TS.stripsFor({ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'agent' }), { mode: 'both', left: true, right: true });
   assert.deepStrictEqual(TS.stripsFor({ isPreviewMode: true, isSplitMode: false, secondaryViewMode: 'editor' }), { mode: 'none', left: false, right: false });
 });
 

@@ -69,6 +69,7 @@ import "embed"
 //go:embed js/tab_strip.js
 //go:embed js/tag_edit.js
 //go:embed js/task_manager.js
+//go:embed js/terminal_pane.js
 //go:embed js/view_layout.js
 //go:embed js/voice_input.js
 //go:embed js/voice_profiles.js

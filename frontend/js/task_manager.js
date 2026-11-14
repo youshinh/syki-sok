@@ -65,7 +65,9 @@
     taskLessonsTitle: 'この実行から、次回への規則を作ります',
     taskLessonsApplied: '教訓 {n} 件を適用',
     taskLessonsAppliedOne: '教訓 {n} 件を適用',
-    taskLessonsSkipped: '{n} 件は多すぎて適用していません'
+    taskLessonsSkipped: '{n} 件は多すぎて適用していません',
+    taskJumpNote: 'ノートへ',
+    taskOpenPane: '開く'
   };
 
   function tt(key, params) {
@@ -261,7 +263,10 @@
       endTime: null,
       lastOutput: '',
       error: null,
-      onCancel: opts.onCancel || null
+      badgeText: opts.badgeText || '',
+      onCancel: opts.onCancel || null,
+      onJumpNote: typeof opts.onJumpNote === 'function' ? opts.onJumpNote : null,
+      onOpenPane: typeof opts.onOpenPane === 'function' ? opts.onOpenPane : null
     };
 
     tasks.set(task.id, task);
@@ -279,6 +284,24 @@
     // them would be the card that never shows why the task failed.
     if (updates.lastOutput !== undefined) {
       task.lastOutput = updates.lastOutput;
+    }
+    if (updates.agent !== undefined) {
+      task.agent = updates.agent;
+    }
+    if (updates.instruction !== undefined) {
+      task.instruction = updates.instruction;
+    }
+    if (updates.badgeText !== undefined) {
+      task.badgeText = updates.badgeText;
+    }
+    if (typeof updates.onJumpNote === 'function') {
+      task.onJumpNote = updates.onJumpNote;
+    }
+    if (typeof updates.onOpenPane === 'function') {
+      task.onOpenPane = updates.onOpenPane;
+    }
+    if (typeof updates.onCancel === 'function') {
+      task.onCancel = updates.onCancel;
     }
     if (updates.error !== undefined) {
       task.error = updates.error;
@@ -325,8 +348,8 @@
       }
     }
 
-    // Direct backend cancel (a command task has no slot process: its onCancel stops the command itself; neither has a deep search)
-    if (task.type !== 'command' && window.backend && window.backend.cancelSlotAgent && task.type !== 'deepsearch') {
+    // Direct backend cancel (a command task has no slot process: its onCancel stops the command itself; neither has a deep search or PTY loop)
+    if (task.type !== 'command' && window.backend && window.backend.cancelSlotAgent && task.type !== 'deepsearch' && task.type !== 'loop') {
       try {
         window.backend.cancelSlotAgent(id);
       } catch (err) {
@@ -425,7 +448,11 @@
       if (activeCount > 0) {
         statTasksEl.classList.remove('hidden');
         statTasksEl.classList.add('task-running');
-        statTasksCountEl.textContent = tt('taskRunningBadge', { count: activeCount });
+        if (activeCount === 1 && active[0].type === 'loop' && active[0].badgeText) {
+          statTasksCountEl.textContent = active[0].badgeText;
+        } else {
+          statTasksCountEl.textContent = tt('taskRunningBadge', { count: activeCount });
+        }
         statTasksEl.title = tt('taskRunningTooltip', { count: activeCount, alt: getAltLabel() });
       } else if (completedHistory.length > 0 && Date.now() - (completedHistory[0].endTime || 0) < COMPLETION_BADGE_MS) {
         // Show brief completion indicator for 4 seconds.
@@ -488,11 +515,16 @@
         const safeInstruction = escapeHTML(task.instruction || tt('taskNoInstruction'));
         const safeOutput = escapeHTML((hoverPeekEnabled ? task.lastOutput : '') || tt('taskWaitingProcess'));
 
+        const actionBtnsHtml =
+          (typeof task.onJumpNote === 'function' ? `<button class="btn-task-action btn-task-jump" data-jump-id="${escapeHTML(task.id)}">${escapeHTML(tt('taskJumpNote'))}</button>` : '') +
+          (typeof task.onOpenPane === 'function' ? `<button class="btn-task-action btn-task-open" data-open-id="${escapeHTML(task.id)}">${escapeHTML(tt('taskOpenPane'))}</button>` : '');
+
         html += `
           <div class="task-card task-card-running" data-task-id="${escapeHTML(task.id)}" data-task-type="${escapeHTML(task.type)}">
             <div class="task-card-header">
               <span class="task-agent-badge">${safeAgent}</span>
               <span class="task-instruction" title="${safeInstruction}">${safeInstruction}</span>
+              ${actionBtnsHtml}
               <button class="btn-task-cancel" data-cancel-id="${escapeHTML(task.id)}" title="${escapeHTML(tt('taskCancelTitle'))}">${escapeHTML(tt('taskCancelLabel'))}</button>
             </div>
             <div class="task-card-meta">
@@ -525,11 +557,16 @@
           statusLabel = tt('taskStatusFailed');
         }
 
+        const actionBtnsHtml =
+          (typeof task.onJumpNote === 'function' ? `<button class="btn-task-action btn-task-jump" data-jump-id="${escapeHTML(task.id)}">${escapeHTML(tt('taskJumpNote'))}</button>` : '') +
+          (typeof task.onOpenPane === 'function' ? `<button class="btn-task-action btn-task-open" data-open-id="${escapeHTML(task.id)}">${escapeHTML(tt('taskOpenPane'))}</button>` : '');
+
         html += `
           <div class="task-card task-card-history ${statusClass}" data-task-type="${escapeHTML(task.type)}">
             <div class="task-card-header">
               <span class="task-agent-badge badge-dim">${safeAgent}</span>
               <span class="task-instruction" title="${safeInstruction}">${safeInstruction}</span>
+              ${actionBtnsHtml}
               <span class="task-status-pill ${statusClass}">${statusLabel} (${duration})</span>
             </div>
             ${task.error ? `<div class="task-card-error">${escapeHTML(task.error)}</div>` : ''}
@@ -561,6 +598,22 @@
         e.stopPropagation();
         const task = historyTask(btn.getAttribute('data-lessons-id'));
         if (task && typeof global.__openLessons === 'function') global.__openLessons({ task: task, opener: btn });
+      });
+    });
+
+    const findTaskAny = (tid) => tasks.get(tid) || completedHistory.find((t) => t.id === tid) || null;
+    tasksListEl.querySelectorAll('.btn-task-jump').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const t = findTaskAny(btn.getAttribute('data-jump-id'));
+        if (t && typeof t.onJumpNote === 'function') t.onJumpNote();
+      });
+    });
+    tasksListEl.querySelectorAll('.btn-task-open').forEach((btn) => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const t = findTaskAny(btn.getAttribute('data-open-id'));
+        if (t && typeof t.onOpenPane === 'function') t.onOpenPane();
       });
     });
   }

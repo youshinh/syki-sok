@@ -45,7 +45,7 @@
   // profile with no saved config gets this; a saved layout, even an empty one, is never touched.
   const CALM_TOOLBAR_HIDDEN = [
     'btn-open-folder', 'btn-search-scraps', 'btn-mobile-drop', 'btn-voice-input', 'btn-quick-capture',
-    'btn-toggle-split', 'btn-preview-side', 'btn-zen', 'btn-fullscreen', 'btn-help'
+    'btn-toggle-split', 'btn-preview-side', 'btn-agent-side', 'btn-zen', 'btn-fullscreen', 'btn-help'
   ];
 
   function calmToolbarLayout() {

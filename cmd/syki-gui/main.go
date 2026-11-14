@@ -171,6 +171,7 @@ func main() {
 	warmFastBootAssets(frontend.FS)
 
 	app := &App{}
+	defer app.closeAllPTYs()
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {

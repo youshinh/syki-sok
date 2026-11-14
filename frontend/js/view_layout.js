@@ -18,11 +18,14 @@
   const KEY_STEP = 0.02;       // an arrow key: two points
   const KEY_STEP_BIG = 0.1;    // with Shift: ten points
 
-  // state: { isPreviewMode, isSplitMode, secondaryViewMode } -> 'page' | 'pair' | 'side' | 'preview'
+  // state: { isPreviewMode, isSplitMode, secondaryViewMode } -> 'page' | 'pair' | 'side' | 'agent' | 'preview'
   function viewOf(state) {
     const s = state || {};
     if (s.isPreviewMode) return 'preview';
-    if (s.isSplitMode) return s.secondaryViewMode === 'preview' ? 'side' : 'pair';
+    if (s.isSplitMode) {
+      if (s.secondaryViewMode === 'agent') return 'agent';
+      return s.secondaryViewMode === 'preview' ? 'side' : 'pair';
+    }
     return 'page';
   }
 

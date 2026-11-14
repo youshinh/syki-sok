@@ -137,6 +137,12 @@
             <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
           </svg>
         </button>
+        <button id="btn-agent-side" class="btn-header-icon" data-i18n-title="agentPaneTitle" title="Agent Terminal (Ctrl+Alt+T)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="4 17 10 11 4 5"></polyline>
+            <line x1="12" y1="19" x2="20" y2="19"></line>
+          </svg>
+        </button>
         <button id="btn-toggle-preview" class="btn-header-icon" data-i18n-title="togglePreviewTitle" title="Toggle Preview (Ctrl+P)">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
@@ -406,6 +412,60 @@
                 <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
               </svg>
             </button>
+            <button id="btn-secondary-agent" class="btn-pane-icon" data-i18n-title="agentModeTitle" title="Switch to Agent Terminal">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="4 17 10 11 4 5"></polyline>
+                <line x1="12" y1="19" x2="20" y2="19"></line>
+              </svg>
+            </button>
+            <span id="pty-loop-badge" class="pty-loop-badge hidden"></span>
+            <button id="btn-pty-loop-stop" class="btn-pane-icon hidden" data-i18n-title="agentLoopStopTitle" title="自律ループを停止（再度クリックで即時中断）">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="6" width="12" height="12" rx="1.5"></rect></svg>
+            </button>
+            <button id="btn-pty-link-to-left" class="btn-pane-icon hidden" data-i18n-title="agentLinkToNoteTitle" title="Insert Session Link to Left Note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path>
+                <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path>
+              </svg>
+            </button>
+            <button id="btn-pty-done-next" class="btn-pane-icon hidden" data-i18n-title="agentDoneNextTitle" title="Record Done / Next to Left Note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 11 12 14 22 4"></polyline>
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+              </svg>
+            </button>
+            <button id="btn-pty-sleep" class="btn-pane-icon hidden" data-i18n-title="agentSleepTitle" title="Sleep Session (Free Memory, Keep Resume)">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+              </svg>
+            </button>
+            <button id="btn-pty-relay" class="btn-pane-icon hidden" data-i18n-title="agentRelayTitle" title="Relay Output to Another Session">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="17 1 21 5 17 9"></polyline>
+                <path d="M3 11V9a4 4 0 0 1 4-4h14"></path>
+                <polyline points="7 23 3 19 7 15"></polyline>
+                <path d="M21 13v2a4 4 0 0 1-4 4H3"></path>
+              </svg>
+            </button>
+            <button id="btn-pty-mermaid-preview" class="btn-pane-icon hidden" data-i18n-title="agentMermaidPreviewTitle" title="Preview Latest Mermaid Diagram">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="7" height="7"></rect>
+                <rect x="14" y="3" width="7" height="7"></rect>
+                <rect x="8" y="14" width="8" height="7"></rect>
+                <line x1="6.5" y1="10" x2="12" y2="14"></line>
+                <line x1="17.5" y1="10" x2="12" y2="14"></line>
+              </svg>
+            </button>
+            <button id="btn-pty-copy-to-left" class="btn-pane-icon hidden" data-i18n-title="agentPasteToNoteTitle" title="Insert Terminal Output to Left Note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="15 18 9 12 15 6"></polyline>
+              </svg>
+            </button>
+            <button id="btn-pty-summarize-to-left" class="btn-pane-icon hidden" data-i18n-title="agentSummarizeToNoteTitle" title="Summarize Output to Left Note">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"></path>
+              </svg>
+            </button>
             <button id="btn-secondary-close" class="btn-pane-icon" data-i18n-title="closePaneTitle" title="Close Pane">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                 <line x1="18" y1="6" x2="6" y2="18"></line>
@@ -421,6 +481,7 @@
           </div>
         </div>
         <div id="secondary-preview-pane" class="markdown-body secondary-preview-pane hidden"></div>
+        <div id="secondary-agent-pane" class="secondary-agent-pane hidden"></div>
       </div>
 
       <!-- Preview View (1-Screen Full Preview Toggle) -->
@@ -644,6 +705,35 @@
         <span class="shortcut" id="sc-ctx-fullscreen">F11</span>
       </div>
       <div class="menu-divider"></div>
+      <div class="menu-item" id="ctx-harness-template">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7 9 9 11 13 7"/><line x1="7" y1="15" x2="17" y2="15"/></svg>
+        <span class="menu-label" data-i18n="ctxHarnessTemplate">Insert Harness Task Template</span>
+      </div>
+      <div class="menu-item" id="ctx-harness-start">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+        <span class="menu-label" data-i18n="ctxHarnessStart">Start Autonomous Harness Loop</span>
+      </div>
+      <div class="menu-item hidden" id="ctx-harness-stop">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"/></svg>
+        <span class="menu-label" data-i18n="ctxHarnessStop">Stop Autonomous Loop</span>
+      </div>
+      <div class="menu-item" id="ctx-session-dispatch">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+        <span class="menu-label" data-i18n="ctxSessionDispatch">Ask Session to Work on Selection</span>
+      </div>
+      <div class="menu-item" id="ctx-session-continue-existing">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 10 20 15 15 20"/><path d="M4 4v7a4 4 0 0 0 4 4h12"/></svg>
+        <span class="menu-label" data-i18n="ctxSessionContinueExisting">Continue in Existing Session</span>
+      </div>
+      <div class="menu-item" id="ctx-session-continue-new">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        <span class="menu-label" data-i18n="ctxSessionContinueNew">Continue in New Session</span>
+      </div>
+      <div class="menu-item" id="ctx-session-review">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+        <span class="menu-label" data-i18n="ctxSessionReview">Review in Another Session</span>
+      </div>
+      <div class="menu-divider"></div>
       <div class="menu-item" id="ctx-settings">
         <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span class="menu-label" data-i18n="ctxSettings">Settings...</span>
@@ -700,6 +790,65 @@
       <div class="menu-item" id="tab-ctx-reveal-explorer">
         <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
         <span class="menu-label" data-i18n="tabCtxRevealExplorer">エクスプローラーで表示</span>
+      </div>
+    </div>
+
+    <!-- Agent Session Context Menu (Right-click on #tab-index-right or #secondary-agent-pane in agent mode) -->
+    <div id="agent-tab-context-menu" class="hidden">
+      <div class="menu-item" id="agent-ctx-new">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="4 17 10 11 4 5"></polyline><line x1="12" y1="19" x2="20" y2="19"></line></svg>
+        <span class="menu-label" data-i18n="agentCtxNew">新しいエージェントセッション...</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-rename">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxRename">セッション名を変更</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="agent-ctx-link-note">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxLinkNote">左ノートへリンク挿入</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-done-next">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxDoneNext">完了 / 次をノートに記録</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-relay">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polyline points="17 1 21 5 17 9"></polyline><path d="M3 11V9a4 4 0 0 1 4-4h14"></path><polyline points="7 23 3 19 7 15"></polyline><path d="M21 13v2a4 4 0 0 1-4 4H3"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxRelay">別セッションへ出力を転送</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-loop-start">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <span class="menu-label" data-i18n="agentCtxLoopStart">選択タスクで自律ループ開始</span>
+      </div>
+      <div class="menu-item hidden" id="agent-ctx-loop-stop">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="5" width="14" height="14" rx="2"></rect></svg>
+        <span class="menu-label" data-i18n="agentCtxLoopStop">ループ停止</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-review">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"></path><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxReview">別モデルセッションでレビュー...</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="agent-ctx-copy-path">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxCopyPath">作業フォルダのパスをコピー</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-reveal-explorer">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxRevealExplorer">作業フォルダをエクスプローラーで表示</span>
+      </div>
+      <div class="menu-divider"></div>
+      <div class="menu-item" id="agent-ctx-sleep">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+        <span class="menu-label" data-i18n="agentCtxSleep">セッションを休止（後で再開可）</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-close">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+        <span class="menu-label" data-i18n="agentCtxClose">セッションを閉じる</span>
+      </div>
+      <div class="menu-item" id="agent-ctx-close-others">
+        <svg class="menu-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"></rect><line x1="9" y1="9" x2="15" y2="15"></line><line x1="15" y1="9" x2="9" y2="15"></line></svg>
+        <span class="menu-label" data-i18n="agentCtxCloseOthers">他のセッションをすべて閉じる</span>
       </div>
     </div>
 
@@ -2350,6 +2499,7 @@
   <script src="js/tab_strip.js?v=1.0.1"></script>
   <script src="js/tab_overflow.js?v=1.0.1"></script>
   <script src="js/view_layout.js?v=1.0.1"></script>
+  <script src="js/terminal_pane.js?v=1.0.0"></script>
   <script src="js/html_to_md.js?v=1.0.1"></script>
   <script src="js/voice_profiles.js?v=1.0.1"></script>
   <script src="js/voice_input.js?v=1.0.1"></script>

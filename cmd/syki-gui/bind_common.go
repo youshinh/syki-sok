@@ -157,6 +157,20 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_cancelOllamaSetup", app.CancelOllamaSetup)
 	_ = w.Bind("backend_getSkillInstruction", app.GetSkillInstruction)
 	_ = w.Bind("backend_getAvailableSkillsJSON", app.GetAvailableSkillsJSON)
+	_ = w.Bind("backend_ptyStart", app.PtyStart)
+	_ = w.Bind("backend_ptyStartWithOptions", app.PtyStartWithOptions)
+	_ = w.Bind("backend_ptyWrite", app.PtyWrite)
+	_ = w.Bind("backend_ptyResize", app.PtyResize)
+	_ = w.Bind("backend_ptyClose", app.PtyClose)
+	_ = w.Bind("backend_ptySleep", app.PtySleep)
+	_ = w.Bind("backend_ptyRename", app.PtyRename)
+	_ = w.Bind("backend_ptyHistory", app.PtyHistory)
+	_ = w.Bind("backend_ptyDeleteHistory", app.PtyDeleteHistory)
+	_ = w.Bind("backend_ptyList", app.PtyList)
+	_ = w.Bind("backend_ptyPickFolder", app.PtyPickFolder)
+	_ = w.Bind("backend_ptySuggestDirs", app.PtySuggestDirs)
+	_ = w.Bind("backend_ptyDetectGate", app.PtyDetectGate)
+	_ = w.Bind("backend_ptyPrepareWorktree", app.PtyPrepareWorktree)
 }
 
 // buildCommonBridgeInitJS returns the shared WebView Init JS that sets up the async RPC
@@ -383,7 +397,21 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 			discardVoiceCache: (cachePath) => window.backend_discardVoiceCache(cachePath || ""),
 			listVoiceCaches: () => window.backend_listVoiceCaches(),
 			discardAllVoiceCaches: () => window.backend_discardAllVoiceCaches(),
-			transcribeVoiceCache: (cachePath, voiceConfigJson) => window.backend_transcribeVoiceCache(cachePath || "", voiceConfigJson || "")` + extras.String() + `
+			transcribeVoiceCache: (cachePath, voiceConfigJson) => window.backend_transcribeVoiceCache(cachePath || "", voiceConfigJson || ""),
+			ptyStart: (preset, dir, cols, rows) => window.backend_ptyStart(preset || "shell", dir || "", cols || 80, rows || 24),
+			ptyStartWithOptions: (id, preset, dir, label, cliSessionId, resume, cols, rows) => window.backend_ptyStartWithOptions(id || "", preset || "shell", dir || "", label || "", cliSessionId || "", !!resume, cols || 80, rows || 24),
+			ptyWrite: (id, b64Data) => window.backend_ptyWrite(id || "", b64Data || ""),
+			ptyResize: (id, cols, rows) => window.backend_ptyResize(id || "", cols || 80, rows || 24),
+			ptyClose: (id) => window.backend_ptyClose(id || ""),
+			ptySleep: (id) => window.backend_ptySleep(id || ""),
+			ptyRename: (id, label) => window.backend_ptyRename(id || "", label || ""),
+			ptyHistory: () => window.backend_ptyHistory(),
+			ptyDeleteHistory: (id) => window.backend_ptyDeleteHistory(id || ""),
+			ptyList: () => window.backend_ptyList(),
+			ptyPickFolder: () => window.backend_ptyPickFolder(),
+			ptySuggestDirs: (activeFilePath) => window.backend_ptySuggestDirs(activeFilePath || ""),
+			ptyDetectGate: (dir) => window.backend_ptyDetectGate(dir || ""),
+			ptyPrepareWorktree: (dir, loopId) => window.backend_ptyPrepareWorktree(dir || "", loopId || "")` + extras.String() + `
 		};
 	`
 }

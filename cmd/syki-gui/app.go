@@ -10,6 +10,7 @@ import (
 
 	"syki-sok/pkg/gitsync"
 	"syki-sok/pkg/jev"
+	"syki-sok/pkg/ptyterm"
 	"syki-sok/pkg/slotagent"
 )
 
@@ -72,6 +73,9 @@ type App struct {
 	cfgCacheMu sync.Mutex
 	cfgCache   *configCacheEntry
 	sessionSaveMu sync.Mutex
+
+	ptyMgr *ptyterm.Manager
+	ptyMu  sync.Mutex
 
 	// ReceptorOrganelles encapsulates Ring 2 detachable background receptors
 	// (Mobile Drop HTTP server, Cloudflare Bridge poller, and Hot-folder Inbox watcher).

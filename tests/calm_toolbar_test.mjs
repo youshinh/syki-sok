@@ -98,6 +98,7 @@ check('every hidden icon has a way back besides Settings: a palette command or a
     'btn-quick-capture': { cmd: 'cmd_quick_capture' },
     'btn-toggle-split': { cmd: 'cmd_toggle_split' },
     'btn-preview-side': { cmd: 'cmd_preview_side', ctx: 'ctx-preview-side' },
+    'btn-agent-side': { cmd: 'cmd_agent_side' },
     'btn-zen': { cmd: 'cmd_toggle_zen', ctx: 'ctx-zen' },
     'btn-fullscreen': { cmd: 'cmd_toggle_fullscreen', ctx: 'ctx-fullscreen' },
     'btn-help': { cmd: 'cmd_help' }

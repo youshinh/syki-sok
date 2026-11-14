@@ -35,7 +35,7 @@
   function stripsFor(state) {
     const s = state || {};
     if (s.isPreviewMode) return { mode: 'none', left: false, right: false };
-    if (s.isSplitMode && s.secondaryViewMode === 'editor') return { mode: 'both', left: true, right: true };
+    if (s.isSplitMode && (s.secondaryViewMode === 'editor' || s.secondaryViewMode === 'agent')) return { mode: 'both', left: true, right: true };
     return { mode: 'left', left: true, right: false };
   }
 

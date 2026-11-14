@@ -574,6 +574,9 @@
       applyAppearance(ap);
       rememberLook(ap);
     } else if (typeof invalidateCharPixelMirrors === 'function') invalidateCharPixelMirrors();
+    if (agentController && typeof agentController.syncTheme === 'function') {
+      agentController.syncTheme();
+    }
   }
 
   // The saved look is kept under a small key of its own (syki_look) so that the first script of index.html can put it on the page before
@@ -686,6 +689,7 @@
   const btnTogglePreview = document.getElementById('btn-toggle-preview');
   const btnToggleSplit = document.getElementById('btn-toggle-split');
   const btnPreviewSide = document.getElementById('btn-preview-side');
+  const btnAgentSide = document.getElementById('btn-agent-side');
   const btnFind = document.getElementById('btn-find');
   const btnHeaderLLM = document.getElementById('btn-header-llm');
   const btnSettings = document.getElementById('btn-settings');
@@ -705,6 +709,7 @@
   const secondaryPaneTitle = document.getElementById('secondary-pane-title');
   const btnSecondarySync = document.getElementById('btn-secondary-sync');
   const btnSecondaryMode = document.getElementById('btn-secondary-mode');
+  const btnSecondaryAgent = document.getElementById('btn-secondary-agent');
   const btnSecondaryPrint = document.getElementById('btn-secondary-print'); // printer button of the side preview (see startPrint)
   const btnSecondaryClose = document.getElementById('btn-secondary-close');
   const secondaryPreviewBadge = document.getElementById('secondary-preview-badge');
@@ -720,6 +725,9 @@
     window.SlotAgent.attachEditor(editorSecondary);
   }
   const secondaryPreviewPane = document.getElementById('secondary-preview-pane');
+  const secondaryAgentPane = document.getElementById('secondary-agent-pane');
+  let agentController = null;
+  let agentBridge = null;
   const paneResizer = document.getElementById('pane-resizer');
   const ctxOpenToSide = document.getElementById('ctx-open-to-side');
   const ctxPreviewSide = document.getElementById('ctx-preview-side');
@@ -1441,6 +1449,9 @@
     }
     if (typeof charMirrors !== 'undefined') {
       clearCharPixelMirrorTexts();
+    }
+    if (agentBridge && typeof agentBridge.trimIdleMemory === 'function') {
+      agentBridge.trimIdleMemory();
     }
     if (window.backend && window.backend.trimMemory) {
       try {
@@ -2868,6 +2879,12 @@
 
   function drawStrip(strip) {
     const { listEl, els } = strip;
+    if (strip.side === 'right' && isSplitMode && secondaryViewMode === 'agent') {
+      els.clear();
+      const ctrl = ensureAgentController();
+      if (ctrl) ctrl.renderRightTabs(listEl);
+      return;
+    }
     const selectedId = strip.selected();
     const effectiveId = (strip.side === 'left' && document.body.classList.contains('tabs-top') && isSplitMode && secondaryViewMode === 'editor' && activePane === 'secondary')
       ? secondaryTabId
@@ -3612,6 +3629,7 @@
     if (btnToggleSplit) btnToggleSplit.classList.add('active');
 
     if (secondaryEditorPane) secondaryEditorPane.classList.add('hidden');
+    if (secondaryAgentPane) secondaryAgentPane.classList.add('hidden');
     if (secondaryPreviewPane) secondaryPreviewPane.classList.remove('hidden');
 
     if (isPreviewMode) {
@@ -3645,7 +3663,11 @@
     paneResizer.classList.add('hidden');
     editorPane.style.flex = '';
     if (secondaryPreviewPane) secondaryPreviewPane.innerHTML = '';
+    if (secondaryAgentPane) secondaryAgentPane.classList.add('hidden');
     if (btnToggleSplit) btnToggleSplit.classList.remove('active');
+    if (btnAgentSide) btnAgentSide.classList.remove('active');
+    if (btnSecondaryAgent) btnSecondaryAgent.classList.remove('active');
+    if (agentBridge) agentBridge.updateHeaderUI(false);
     applyViewMode();
     activePane = 'primary';
     updatePaneFocusClasses();
@@ -3664,8 +3686,176 @@
     }
   }
 
+  function ensureAgentController() {
+    if (agentController) return agentController;
+    if (!window.TerminalPane || typeof window.TerminalPane.createController !== 'function') return null;
+    agentController = window.TerminalPane.createController({
+      doc: document,
+      win: window,
+      getActiveFilePath: () => {
+        const tTab = getActiveTab();
+        return tTab ? tTab.path : '';
+      },
+      t,
+      onSessionsChanged: () => {
+        syncAgentRunningBadge();
+        if (isSplitMode && secondaryViewMode === 'agent') {
+          updateSecondaryPane();
+          renderTabs();
+        }
+      },
+      onLoopStateChanged: (loop) => {
+        if (agentBridge && typeof agentBridge.handleLoopStateChanged === 'function') {
+          agentBridge.handleLoopStateChanged(loop);
+        }
+      }
+    });
+    return agentController;
+  }
+
+  function syncAgentRunningBadge() {
+    const has = !!(agentController && agentController.hasRunningSession());
+    if (btnAgentSide) btnAgentSide.classList.toggle('has-running', has);
+  }
+
+  async function openAgentPane(opts) {
+    const o = opts || {};
+    clearGhostText();
+    if (isSplitMode && secondaryTabId) {
+      const prevSecTab = getTab(secondaryTabId);
+      if (prevSecTab && editorSecondary && secondaryViewMode === 'editor') {
+        prevSecTab.content = editorSecondary.value;
+        prevSecTab.cursorPos = editorSecondary.selectionStart;
+      }
+    }
+    secondaryViewMode = 'agent';
+    isSplitMode = true;
+
+    workspaceEl.classList.add('split-mode');
+    secondaryPane.classList.remove('hidden');
+    paneResizer.classList.remove('hidden');
+    if (btnToggleSplit) btnToggleSplit.classList.remove('active');
+    if (secondaryEditorPane) secondaryEditorPane.classList.add('hidden');
+    if (secondaryPreviewPane) secondaryPreviewPane.classList.add('hidden');
+    if (secondaryAgentPane) secondaryAgentPane.classList.remove('hidden');
+
+    if (isPreviewMode) {
+      isPreviewMode = false;
+      previewPane.classList.add('hidden');
+      editorPane.classList.remove('hidden');
+      if (btnTogglePreview) btnTogglePreview.classList.remove('active');
+    }
+    applyViewMode();
+
+    activePane = o.preserveFocus ? 'primary' : 'secondary';
+    updateSecondaryPane();
+    updatePaneFocusClasses();
+    renderTabs();
+
+    const ctrl = ensureAgentController();
+    if (ctrl && secondaryAgentPane) {
+      await ctrl.openPane(secondaryAgentPane, {
+        preserveFocus: !!o.preserveFocus,
+        skipLauncher: !!o.skipLauncher
+      });
+    }
+  }
+
+  async function toggleAgentPane() {
+    if (isSplitMode && secondaryViewMode === 'agent') {
+      closeSecondaryPane();
+    } else {
+      await openAgentPane();
+    }
+  }
+
+  async function showAgentMermaidOverlay() {
+    const ctrl = ensureAgentController();
+    if (!ctrl || !secondaryAgentPane) return;
+    const code = ctrl.getLatestMermaid();
+    if (!code) {
+      if (typeof showToast === 'function') {
+        showToast(t('agentNoMermaidFound', 'No Mermaid block found in recent terminal output'));
+      }
+      return;
+    }
+    await ensureRendererLibraries();
+    const prev = secondaryAgentPane.querySelector('.agent-mermaid-overlay');
+    if (prev && prev.parentElement) prev.parentElement.removeChild(prev);
+
+    const overlay = document.createElement('div');
+    overlay.className = 'agent-mermaid-overlay';
+
+    const bar = document.createElement('div');
+    bar.className = 'agent-mermaid-bar';
+    const label = document.createElement('span');
+    label.textContent = 'Mermaid Preview';
+    bar.appendChild(label);
+
+    const actions = document.createElement('div');
+    actions.className = 'agent-mermaid-bar-actions';
+
+    const insertBtn = document.createElement('button');
+    insertBtn.type = 'button';
+    insertBtn.className = 'agent-launcher-btn primary';
+    insertBtn.textContent = t('agentInsertToNoteBtn', 'Insert to Note');
+    insertBtn.onclick = () => {
+      if (agentBridge) agentBridge.insertTextIntoLeftNote('```mermaid\n' + code + '\n```');
+      if (overlay.parentElement) overlay.parentElement.removeChild(overlay);
+    };
+    actions.appendChild(insertBtn);
+
+    const closeBtn = document.createElement('button');
+    closeBtn.type = 'button';
+    closeBtn.className = 'agent-launcher-btn';
+    closeBtn.textContent = '×';
+    closeBtn.onclick = () => {
+      if (overlay.parentElement) overlay.parentElement.removeChild(overlay);
+    };
+    actions.appendChild(closeBtn);
+    bar.appendChild(actions);
+    overlay.appendChild(bar);
+
+    const body = document.createElement('div');
+    body.className = 'agent-mermaid-body markdown-body';
+    overlay.appendChild(body);
+    secondaryAgentPane.appendChild(overlay);
+
+    try {
+      if (window.mermaid && typeof window.mermaid.render === 'function') {
+        const res = await window.mermaid.render('agent-mmd-' + Date.now(), code);
+        body.innerHTML = res && res.svg ? res.svg : String(res || '');
+      } else {
+        body.textContent = code;
+      }
+    } catch (err) {
+      body.textContent = (t('mermaidError', 'Mermaid syntax error: ') + (err && err.message ? err.message : String(err)));
+    }
+  }
+
   function updateSecondaryPane() {
     if (!isSplitMode) return;
+
+    if (secondaryViewMode === 'agent') {
+      if (secondaryEditorPane) secondaryEditorPane.classList.add('hidden');
+      if (secondaryPreviewPane) secondaryPreviewPane.classList.add('hidden');
+      if (secondaryAgentPane) secondaryAgentPane.classList.remove('hidden');
+      if (secondaryPreviewBadge) secondaryPreviewBadge.hidden = true;
+      if (btnSecondaryPrint) btnSecondaryPrint.hidden = true;
+      if (btnSecondarySync) btnSecondarySync.style.display = 'none';
+      if (btnSecondaryMode) btnSecondaryMode.classList.remove('active');
+      if (btnSecondaryAgent) btnSecondaryAgent.classList.add('active');
+      if (btnAgentSide) btnAgentSide.classList.add('active');
+      if (agentBridge) agentBridge.updateHeaderUI(true);
+      applySplitRatio();
+      updatePaneFocusClasses();
+      return;
+    }
+
+    if (secondaryAgentPane) secondaryAgentPane.classList.add('hidden');
+    if (btnSecondaryAgent) btnSecondaryAgent.classList.remove('active');
+    if (btnAgentSide) btnAgentSide.classList.remove('active');
+    if (agentBridge) agentBridge.updateHeaderUI(false);
 
     const secTab = getTab(secondaryTabId) || getActiveTab();
     if (!secTab) return;
@@ -6545,12 +6735,17 @@
     hideCursorAura(true);
     clearTimeout(autocompleteTimer);
   });
+
   editorEl.addEventListener('compositionend', (e) => {
     isComposing = false;
     const guardHandled = handleZenkakuGuardOnCompositionEnd(editorEl, e && e.data);
     offerEnglishRetype(e && e.data);
     if (!guardHandled) {
       onEditorInput(editorEl, getTab(activeTabId), false);
+    }
+    if (agentBridge) {
+      agentBridge.flushPendingLoopNoteSyncs();
+      agentBridge.scheduleLiveLoopInstructionSync(getTab(activeTabId));
     }
     triggerCursorAuraDebounced();
   });
@@ -6563,6 +6758,10 @@
       onEditorInput(editorEl, getTab(activeTabId), true);
     } else {
       onEditorInput(editorEl, getTab(activeTabId), false);
+    }
+    if (agentBridge) {
+      agentBridge.captureEditorSelection();
+      agentBridge.scheduleLiveLoopInstructionSync(getTab(activeTabId));
     }
     triggerCursorAuraDebounced();
   });
@@ -6611,6 +6810,7 @@
   // Alt+Click (reveal) both bail out immediately unless the caret landed on something they
   // recognize, so this costs nothing on an ordinary click.
   editorEl.addEventListener('click', (e) => {
+    if (agentBridge && agentBridge.handleEditorClick(editorEl, e)) { e.preventDefault(); return; }
     if (window.VoiceInput && window.VoiceInput.handleEditorClick(editorEl, e)) { e.preventDefault(); return; }
     if (window.FileAnchor && window.FileAnchor.handleEditorClick(editorEl, e)) { e.preventDefault(); }
   });
@@ -6655,6 +6855,10 @@
       if (!guardHandled) {
         onEditorInput(editorSecondary, getTab(secondaryTabId), false);
       }
+      if (agentBridge) {
+        agentBridge.flushPendingLoopNoteSyncs();
+        agentBridge.scheduleLiveLoopInstructionSync(getTab(secondaryTabId));
+      }
       triggerCursorAuraDebounced();
     });
     editorSecondary.addEventListener('input', () => {
@@ -6690,6 +6894,7 @@
           debouncedLivePreview();
         }
       }
+      if (agentBridge) agentBridge.scheduleLiveLoopInstructionSync(secTab);
       scheduleUpdateSecondaryLineNumbers();
       scheduleUpdateStatusBar();
       triggerCursorAuraDebounced();
@@ -6724,6 +6929,7 @@
       triggerCursorAuraDebounced();
     });
     editorSecondary.addEventListener('click', (e) => {
+      if (agentBridge && agentBridge.handleEditorClick(editorSecondary, e)) { e.preventDefault(); return; }
       if (window.VoiceInput && window.VoiceInput.handleEditorClick(editorSecondary, e)) { e.preventDefault(); return; }
       if (window.FileAnchor && window.FileAnchor.handleEditorClick(editorSecondary, e)) { e.preventDefault(); }
     });
@@ -10059,6 +10265,13 @@ OUTPUT FORMAT:
         action: () => openPreviewToSide()
       },
       {
+        id: 'cmd_agent_side',
+        title: t('agentPaneTitle'),
+        desc: isMac ? 'Cmd+Option+T' : 'Ctrl+Alt+T',
+        iconSvg: icon('<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>'),
+        action: () => toggleAgentPane()
+      },
+      {
         id: 'cmd_search_scraps',
         title: t('cmdPaletteSearchNotes'),
         desc: paletteDescWithShortcut('cmdPaletteSearchNotesDesc', 'searchScraps'),
@@ -11903,6 +12116,34 @@ OUTPUT FORMAT:
     // text-editing binding, like Ctrl+Tab / Ctrl+W).
     const isModStrict = isMac ? e.metaKey : isCtrl;
 
+    // Embedded PTY Agent Pane toggle (Ctrl+Alt+T / Cmd+Alt+T) and Send-to-Agent (Ctrl+Shift+Enter)
+    if (isCtrl && e.altKey && !e.shiftKey && e.code === 'KeyT') {
+      e.preventDefault();
+      toggleAgentPane();
+      return;
+    }
+    if (isCtrl && e.shiftKey && !e.altKey && e.key === 'Enter' && isSplitMode && secondaryViewMode === 'agent') {
+      const payload = agentBridge ? agentBridge.getLeftNoteSelectionOrLine() : '';
+      if (payload && ensureAgentController()) {
+        e.preventDefault();
+        ensureAgentController().sendTextToActive(payload);
+        return;
+      }
+    }
+    // Focus isolation: when the embedded terminal has keyboard focus, let Ctrl+C/Ctrl+N/Ctrl+//Tab go directly to the PTY.
+    if (window.TerminalPane && window.TerminalPane.isTerminalElement(document.activeElement)) {
+      if (isCtrl && (e.key === '1' || e.key === '2')) {
+        e.preventDefault();
+        if (e.key === '1' && editorEl) {
+          editorEl.focus();
+          activePane = 'primary';
+          updatePaneFocusClasses();
+          renderTabs();
+        }
+      }
+      return;
+    }
+
     // Voice input start/stop (機能 3): a configurable shortcut (default Ctrl/Cmd+Shift+R; an
     // unassigned one matches nothing). matchShortcut also accepts the physical key (e.code), so a
     // Japanese IME that delivers the press as key 'Process' / keyCode 229 still triggers it.
@@ -12421,6 +12662,7 @@ OUTPUT FORMAT:
   }
 
   const tabContextMenu = document.getElementById('tab-context-menu');
+  const agentTabContextMenu = document.getElementById('agent-tab-context-menu');
   const statusContextMenu = document.getElementById('status-context-menu');
 
   function positionContextMenu(menuEl, x, y) {
@@ -12454,14 +12696,80 @@ OUTPUT FORMAT:
   function hideAllContextMenus() {
     if (contextMenu) contextMenu.classList.add('hidden');
     if (tabContextMenu) tabContextMenu.classList.add('hidden');
+    if (agentTabContextMenu) agentTabContextMenu.classList.add('hidden');
     if (statusContextMenu) statusContextMenu.classList.add('hidden');
     hideTabsSubmenu(true);
   }
 
+  agentBridge = (window.TerminalPane && typeof window.TerminalPane.createWorkspaceBridge === 'function')
+    ? window.TerminalPane.createWorkspaceBridge({
+        doc: document,
+        win: window,
+        editorEl,
+        editorSecondary,
+        secondaryAgentPane,
+        secondaryPaneTitle,
+        agentTabContextMenu,
+        t,
+        getController: () => agentController,
+        ensureController: ensureAgentController,
+        openAgentPane,
+        getActiveTab,
+        getTab,
+        getTabs: () => tabs,
+        getActiveTabId: () => activeTabId,
+        getSecondaryTabId: () => secondaryTabId,
+        isSplitAgent: () => isSplitMode && secondaryViewMode === 'agent',
+        isSplitEditor: () => isSplitMode && secondaryViewMode === 'editor',
+        getIsComposing: () => isComposing,
+        getLanguage: () => (config && config.general && config.general.language) || 'en',
+        hideAllContextMenus,
+        selectTab,
+        openPathInTab: async (filePath) => {
+          if (!window.backend || typeof window.backend.readFileByPath !== 'function') return null;
+          const res = await window.backend.readFileByPath(filePath);
+          if (!res) return null;
+          return createTab(res.title || String(filePath).split(/[\\/]/).pop(), res.content, res.path || filePath, res.encoding || 'UTF-8');
+        },
+        ensurePrimaryEditorVisible: async () => { if (isPreviewMode) await togglePreview(); },
+        focusPrimaryEditor: () => {
+          activePane = 'primary';
+          updatePaneFocusClasses();
+        },
+        onTabTextReplaced: (tab, res, isPrimary, isSecondary) => {
+          tab.content = res.text;
+          if (!tab.isDirty) tab.isDirty = true;
+          patchTabItem(tab.id);
+          if (isPrimary) {
+            cachedLineCount = 0;
+            scheduleUpdateLineNumbers();
+            if (isSplitMode || isPreviewMode) debouncedLivePreview();
+          }
+          if (isSecondary) scheduleUpdateSecondaryLineNumbers();
+          scheduleUpdateStatusBar();
+          armAutoSave(tab);
+          saveSessionDebounced();
+        },
+        refreshUi: () => {
+          updateSecondaryPane();
+          renderTabs();
+        },
+        showMessage,
+        copyTextToClipboard,
+        renderMermaidOverlay: showAgentMermaidOverlay
+      })
+    : null;
+
   window.addEventListener('contextmenu', (e) => {
     e.preventDefault();
+    if (agentBridge) agentBridge.captureEditorSelection();
     hideAllContextMenus();
     if (window.ChromeLayout && !window.ChromeLayout.hasVisibleItems('context')) {
+      return;
+    }
+
+    // 0. Right-click on Agent Tab Strip or Agent Pane
+    if (isSplitMode && secondaryViewMode === 'agent' && agentBridge && agentBridge.openAgentTabContextMenu(e, positionContextMenu)) {
       return;
     }
 
@@ -12488,6 +12796,7 @@ OUTPUT FORMAT:
     forgetContextTabUnlessOnTab(e.target);
     syncTagContextItems();
     syncTabsSubmenu();
+    if (agentBridge) agentBridge.syncHarnessContextMenuItems();
     if (window.ChromeLayout && !window.ChromeLayout.hasVisibleItems('context')) {
       return;
     }
@@ -12498,9 +12807,10 @@ OUTPUT FORMAT:
     const subEl = document.getElementById('ctx-tabs-submenu');
     const inCtx = contextMenu && contextMenu.contains(e.target);
     const inTabCtx = tabContextMenu && tabContextMenu.contains(e.target);
+    const inAgentTabCtx = agentTabContextMenu && agentTabContextMenu.contains(e.target);
     const inStatCtx = statusContextMenu && statusContextMenu.contains(e.target);
     const inSub = subEl && subEl.contains(e.target);
-    if (!inCtx && !inTabCtx && !inStatCtx && !inSub) {
+    if (!inCtx && !inTabCtx && !inAgentTabCtx && !inStatCtx && !inSub) {
       hideAllContextMenus();
     }
   });
@@ -12900,8 +13210,13 @@ OUTPUT FORMAT:
   }
   if (btnToggleSplit) btnToggleSplit.onclick = () => toggleSplitMode();
   if (btnPreviewSide) btnPreviewSide.onclick = () => openPreviewToSide();
+  if (btnAgentSide) btnAgentSide.onclick = () => toggleAgentPane();
   btnTogglePreview.onclick = () => togglePreview();
   btnSettings.onclick = () => openSettings();
+
+  if (btnSecondaryAgent) {
+    btnSecondaryAgent.onclick = () => openAgentPane();
+  }
 
   // Secondary Pane Button Bindings
   if (btnSecondarySync) {

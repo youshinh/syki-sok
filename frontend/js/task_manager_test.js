@@ -380,6 +380,37 @@ console.log("Test 6: command tasks are listed, are not hover-peeked and cancel t
       TaskManager.cancelTask('press-1');
       TaskManager.hidePanel();
       console.log("PASS: Test 7");
+
+      // Test 8: loop tasks skip cancelSlotAgent, render [ノートへ]/[開く], and show badgeText on single active loop
+      console.log("Test 8: loop tasks skip cancelSlotAgent and render jump/open buttons");
+      mouseup();
+      TaskManager.showPanel();
+      TaskManager.clearHistory();
+      global.__canceledBackendId = null;
+      let jumpClicks = 0;
+      let openClicks = 0;
+      let cancelClicks = 0;
+      TaskManager.addTask({
+        id: 'harness-loop-1',
+        type: 'loop',
+        agent: 'Loop 1/3',
+        instruction: 'Refactor Parser',
+        badgeText: 'Loop 1/3 · Maker',
+        onJumpNote: () => { jumpClicks++; },
+        onOpenPane: () => { openClicks++; },
+        onCancel: () => { cancelClicks++; }
+      });
+      assert.strictEqual(documentMock.getElementById('stat-tasks-count').textContent, 'Loop 1/3 · Maker');
+      const loopHtml = documentMock.getElementById('tasks-panel-list').innerHTML;
+      assert(loopHtml.includes('data-jump-id="harness-loop-1"'), 'jump button rendered');
+      assert(loopHtml.includes('data-open-id="harness-loop-1"'), 'open button rendered');
+      TaskManager.cancelTask('harness-loop-1');
+      assert.strictEqual(cancelClicks, 1, 'onCancel ran for loop task');
+      assert.strictEqual(global.__canceledBackendId, null, 'cancelSlotAgent must not be called for loop tasks');
+      TaskManager.hidePanel();
+      TaskManager.clearHistory();
+      console.log("PASS: Test 8");
+
       console.log("All TaskManager tests PASS!");
     }, 5);
   }).catch((err) => {

@@ -19,6 +19,7 @@ check('viewOf: the table of the four displays (isPreviewMode, isSplitMode, secon
     [{ isPreviewMode: false, isSplitMode: false, secondaryViewMode: 'preview' }, 'page'],
     [{ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'editor' }, 'pair'],
     [{ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'preview' }, 'side'],
+    [{ isPreviewMode: false, isSplitMode: true, secondaryViewMode: 'agent' }, 'agent'],
     [{ isPreviewMode: true, isSplitMode: false, secondaryViewMode: 'editor' }, 'preview'],
     [{ isPreviewMode: true, isSplitMode: false, secondaryViewMode: 'preview' }, 'preview']
   ];
