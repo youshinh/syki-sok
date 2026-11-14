@@ -74,7 +74,18 @@ for (const { relPath, passed, output } of results) {
     console.log(`PASS  ${relPath}`);
   } else {
     console.log(`FAIL  ${relPath}`);
-    const tail = output.split('\n').filter(Boolean).slice(-20).join('\n');
+    const lines = output.split('\n').filter(Boolean);
+    const failLines = [];
+    for (let i = 0; i < lines.length; i++) {
+      if (/\bFAIL\b|AssertionError|Error:/i.test(lines[i])) {
+        failLines.push(...lines.slice(i, Math.min(i + 5, lines.length)));
+      }
+    }
+    if (failLines.length) {
+      console.log('      --- failure lines ---');
+      failLines.slice(0, 20).forEach((line) => console.log(`      ${line}`));
+    }
+    const tail = lines.slice(-20).join('\n');
     if (tail) {
       console.log('      --- last output lines ---');
       tail.split('\n').forEach((line) => console.log(`      ${line}`));
