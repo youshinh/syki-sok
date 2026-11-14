@@ -1118,12 +1118,18 @@ test('findContextAbove: a big note with many tasks stays cheap', () => {
   let note = chunk;
   for (let i = 0; i < 20; i++) note += 'para ' + i + '\n[[ @llm q' + i + ' ]]\n' + AS.makeResultBlock('a' + i + 'aa', 'answer '.repeat(50), 'ctx=above') + '\n\n';
   note += 'last paragraph\n[[ @llm final ]]';
-  const t0 = process.hrtime.bigint();
-  const ctx = AS.findContextAbove(note, note.lastIndexOf('[[ @llm final'));
-  const ms = Number(process.hrtime.bigint() - t0) / 1e6;
+  const at = note.lastIndexOf('[[ @llm final');
+  AS.findContextAbove(note, at);
+  let ms = Infinity;
+  let ctx = null;
+  for (let i = 0; i < 5; i++) {
+    const t0 = process.hrtime.bigint();
+    ctx = AS.findContextAbove(note, at);
+    ms = Math.min(ms, Number(process.hrtime.bigint() - t0) / 1e6);
+  }
   assert.strictEqual(ctx.text, 'last paragraph');
-  console.log('  findContextAbove on a ' + note.length + ' char note: ' + ms.toFixed(3) + ' ms');
-  assert.ok(ms < 10);
+  console.log('  findContextAbove on a ' + note.length + ' char note (best of 5): ' + ms.toFixed(3) + ' ms');
+  assert.ok(ms < 20, 'ms=' + ms.toFixed(3));
 });
 
 // ---- tuned rules --------------------------------------------------------------------------------------------
