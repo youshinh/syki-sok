@@ -117,7 +117,9 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_jevDispatchAgent", app.JevDispatchAgent)
 	_ = w.Bind("backend_jevPruneContext", app.JevPruneContext)
 	_ = w.Bind("backend_startMobileDrop", app.StartMobileDrop)
+	_ = w.Bind("backend_startMobileDropAsync", app.StartMobileDropAsync)
 	_ = w.Bind("backend_startMobileDropWithVoice", app.StartMobileDropWithVoice)
+	_ = w.Bind("backend_startMobileDropWithVoiceAsync", app.StartMobileDropWithVoiceAsync)
 	_ = w.Bind("backend_setMobileDropSharedText", app.SetMobileDropSharedText)
 	_ = w.Bind("backend_cancelMobileDrop", app.CancelMobileDrop)
 	_ = w.Bind("backend_requestMobileDropTunnelAsync", app.RequestMobileDropTunnelAsync)
@@ -226,6 +228,9 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 		};
 		// the print panel: the preview PDF and the saved PDF answer here
 		window.__onPrintPdfResult = function (reqID, result, errMsg) {
+			window.__sykiSettle(reqID, result, errMsg);
+		};
+		window.__onMobileDropStartResult = function (reqID, result, errMsg) {
 			window.__sykiSettle(reqID, result, errMsg);
 		};
 
@@ -350,8 +355,8 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 			jevVerify: (cmdStr) => window.backend_jevVerify(cmdStr),
 			jevDispatchAgent: (input) => window.backend_jevDispatchAgent(input || ""),
 			jevPruneContext: (rawMarkdown, query) => window.backend_jevPruneContext(rawMarkdown || "", query || ""),
-			startMobileDrop: (visionConfigJson) => window.backend_startMobileDrop(visionConfigJson || ""),
-			startMobileDropWithVoice: (visionConfigJson, voiceConfigJson) => window.backend_startMobileDropWithVoice(visionConfigJson || "", voiceConfigJson || ""),
+			startMobileDrop: (visionConfigJson) => window.__sykiAsync('mobileDropStart_', 15000, (reqID) => window.backend_startMobileDropAsync(reqID, visionConfigJson || "")),
+			startMobileDropWithVoice: (visionConfigJson, voiceConfigJson) => window.__sykiAsync('mobileDropStart_', 15000, (reqID) => window.backend_startMobileDropWithVoiceAsync(reqID, visionConfigJson || "", voiceConfigJson || "")),
 			setMobileDropSharedText: (text) => window.backend_setMobileDropSharedText(text || ""),
 			cancelMobileDrop: () => window.backend_cancelMobileDrop(),
 			requestMobileDropTunnel: () => window.backend_requestMobileDropTunnelAsync(),

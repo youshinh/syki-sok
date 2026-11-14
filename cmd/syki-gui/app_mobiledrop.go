@@ -87,12 +87,43 @@ func (a *App) StartMobileDropWithVoice(visionConfigJSON, voiceConfigJSON string)
 	return a.startMobileDrop(visionConfigJSON, voiceConfigJSON)
 }
 
+// StartMobileDropAsync starts Mobile Drop off the UI thread and delivers the result to
+// window.__onMobileDropStartResult so network/socket/firewall checks never freeze the WebView.
+func (a *App) StartMobileDropAsync(reqID, visionConfigJSON string) {
+	a.StartMobileDropWithVoiceAsync(reqID, visionConfigJSON, "")
+}
+
+// StartMobileDropWithVoiceAsync starts Mobile Drop with voice config off the UI thread.
+func (a *App) StartMobileDropWithVoiceAsync(reqID, visionConfigJSON, voiceConfigJSON string) {
+	go func() {
+		info, err := a.startMobileDrop(visionConfigJSON, voiceConfigJSON)
+		errMsg := ""
+		if err != nil {
+			errMsg = err.Error()
+		}
+		a.dispatchMobileDropStartResult(reqID, info, errMsg)
+	}()
+}
+
+func (a *App) dispatchMobileDropStartResult(reqID string, info *MobileDropInfo, errMsg string) {
+	if atomic.LoadInt32(&a.isDestroyed) != 0 || a.w == nil {
+		return
+	}
+	resJSON, _ := json.Marshal(info)
+	errJSON, _ := json.Marshal(errMsg)
+	js := fmt.Sprintf("if (window.__onMobileDropStartResult) { window.__onMobileDropStartResult(%q, %s, %s); }", reqID, string(resJSON), string(errJSON))
+	a.dispatchEval(js)
+}
+
 func (a *App) startMobileDrop(visionConfigJSON, voiceConfigJSON string) (*MobileDropInfo, error) {
 	a.dropzoneMu.Lock()
-	defer a.dropzoneMu.Unlock()
-	if a.dropzoneServer != nil {
+	if a.dropzoneServer != nil || a.dropzoneStarting {
+		a.dropzoneMu.Unlock()
 		return nil, errors.New("Mobile Dropは既に起動しています")
 	}
+	a.dropzoneStarting = true
+	gen := a.dropzoneGen
+	a.dropzoneMu.Unlock()
 
 	var visionCfg llm.VisionConfig
 	_ = json.Unmarshal([]byte(visionConfigJSON), &visionCfg)
@@ -111,9 +142,21 @@ func (a *App) startMobileDrop(visionConfigJSON, voiceConfigJSON string) (*Mobile
 
 	result, err := srv.Start()
 	if err != nil {
+		a.dropzoneMu.Lock()
+		a.dropzoneStarting = false
+		a.dropzoneMu.Unlock()
 		return nil, err
 	}
+
+	a.dropzoneMu.Lock()
+	a.dropzoneStarting = false
+	if a.dropzoneGen != gen || a.dropzoneServer != nil {
+		a.dropzoneMu.Unlock()
+		go srv.Stop()
+		return nil, errors.New("Mobile Dropはキャンセルされました")
+	}
 	a.dropzoneServer = srv
+	a.dropzoneMu.Unlock()
 
 	info := &MobileDropInfo{
 		URL:                result.URL,
@@ -143,6 +186,7 @@ func (a *App) SetMobileDropSharedText(text string) error {
 // without anyone sending anything. Safe to call when no server is running.
 func (a *App) CancelMobileDrop() error {
 	a.dropzoneMu.Lock()
+	a.dropzoneGen++
 	srv := a.dropzoneServer
 	a.dropzoneServer = nil
 	a.dropzoneMu.Unlock()

@@ -225,6 +225,47 @@ const LEGACY_WHISPER = {
     console.log('addon render test passed');
   }
 
+  // Install error must not be overwritten by refresh() -> render()
+  {
+    delete require.cache[require.resolve('./speech_settings.js')];
+    const S2 = require('./speech_settings.js');
+    const doc = fakeDoc(FORM_IDS.concat([
+      'speech-ready-hint-rt', 'btn-speech-quick-runtime-rt', 'speech-runtime-status'
+    ]));
+    doc.els['speech-ready-hint-rt'].style = {};
+    const listeners = {};
+    doc.els['btn-speech-quick-runtime-rt'].addEventListener = (ev, fn) => { listeners[ev] = fn; };
+    doc.els['cfg-speech-engine-rt'].value = 'whisper-local';
+    let capturedReqId = null;
+    const fakeStatus = {
+      supported: true,
+      realtime: {
+        ready: false,
+        runtimeInstalled: false,
+        modelInstalled: true,
+        reason: '実行ファイルがありません',
+        runtime: { part: { id: 'speech-runtime-v0.10.1-darwin-arm64', size: 6087757 }, status: { installed: false, size: 0 } },
+        model: { part: { id: 'haas-ja-v1.0-q8_0', size: 656381472 }, status: { installed: true, size: 656381472 } }
+      },
+      addons: []
+    };
+    const fakeBackend = {
+      getSpeechStatus: () => JSON.stringify(fakeStatus),
+      installSpeechPartAsync: (reqId) => {
+        capturedReqId = reqId;
+        return Promise.resolve();
+      }
+    };
+    S2.init({ t: (k, p) => (p && p.error ? k + ':' + p.error : k), backend: fakeBackend, doc });
+    assert.strictEqual(typeof listeners.click, 'function', 'quick runtime click bound');
+    listeners.click();
+    assert.ok(capturedReqId, 'installSpeechPartAsync called');
+    S2.onInstallEvent(capturedReqId, 'error', 0, 0, 'size mismatch');
+    await new Promise((r) => setTimeout(r, 10));
+    assert.strictEqual(doc.els['speech-ready-hint-rt'].textContent, 'speechInstallFailed:size mismatch');
+    console.log('install error persistence test passed');
+  }
+
   console.log('speech_settings tests passed');
 })().catch((err) => {
   console.error(err);

@@ -398,9 +398,13 @@
     const slot = slotForReq(reqId);
     if (!slot) return;
     installs[slot] = null;
-    if (state === 'error') setText(hintIdFor(slot), t('speechInstallFailed', { error: message || '' }));
-    else if (state === 'canceled') setText(hintIdFor(slot), t('speechCanceled'));
+    const errText = state === 'error'
+      ? t('speechInstallFailed', { error: message || '' })
+      : (state === 'canceled' ? t('speechCanceled') : '');
+    if (errText) setText(hintIdFor(slot), errText);
     refresh().then(() => {
+      // Re-apply install error/cancel message after render() so refresh() doesn't hide it.
+      if (errText) setText(hintIdFor(slot), errText);
       // Auto-install runtime if a model finished installing successfully but runtime is still missing
       if (state !== 'error' && state !== 'canceled' && slot.startsWith('model')) {
         const any = lastStatus.realtime || lastStatus.batch;

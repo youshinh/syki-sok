@@ -11,8 +11,10 @@ import (
 // ReceptorOrganelles encapsulates Ring 2 detachable background receptors:
 // the Mobile Drop LAN HTTP server, the Cloudflare Bridge poller, and the Hot-folder Inbox watcher.
 type ReceptorOrganelles struct {
-	dropzoneMu     sync.Mutex
-	dropzoneServer *dropzone.Server
+	dropzoneMu       sync.Mutex
+	dropzoneServer   *dropzone.Server
+	dropzoneStarting bool
+	dropzoneGen      uint64
 
 	cfMu     sync.Mutex
 	cfPoller *cfbridge.Poller

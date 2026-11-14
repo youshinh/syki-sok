@@ -144,3 +144,18 @@ func TestJevPredictAsync_DeliversPredictShape(t *testing.T) {
 		t.Errorf("async payload differs from the synchronous result\n got: %s\nwant substring: %s", eval, wantJSON)
 	}
 }
+
+func TestStartMobileDropWithVoiceAsync_DeliversResult(t *testing.T) {
+	mock := &asyncMockWebView{}
+	app := &App{w: mock}
+	defer func() { _ = app.CancelMobileDrop() }()
+
+	app.StartMobileDropWithVoiceAsync("req-md-1", "{}", "{}")
+	eval := mock.waitFor(t, "__onMobileDropStartResult", 10*time.Second)
+	if !strings.Contains(eval, `"req-md-1"`) {
+		t.Errorf("callback did not carry the request id: %s", eval)
+	}
+	if !strings.Contains(eval, `"url":`) {
+		t.Errorf("payload is missing url field: %s", eval)
+	}
+}

@@ -232,7 +232,7 @@ func TestSpeechRuntimePlatforms(t *testing.T) {
 
 	hostPlatform = func() string { return "darwin/arm64" }
 	p, ok = SpeechRuntimePart()
-	if !ok || p.ID != "speech-runtime-v0.10.1-darwin-arm64" || p.Entry != "speech" {
+	if !ok || p.ID != "speech-runtime-v0.10.1-darwin-arm64" || p.Entry != "speech" || p.Size != 6087757 {
 		t.Errorf("darwin/arm64 speech runtime = %+v, %v", p, ok)
 	}
 

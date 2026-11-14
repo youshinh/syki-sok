@@ -64,7 +64,7 @@ func speechRuntimeCatalogParts() []components.Part {
 			Note:     "Apple Silicon Metal 最適化ローカル音声認識エンジン(約6MB)",
 			URL:      "https://github.com/nyosegawa/speech.cpp/releases/download/v0.10.1/speech-0.10.1-macos-arm64-metal.zip",
 			SHA256:   "ff24f6f58c9d2dedb01caa88ba043ae845c76eff228e4cbfae5de749174404c1",
-			Size:     6092040,
+			Size:     6087757,
 			Archive:  "zip",
 			Extract:  []string{"speech", "libspeech*.dylib"},
 			Entry:    "speech",
