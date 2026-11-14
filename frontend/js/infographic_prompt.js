@@ -132,6 +132,97 @@
     return false;
   }
 
+  const MERMAID_START_RE = /^(?:flowchart|graph|sequenceDiagram|classDiagram|stateDiagram(?:-v2)?|erDiagram|gantt|pie|journey|gitGraph|mindmap|timeline|quadrantChart|requirementDiagram|C4Context|sankey-beta|xychart-beta|block-beta)\b/i;
+  const STRUCTURED_LINE_RE = /^\s*(?:[-*+]|\d+\.|#|\|)\s+/m;
+  const FLOW_ARROW_RE = /(?:-->|->|=>|→|⇒)/;
+  const DIAGRAM_KEYWORD_RE = /(?:手順|フロー|仕組み|比較|構成|アーキテクチャ|まとめ|一覧|図解|\bworkflow\b|\barchitecture\b|\bcomparison\b|\bdiagram\b|\bsteps\b|\boverview\b)/i;
+
+  function stripMermaidFence(text) {
+    return String(text || '')
+      .replace(/^```mermaid\s*\r?\n?/i, '')
+      .replace(/\r?\n?```\s*$/, '')
+      .trim();
+  }
+
+  function classifyImageInput(text) {
+    const raw = String(text == null ? '' : text).trim();
+    if (!raw) return 'free';
+    if (/```mermaid\b/i.test(raw)) return 'mermaid';
+
+    const lines = raw.replace(/\r/g, '').split('\n').map(l => l.trim()).filter(Boolean);
+    const firstContentLine = lines.find(l => !l.startsWith('%%')) || '';
+    if (MERMAID_START_RE.test(firstContentLine)) return 'mermaid';
+
+    if (
+      STRUCTURED_LINE_RE.test(raw) ||
+      FLOW_ARROW_RE.test(raw) ||
+      DIAGRAM_KEYWORD_RE.test(raw) ||
+      lines.length >= 2 ||
+      raw.length >= 60
+    ) {
+      return 'infographic';
+    }
+    return 'free';
+  }
+
+  function buildInfographicFromTextPrompt(text, noteContent, forcedStyle, defaultStyle) {
+    const title = deriveDiagramTitle('', noteContent);
+    const styleName = forcedStyle || defaultStyle || 'material';
+    const stylePrompt = getInfographicStylePrompt(styleName);
+    const refText = String(text == null ? '' : text).trim();
+
+    return [
+      `A high-quality ${stylePrompt}`,
+      `REFERENCE (source text to visualize as a structured infographic; do NOT render meta labels): """\n${refText}\n"""`,
+      `CONTENT FIDELITY: Organize the key points, steps, relationships, and comparisons from the reference text into a clear, structured visual diagram/infographic. Preserve key terms, labels, and numbers in Japanese (Noto Sans JP) or the original language.`,
+      `Slide layout: wide 16:9. Use a clean card composition: (1) a prominent header title '${title}' (normal-to-medium weight geometric sans), (2) a central structured diagram area on crisp white cards with 28px rounded corners and 1px light border, (3) clear directional arrows or visual hierarchy.`,
+      `Visual system: strict 8px spacing grid, Google Material Symbols Outlined line icons, consistent stroke weight, generous structural whitespace.`,
+      `TITLE RULE: The slide must prominently display the header title: '${title}'.`,
+      `NEGATIVE CONSTRAINTS: ${CLEAN_INFOGRAPHIC_NEGATIVES}`,
+      `high resolution, 8k, sharp focus, aesthetic composition, publication-ready vector finish.`
+    ].join(' ');
+  }
+
+  const PHOTO_KEYWORD_RE = /(?:写真|フォト|リアル|風景|実写|夜景|朝焼け|夕暮れ|カメラ|\bphoto(?:graph)?\b|\brealistic\b|\bportrait\b|\blandscape\b)/i;
+  const FREE_IMAGE_QUALITY_GUARD = 'No unintended text, no watermarks, no signatures, no logos, no blurry or distorted artifacts.';
+
+  function buildFreeImagePrompt(text) {
+    const raw = String(text == null ? '' : text).trim();
+    if (!raw) return '';
+    if (PHOTO_KEYWORD_RE.test(raw)) {
+      return [
+        raw,
+        'Photography direction: natural soft lighting, calm film-like color grading, quiet editorial composition with generous breathing space, shallow depth of field, sharp focus, high resolution.',
+        FREE_IMAGE_QUALITY_GUARD
+      ].join(' ');
+    }
+    return [
+      raw,
+      'Illustration direction: refined minimalist editorial illustration matching a calm paper-and-ink aesthetic, clean line work, harmonious muted color palette, uncluttered background with generous whitespace, high-craft finish.',
+      FREE_IMAGE_QUALITY_GUARD
+    ].join(' ');
+  }
+
+  function buildImagePrompt(text, noteContent, forcedStyle, defaultStyle) {
+    const kind = classifyImageInput(text);
+    if (kind === 'mermaid') {
+      return {
+        kind: 'mermaid',
+        prompt: buildInfographicImagePrompt(stripMermaidFence(text), noteContent, forcedStyle, defaultStyle)
+      };
+    }
+    if (kind === 'infographic') {
+      return {
+        kind: 'infographic',
+        prompt: buildInfographicFromTextPrompt(text, noteContent, forcedStyle, defaultStyle)
+      };
+    }
+    return {
+      kind: 'free',
+      prompt: buildFreeImagePrompt(text)
+    };
+  }
+
   const api = {
     getInfographicStylePrompt: getInfographicStylePrompt,
     CLEAN_INFOGRAPHIC_STYLE: CLEAN_INFOGRAPHIC_STYLE,
@@ -139,6 +230,10 @@
     extractFlowDirectionText: extractFlowDirectionText,
     deriveDiagramTitle: deriveDiagramTitle,
     buildInfographicImagePrompt: buildInfographicImagePrompt,
+    buildInfographicFromTextPrompt: buildInfographicFromTextPrompt,
+    buildFreeImagePrompt: buildFreeImagePrompt,
+    classifyImageInput: classifyImageInput,
+    buildImagePrompt: buildImagePrompt,
     isDedicatedImageModel: isDedicatedImageModel
   };
 

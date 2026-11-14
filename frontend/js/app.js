@@ -9553,14 +9553,25 @@ OUTPUT FORMAT:
     const curTab = getActiveTab();
     if (!curTab) return;
 
-    let mermaidCode = extractMermaidAtCursor();
-    if (!mermaidCode) {
-      const previewEl = document.querySelector("[data-mermaid-src]");
-      if (previewEl && previewEl.dataset && previewEl.dataset.mermaidSrc) {
-        mermaidCode = previewEl.dataset.mermaidSrc;
+    const selStart = editorEl ? editorEl.selectionStart : 0;
+    const selEnd = editorEl ? editorEl.selectionEnd : 0;
+    const selectedText = (editorEl && selStart !== selEnd)
+      ? editorEl.value.slice(selStart, selEnd).trim()
+      : '';
+
+    let sourceText = selectedText;
+    let isFromSelection = Boolean(selectedText);
+    if (!sourceText) {
+      let mermaidCode = extractMermaidAtCursor();
+      if (!mermaidCode) {
+        const previewEl = document.querySelector("[data-mermaid-src]");
+        if (previewEl && previewEl.dataset && previewEl.dataset.mermaidSrc) {
+          mermaidCode = previewEl.dataset.mermaidSrc;
+        }
       }
+      sourceText = mermaidCode || '';
     }
-    if (!mermaidCode) {
+    if (!sourceText) {
       showMessage(t('noMermaidFound'), 4000);
       return;
     }
@@ -9589,14 +9600,16 @@ OUTPUT FORMAT:
     const reqId = genReqId('img_');
     const anchorId = `[${t('generatingImageAnchor')}]`;
 
-    // Find the end of the mermaid block to insert image directly below it
+    // Insert directly below the selection or the mermaid block
     const val = editorEl.value;
-    const mermaidBlockIdx = val.indexOf(mermaidCode);
-    let insertPos = editorEl.selectionEnd;
-    if (mermaidBlockIdx !== -1) {
-      const fenceEnd = val.indexOf('```', mermaidBlockIdx + mermaidCode.length);
-      if (fenceEnd !== -1) {
-        insertPos = fenceEnd + 3;
+    let insertPos = selEnd;
+    if (!isFromSelection) {
+      const mermaidBlockIdx = val.indexOf(sourceText);
+      if (mermaidBlockIdx !== -1) {
+        const fenceEnd = val.indexOf('```', mermaidBlockIdx + sourceText.length);
+        if (fenceEnd !== -1) {
+          insertPos = fenceEnd + 3;
+        }
       }
     }
 
@@ -9621,7 +9634,9 @@ OUTPUT FORMAT:
 
     updateLLMIndicator();
 
-    const imageGenPrompt = buildInfographicImagePrompt(mermaidCode, curTab.content);
+    const imageGenPrompt = infoPrompt && infoPrompt.buildImagePrompt
+      ? infoPrompt.buildImagePrompt(sourceText, curTab.content).prompt
+      : buildInfographicImagePrompt(sourceText, curTab.content);
     let imageModel = (config.image && config.image.model) ? config.image.model.trim() : '';
     if (!imageModel) {
       imageModel = 'gemini-3.1-flash-lite-image';
