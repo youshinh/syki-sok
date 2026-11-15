@@ -237,6 +237,16 @@ Text piped in with `cmd | syki` is filed under `## [HH:MM:SS] title` (section 3.
 - JSON-RPC `lessons.list {agent?}` (section 2.2) answers the same.
 - Why nothing here adds, changes or removes a rule: the rules are put in front of an agent's instruction, so a write command or method would let an agent rewrite its own future instructions with nobody approving it. `syki lessons add` and the like are refused with that explanation. The person saves a rule from the window, or edits the file; do not write the file unless the user asked for exactly that.
 
+### 1.11 `syki pty` (pipe input/output to running PTY agent sessions)
+
+`syki pty <list|start|write|read|close> [options]` (`pkg/cli/pty.go`, `cmd/syki-gui/app_rpc_pty.go`). Needs the running app.
+
+- `syki pty list`: list running PTY sessions (`sessions: [{id, title, label, preset, dir, running}]`).
+- `syki pty start [--preset agy] [--dir <path>] [--label <text>] [--id <explicit>]`: start a PTY session (default preset `agy`).
+- `syki pty write [--submit] <id> [text]`: write text (or piped stdin) to the PTY session; `--submit` appends `\r`.
+- `syki pty read [--since <offset>] [--max-bytes <n>] [--strip-ansi] [--raw] <id>`: read buffered PTY output (64 KB ring buffer) from byte offset (`--since -1` reads the tail), optionally stripping ANSI sequences or printing raw text.
+- `syki pty close <id>`: close a running PTY session.
+
 ---
 
 ## 2. JSON-RPC 2.0 over local TCP (what the CLI uses)
@@ -309,6 +319,11 @@ print(json.loads(s.makefile("r", encoding="utf-8").readline()))
 | `lessons.list` | required | `{agent?}` | with `agent` (a key or an alias): `{agent, path, exists, count, applied, skipped, disabled}`; without it: a list of those, one per file of the lessons folder (`[]` when there is none) | The rules the user kept for agents (the same function as `syki lessons list`, 1.10; `count` is the rules in the file, `applied` / `skipped` what the next run gets / leaves out of the 30 rules and 4,000 characters of 3.1.6, `disabled` is `lessons: false`). Needs no page. Read-only: there is no method that writes a rule, because the rules are put in front of an agent's instruction and a write door would let an agent rewrite its own future instructions; nor one that starts a proposal, which sends text to a model (the person does both in the window, 4.14). A name that is not in `agents.yaml` is used as it is (`exists:false` unless a file of that name is there). |
 | `filter.validate` | required | `{command}` | `{safe, warning, blocked, risk_level, reason}` | The verdict of the command bar's guard (the reviewed mode of `pkg/jev`, as `syki jev verify`); runs nothing. |
 | `filter.run` | required | `{command, input?, confirm_warning?, timeout_ms?}` | `{stdout, stderr, exit_code, truncated, risk_level, duration_ms}` | Runs a shell command with `input` on its standard input: what the command bar does to the selection, with no note touched (read the text with `buffer.get_selection`, run it, write the answer with `buffer.replace_selection`). The guard decides first: a blocked command is -32602 `refused by the command guard: ...` and nothing runs; one the guard warns about is -32602 until `confirm_warning:true`, which a caller sends only when the person agreed. 5 s by default, at most 8 s (-32603 `did not finish within N ms and was stopped`); each stream is cut at 1 MB (`truncated`). It runs a program on the user's PC: only when asked. |
+| `pty.list` | required | none | `{sessions: [...]}` | Lists running PTY agent sessions (`app_rpc_pty.go`). |
+| `pty.start` | required | `{preset?, dir?, label?, explicit_id?, cols?, rows?}` | session metadata object | Starts a PTY session (default preset `"agy"`). |
+| `pty.write` | required | `{id, text?, base64?, submit?}` | `{ok:true, bytes}` | Writes text or base64 bytes to a PTY session (`submit:true` appends `\r`). |
+| `pty.read` | required | `{id, since_offset?, max_bytes?, strip_ansi?}` | `{id, data, next_offset, running}` | Reads buffered PTY output from `since_offset` (default `-1` for tail). |
+| `pty.close` | required | `{id}` | `{ok:true}` | Closes a running PTY session. |
 
 The 5 s limit per call and the serialising of writes (one at a time, so `generation` stays exact) apply to every method that changes a note. `app.info`, `config.get`, `scrap.*`, `git.*`, `filter.*` and `lessons.list` do not need the page and answer while it is still starting; the methods that read or change a note, the caret or the view are -32603 until the page is ready. Only `scrap.*`, `app.info`, `config.get` and `lessons.list` (section 1.6 to 1.8 and 1.10) and `print.pdf` (`syki tab pdf`, section 1.3) have a command line twin; the other new methods are JSON-RPC only.
 
