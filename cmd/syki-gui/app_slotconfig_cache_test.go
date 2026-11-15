@@ -120,3 +120,31 @@ func TestCloneSlotConfig_DeepCopiesNestedCollections(t *testing.T) {
 		t.Errorf("mutating clone.Recipes[...].Steps leaked into original: got %q", original.Recipes[0].Steps[0])
 	}
 }
+
+func TestResolveActiveSlotConfigReadOnly_SharesCachedResult(t *testing.T) {
+	cfgPath := getConfigFilePath()
+	origData, origErr := os.ReadFile(cfgPath)
+	t.Cleanup(func() {
+		if origErr == nil {
+			_ = os.WriteFile(cfgPath, origData, 0600)
+		} else {
+			_ = os.Remove(cfgPath)
+		}
+	})
+
+	scrapDir := t.TempDir()
+	testCfgJSON := fmt.Sprintf(`{"scrap_dir": %q}`, filepath.ToSlash(scrapDir))
+	if err := os.WriteFile(cfgPath, []byte(testCfgJSON), 0600); err != nil {
+		t.Fatalf("failed to write test config.json: %v", err)
+	}
+
+	app := &App{}
+	ro1 := app.resolveActiveSlotConfigReadOnly("")
+	ro2 := app.resolveActiveSlotConfigReadOnly("")
+	if ro1.DefaultAgent == "" || ro1.DefaultAgent != ro2.DefaultAgent {
+		t.Fatalf("unexpected DefaultAgent: ro1=%q ro2=%q", ro1.DefaultAgent, ro2.DefaultAgent)
+	}
+	if len(ro1.SlotProfiles) != len(ro2.SlotProfiles) {
+		t.Fatalf("SlotProfiles length mismatch: %d vs %d", len(ro1.SlotProfiles), len(ro2.SlotProfiles))
+	}
+}

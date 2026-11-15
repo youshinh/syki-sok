@@ -552,6 +552,53 @@ func TestRunSlotAgentAsync_RecipeAndGateOffsetsAreUTF16(t *testing.T) {
 	}
 }
 
+func TestRecipeFailHelperProcess(t *testing.T) {
+	if os.Getenv("SYKI_RECIPE_FAIL_HELPER") != "1" {
+		return
+	}
+	os.Stderr.WriteString("step boom\n")
+	os.Exit(5)
+}
+
+func TestRunSlotAgentAsync_RecipeFailureFormatsErrorAndPropagatesExitCode(t *testing.T) {
+	t.Setenv("SYKI_RECIPE_FAIL_HELPER", "1")
+	cfgBytes, err := json.Marshal(map[string]any{
+		"version":         2,
+		"default_agent":   "mock",
+		"timeout_seconds": 30,
+		"agents": map[string]any{
+			"mock": map[string]any{
+				"command":            os.Args[0],
+				"args":               []string{"-test.run=^TestRecipeFailHelperProcess$"},
+				"append_instruction": false,
+			},
+		},
+		"recipes": []map[string]any{
+			{
+				"trigger_open":  "[>>",
+				"trigger_close": "]",
+				"name":          "fail-recipe",
+				"steps":         []string{"step1"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	got, _ := runSlot(t, "[>> やって ]", 4, string(cfgBytes))
+	r := got.res
+	if r.Status != "failed" {
+		t.Fatalf("Status = %q, want failed", r.Status)
+	}
+	if r.ExitCode != 5 {
+		t.Errorf("ExitCode = %d, want 5", r.ExitCode)
+	}
+	if !strings.Contains(r.NewContent, "⚠ エラー:") || !strings.Contains(r.NewContent, "(再試行: Ctrl+Enter)") {
+		t.Errorf("NewContent = %q, want formatted error with retry hint", r.NewContent)
+	}
+}
+
 func TestRunSlotAgentAsync_NoActionableSlot(t *testing.T) {
 	calls := stubSlotExecute(t, &slotagent.AgentExecutionResult{})
 	got, _ := runSlot(t, "ただのメモ😀\n", 3, "")

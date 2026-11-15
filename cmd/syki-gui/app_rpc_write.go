@@ -6,13 +6,13 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
-	"regexp"
 	"strings"
 	"sync"
 	"sync/atomic"
 
 	"syki-sok/pkg/encoding"
 	"syki-sok/pkg/ipc"
+	"syki-sok/pkg/lazyre"
 	"syki-sok/pkg/notesave"
 	"syki-sok/pkg/textsig"
 )
@@ -71,7 +71,7 @@ func (a *App) callRPCJS(ctx context.Context, fn string, args ...interface{}) (st
 // jsErrPrefix is how the page marks an error the caller should see as a JSON-RPC error of its own:
 // "[not_found] no such tab: x" (see rpcFail in app.js). Anything without the prefix is a failure
 // inside the app (-32603).
-var jsErrPrefix = regexp.MustCompile(`^\[(not_found|conflict|invalid_params)\] `)
+var jsErrPrefix = lazyre.New(`^\[(not_found|conflict|invalid_params)\] `)
 
 var jsErrCodes = map[string]int{
 	"not_found":      ipc.ErrCodeNotFound,

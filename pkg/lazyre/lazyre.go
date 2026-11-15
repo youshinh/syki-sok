@@ -29,6 +29,9 @@ func (r *Regexp) FindStringIndex(s string) []int { return r.get().FindStringInde
 func (r *Regexp) FindStringSubmatch(s string) []string {
 	return r.get().FindStringSubmatch(s)
 }
+func (r *Regexp) FindAllStringSubmatch(s string, n int) [][]string {
+	return r.get().FindAllStringSubmatch(s, n)
+}
 func (r *Regexp) FindAllString(s string, n int) []string { return r.get().FindAllString(s, n) }
 func (r *Regexp) FindAllStringIndex(s string, n int) [][]int {
 	return r.get().FindAllStringIndex(s, n)

@@ -101,3 +101,28 @@ func TestBareURLRegex_TableCases(t *testing.T) {
 		})
 	}
 }
+
+func TestParseSlots_FastPathAndMixedDelimiters(t *testing.T) {
+	cfg := DefaultSlotConfig()
+	// No delimiters in text -> fast path returns nil without errors
+	if got := ParseSlots("plain markdown text with `code` and https://example.com", cfg); len(got) != 0 {
+		t.Fatalf("expected 0 slots on plain text, got %d", len(got))
+	}
+	// Empty delimiters in config are ignored safely instead of looping
+	cfgWithEmpty := cfg
+	cfgWithEmpty.SlotProfiles = append([]SlotProfile{{Name: "empty", TriggerOpen: "", TriggerClose: ""}}, cfgWithEmpty.SlotProfiles...)
+	doc := "before {{ first }} middle [? second ] after {{ third }}"
+	got := ParseSlots(doc, cfgWithEmpty)
+	if len(got) != 3 {
+		t.Fatalf("expected 3 slots, got %d: %+v", len(got), got)
+	}
+	if got[0].Instruction != "first" || got[1].Instruction != "second" || got[2].Instruction != "third" {
+		t.Errorf("unexpected instructions: %q, %q, %q", got[0].Instruction, got[1].Instruction, got[2].Instruction)
+	}
+}
+
+func TestFindApprovalGates_FastPathNoApprove(t *testing.T) {
+	if gates := FindApprovalGates("- [ ] regular task\n- [x] done task\n"); len(gates) != 0 {
+		t.Fatalf("expected 0 gates, got %d", len(gates))
+	}
+}

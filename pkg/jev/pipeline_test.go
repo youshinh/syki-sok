@@ -2,6 +2,7 @@ package jev
 
 import (
 	"context"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -72,5 +73,31 @@ func TestPipelineRunner_BlockedExecution(t *testing.T) {
 	}
 	if res.Success {
 		t.Errorf("expected success to be false for blocked command")
+	}
+}
+
+type allowAllVerifier struct{}
+
+func (allowAllVerifier) Verify(cmd string) (ValidationResult, error) {
+	return ValidationResult{IsSafe: true}, nil
+}
+
+func TestPipelineRunner_TimeoutMessageUsesConfiguredTimeout(t *testing.T) {
+	runner := NewPipelineRunner(allowAllVerifier{}, 1*time.Second)
+
+	sleepCmd := "sleep 5"
+	if runtime.GOOS == "windows" {
+		sleepCmd = "Start-Sleep -Seconds 5"
+	}
+
+	res, err := runner.Execute(context.Background(), Candidate{
+		ActionType: "sh",
+		Command:    sleepCmd,
+	}, "")
+	if err == nil || res.Success {
+		t.Fatalf("expected timeout error, got success=%v err=%v", res.Success, err)
+	}
+	if !strings.Contains(res.Error, "1秒超過") {
+		t.Errorf("expected error to mention configured 1s timeout, got: %q", res.Error)
 	}
 }
