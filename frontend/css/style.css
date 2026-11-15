@@ -6786,12 +6786,15 @@ body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
   opacity: 1;
 }
 
-.tab-index[data-side="right"]:not(:hover):not(:focus-within) .tab-loop-badge {
+.tab-index[data-side="right"]:not(:hover):not(:focus-within) .tab-loop-badge,
+.tab-index[data-side="right"]:not(:hover):not(:focus-within) .agent-tab-plus {
   opacity: 0;
   pointer-events: none;
 }
 
-body.tabs-pinned .tab-index[data-side="right"] .tab-loop-badge {
+body.tabs-pinned .tab-index[data-side="right"] .tab-loop-badge,
+body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus,
+.tab-index[data-side="right"].dock-live .agent-tab-plus {
   opacity: 1;
 }
 
@@ -6804,6 +6807,14 @@ body.tabs-pinned .tab-index[data-side="right"] .tab-loop-badge {
   cursor: pointer;
   margin-top: 4px;
   padding: 0;
+}
+
+.tab-index[data-side="right"]:not(:hover):not(:focus-within):not(.dock-live) .agent-tab-add {
+  border-color: transparent;
+}
+
+body.tabs-pinned .tab-index[data-side="right"] .agent-tab-add {
+  border-color: var(--border-color);
 }
 
 .agent-tab-plus {
