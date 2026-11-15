@@ -171,6 +171,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_ptySuggestDirs", app.PtySuggestDirs)
 	_ = w.Bind("backend_ptyDetectGate", app.PtyDetectGate)
 	_ = w.Bind("backend_ptyPrepareWorktree", app.PtyPrepareWorktree)
+	_ = w.Bind("backend_ptyAvailablePresets", app.PtyAvailablePresets)
 }
 
 // buildCommonBridgeInitJS returns the shared WebView Init JS that sets up the async RPC
@@ -411,7 +412,8 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 			ptyPickFolder: () => window.backend_ptyPickFolder(),
 			ptySuggestDirs: (activeFilePath) => window.backend_ptySuggestDirs(activeFilePath || ""),
 			ptyDetectGate: (dir) => window.backend_ptyDetectGate(dir || ""),
-			ptyPrepareWorktree: (dir, loopId) => window.backend_ptyPrepareWorktree(dir || "", loopId || "")` + extras.String() + `
+			ptyPrepareWorktree: (dir, loopId) => window.backend_ptyPrepareWorktree(dir || "", loopId || ""),
+			ptyAvailablePresets: () => window.backend_ptyAvailablePresets()` + extras.String() + `
 		};
 	`
 }

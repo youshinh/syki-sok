@@ -123,7 +123,9 @@
 
   function stripAnsi(str) {
     if (!str) return '';
-    return String(str).replace(/\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]/g, '');
+    return String(str)
+      .replace(/\x1b\[(?:\d+(?:;\d+)?)?[HfEB]/g, '\n')
+      .replace(/\x1b\[[0-?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)|\x1b[@-Z\\-_]/g, '');
   }
 
   function decodeUtf8Base64ToString(b64) {
@@ -138,11 +140,33 @@
     return Buffer.from(bytes).toString('utf8');
   }
 
-  function pickCrossModelPreset(preset) {
+  function pickCrossModelPreset(preset, available) {
     const p = String(preset || '').toLowerCase();
-    if (p === 'cc' || p === 'claude' || p === 'claude-code') return 'codex';
-    if (p === 'codex') return 'cc';
-    if (p === 'agy') return 'cc';
+    const isCC = p === 'cc' || p === 'claude' || p === 'claude-code';
+    const isCodex = p === 'codex';
+    const isAgy = p === 'agy' || p === 'antigravity' || p === 'gemini';
+    const candidates = isCC
+      ? ['codex', 'agy']
+      : isCodex
+        ? ['cc', 'agy']
+        : isAgy
+          ? ['codex', 'cc']
+          : ['codex', 'cc', 'agy'];
+    if (Array.isArray(available) && available.length > 0) {
+      for (let i = 0; i < candidates.length; i++) {
+        if (available.indexOf(candidates[i]) >= 0) return candidates[i];
+      }
+      const normP = isCC ? 'cc' : (isCodex ? 'codex' : (isAgy ? 'agy' : p));
+      const other = available.find((x) => {
+        const nx = (x === 'claude' || x === 'claude-code') ? 'cc' : ((x === 'antigravity' || x === 'gemini') ? 'agy' : x);
+        return x !== 'shell' && nx !== normP;
+      });
+      if (other) return other;
+      return available.find((x) => x !== 'shell') || preset || available[0] || 'shell';
+    }
+    if (isCC) return 'codex';
+    if (isCodex) return 'cc';
+    if (isAgy) return 'cc';
     return 'codex';
   }
 
@@ -219,7 +243,7 @@
       const hm = kind === 'heading' ? headingRe.exec(first.text) : taskBulletRe.exec(first.text);
       if (!hm) return null;
 
-      const checked = hm[1].toLowerCase() === 'x';
+      const checked = hm[kind === 'heading' ? 2 : 1].toLowerCase() === 'x';
       const title = stripPtyBadgeFromTitle(hm[kind === 'heading' ? 3 : 2]);
       const bracketRel = first.text.indexOf('[');
       const headingCheckOffset = bracketRel >= 0 ? first.start + bracketRel + 1 : -1;
@@ -387,7 +411,7 @@
       }
       if (hint.title) {
         const cleanHint = stripPtyBadgeFromTitle(hint.title);
-        const byTitle = blocks.find((b) => b.title === cleanHint);
+        const byTitle = blocks.find((b) => !b.checked && b.title === cleanHint) || blocks.find((b) => b.title === cleanHint);
         if (byTitle) return byTitle;
       }
     }
@@ -528,17 +552,30 @@
       lines.push('過去の失敗記憶（再発していないか重点確認）:');
       for (let i = 0; i < failures.length; i++) lines.push(`- ${failures[i]}`);
     }
-    const excerpt = String(makerOutput || '').trim().slice(-2000);
-    if (excerpt) {
-      lines.push('実装側の直近出力:', '```', excerpt, '```');
-    }
-    lines.push(
+    const cleanExcerpt = String(makerOutput || '')
+      .replace(/[─━═┄┅┈┉│┌┐└┘├┤┬┴┼╭╮╰╯]{4,}/g, '')
+      .split(/\r?\n/)
+      .map((l) => l.trimEnd())
+      .filter((l) => {
+        const t = l.trim();
+        return t.length > 0 && !/^\?\s*for shortcuts/i.test(t) && !/^esc to cancel/i.test(t);
+      })
+      .join('\n')
+      .trim();
+    const tailLines = [
       '検収手順（実装者の主張を鵜呑みにせず自ら確認すること）:',
       '1. git diff を確認し、仕様・評価軸の漏れや副作用がないか点検する。',
       `2. 必ずあなた自身で検証コマンド \`${gateCmd || 'git status --short'}\` を実行し、Exit Code 0 になるか確認する。`,
       '3. 判定結果として、最終行に「VERDICT」に続けて「: PASS」（合格時）または「VERDICT」に続けて「: FAIL」（不合格時）を単独行で出力する。',
       '4. FAIL の場合は、その次の行に「REASON」に続けて「: 具体的な問題点（1行要約）」を必ず出力する。'
-    );
+    ];
+    const baseLen = lines.join('\n').length + tailLines.join('\n').length + 40;
+    const maxExcerptLen = Math.max(0, Math.min(320, 880 - baseLen));
+    const excerpt = maxExcerptLen > 0 ? cleanExcerpt.slice(-maxExcerptLen) : '';
+    if (excerpt) {
+      lines.push('実装側の直近出力(抜粋):', '```', excerpt, '```');
+    }
+    lines.push.apply(lines, tailLines);
     return lines.join('\n');
   }
 
@@ -627,10 +664,61 @@
     let launcherEl = null;
     let resizeObserver = null;
     let selectedPreset = 'cc';
+    let userPickedPreset = false;
     let selectedDir = '';
     let hooksRegistered = false;
+    let availablePresetsCache = null;
     const loops = new Map();
     let loopsSeq = 0;
+
+    function normalizeAgentPreset(raw) {
+      const p = String(raw || '').trim().toLowerCase();
+      if (p === 'cc' || p === 'claude' || p === 'claude-code') return 'cc';
+      if (p === 'codex') return 'codex';
+      if (p === 'agy' || p === 'antigravity' || p === 'gemini') return 'agy';
+      return '';
+    }
+
+    async function ensureAvailablePresets() {
+      if (Array.isArray(availablePresetsCache)) return availablePresetsCache;
+      const backend = d.backend || (win && win.backend);
+      if (backend && typeof backend.ptyAvailablePresets === 'function') {
+        try {
+          const raw = await backend.ptyAvailablePresets();
+          const parsed = typeof raw === 'string' ? JSON.parse(raw || '[]') : raw;
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            availablePresetsCache = parsed;
+            if (!userPickedPreset) {
+              const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
+              if (cfgPreset && parsed.indexOf(cfgPreset) >= 0) {
+                selectedPreset = cfgPreset;
+              } else if (parsed.indexOf(selectedPreset) < 0) {
+                selectedPreset = parsed.find((p) => p !== 'shell') || parsed[0];
+              }
+            }
+            return availablePresetsCache;
+          }
+        } catch (_) {}
+      }
+      return null;
+    }
+
+    async function resolvePreferredAgentPreset(explicit) {
+      if (explicit) return explicit;
+      const avail = await ensureAvailablePresets();
+      const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
+      if (userPickedPreset && selectedPreset && selectedPreset !== 'shell') {
+        if (!avail || avail.indexOf(selectedPreset) >= 0) return selectedPreset;
+      }
+      if (cfgPreset && (!avail || avail.indexOf(cfgPreset) >= 0)) {
+        return cfgPreset;
+      }
+      if (Array.isArray(avail) && avail.length > 0) {
+        if (avail.indexOf(selectedPreset) >= 0 && selectedPreset !== 'shell') return selectedPreset;
+        return avail.find((p) => p !== 'shell') || avail[0];
+      }
+      return cfgPreset || selectedPreset || 'cc';
+    }
 
     function loadRecentDirs() {
       try {
@@ -669,6 +757,14 @@
       if (loop.submitTimer) {
         clearTimeout(loop.submitTimer);
         loop.submitTimer = null;
+      }
+      if (loop.submitRetryTimer) {
+        clearTimeout(loop.submitRetryTimer);
+        loop.submitRetryTimer = null;
+      }
+      if (loop.idleTimer) {
+        clearTimeout(loop.idleTimer);
+        loop.idleTimer = null;
       }
     }
 
@@ -740,23 +836,92 @@
       return /(?:^|\r?\n)\s*(?:[-*>#`]+\s*)?VERDICT:\s*FAIL[^\r\n]*\r?\n\s*(?:[-*>#`]+\s*)?REASON:\s*\S[^\r\n]*\r?\n/i.test(cleanText || '');
     }
 
+    function hasInteractivePromptTail(cleanText) {
+      const text = String(cleanText || '').trimEnd();
+      if (text.length < 80) return false;
+      const tail = text.slice(-400);
+      if (/Working\.\.\.|esc to (?:cancel|interrupt)|Thought for\s+\d/i.test(tail)) return false;
+      if (/\?\s*for shortcuts/i.test(tail)) return true;
+      return /(?:^|\r?\n)\s*[>›❯]\s*(?:Auto mode:[^\r\n]*)?$/i.test(tail);
+    }
+
+    function scheduleLoopIdleCheck(loop, s, role) {
+      if (!loop || !s || loop.transitioning || loop.submitTimer) return;
+      if (!hasInteractivePromptTail(s.stepBuffer)) {
+        if (loop.idleTimer) {
+          clearTimeout(loop.idleTimer);
+          loop.idleTimer = null;
+        }
+        return;
+      }
+      if (loop.idleTimer) clearTimeout(loop.idleTimer);
+      const idleMs = typeof loop.idleTurnMs === 'number'
+        ? loop.idleTurnMs
+        : (typeof d.idleTurnMs === 'number' ? d.idleTurnMs : 2500);
+      if (idleMs <= 0) return;
+      loop.idleTimer = setTimeout(() => {
+        loop.idleTimer = null;
+        if (loop.transitioning || loop.phase !== role) return;
+        const latest = parseLoopSignal(s.stepBuffer);
+        if (latest) return;
+        if (!loop.idleNudged) {
+          loop.idleNudged = true;
+          const nudge = role === 'maker'
+            ? 'まだ終了マーカーがありません。タスクを完了して最後に「STAGE_DONE」の直後に「: READY」を繋げた文字列のみを1行で出力してください。仕様不足等で続行不能な場合も理由を述べた上で同じ終了マーカーを出力して報告してください。'
+            : 'まだ判定マーカーがありません。検証を完了し「VERDICT」の直後に「: PASS」または「: FAIL」と「REASON: ...」を出力してください。';
+          sendToSession(s.id, nudge, {
+            submit: true,
+            preserveFocus: true,
+            submitDelayMs: loop.submitDelayMs,
+            loopRef: loop
+          });
+          return;
+        }
+        if (role === 'maker') {
+          loop.lastMakerOutput = s.stepBuffer || '';
+          s.stepRaw = '';
+          s.stepBuffer = '';
+          onMakerCompleted(loop, 'idle');
+          return;
+        }
+        s.stepRaw = '';
+        s.stepBuffer = '';
+        onCheckerVerdict(loop, 'FAIL', 'CheckerがVERDICTを出力せず待機状態に戻りました');
+      }, idleMs);
+    }
+
     function handleLoopSessionData(s) {
       if (!s) return;
       const makerLoop = findActiveLoopBySession(s.id, 'maker');
       if (makerLoop && !makerLoop.transitioning) {
         const sig = parseLoopSignal(s.stepBuffer);
         if (sig && sig.type === 'maker_done') {
+          if (makerLoop.idleTimer) {
+            clearTimeout(makerLoop.idleTimer);
+            makerLoop.idleTimer = null;
+          }
+          makerLoop.idleNudged = false;
           makerLoop.lastMakerOutput = s.stepBuffer || '';
           s.stepRaw = '';
           s.stepBuffer = '';
           onMakerCompleted(makerLoop, 'signal');
+          return;
         }
+        scheduleLoopIdleCheck(makerLoop, s, 'maker');
         return;
       }
       const checkerLoop = findActiveLoopBySession(s.id, 'checker');
       if (checkerLoop && !checkerLoop.transitioning) {
         const sig = parseLoopSignal(s.stepBuffer);
-        if (!sig || sig.type !== 'verdict') return;
+        if (!sig || sig.type !== 'verdict') {
+          scheduleLoopIdleCheck(checkerLoop, s, 'checker');
+          return;
+        }
+        if (checkerLoop.idleTimer) {
+          clearTimeout(checkerLoop.idleTimer);
+          checkerLoop.idleTimer = null;
+        }
+        checkerLoop.idleNudged = false;
         if (sig.verdict === 'PASS') {
           s.stepRaw = '';
           s.stepBuffer = '';
@@ -854,7 +1019,32 @@
         const s = sessions.find((item) => item.id === id);
         if (!s || !s.term) return;
         const bytes = decodeUtf8Base64ToBytes(b64);
-        if (bytes.length > 0) s.term.write(bytes);
+        if (bytes.length > 0) {
+          s.term.write(bytes);
+          s.hasOutput = true;
+          if (!s.readySettled) {
+            if (s.readySettleTimer) clearTimeout(s.readySettleTimer);
+            const probeText = stripAnsi(decodeUtf8Base64ToString(b64));
+            if (!s.trustAccepted && /Yes,\s*I\s*trust\s*this\s*folder|Do\s*you\s*trust\s*the\s*contents\s*of\s*this|Trust\s*this\s*folder|Trust\s*and\s*continue/i.test(probeText)) {
+              s.trustAccepted = true;
+              const backend = d.backend || (win && win.backend);
+              if (backend && typeof backend.ptyWrite === 'function') {
+                setTimeout(() => {
+                  if (s.running) backend.ptyWrite(s.id, encodeUtf8Base64('\r'));
+                }, 150);
+              }
+            } else {
+              const settleMs = typeof d.startupReadyDelayMs === 'number'
+                ? d.startupReadyDelayMs
+                : (d.submitDelayMs === 0 ? 0 : 650);
+              if (settleMs <= 0) {
+                flushSessionReady(s);
+              } else {
+                s.readySettleTimer = setTimeout(() => flushSessionReady(s), settleMs);
+              }
+            }
+          }
+        }
         if (loops.size === 0 || (!findActiveLoopBySession(s.id, 'maker') && !findActiveLoopBySession(s.id, 'checker'))) {
           return;
         }
@@ -883,6 +1073,7 @@
           } else {
             makerLoop.phase = 'failed';
             makerLoop.statusText = `Maker異常終了 (exit ${code})`;
+            clearLoopTimers(makerLoop);
             releaseLoopBuffers(makerLoop);
             notifyLoopChange(makerLoop);
           }
@@ -896,6 +1087,7 @@
               checkerLoop.phase = 'failed';
               checkerLoop.statusText = `Checker判定前に終了 (exit ${code})`;
             }
+            clearLoopTimers(checkerLoop);
             releaseLoopBuffers(checkerLoop);
             notifyLoopChange(checkerLoop);
           }
@@ -941,6 +1133,11 @@
     async function showLauncher(container) {
       if (container) ensureDOM(container);
       if (!launcherEl) return;
+      const avail = await ensureAvailablePresets();
+      if (!userPickedPreset) {
+        const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
+        if (cfgPreset && (!avail || avail.indexOf(cfgPreset) >= 0)) selectedPreset = cfgPreset;
+      }
       const backend = d.backend || (win && win.backend);
       const activePath = typeof d.getActiveFilePath === 'function' ? d.getActiveFilePath() : '';
       let suggested = [];
@@ -991,6 +1188,7 @@
         btn.textContent = p.label;
         btn.onclick = () => {
           selectedPreset = p.id;
+          userPickedPreset = true;
           const all = cliRow.querySelectorAll('.agent-preset-btn');
           for (let i = 0; i < all.length; i++) all[i].classList.remove('active');
           btn.classList.add('active');
@@ -1135,8 +1333,53 @@
       if (launcherEl) launcherEl.classList.add('hidden');
     }
 
+    function flushSessionReady(s) {
+      if (!s) return;
+      if (s.readySettleTimer) {
+        clearTimeout(s.readySettleTimer);
+        s.readySettleTimer = null;
+      }
+      s.readySettled = true;
+      const list = Array.isArray(s.readyResolvers) ? s.readyResolvers.splice(0) : [];
+      for (let i = 0; i < list.length; i++) list[i](true);
+    }
+
+    function waitForSessionReady(sessionId, maxWaitMs) {
+      const s = sessions.find((item) => item.id === sessionId);
+      if (!s || !s.running || s.readySettled) return Promise.resolve(true);
+      const limit = typeof maxWaitMs === 'number'
+        ? maxWaitMs
+        : (typeof d.startupReadyTimeoutMs === 'number'
+            ? d.startupReadyTimeoutMs
+            : (d.submitDelayMs === 0 ? 0 : 3500));
+      if (limit <= 0) {
+        flushSessionReady(s);
+        return Promise.resolve(true);
+      }
+      return new Promise((resolve) => {
+        let done = false;
+        const finish = (ok) => {
+          if (done) return;
+          done = true;
+          clearTimeout(timer);
+          resolve(ok);
+        };
+        const timer = setTimeout(() => {
+          flushSessionReady(s);
+          finish(true);
+        }, limit);
+        s.readyResolvers = s.readyResolvers || [];
+        s.readyResolvers.push(finish);
+      });
+    }
+
     function disposeSessionView(s) {
       if (!s) return;
+      if (s.readySettleTimer) {
+        clearTimeout(s.readySettleTimer);
+        s.readySettleTimer = null;
+      }
+      flushSessionReady(s);
       s.stepRaw = '';
       s.stepBuffer = '';
       try { if (s.term && typeof s.term.dispose === 'function') s.term.dispose(); } catch (_) {}
@@ -1210,6 +1453,10 @@
         dir: info.dir || dir || '',
         cliSessionId: info.cliSessionId || o.cliSessionId || '',
         running: true,
+        hasOutput: false,
+        readySettled: preset === 'shell' || !preset,
+        readyResolvers: [],
+        readySettleTimer: null,
         stepRaw: '',
         stepBuffer: '',
         term,
@@ -1440,17 +1687,35 @@
       const payload = o.bracketed === false ? String(text || '') : bracketedPaste(text);
       backend.ptyWrite(target.id, encodeUtf8Base64(payload));
       if (o.submit) {
-        const delay = typeof o.submitDelayMs === 'number'
+        const baseDelay = typeof o.submitDelayMs === 'number'
           ? o.submitDelayMs
-          : (typeof d.submitDelayMs === 'number' ? d.submitDelayMs : 80);
+          : (typeof d.submitDelayMs === 'number' ? d.submitDelayMs : 250);
+        const delay = baseDelay > 0 && String(text || '').length > 400
+          ? Math.max(baseDelay, 450)
+          : baseDelay;
+        let timer = null;
+        let retryTimer = null;
         const sendEnter = () => {
+          if (o.loopRef && timer && o.loopRef.submitTimer === timer) o.loopRef.submitTimer = null;
           if (!target.running) return;
           backend.ptyWrite(target.id, encodeUtf8Base64('\r'));
+          if (delay > 0 && target.preset === 'codex' && String(text || '').length > 400) {
+            retryTimer = setTimeout(() => {
+              if (o.loopRef && retryTimer && o.loopRef.submitRetryTimer === retryTimer) o.loopRef.submitRetryTimer = null;
+              if (!target.running) return;
+              if (o.loopRef && o.loopRef.transitioning) return;
+              const buf = String(target.stepBuffer || '');
+              if (!/Working\s*\(/i.test(buf)) {
+                backend.ptyWrite(target.id, encodeUtf8Base64('\r'));
+              }
+            }, 400);
+            if (o.loopRef) o.loopRef.submitRetryTimer = retryTimer;
+          }
         };
         if (delay <= 0) {
           sendEnter();
         } else {
-          const timer = setTimeout(sendEnter, delay);
+          timer = setTimeout(sendEnter, delay);
           if (o.loopRef) o.loopRef.submitTimer = timer;
         }
       }
@@ -1548,6 +1813,7 @@
         notifyLoopChange(loop);
         notifyChange();
 
+        let newlyStarted = false;
         if (!makerSess) {
           makerSess = await startSession(loop.makerPreset, loop.workDir, {
             label: `Loop ${loop.round}/${loop.maxRounds}`,
@@ -1555,8 +1821,12 @@
           });
           if (!makerSess) throw new Error('Failed to start Maker session');
           loop.makerSessionId = makerSess.id;
+          newlyStarted = true;
           notifyLoopChange(loop);
           notifyChange();
+        }
+        if (newlyStarted) {
+          await waitForSessionReady(makerSess.id);
         }
       } catch (err) {
         loop.phase = 'failed';
@@ -1568,6 +1838,11 @@
         return;
       }
       loop.transitioning = false;
+      loop.idleNudged = false;
+      if (loop.idleTimer) {
+        clearTimeout(loop.idleTimer);
+        loop.idleTimer = null;
+      }
       makerSess.stepRaw = '';
       makerSess.stepBuffer = '';
       loop.pendingInstructionUpdate = false;
@@ -1600,6 +1875,7 @@
         notifyLoopChange(loop);
         notifyChange();
 
+        let newlyStarted = false;
         if (!checkerSess) {
           checkerSess = await startSession(loop.checkerPreset, loop.workDir, {
             label: 'Checker',
@@ -1607,8 +1883,12 @@
           });
           if (!checkerSess) throw new Error('Failed to start Checker session');
           loop.checkerSessionId = checkerSess.id;
+          newlyStarted = true;
           notifyLoopChange(loop);
           notifyChange();
+        }
+        if (newlyStarted) {
+          await waitForSessionReady(checkerSess.id);
         }
       } catch (err) {
         loop.phase = 'failed';
@@ -1620,6 +1900,11 @@
         return;
       }
       loop.transitioning = false;
+      loop.idleNudged = false;
+      if (loop.idleTimer) {
+        clearTimeout(loop.idleTimer);
+        loop.idleTimer = null;
+      }
       checkerSess.stepRaw = '';
       checkerSess.stepBuffer = '';
       const prompt = buildCheckerPrompt(loop, loop.gateCmd, loop.lastMakerOutput || '', loop.round, loop.maxRounds);
@@ -1728,8 +2013,35 @@
       const explicitMakerSess = explicitMakerId
         ? sessions.find((s) => s.id === explicitMakerId && s.running)
         : null;
-      const makerPreset = o.makerPreset || (explicitMakerSess && explicitMakerSess.preset) || o.preferredPreset || selectedPreset || 'cc';
-      const checkerPreset = o.checkerPreset || pickCrossModelPreset(makerPreset);
+      const availPresets = await ensureAvailablePresets();
+      const makerPreset = o.makerPreset
+        || (explicitMakerSess && explicitMakerSess.preset)
+        || o.preferredPreset
+        || await resolvePreferredAgentPreset();
+      if ((Array.isArray(availPresets) && !availPresets.some((p) => p !== 'shell')) || makerPreset === 'shell') {
+        const failedLoop = {
+          id: loopId,
+          notePath: o.notePath || '',
+          noteTabId: o.noteTabId || '',
+          heading,
+          title: cleanTitle,
+          criteria: Array.isArray(b.criteria) ? b.criteria.filter(Boolean) : [],
+          failedMemory: Array.isArray(b.failedMemory) ? b.failedMemory.filter(Boolean) : [],
+          isEnglish: !!b.isEnglish,
+          phase: 'failed',
+          round: 1,
+          maxRounds: Math.max(1, Number(b.maxRounds || o.maxRounds || 3)),
+          makerSessionId: '',
+          checkerSessionId: '',
+          makerPreset: makerPreset || 'shell',
+          checkerPreset: 'shell',
+          statusText: '利用可能な AI エージェント (agy / codex / claude) が見つかりません'
+        };
+        loops.set(loopId, failedLoop);
+        notifyLoopChange(failedLoop);
+        return serializeLoop(failedLoop);
+      }
+      const checkerPreset = o.checkerPreset || pickCrossModelPreset(makerPreset, availPresets);
 
       let baseDir = o.workDir || selectedDir || (explicitMakerSess && explicitMakerSess.dir) || '';
       if (!baseDir && backend && typeof backend.ptySuggestDirs === 'function') {
@@ -1853,7 +2165,7 @@
         item.className = 'tab-item' + (s.id === activeId ? ' active' : '');
         item.setAttribute('role', 'tab');
         item.setAttribute('aria-selected', s.id === activeId ? 'true' : 'false');
-        item.dataset = item.dataset || {};
+        if (!item.dataset) item.dataset = {};
         item.dataset.agentSessionId = s.id;
         item.title = s.dir ? `${s.title}\n${s.dir}` : s.title;
         item.onclick = (e) => {
@@ -1928,6 +2240,9 @@
       getSessionById,
       hasRunningSession,
       getActiveSession,
+      resolvePreferredAgentPreset,
+      ensureAvailablePresets,
+      waitForSessionReady,
       startLoop,
       stopLoop,
       updateLoopInstructions,
@@ -1952,6 +2267,10 @@
     const pendingLoopNoteSyncs = new Map();
     let liveLoopSyncTimer = null;
     let agentContextMenuTargetId = null;
+
+    function toast(msg, ms) {
+      if (msg && typeof cfg.showToast === 'function') cfg.showToast(msg, ms || 3500);
+    }
 
     function getCtrl() {
       return typeof cfg.getController === 'function' ? cfg.getController() : null;
@@ -2038,21 +2357,90 @@
       const sel = captureEditorSelection();
       const offset = sel && typeof sel.start === 'number' ? sel.start : (ed ? ed.selectionStart || 0 : 0);
       let block = parseHarnessBlock(text, offset);
-      if (!block && sel && sel.end > sel.start && sel.text) {
-        block = parseHarnessBlock(sel.text, 0);
-        if (!block) {
-          const selLines = sel.text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
-          if (selLines.length > 0) {
-            block = {
-              kind: 'selection',
-              title: selLines[0].replace(/^#{1,3}\s+/, '').replace(/^[-*]\s+\[[ xX]\]\s+/, '').trim(),
-              criteria: selLines.slice(1).map((l) => l.replace(/^[-*]\s+/, '').trim()).filter(Boolean),
-              failedMemory: []
-            };
-          }
+      if (block && block.kind === 'heading') return block;
+      if (block && block.kind === 'task') {
+        block.replaceStart = block.blockStart;
+        block.replaceEnd = block.blockEnd;
+        return block;
+      }
+      if (sel && sel.end > sel.start && sel.text) {
+        const parsedSel = parseHarnessBlock(sel.text, 0);
+        if (parsedSel && parsedSel.kind === 'heading') {
+          parsedSel.replaceStart = sel.start;
+          parsedSel.replaceEnd = sel.end;
+          return parsedSel;
+        }
+        const selLines = sel.text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+        if (selLines.length > 0) {
+          return {
+            kind: 'selection',
+            title: selLines[0].replace(/^#{1,3}\s+/, '').replace(/^[-*]\s+\[[ xX]\]\s+/, '').trim(),
+            criteria: selLines.slice(1).map((l) => l.replace(/^[-*]\s+/, '').trim()).filter(Boolean),
+            failedMemory: [],
+            replaceStart: sel.start,
+            replaceEnd: sel.end
+          };
         }
       }
-      return block;
+      const lineText = String(getLeftNoteSelectionOrLine() || '').trim();
+      if (lineText && !/^<!--/.test(lineText) && !/^---+$/.test(lineText)) {
+        const lineStart = text.lastIndexOf('\n', Math.max(0, offset - 1)) + 1;
+        const nextNl = text.indexOf('\n', offset);
+        const lineEnd = nextNl >= 0 ? nextNl : text.length;
+        return {
+          kind: 'selection',
+          title: lineText.replace(/^#{1,3}\s+/, '').replace(/^[-*]\s+\[[ xX]\]\s+/, '').trim(),
+          criteria: [],
+          failedMemory: [],
+          replaceStart: lineStart,
+          replaceEnd: lineEnd
+        };
+      }
+      return null;
+    }
+
+    function promoteBlockToHarnessInNote(tab, block) {
+      if (!block || block.kind === 'heading') return block;
+      const ed = cfg.editorEl;
+      if (!tab || !ed) return block;
+      const src = ed.value || '';
+      const nl = src.indexOf('\r\n') >= 0 ? '\r\n' : '\n';
+      const lang = typeof cfg.getLanguage === 'function' ? cfg.getLanguage() : 'ja';
+      const isEn = !!block.isEnglish || lang === 'en';
+      const title = stripPtyBadgeFromTitle(block.title || 'Task') || 'Task';
+      const criteria = Array.isArray(block.criteria) ? block.criteria.filter(Boolean) : [];
+      const lines = [`## [ ] ${title}`];
+      if (criteria.length > 0) {
+        lines.push(isEn ? '- Criteria:' : '- 条件・評価軸:');
+        for (let i = 0; i < criteria.length; i++) lines.push(`  - ${criteria[i]}`);
+      }
+      lines.push(
+        isEn ? '- Gate: auto' : '- ゲート(検証): 自動',
+        isEn ? '- Setup: Maker[auto] ⇄ Checker[cross-model auto] / Env: `workspace` / Max: 1/3 rounds' : '- 体制: 実装[自動] ⇄ 検収[別モデル自動] / 環境: `作業フォルダ` / 上限: 1/3回',
+        isEn ? '- Failed Memory: none' : '- 失敗記憶: なし',
+        isEn ? '- Status: starting' : '- 進捗: 準備中',
+        '---'
+      );
+      const snippet = lines.join(nl);
+      const hasRange = typeof block.replaceStart === 'number' && typeof block.replaceEnd === 'number' &&
+        block.replaceStart >= 0 && block.replaceEnd >= block.replaceStart && block.replaceEnd <= src.length;
+      const rStart = hasRange ? block.replaceStart : src.length;
+      const rEnd = hasRange ? block.replaceEnd : src.length;
+      const prefix = (!hasRange && src.length > 0 && !src.endsWith('\n')) ? (nl + nl) : '';
+      const suffix = (rEnd < src.length && src[rEnd] !== '\n' && src[rEnd] !== '\r') ? nl : '';
+      const nextText = src.slice(0, rStart) + prefix + snippet + suffix + src.slice(rEnd);
+      const res = {
+        text: nextText,
+        replaceStart: rStart,
+        replaceEnd: rEnd,
+        delta: nextText.length - src.length
+      };
+      applySurgicalTextareaUpdate(ed, res);
+      if (typeof cfg.onTabTextReplaced === 'function') {
+        const curActiveId = typeof cfg.getActiveTabId === 'function' ? cfg.getActiveTabId() : null;
+        cfg.onTabTextReplaced(tab, res, !curActiveId || tab.id === curActiveId, false);
+      }
+      return parseHarnessBlock(ed.value || '', rStart + prefix.length, { title }) || Object.assign({}, block, { heading: `## [ ] ${title}`, kind: 'heading' });
     }
 
     function findMatchingActiveLoop(block, tab) {
@@ -2385,9 +2773,13 @@
       if (!ctrl) return null;
       const meta = ctrl.getSessionsMeta ? ctrl.getSessionsMeta() : [];
       const live = meta.find((s) => s.running);
-      if (live) return live;
+      if (live) return { session: live, isNew: false };
       const dir = await resolvePreferredSessionDir(typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null);
-      return ctrl.startSession('cc', dir, { preserveFocus: !!(opts && opts.preserveFocus) });
+      const preset = typeof ctrl.resolvePreferredAgentPreset === 'function'
+        ? await ctrl.resolvePreferredAgentPreset()
+        : 'cc';
+      const created = await ctrl.startSession(preset, dir, { preserveFocus: !!(opts && opts.preserveFocus) });
+      return created ? { session: created, isNew: true } : null;
     }
 
     function updateHeaderUI(isAgentMode) {
@@ -2528,7 +2920,14 @@
           agentContextMenuTargetId = null;
           if (!ctrl || !ctrl.startLoop) return;
           const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
-          const block = parseSelectedHarnessBlock() || { heading: '', title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
+          let block = parseSelectedHarnessBlock();
+          if (!block && cfg.editorEl) {
+            block = parseHarnessBlock(cfg.editorEl.value || '', -1);
+          }
+          if (!block) {
+            block = { kind: 'selection', title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
+          }
+          block = promoteBlockToHarnessInNote(tab, block);
           if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
           await ctrl.startLoop(block, {
             makerSessionId: target ? target.id : '',
@@ -2627,18 +3026,29 @@
       });
       bindCtx('ctx-harness-start', async () => {
         hideMenus();
-        const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
-        const block = parseSelectedHarnessBlock();
-        if (!block) return;
-        if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
-        const ctrl = ensureCtrl();
-        if (!ctrl || !ctrl.startLoop) return;
-        await ctrl.startLoop(block, {
-          notePath: tab ? tab.path : '',
-          noteTabId: tab ? tab.id : '',
-          container: cfg.secondaryAgentPane,
-          preserveFocus: true
-        });
+        try {
+          const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
+          let block = parseSelectedHarnessBlock();
+          if (!block) {
+            toast(t('agentHarnessNoTask', 'Select a task line or ## [ ] harness block first'));
+            return;
+          }
+          block = promoteBlockToHarnessInNote(tab, block);
+          if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+          const ctrl = ensureCtrl();
+          if (!ctrl || !ctrl.startLoop) return;
+          const res = await ctrl.startLoop(block, {
+            notePath: tab ? tab.path : '',
+            noteTabId: tab ? tab.id : '',
+            container: cfg.secondaryAgentPane,
+            preserveFocus: true
+          });
+          if (res && res.phase === 'failed' && res.statusText) {
+            toast(res.statusText, 5000);
+          }
+        } catch (err) {
+          toast(`Loop start failed: ${err && err.message ? err.message : err}`, 5000);
+        }
       });
       bindCtx('ctx-harness-stop', () => {
         hideMenus();
@@ -2651,87 +3061,135 @@
       });
       bindCtx('ctx-session-dispatch', async () => {
         hideMenus();
-        const text = getLeftNoteSelectionOrLine();
-        if (!text || !text.trim()) return;
-        if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
-        const ctrl = ensureCtrl();
-        if (!ctrl) return;
-        let target = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
-        if (!target || !target.running) target = await ensureDefaultLiveSession(ctrl, { preserveFocus: true });
-        if (!target) return;
-        ctrl.sendToSession(target.id, text, { submit: true, select: true, preserveFocus: true });
+        try {
+          const text = getLeftNoteSelectionOrLine();
+          if (!text || !text.trim()) {
+            toast(t('agentDispatchNoText', 'Place cursor on a non-empty line or select text first'));
+            return;
+          }
+          if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+          const ctrl = ensureCtrl();
+          if (!ctrl) return;
+          const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+          let target = (act && act.running) ? act : null;
+          let isNew = false;
+          if (!target) {
+            const ens = await ensureDefaultLiveSession(ctrl, { preserveFocus: true });
+            target = ens ? ens.session : null;
+            isNew = !!(ens && ens.isNew);
+          }
+          if (!target) return;
+          if (isNew && typeof ctrl.waitForSessionReady === 'function') {
+            await ctrl.waitForSessionReady(target.id);
+          }
+          ctrl.sendToSession(target.id, text, { submit: true, select: true, preserveFocus: true });
+        } catch (err) {
+          toast(`Session dispatch failed: ${err && err.message ? err.message : err}`, 5000);
+        }
       });
       bindCtx('ctx-session-continue-existing', async () => {
         hideMenus();
-        const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
-        const prompt = buildContinuationPrompt(block, false);
-        if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
-        const ctrl = ensureCtrl();
-        if (!ctrl) return;
-        let targetId = block.makerId || block.makerSessionId || '';
-        if (targetId && ctrl.openOrReviveById) {
-          const ok = await ctrl.openOrReviveById(targetId, cfg.secondaryAgentPane, { preserveFocus: true });
-          if (!ok) targetId = '';
-        }
-        if (!targetId) {
-          let act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
-          if (!act || !act.running) act = await ensureDefaultLiveSession(ctrl, { preserveFocus: true });
-          targetId = act ? act.id : '';
-        }
-        if (targetId) {
-          ctrl.sendToSession(targetId, prompt, { submit: true, select: true, preserveFocus: true });
+        try {
+          const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
+          const prompt = buildContinuationPrompt(block, false);
+          if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+          const ctrl = ensureCtrl();
+          if (!ctrl) return;
+          let targetId = block.makerId || block.makerSessionId || '';
+          let isNew = false;
+          if (targetId && ctrl.openOrReviveById) {
+            const ok = await ctrl.openOrReviveById(targetId, cfg.secondaryAgentPane, { preserveFocus: true });
+            if (!ok) targetId = '';
+          }
+          if (!targetId) {
+            const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+            if (act && act.running) {
+              targetId = act.id;
+            } else {
+              const ens = await ensureDefaultLiveSession(ctrl, { preserveFocus: true });
+              targetId = ens && ens.session ? ens.session.id : '';
+              isNew = !!(ens && ens.isNew);
+            }
+          }
+          if (targetId) {
+            if (isNew && typeof ctrl.waitForSessionReady === 'function') {
+              await ctrl.waitForSessionReady(targetId);
+            }
+            ctrl.sendToSession(targetId, prompt, { submit: true, select: true, preserveFocus: true });
+          }
+        } catch (err) {
+          toast(`Session continue failed: ${err && err.message ? err.message : err}`, 5000);
         }
       });
       bindCtx('ctx-session-continue-new', async () => {
         hideMenus();
-        const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
-        const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
-        const prompt = buildContinuationPrompt(block, true);
-        if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
-        const ctrl = ensureCtrl();
-        if (!ctrl) return;
-        const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
-        const preset = (act && act.preset) || 'cc';
-        const dir = (act && act.dir) || await resolvePreferredSessionDir(tab);
-        const fresh = await ctrl.startSession(preset, dir, { preserveFocus: true });
-        if (!fresh) return;
-        if (tab && block && block.kind === 'heading') {
-          applyTabMetadataEdit(tab, { makerId: block.makerId, title: block.title }, { makerId: fresh.id });
+        try {
+          const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
+          const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Task', criteria: [] };
+          const prompt = buildContinuationPrompt(block, true);
+          if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+          const ctrl = ensureCtrl();
+          if (!ctrl) return;
+          const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+          const preset = (act && act.preset)
+            || (typeof ctrl.resolvePreferredAgentPreset === 'function' ? await ctrl.resolvePreferredAgentPreset() : 'cc');
+          const dir = (act && act.dir) || await resolvePreferredSessionDir(tab);
+          const fresh = await ctrl.startSession(preset, dir, { preserveFocus: true });
+          if (!fresh) return;
+          if (tab && block && block.kind === 'heading') {
+            applyTabMetadataEdit(tab, { makerId: block.makerId, title: block.title }, { makerId: fresh.id });
+          }
+          if (typeof ctrl.waitForSessionReady === 'function') {
+            await ctrl.waitForSessionReady(fresh.id);
+          }
+          ctrl.sendToSession(fresh.id, prompt, { submit: true, select: true, preserveFocus: true });
+        } catch (err) {
+          toast(`New session failed: ${err && err.message ? err.message : err}`, 5000);
         }
-        ctrl.sendToSession(fresh.id, prompt, { submit: true, select: true, preserveFocus: true });
       });
       bindCtx('ctx-session-review', async () => {
         hideMenus();
-        const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
-        const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Review Task', criteria: [] };
-        if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
-        const ctrl = ensureCtrl();
-        if (!ctrl) return;
-        const mId = block.makerId || block.makerSessionId;
-        const makerSess = (mId && ctrl.getSessionById)
-          ? ctrl.getSessionById(mId)
-          : (ctrl.getActiveSession ? ctrl.getActiveSession() : null);
-        const sourcePreset = (makerSess && makerSess.preset) || 'cc';
-        const revPreset = pickCrossModelPreset(sourcePreset);
-        const dir = (makerSess && makerSess.dir) || await resolvePreferredSessionDir(tab);
-        const be = win.backend;
-        const gateCmd = (dir && be && typeof be.ptyDetectGate === 'function')
-          ? await be.ptyDetectGate(dir).catch(() => '')
-          : '';
-        const sessionsList = ctrl.getSessionsMeta ? ctrl.getSessionsMeta() : [];
-        let revSess = sessionsList.find((s) => s.running && s.preset === revPreset && (!makerSess || s.id !== makerSess.id));
-        if (!revSess) {
-          revSess = await ctrl.startSession(revPreset, dir, { label: 'Checker', preserveFocus: true });
+        try {
+          const tab = typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null;
+          const block = parseSelectedHarnessBlock() || { title: getLeftNoteSelectionOrLine() || 'Review Task', criteria: [] };
+          if (typeof cfg.openAgentPane === 'function') await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+          const ctrl = ensureCtrl();
+          if (!ctrl) return;
+          const mId = block.makerId || block.makerSessionId;
+          const makerSess = (mId && ctrl.getSessionById)
+            ? ctrl.getSessionById(mId)
+            : (ctrl.getActiveSession ? ctrl.getActiveSession() : null);
+          const availPresets = typeof ctrl.ensureAvailablePresets === 'function' ? await ctrl.ensureAvailablePresets() : null;
+          const sourcePreset = (makerSess && makerSess.preset)
+            || (typeof ctrl.resolvePreferredAgentPreset === 'function' ? await ctrl.resolvePreferredAgentPreset() : 'cc');
+          const revPreset = pickCrossModelPreset(sourcePreset, availPresets);
+          const dir = (makerSess && makerSess.dir) || await resolvePreferredSessionDir(tab);
+          const be = win.backend;
+          const gateCmd = (dir && be && typeof be.ptyDetectGate === 'function')
+            ? await be.ptyDetectGate(dir).catch(() => '')
+            : '';
+          const sessionsList = ctrl.getSessionsMeta ? ctrl.getSessionsMeta() : [];
+          let revSess = sessionsList.find((s) => s.running && s.preset === revPreset && (!makerSess || s.id !== makerSess.id));
+          let isNew = false;
+          if (!revSess) {
+            revSess = await ctrl.startSession(revPreset, dir, { label: 'Checker', preserveFocus: true });
+            isNew = true;
+          }
+          if (!revSess) return;
+          if (tab && block && block.kind === 'heading') {
+            applyTabMetadataEdit(tab, { makerId: block.makerId, title: block.title }, {
+              makerId: makerSess ? makerSess.id : (block.makerId || ''),
+              checkerId: revSess.id
+            });
+          }
+          if (isNew && typeof ctrl.waitForSessionReady === 'function') {
+            await ctrl.waitForSessionReady(revSess.id);
+          }
+          const prompt = buildCheckerPrompt(block, gateCmd, '', 1, 1);
+          ctrl.sendToSession(revSess.id, prompt, { submit: true, select: true, preserveFocus: true });
+        } catch (err) {
+          toast(`Review session failed: ${err && err.message ? err.message : err}`, 5000);
         }
-        if (!revSess) return;
-        if (tab && block && block.kind === 'heading') {
-          applyTabMetadataEdit(tab, { makerId: block.makerId, title: block.title }, {
-            makerId: makerSess ? makerSess.id : (block.makerId || ''),
-            checkerId: revSess.id
-          });
-        }
-        const prompt = buildCheckerPrompt(block, gateCmd, '', 1, 1);
-        ctrl.sendToSession(revSess.id, prompt, { submit: true, select: true, preserveFocus: true });
       });
     }
 

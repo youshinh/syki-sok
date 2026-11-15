@@ -107,6 +107,27 @@ func ResolvePresetWithResume(preset, cliSessionID string, resume bool) (label st
 	}
 }
 
+// AvailablePresets returns preset IDs whose CLI binaries are currently discoverable on PATH.
+// "shell" is always appended as the fallback interactive preset.
+func AvailablePresets() []string {
+	candidates := []struct {
+		id  string
+		bin string
+	}{
+		{id: "cc", bin: "claude"},
+		{id: "codex", bin: "codex"},
+		{id: "agy", bin: "agy"},
+	}
+	var out []string
+	for _, c := range candidates {
+		if _, err := exec.LookPath(c.bin); err == nil {
+			out = append(out, c.id)
+		}
+	}
+	out = append(out, "shell")
+	return out
+}
+
 // Manager tracks multiple concurrent PTY sessions.
 type Manager struct {
 	mu       sync.RWMutex

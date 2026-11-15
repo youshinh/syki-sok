@@ -445,3 +445,9 @@ func (a *App) PtyPrepareWorktree(dir, loopID string) (string, error) {
 	}
 	return marshalPTYWorktree(wtDir, true)
 }
+
+// PtyAvailablePresets returns a JSON array of preset IDs discoverable on PATH.
+func (a *App) PtyAvailablePresets() string {
+	b, _ := json.Marshal(ptyterm.AvailablePresets())
+	return string(b)
+}

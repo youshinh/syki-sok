@@ -3696,6 +3696,7 @@
         const tTab = getActiveTab();
         return tTab ? tTab.path : '';
       },
+      getDefaultAgent: () => (config && config.default_agent) || '',
       t,
       onSessionsChanged: () => {
         syncAgentRunningBadge();
@@ -12714,6 +12715,7 @@ OUTPUT FORMAT:
         getController: () => agentController,
         ensureController: ensureAgentController,
         openAgentPane,
+        showToast: (msg, ms) => { if (typeof showMessage === 'function') showMessage(msg, ms || 3500); },
         getActiveTab,
         getTab,
         getTabs: () => tabs,

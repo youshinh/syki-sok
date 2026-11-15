@@ -480,8 +480,333 @@ function makeMockEnv() {
     lineEditor.selectionStart = lineEditor.value.indexOf('app.js'); // on src/app.js:10
     assert.strictEqual(bridge.handleEditorClick(lineEditor, { ctrlKey: true }), false);
 
+    // Regression: available preset discovery without Claude Code (codex + agy only)
+    assert.strictEqual(TP.pickCrossModelPreset('agy', ['codex', 'agy', 'shell']), 'codex');
+    assert.strictEqual(TP.pickCrossModelPreset('codex', ['codex', 'agy', 'shell']), 'agy');
+    assert.strictEqual(TP.pickCrossModelPreset('agy', ['agy', 'shell']), 'agy');
+
+    {
+      const env2 = makeMockEnv();
+      const startedPresets = [];
+      const ctrl2 = TP.createController({
+        doc: env2.doc,
+        win: env2.win,
+        submitDelayMs: 0,
+        startupReadyDelayMs: 0,
+        getDefaultAgent: () => 'agy',
+        backend: {
+          ptyAvailablePresets: async () => JSON.stringify(['codex', 'agy', 'shell']),
+          ptyPrepareWorktree: async (dir) => JSON.stringify({ ok: true, worktreePath: dir, isWorktree: false }),
+          ptyDetectGate: async () => 'npm test',
+          ptyStartWithOptions: async (_eid, preset, dir) => {
+            startedPresets.push(preset);
+            return JSON.stringify({ id: preset + '-1', preset, dir });
+          },
+          ptyWrite: async () => {},
+          ptyResize: async () => {}
+        }
+      });
+      const resolved = await ctrl2.resolvePreferredAgentPreset();
+      assert.strictEqual(resolved, 'agy', 'must auto-select agy when claude is not installed');
+      const loop2 = await ctrl2.startLoop({ heading: '## [ ] Agy task', title: 'Agy task', criteria: [] }, {
+        workDir: '/repo',
+        container: env2.root
+      });
+      assert.strictEqual(loop2.makerPreset, 'agy');
+      assert.strictEqual(loop2.checkerPreset, 'codex');
+      assert.strictEqual(startedPresets[0], 'agy');
+    }
+
+    // Regression: renderRightTabs must not assign to getter-only HTMLElement.dataset
+    {
+      const envGetter = makeMockEnv();
+      const origCreate = envGetter.doc.createElement;
+      envGetter.doc.createElement = (tag) => {
+        const el = origCreate(tag);
+        const ds = {};
+        Object.defineProperty(el, 'dataset', { get: () => ds });
+        return el;
+      };
+      const ctrlG = TP.createController({
+        doc: envGetter.doc,
+        win: envGetter.win,
+        submitDelayMs: 0,
+        startupReadyDelayMs: 0,
+        backend: {
+          ptyStartWithOptions: async (_e, preset, dir) => JSON.stringify({ id: 'agy-g1', preset, dir }),
+          ptyWrite: async () => {},
+          ptyResize: async () => {}
+        }
+      });
+      await ctrlG.openPane(envGetter.root, { skipLauncher: true });
+      await ctrlG.startSession('agy', '/repo', { preserveFocus: true });
+      const tabList = envGetter.doc.createElement('ul');
+      ctrlG.renderRightTabs(tabList);
+      assert.strictEqual(tabList.children[0].dataset.agentSessionId, 'agy-g1');
+    }
+
     passed++;
     console.log('PASS: zero-copy bridge selection, idle right-click fast-bail, non-loop PTY bypass, and trimIdleMemory cleanup');
+  }
+
+  // Test: interactive CLI idle prompt-return auto-nudges once and transitions on second idle
+  {
+    const envIdle = makeMockEnv();
+    const writesIdle = [];
+    let spawnSeq = 0;
+    const ctrlIdle = TP.createController({
+      win: envIdle.win,
+      doc: envIdle.doc,
+      startupReadyDelayMs: 0,
+      submitDelayMs: 0,
+      verdictDebounceMs: 0,
+      idleTurnMs: 25,
+      getDefaultAgent: () => 'agy',
+      backend: {
+        ptyAvailablePresets: async () => JSON.stringify(['agy', 'codex']),
+        ptyPrepareWorktree: async (dir) => JSON.stringify({ ok: true, worktreePath: dir, isWorktree: false }),
+        ptyDetectGate: async () => 'echo ok',
+        ptyStartWithOptions: async (_eid, preset, dir) => JSON.stringify({ id: `${preset}-idle-${++spawnSeq}`, preset, dir }),
+        ptyWrite: async (id, b64) => {
+          writesIdle.push({ id, text: Buffer.from(b64, 'base64').toString('utf8') });
+        },
+        ptyResize: async () => {},
+        ptyClose: async () => {}
+      }
+    });
+    await ctrlIdle.openPane(envIdle.root, { skipLauncher: true });
+    const loop = await ctrlIdle.startLoop({
+      heading: '## [ ] Idle fallback test',
+      title: 'Idle fallback test',
+      criteria: []
+    }, {
+      workDir: '/repo',
+      container: envIdle.root,
+      maxRounds: 2
+    });
+    assert.strictEqual(loop.phase, 'maker');
+    const makerId = loop.makerSessionId;
+    const writesBeforeNudge = writesIdle.length;
+
+    const filler = '確認結果: 作業ツリーはクリーンでテストもすべて通過しています。実装すべき具体的なタスク内容をご指示ください。\n';
+    envIdle.win.__onPtyData(makerId, Buffer.from(filler + '> Auto mode: edits & safe commands auto-approved\n? for shortcuts\n', 'utf8').toString('base64'));
+    await new Promise((r) => setTimeout(r, 60));
+
+    // 1st idle: auto-nudged once, still in maker phase
+    let snap = ctrlIdle.getLoopsMeta()[0];
+    assert.strictEqual(snap.phase, 'maker');
+    assert.ok(writesIdle.length > writesBeforeNudge, 'expected auto-nudge write on first idle');
+    assert.ok(writesIdle.slice(writesBeforeNudge).some((w) => w.id === makerId && w.text.includes('まだ終了マーカーがありません')));
+
+    // 2nd idle without STAGE_DONE: READY -> proceeds to checker
+    envIdle.win.__onPtyData(makerId, Buffer.from(filler + '? for shortcuts\n', 'utf8').toString('base64'));
+    await new Promise((r) => setTimeout(r, 60));
+    snap = ctrlIdle.getLoopsMeta()[0];
+    assert.strictEqual(snap.phase, 'checker');
+    assert.ok(snap.checkerSessionId, 'expected checker session started on second idle');
+
+    // Checker finishes with VERDICT: PASS
+    envIdle.win.__onPtyData(snap.checkerSessionId, Buffer.from('VERDICT: PASS\n', 'utf8').toString('base64'));
+    await new Promise((r) => setTimeout(r, 20));
+    snap = ctrlIdle.getLoopsMeta()[0];
+    assert.strictEqual(snap.phase, 'done');
+
+    passed++;
+    console.log('PASS: interactive CLI idle prompt-return auto-nudges once and proceeds to checker');
+  }
+
+  // Test: starting loop from plain line or - [ ] bullet promotes it in-place with progress tracking
+  {
+    const envProm = makeMockEnv();
+    let bridgeRef = null;
+    const ctrlProm = TP.createController({
+      doc: envProm.doc,
+      win: envProm.win,
+      startupReadyDelayMs: 0,
+      submitDelayMs: 0,
+      getDefaultAgent: () => 'agy',
+      onLoopStateChanged: (loop) => {
+        if (bridgeRef) bridgeRef.handleLoopStateChanged(loop);
+      },
+      backend: {
+        ptyAvailablePresets: async () => JSON.stringify(['agy', 'codex']),
+        ptyPrepareWorktree: async (dir) => JSON.stringify({ ok: true, worktreePath: dir, isWorktree: false }),
+        ptyDetectGate: async () => 'npm test',
+        ptyStartWithOptions: async (_e, preset, dir) => JSON.stringify({ id: `${preset}-p1`, preset, dir }),
+        ptyWrite: async () => {},
+        ptyResize: async () => {}
+      }
+    });
+    const ctxHandlers = {};
+    const makeBtn = (id) => ({
+      id,
+      classList: { toggle() {}, add() {}, remove() {} },
+      addEventListener(ev, fn) { ctxHandlers[id + ':' + ev] = fn; }
+    });
+    const startBtn = makeBtn('ctx-harness-start');
+    const promDoc = {
+      getElementById: (id) => (id === 'ctx-harness-start' ? startBtn : null),
+      addEventListener() {}
+    };
+    let noteText = '# Notes\n- [ ] fix bug\nbottom line';
+    const tabObj = { id: 't-prom', path: '', content: noteText };
+    const promEd = {
+      get value() { return noteText; },
+      set value(v) { noteText = v; },
+      selectionStart: noteText.indexOf('fix bug'),
+      selectionEnd: noteText.indexOf('fix bug'),
+      scrollTop: 0,
+      setSelectionRange(a, b) { this.selectionStart = a; this.selectionEnd = b; }
+    };
+    bridgeRef = TP.createWorkspaceBridge({
+      doc: promDoc,
+      win: envProm.win,
+      editorEl: promEd,
+      secondaryAgentPane: envProm.root,
+      getController: () => ctrlProm,
+      ensureController: () => ctrlProm,
+      getActiveTab: () => tabObj,
+      getTab: (id) => (id === 't-prom' ? tabObj : null),
+      getTabs: () => [tabObj],
+      getActiveTabId: () => 't-prom',
+      getLanguage: () => 'ja',
+      onTabTextReplaced: (tab, res) => { tab.content = res.text; }
+    });
+    await startBtn.onclick();
+    assert.ok(noteText.includes('## [ ] fix bug'), 'expected in-place ## [ ] heading promotion');
+    assert.ok(noteText.includes('- 進捗: 1/3 Maker実行中 (agy)'), 'expected live progress tracking line');
+    assert.strictEqual((noteText.match(/fix bug/g) || []).length, 1, 'must not duplicate task block');
+    assert.ok(noteText.indexOf('## [ ] fix bug') < noteText.indexOf('bottom line'), 'must replace in-place, not append to bottom');
+
+    passed++;
+    console.log('PASS: plain/bullet task promotes in-place to tracked harness block on loop start');
+  }
+
+  // Test: irregular scenarios (duplicate titles, working indicator guard, checker crash, IME defer, prompt cap)
+  {
+    // 1. Duplicate title: prefer unchecked block over completed block
+    const dupNote = '## [x] Same Task\n- 進捗: PASS\n---\n\n## [ ] Same Task\n- 進捗: 未着手\n---';
+    const updated = TP.applyHarnessMetadataUpdate(dupNote, { title: 'Same Task' }, {
+      statusText: '1/3 Maker実行中 (agy)',
+      makerId: 'agy-dup'
+    });
+    assert.ok(updated.text.startsWith('## [x] Same Task\n- 進捗: PASS'), 'completed block must remain untouched');
+    assert.ok(updated.text.includes('## [ ] Same Task\n- ゲート(検証): 自動\n- 体制: 実装[#agy-dup]'), 'unchecked block must be updated');
+
+    // 2. Prompt length cap for Codex safety
+    const longPrompt = TP.buildCheckerPrompt(
+      { title: 'Long Task', criteria: ['c1', 'c2'] },
+      'npm test',
+      'line\n'.repeat(500),
+      1,
+      3
+    );
+    assert.ok(longPrompt.length <= 920, 'checker prompt must stay compact (got ' + longPrompt.length + ')');
+
+    // 3. Working indicator guard + Checker non-zero exit + IME defer
+    const envIrr = makeMockEnv();
+    const writesIrr = [];
+    let isComposing = true;
+    let spawnIrr = 0;
+    let bridgeIrr = null;
+    const ctrlIrr = TP.createController({
+      doc: envIrr.doc,
+      win: envIrr.win,
+      startupReadyDelayMs: 0,
+      submitDelayMs: 0,
+      idleTurnMs: 25,
+      getDefaultAgent: () => 'agy',
+      onLoopStateChanged: (loop) => {
+        if (bridgeIrr) bridgeIrr.handleLoopStateChanged(loop);
+      },
+      backend: {
+        ptyAvailablePresets: async () => JSON.stringify(['agy', 'codex']),
+        ptyPrepareWorktree: async (dir) => JSON.stringify({ ok: true, worktreePath: dir, isWorktree: false }),
+        ptyDetectGate: async () => 'npm test',
+        ptyStartWithOptions: async (_e, preset, dir) => JSON.stringify({ id: `${preset}-irr-${++spawnIrr}`, preset, dir }),
+        ptyWrite: async (id, b64) => {
+          writesIrr.push({ id, text: Buffer.from(b64, 'base64').toString('utf8') });
+        },
+        ptyResize: async () => {}
+      }
+    });
+    let irrNote = '## [ ] Irr Task\n- 進捗: 未着手\n---';
+    const irrTab = { id: 't-irr', path: '', content: irrNote };
+    const irrEd = {
+      get value() { return irrNote; },
+      set value(v) { irrNote = v; },
+      selectionStart: 0,
+      selectionEnd: 0,
+      scrollTop: 0,
+      setSelectionRange() {}
+    };
+    bridgeIrr = TP.createWorkspaceBridge({
+      doc: envIrr.doc,
+      win: envIrr.win,
+      editorEl: irrEd,
+      secondaryAgentPane: envIrr.root,
+      getController: () => ctrlIrr,
+      ensureController: () => ctrlIrr,
+      getActiveTab: () => irrTab,
+      getTab: (id) => (id === 't-irr' ? irrTab : null),
+      getTabs: () => [irrTab],
+      getActiveTabId: () => 't-irr',
+      getIsComposing: () => isComposing,
+      onTabTextReplaced: (tab, res) => { tab.content = res.text; }
+    });
+    await ctrlIrr.openPane(envIrr.root, { skipLauncher: true });
+    const loopIrr = await ctrlIrr.startLoop({ heading: '## [ ] Irr Task', title: 'Irr Task', criteria: [] }, {
+      workDir: '/repo',
+      noteTabId: 't-irr',
+      container: envIrr.root
+    });
+    // During IME composition, note must not be mutated yet
+    assert.ok(irrNote.includes('- 進捗: 未着手'), 'must defer note mutation while IME composing');
+    isComposing = false;
+    bridgeIrr.flushPendingLoopNoteSyncs();
+    assert.ok(irrNote.includes('- 進捗: 1/3 Maker実行中 (agy)'), 'must flush deferred sync after IME commit');
+
+    // Working indicator in tail must NOT trigger idle nudge
+    const writesBeforeWork = writesIrr.length;
+    envIrr.win.__onPtyData(loopIrr.makerSessionId, Buffer.from('x'.repeat(100) + '\nWorking...\n>\nesc to cancel\n', 'utf8').toString('base64'));
+    await new Promise((r) => setTimeout(r, 50));
+    assert.strictEqual(writesIrr.length, writesBeforeWork, 'Working.../esc to cancel must suppress idle nudge');
+
+    // Maker completes -> Checker starts -> Checker crashes (exit 1) -> loop must fail cleanly without hanging
+    envIrr.win.__onPtyData(loopIrr.makerSessionId, Buffer.from('\nSTAGE_DONE: READY\n', 'utf8').toString('base64'));
+    await new Promise((r) => setTimeout(r, 20));
+    const midSnap = ctrlIrr.getLoopsMeta()[0];
+    assert.strictEqual(midSnap.phase, 'checker');
+    envIrr.win.__onPtyExit(midSnap.checkerSessionId, 1, 'crash');
+    const endSnap = ctrlIrr.getLoopsMeta()[0];
+    assert.strictEqual(endSnap.phase, 'failed');
+    assert.ok(endSnap.statusText.includes('exit 1'));
+    assert.ok(irrNote.includes('Checker判定前に終了 (exit 1)'));
+
+    passed++;
+    console.log('PASS: irregular scenarios (duplicate title, prompt cap, working guard, IME defer, checker crash)');
+
+    // 4. Cursor-positioning CSI sequences must preserve line breaks for VERDICT/STAGE_DONE detection
+    const tuiOut = TP.stripAnsi('差分を確認し、テスト成功を確認しました。\x1b[20;1HVERDICT: PASS\x1b[21;1HWorked for 10s');
+    const tuiSig = TP.parseLoopSignal(tuiOut);
+    assert.ok(tuiSig && tuiSig.type === 'verdict' && tuiSig.verdict === 'PASS', 'expected VERDICT: PASS after cursor move');
+
+    // 5. Impossible preset combo: only shell installed -> startLoop fails cleanly with message
+    const envNoAi = makeMockEnv();
+    const ctrlNoAi = TP.createController({
+      doc: envNoAi.doc,
+      win: envNoAi.win,
+      backend: {
+        ptyAvailablePresets: async () => JSON.stringify(['shell']),
+        ptyStartWithOptions: async () => { throw new Error('must not spawn shell for loop'); }
+      }
+    });
+    const noAiRes = await ctrlNoAi.startLoop({ title: 'Test', criteria: [] }, { workDir: '/repo' });
+    assert.strictEqual(noAiRes.phase, 'failed');
+    assert.ok(noAiRes.statusText.includes('AI エージェント'));
+
+    passed++;
+    console.log('PASS: TUI cursor-move verdict detection and no-AI-preset error guard');
   }
 
   console.log('\n' + passed + ' passed, 0 failed');
