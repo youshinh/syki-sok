@@ -18389,6 +18389,25 @@ OUTPUT FORMAT:
   // Expose programmatic RPC interface for CLI, Unix pipe, and Agent operations
   function ensureRpcBridge() {
     if (typeof window === 'undefined') return null;
+    if (!window.__sykiPtyLoopRPC) {
+      window.__sykiPtyLoopRPC = {
+        list: function () {
+          return (agentBridge && typeof agentBridge.listLoops === 'function') ? agentBridge.listLoops() : [];
+        },
+        start: function (opts) {
+          if (!agentBridge || typeof agentBridge.startHarnessLoop !== 'function') {
+            throw new Error('harness loop bridge is not ready');
+          }
+          return agentBridge.startHarnessLoop(opts || {});
+        },
+        stop: function (id, force) {
+          if (!agentBridge || typeof agentBridge.stopHarnessLoop !== 'function') {
+            throw new Error('harness loop bridge is not ready');
+          }
+          return agentBridge.stopHarnessLoop(id, !!force);
+        }
+      };
+    }
     if (window.__sykiRPC) return window.__sykiRPC;
     if (!window.SykiRpcBridge) return null;
     window.__sykiRPC = window.SykiRpcBridge.create({

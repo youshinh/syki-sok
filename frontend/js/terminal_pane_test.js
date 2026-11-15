@@ -893,6 +893,62 @@ function makeMockEnv() {
     console.log('PASS: streamed REASON survives chunk delay and prompts enforce strict test reporting');
   }
 
+  // Test: workspaceBridge listLoops / startHarnessLoop / stopHarnessLoop (RPC loop bridge)
+  {
+    const envRpc = makeMockEnv();
+    let seqRpc = 0;
+    const ctrlRpc = TP.createController({
+      doc: envRpc.doc,
+      win: envRpc.win,
+      startupReadyDelayMs: 0,
+      submitDelayMs: 0,
+      backend: {
+        ptyAvailablePresets: async () => JSON.stringify(['agy', 'codex']),
+        ptyPrepareWorktree: async (dir) => JSON.stringify({ dir, isolated: false }),
+        ptyDetectGate: async () => 'go test ./...',
+        ptyStartWithOptions: async (_e, preset, dir) => JSON.stringify({ id: `${preset}-rpc-${++seqRpc}`, preset, dir }),
+        ptyWrite: async () => {},
+        ptyResize: async () => {}
+      }
+    });
+    const noteRpc = '## [ ] RPC Loop Task\n- 条件・評価軸:\n  - keep tests green\n- 進捗: 未着手\n---';
+    const tabRpc = { id: 'tab-rpc-1', path: '/repo/note.md', content: noteRpc };
+    const bridgeRpc = TP.createWorkspaceBridge({
+      doc: envRpc.doc,
+      win: envRpc.win,
+      editorEl: { value: '', selectionStart: 0, selectionEnd: 0 },
+      secondaryAgentPane: envRpc.root,
+      getController: () => ctrlRpc,
+      ensureController: () => ctrlRpc,
+      getActiveTab: () => null,
+      getTab: (id) => (id === 'tab-rpc-1' ? tabRpc : null),
+      getTabs: () => [tabRpc],
+      getActiveTabId: () => 'other-tab',
+      onTabTextReplaced: (tab, res) => { tab.content = res.text; }
+    });
+    assert.deepStrictEqual(bridgeRpc.listLoops(), []);
+    const started = await bridgeRpc.startHarnessLoop({ tabId: 'tab-rpc-1', line: 1 });
+    assert.strictEqual(started.title, 'RPC Loop Task');
+    assert.strictEqual(started.phase, 'maker');
+    assert.strictEqual(bridgeRpc.listLoops().length, 1);
+
+    const stopRes = bridgeRpc.stopHarnessLoop(started.id, true);
+    assert.strictEqual(stopRes.ok, true);
+    assert.strictEqual(stopRes.stopped, true);
+    assert.strictEqual(bridgeRpc.listLoops()[0].phase, 'stopped');
+
+    let missingErr = null;
+    try {
+      await bridgeRpc.startHarnessLoop({ tabId: 'tab-missing' });
+    } catch (e) {
+      missingErr = e;
+    }
+    assert.ok(missingErr && missingErr.message.includes('no such tab'), 'expected no such tab error');
+
+    passed++;
+    console.log('PASS: workspaceBridge harness loop RPC methods (list/start/stop)');
+  }
+
   console.log('\n' + passed + ' passed, 0 failed');
 })().catch((e) => {
   console.error(e);

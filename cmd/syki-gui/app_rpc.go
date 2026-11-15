@@ -417,6 +417,26 @@ func (a *App) DispatchRPCOperation(req *ipc.RPCRequest) (resp *ipc.RPCResponse) 
 		return a.rpcPtyRead(req)
 	case "pty.close":
 		return a.rpcPtyClose(req)
+	case "pty.resize":
+		return a.rpcPtyResize(req)
+	case "pty.rename":
+		return a.rpcPtyRename(req)
+	case "pty.sleep":
+		return a.rpcPtySleep(req)
+	case "pty.history":
+		return a.rpcPtyHistory(req)
+	case "pty.presets":
+		return a.rpcPtyPresets(req)
+	case "pty.detect_gate":
+		return a.rpcPtyDetectGate(req)
+	case "pty.prepare_worktree":
+		return a.rpcPtyPrepareWorktree(req)
+	case "pty.loop_list":
+		return a.rpcPtyLoopList(ctx, req)
+	case "pty.loop_start":
+		return a.rpcPtyLoopStart(ctx, req)
+	case "pty.loop_stop":
+		return a.rpcPtyLoopStop(ctx, req)
 
 	default:
 		return errorResponse(req.ID, ipc.ErrCodeMethodNotFound, fmt.Sprintf("method not found: %s", req.Method))

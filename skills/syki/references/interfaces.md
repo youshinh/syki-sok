@@ -237,15 +237,25 @@ Text piped in with `cmd | syki` is filed under `## [HH:MM:SS] title` (section 3.
 - JSON-RPC `lessons.list {agent?}` (section 2.2) answers the same.
 - Why nothing here adds, changes or removes a rule: the rules are put in front of an agent's instruction, so a write command or method would let an agent rewrite its own future instructions with nobody approving it. `syki lessons add` and the like are refused with that explanation. The person saves a rule from the window, or edits the file; do not write the file unless the user asked for exactly that.
 
-### 1.11 `syki pty` (pipe input/output to running PTY agent sessions)
+### 1.11 `syki pty` (control embedded PTY sessions and autonomous harness loops)
 
-`syki pty <list|start|write|read|close> [options]` (`pkg/cli/pty.go`, `cmd/syki-gui/app_rpc_pty.go`). Needs the running app.
+`syki pty <subcommand> [options]` (`pkg/cli/pty.go`, `cmd/syki-gui/app_rpc_pty.go`). Needs the running app.
 
 - `syki pty list`: list running PTY sessions (`sessions: [{id, title, label, preset, dir, running}]`).
-- `syki pty start [--preset agy] [--dir <path>] [--label <text>] [--id <explicit>]`: start a PTY session (default preset `agy`).
+- `syki pty start [--preset agy] [--dir <path>] [--label <text>] [--id <explicit>] [--cli-session-id <sid>] [--resume] [--cols N] [--rows M]`: start or resume a PTY session (default preset `agy`).
 - `syki pty write [--submit] <id> [text]`: write text (or piped stdin) to the PTY session; `--submit` appends `\r`.
 - `syki pty read [--since <offset>] [--max-bytes <n>] [--strip-ansi] [--raw] <id>`: read buffered PTY output (64 KB ring buffer) from byte offset (`--since -1` reads the tail), optionally stripping ANSI sequences or printing raw text.
 - `syki pty close <id>`: close a running PTY session.
+- `syki pty resize --cols N --rows M <id>`: resize the terminal grid of a running PTY session.
+- `syki pty rename <id> <label>`: update the user-facing label on both the live session and persistent ledger.
+- `syki pty sleep <id>`: terminate the OS PTY process while keeping the session dormant in the ledger for later resume.
+- `syki pty history`: list dormant or closed PTY session entries from the persistent ledger.
+- `syki pty presets`: list discoverable PTY agent presets on `PATH`.
+- `syki pty detect-gate [--dir <path>]`: detect the canonical test/build gate command for the target directory (or nearest git root).
+- `syki pty prepare-worktree [--dir <path>] [--id <loopId>]`: create or reuse an isolated detached git worktree under `.worktrees/<loopId>` (falls back cleanly when git isolation is unavailable).
+- `syki pty loop-list`: list active and recent autonomous Maker-Checker harness loops.
+- `syki pty loop-start [--tab <id>] [--line N] [--title <text>]`: start an autonomous harness loop from a `## [ ] <Title>` block in the specified (or active) note tab.
+- `syki pty loop-stop [--force] <id>`: request a graceful stop after the current step, or immediately interrupt (`--force`) the active PTY session.
 
 ---
 
@@ -320,10 +330,20 @@ print(json.loads(s.makefile("r", encoding="utf-8").readline()))
 | `filter.validate` | required | `{command}` | `{safe, warning, blocked, risk_level, reason}` | The verdict of the command bar's guard (the reviewed mode of `pkg/jev`, as `syki jev verify`); runs nothing. |
 | `filter.run` | required | `{command, input?, confirm_warning?, timeout_ms?}` | `{stdout, stderr, exit_code, truncated, risk_level, duration_ms}` | Runs a shell command with `input` on its standard input: what the command bar does to the selection, with no note touched (read the text with `buffer.get_selection`, run it, write the answer with `buffer.replace_selection`). The guard decides first: a blocked command is -32602 `refused by the command guard: ...` and nothing runs; one the guard warns about is -32602 until `confirm_warning:true`, which a caller sends only when the person agreed. 5 s by default, at most 8 s (-32603 `did not finish within N ms and was stopped`); each stream is cut at 1 MB (`truncated`). It runs a program on the user's PC: only when asked. |
 | `pty.list` | required | none | `{sessions: [...]}` | Lists running PTY agent sessions (`app_rpc_pty.go`). |
-| `pty.start` | required | `{preset?, dir?, label?, explicit_id?, cols?, rows?}` | session metadata object | Starts a PTY session (default preset `"agy"`). |
+| `pty.start` | required | `{preset?, dir?, label?, explicit_id?, cli_session_id?, resume?, cols?, rows?}` | session metadata object | Starts or resumes a PTY session (default preset `"agy"`). |
 | `pty.write` | required | `{id, text?, base64?, submit?}` | `{ok:true, bytes}` | Writes text or base64 bytes to a PTY session (`submit:true` appends `\r`). |
 | `pty.read` | required | `{id, since_offset?, max_bytes?, strip_ansi?}` | `{id, data, next_offset, running}` | Reads buffered PTY output from `since_offset` (default `-1` for tail). |
 | `pty.close` | required | `{id}` | `{ok:true}` | Closes a running PTY session. |
+| `pty.resize` | required | `{id, cols, rows}` | `{ok:true, id, cols, rows}` | Resizes the terminal grid (`cols > 0`, `rows > 0`). |
+| `pty.rename` | required | `{id, label}` | `{ok:true, id, label}` | Renames a PTY session label in memory and the persistent ledger. |
+| `pty.sleep` | required | `{id}` | `{ok:true, id}` | Terminates the OS process while keeping the session dormant for resume. |
+| `pty.history` | required | none | `{entries: [...]}` | Lists dormant or closed PTY sessions from the persistent ledger. |
+| `pty.presets` | required | none | `{presets: [...]}` | Lists discoverable PTY agent presets on `PATH`. |
+| `pty.detect_gate` | required | `{dir?}` | `{dir, gate}` | Detects the canonical test/build gate command for `dir`. |
+| `pty.prepare_worktree` | required | `{dir?, loop_id?}` | `{dir, isolated}` | Creates or reuses a detached git worktree under `.worktrees/<loop_id>`. |
+| `pty.loop_list` | required | none | `{loops: [...]}` | Lists active and recent autonomous harness loops. |
+| `pty.loop_start` | required | `{tab_id?, line?, title?}` | loop metadata object | Starts an autonomous harness loop from a `## [ ]` block in a note tab. |
+| `pty.loop_stop` | required | `{id, force?}` | `{ok:true, id, stopped}` | Stops (or force-interrupts with `force:true`) a running harness loop. |
 
 The 5 s limit per call and the serialising of writes (one at a time, so `generation` stays exact) apply to every method that changes a note. `app.info`, `config.get`, `scrap.*`, `git.*`, `filter.*` and `lessons.list` do not need the page and answer while it is still starting; the methods that read or change a note, the caret or the view are -32603 until the page is ready. Only `scrap.*`, `app.info`, `config.get` and `lessons.list` (section 1.6 to 1.8 and 1.10) and `print.pdf` (`syki tab pdf`, section 1.3) have a command line twin; the other new methods are JSON-RPC only.
 

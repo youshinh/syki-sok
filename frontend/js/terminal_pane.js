@@ -3364,6 +3364,64 @@
       });
     }
 
+    function listLoops() {
+      const ctrl = getCtrl();
+      return (ctrl && typeof ctrl.getLoopsMeta === 'function') ? ctrl.getLoopsMeta() : [];
+    }
+
+    async function startHarnessLoop(opts) {
+      const o = opts || {};
+      const targetTab = o.tabId
+        ? (typeof cfg.getTab === 'function' ? cfg.getTab(o.tabId) : null)
+        : (typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null);
+      if (!targetTab) {
+        throw new Error(o.tabId ? `no such tab: ${o.tabId}` : 'no active tab');
+      }
+      const curActiveId = typeof cfg.getActiveTabId === 'function' ? cfg.getActiveTabId() : null;
+      const isPrimary = !!(cfg.editorEl && targetTab.id === curActiveId);
+      const srcText = isPrimary ? (cfg.editorEl.value || '') : (targetTab.content || '');
+      let offset = isPrimary ? (cfg.editorEl.selectionStart || 0) : 0;
+      if (o.line && Number(o.line) > 0) {
+        const targetLine = Number(o.line);
+        let curLine = 1;
+        offset = 0;
+        for (let i = 0; i < srcText.length && curLine < targetLine; i++) {
+          if (srcText[i] === '\n') curLine++;
+          offset = i + 1;
+        }
+      }
+      const hint = o.title ? { title: String(o.title) } : undefined;
+      let block = parseHarnessBlock(srcText, offset, hint);
+      if (!block) {
+        throw new Error('no harness block found in note');
+      }
+      if (block.kind !== 'heading' && isPrimary) {
+        block = promoteBlockToHarnessInNote(targetTab, block);
+      }
+      if (typeof cfg.openAgentPane === 'function') {
+        await cfg.openAgentPane({ preserveFocus: true, skipLauncher: true });
+      }
+      const ctrl = ensureCtrl();
+      if (!ctrl || typeof ctrl.startLoop !== 'function') {
+        throw new Error('terminal controller unavailable');
+      }
+      return await ctrl.startLoop(block, {
+        notePath: targetTab.path || '',
+        noteTabId: targetTab.id,
+        container: cfg.secondaryAgentPane,
+        preserveFocus: true
+      });
+    }
+
+    function stopHarnessLoop(loopId, force) {
+      const ctrl = getCtrl();
+      if (!ctrl || typeof ctrl.stopLoop !== 'function') {
+        return { ok: false, id: loopId, stopped: false };
+      }
+      const stopped = ctrl.stopLoop(loopId, !!force);
+      return { ok: true, id: loopId, stopped: !!stopped };
+    }
+
     function trimIdleMemory() {
       clearTimeout(liveLoopSyncTimer);
       liveLoopSyncTimer = null;
@@ -3390,6 +3448,9 @@
       syncHarnessContextMenuItems,
       openAgentTabContextMenu,
       updateHeaderUI,
+      listLoops,
+      startHarnessLoop,
+      stopHarnessLoop,
       trimIdleMemory
     };
   }

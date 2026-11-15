@@ -152,8 +152,11 @@ otherwise: "Error: syki is not running", exit 1):
   ui activate                                Bring the window to the front
   ui toggle-split                            Toggle the split view
   ui eval <javascript>                       Run JavaScript in the page (powerful: full control of the UI)
-  pty list|start|write|read|close          Pipe input/output to running PTY agent sessions
-                                             (RPC: pty.list, pty.start, pty.write, pty.read, pty.close)
+  pty list|start|write|read|close|resize|rename|sleep|history|presets|detect-gate|prepare-worktree|loop-list|loop-start|loop-stop
+                                             Control PTY agent sessions and autonomous harness loops
+                                             (RPC: pty.list, pty.start, pty.write, pty.read, pty.close, pty.resize,
+                                              pty.rename, pty.sleep, pty.history, pty.presets, pty.detect_gate,
+                                              pty.prepare_worktree, pty.loop_list, pty.loop_start, pty.loop_stop)
 
 Commands that run on their own (syki::sok need not be running):
   jev verify [--mode m] <command...>         Judge a shell command with the built-in guard
@@ -431,15 +434,28 @@ Works on the RUNNING app (start syki::sok first).
 Exit 0 ok, 1 error.
 `
 	case "pty":
-		return `syki pty <list|start|write|read|close> [options]
+		return `syki pty <subcommand> [options]
 
 Works on the RUNNING app (start syki::sok first).
 
   pty list                                     List running PTY sessions.
-  pty start [--preset agy] [--dir D] [--label L]  Start a new PTY session.
+  pty start [--preset agy] [--dir D] [--label L] [--id ID] [--cli-session-id SID] [--resume] [--cols N] [--rows M]
+                                               Start or resume a PTY session.
   pty write [--submit] <id> [text]             Write text (or piped stdin) to a PTY session.
-  pty read [--since N] [--strip-ansi] [--raw] <id>  Read buffered PTY output from offset N.
+  pty read [--since N] [--max-bytes N] [--strip-ansi] [--raw] <id>
+                                               Read buffered PTY output from offset N.
   pty close <id>                               Close a PTY session.
+  pty resize --cols N --rows M <id>            Resize a PTY session grid.
+  pty rename <id> <label>                      Rename a PTY session label.
+  pty sleep <id>                               Sleep a PTY session (keep in ledger for resume).
+  pty history                                  List dormant or closed PTY sessions.
+  pty presets                                  List discoverable PTY agent presets.
+  pty detect-gate [--dir D]                    Detect the test/build gate command for a directory.
+  pty prepare-worktree [--dir D] [--id loopId] Prepare an isolated git worktree under .worktrees/.
+  pty loop-list                                List active and recent autonomous harness loops.
+  pty loop-start [--tab <id>] [--line N] [--title <text>]
+                                               Start an autonomous harness loop from a note block.
+  pty loop-stop [--force] <id>                 Stop (or force-interrupt with --force) a harness loop.
 
 Exit 0 ok, 1 error.
 `
