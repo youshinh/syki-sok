@@ -835,13 +835,14 @@ function makeMockEnv() {
     envStream.win.__onPtyData(checkerIdStream, TP.encodeUtf8Base64('\nVERDICT: FAIL\nREASON: TestFoo'));
     await new Promise((r) => setTimeout(r, 350));
     envStream.win.__onPtyData(checkerIdStream, TP.encodeUtf8Base64(' (app_slot.go) failed\n'));
-    await new Promise((r) => setTimeout(r, 30));
+    await new Promise((r) => setTimeout(r, 1550));
     const afterStream = ctrlStream.getLoopsMeta()[0];
     assert.strictEqual(afterStream.round, 2, 'expected round 2, got phase=' + afterStream.phase + ' status=' + afterStream.statusText);
     assert.strictEqual(afterStream.failedMemory[0], '[1回目NG] TestFoo (app_slot.go) failed');
 
     const makerPromptText = TP.buildMakerPrompt({ title: 'T', criteria: ['C'] }, 'go test ./...', 1, 3);
     assert.ok(makerPromptText.includes('-run 等で通るテストだけに絞って成功扱いにしない'));
+    assert.ok(!/STAGE_DONE:\s*READY/i.test(makerPromptText), 'maker prompt must remain echo-safe');
     const checkerPromptText = TP.buildCheckerPrompt({ title: 'T', criteria: ['C'] }, 'go test ./...', 'out', 1, 3);
     assert.ok(checkerPromptText.includes('失敗したテスト名/ファイル名と原因の1行要約'));
 

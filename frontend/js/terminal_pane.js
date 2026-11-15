@@ -531,7 +531,7 @@
       '手順:',
       '1. 上記条件を満たす最小かつ正確な変更を実装し、必要に応じて自動テストを追加する。',
       `2. 検証コマンド \`${gateCmd || 'git status --short'}\` を自分で実行し、Exit Code 0 を確認する（-run 等で通るテストだけに絞って成功扱いにしないこと）。`,
-      '3. 環境制約等で検証を通せない場合は STAGE_DONE: READY を出さず、失敗したテスト名と原因をそのまま報告する。作業と検証の成功を確認したら、最後の1行として単独で「STAGE_DONE」の直後に「: READY」を繋げた文字列のみを出力して報告する。'
+      '3. 環境制約等で検証を通せない場合は終了マーカーを出さず、失敗したテスト名と原因をそのまま報告する。作業と検証の成功を確認したら、最後の1行として単独で「STAGE_DONE」の直後に「: READY」を繋げた文字列のみを出力して報告する。'
     );
     return lines.join('\n');
   }
@@ -936,7 +936,7 @@
           const delay = typeof checkerLoop.verdictDebounceMs === 'number'
             ? checkerLoop.verdictDebounceMs
             : (typeof d.verdictDebounceMs === 'number' ? d.verdictDebounceMs : 1500);
-          if (delay <= 0 || hasExplicitReasonAfterFail(s.stepBuffer)) {
+          if (delay <= 0) {
             s.stepRaw = '';
             s.stepBuffer = '';
             if (checkerLoop.verdictTimer) {
