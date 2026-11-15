@@ -3713,6 +3713,7 @@
     });
     return agentController;
   }
+  window.__sykiAgentController = ensureAgentController;
 
   function syncAgentRunningBadge() {
     const has = !!(agentController && agentController.hasRunningSession());

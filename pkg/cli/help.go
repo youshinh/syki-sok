@@ -152,6 +152,7 @@ otherwise: "Error: syki is not running", exit 1):
   ui activate                                Bring the window to the front
   ui toggle-split                            Toggle the split view
   ui eval <javascript>                       Run JavaScript in the page (powerful: full control of the UI)
+  pty <list|start|write|read|close>          Pipe input/output to running PTY agent sessions
 
 Commands that run on their own (syki::sok need not be running):
   jev verify [--mode m] <command...>         Judge a shell command with the built-in guard
@@ -425,6 +426,19 @@ Works on the RUNNING app (start syki::sok first).
   ui toggle-split        Toggle the split editor.
   ui eval <javascript>   Run JavaScript in the page and print the JSON of the result.
                          Powerful: it can do anything the UI can, so use it only when asked.
+
+Exit 0 ok, 1 error.
+`
+	case "pty":
+		return `syki pty <list|start|write|read|close> [options]
+
+Works on the RUNNING app (start syki::sok first).
+
+  pty list                                     List running PTY sessions.
+  pty start [--preset agy] [--dir D] [--label L]  Start a new PTY session.
+  pty write [--submit] <id> [text]             Write text (or piped stdin) to a PTY session.
+  pty read [--since N] [--strip-ansi] [--raw] <id>  Read buffered PTY output from offset N.
+  pty close <id>                               Close a PTY session.
 
 Exit 0 ok, 1 error.
 `

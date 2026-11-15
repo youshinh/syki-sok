@@ -27,6 +27,7 @@ var commands = []command{
 	{name: "buffer", app: (*ClientRunner).runBuffer},
 	{name: "tab", app: (*ClientRunner).runTab},
 	{name: "ui", app: (*ClientRunner).runUI},
+	{name: "pty", app: (*ClientRunner).runPty},
 	{name: "jev", standalone: (*HeadlessRunner).runJev},
 	{name: "agent", standalone: (*HeadlessRunner).runAgent},
 	{name: "ocr", standalone: (*HeadlessRunner).runOCR, noAction: true},

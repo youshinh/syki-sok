@@ -135,9 +135,33 @@ type Manager struct {
 	seq      atomic.Uint64
 }
 
+const maxTailBytes = 64 * 1024
+
 type managedSession struct {
-	info SessionInfo
-	sess Session
+	info       SessionInfo
+	sess       Session
+	bufMu      sync.Mutex
+	tailBuf    []byte
+	totalBytes int64
+}
+
+func (ms *managedSession) appendOutput(data []byte) {
+	if len(data) == 0 {
+		return
+	}
+	ms.bufMu.Lock()
+	defer ms.bufMu.Unlock()
+	ms.totalBytes += int64(len(data))
+	if len(data) >= maxTailBytes {
+		ms.tailBuf = append(ms.tailBuf[:0], data[len(data)-maxTailBytes:]...)
+		return
+	}
+	ms.tailBuf = append(ms.tailBuf, data...)
+	if len(ms.tailBuf) > maxTailBytes {
+		excess := len(ms.tailBuf) - maxTailBytes
+		copy(ms.tailBuf, ms.tailBuf[excess:])
+		ms.tailBuf = ms.tailBuf[:maxTailBytes]
+	}
 }
 
 // NewManager creates an empty PTY session manager.
@@ -190,12 +214,21 @@ func (m *Manager) Start(idPrefix string, preset string, title string, opts Optio
 	}
 
 	id := m.AllocateID(idPrefix, opts.ExplicitID)
+	ms := &managedSession{}
+
+	userOnData := opts.OnData
+	opts.OnData = func(data []byte) {
+		ms.appendOutput(data)
+		if userOnData != nil {
+			userOnData(data)
+		}
+	}
 
 	userOnExit := opts.OnExit
 	opts.OnExit = func(code int, err error) {
 		m.mu.Lock()
-		if ms, ok := m.sessions[id]; ok {
-			ms.info.Running = false
+		if cur, ok := m.sessions[id]; ok {
+			cur.info.Running = false
 		}
 		m.mu.Unlock()
 		if userOnExit != nil {
@@ -217,8 +250,10 @@ func (m *Manager) Start(idPrefix string, preset string, title string, opts Optio
 		CLISessionID: opts.CLISessionID,
 		Running:      true,
 	}
+	ms.info = info
+	ms.sess = sess
 	m.mu.Lock()
-	m.sessions[id] = &managedSession{info: info, sess: sess}
+	m.sessions[id] = ms
 	m.mu.Unlock()
 	return info, nil
 }
@@ -233,6 +268,51 @@ func (m *Manager) Write(id string, data []byte) error {
 	}
 	_, err := ms.sess.Write(data)
 	return err
+}
+
+// ReadOutput returns buffered PTY output from sinceOffset (or the latest maxBytes when sinceOffset < 0),
+// along with the next byte offset and whether the session is still running.
+func (m *Manager) ReadOutput(id string, sinceOffset int64, maxBytes int) ([]byte, int64, bool, error) {
+	m.mu.RLock()
+	ms, ok := m.sessions[id]
+	running := ok && ms.info.Running
+	m.mu.RUnlock()
+	if !ok {
+		return nil, 0, false, fmt.Errorf("pty session not found: %s", id)
+	}
+	if maxBytes <= 0 || maxBytes > maxTailBytes {
+		maxBytes = maxTailBytes
+	}
+
+	ms.bufMu.Lock()
+	defer ms.bufMu.Unlock()
+
+	total := ms.totalBytes
+	bufLen := int64(len(ms.tailBuf))
+	baseOffset := total - bufLen
+
+	var start int64
+	if sinceOffset < 0 {
+		start = total - int64(maxBytes)
+		if start < baseOffset {
+			start = baseOffset
+		}
+	} else if sinceOffset <= baseOffset {
+		start = baseOffset
+	} else if sinceOffset >= total {
+		return nil, total, running, nil
+	} else {
+		start = sinceOffset
+	}
+
+	idx := int(start - baseOffset)
+	avail := ms.tailBuf[idx:]
+	if len(avail) > maxBytes {
+		avail = avail[:maxBytes]
+	}
+	nextOffset := start + int64(len(avail))
+	out := append([]byte(nil), avail...)
+	return out, nextOffset, running, nil
 }
 
 // Resize updates the terminal dimensions of the target PTY session.

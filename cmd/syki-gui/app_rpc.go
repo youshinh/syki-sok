@@ -406,6 +406,18 @@ func (a *App) DispatchRPCOperation(req *ipc.RPCRequest) (resp *ipc.RPCResponse) 
 	case "lessons.list":
 		return a.rpcLessonsList(req)
 
+	// app_rpc_pty.go: external PTY pipe & session control
+	case "pty.list":
+		return a.rpcPtyList(req)
+	case "pty.start":
+		return a.rpcPtyStart(req)
+	case "pty.write":
+		return a.rpcPtyWrite(req)
+	case "pty.read":
+		return a.rpcPtyRead(req)
+	case "pty.close":
+		return a.rpcPtyClose(req)
+
 	default:
 		return errorResponse(req.ID, ipc.ErrCodeMethodNotFound, fmt.Sprintf("method not found: %s", req.Method))
 	}
