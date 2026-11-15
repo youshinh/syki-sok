@@ -2779,6 +2779,14 @@
   }
 
   // Writes what differs between the tab and its element. `selectedIndex` is the strip's selected tab (-1: none).
+  function isSecondaryOpenTab(tabId) {
+    if (!document.body.classList.contains('tabs-top') || !isSplitMode || secondaryViewMode === 'agent') return false;
+    const primaryIsActive = !(secondaryViewMode === 'editor' && activePane === 'secondary');
+    const otherId = primaryIsActive ? secondaryTabId : activeTabId;
+    const activeId = primaryIsActive ? activeTabId : secondaryTabId;
+    return !!otherId && otherId !== activeId && tabId === otherId;
+  }
+
   function updateTabEl(el, tab, index, selectedIndex) {
     const v = tabViews.get(el);
     const active = index === selectedIndex;
@@ -2787,6 +2795,7 @@
     setTabFlag(el, v, 'active', active);
     setTabFlag(el, v, 'is-dirty', dirty);
     setTabFlag(el, v, 'has-conflict', conflict);
+    setTabFlag(el, v, 'active-secondary', !active && isSecondaryOpenTab(tab.id));
 
     const title = tab.title || '';
     if (v.title !== title) {

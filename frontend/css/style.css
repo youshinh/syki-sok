@@ -6483,6 +6483,10 @@ body.tabs-top #tab-index-left .tab-item.active {
   color: var(--tab-ink);
   background-color: rgb(var(--ink-rgb) / 0.1) !important;
 }
+body.tabs-top #tab-index-left .tab-item.active-secondary {
+  color: var(--tab-ink);
+  background-color: rgb(var(--ink-rgb) / 0.05) !important;
+}
 body.tabs-top #tab-index-left .tab-item::before {
   top: auto;
   bottom: 0;
@@ -6495,6 +6499,9 @@ body.tabs-top #tab-index-left .tab-item::before {
 }
 body.tabs-top #tab-index-left .tab-item.active::before {
   opacity: 1;
+}
+body.tabs-top #tab-index-left .tab-item.active-secondary::before {
+  opacity: 0.42;
 }
 body.tabs-top #tab-index-left .tab-item.is-dirty::after,
 body.tabs-top #tab-index-left .tab-item.has-conflict::after {
