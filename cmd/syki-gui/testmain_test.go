@@ -6,6 +6,7 @@ import (
 	"testing"
 
 	"syki-sok/pkg/appdir"
+	"syki-sok/pkg/dropzone"
 )
 
 // TestMain makes the root package's test binary hermetic. Without it `go test .` acts on the
@@ -42,6 +43,7 @@ func TestMain(m *testing.M) {
 	}
 	appdir.SetConfigDirOverride(tempRoot)
 	appdir.SetHomeDirOverride(tempRoot)
+	dropzone.SetLoopbackOnlyForTest(true)
 
 	// A developer's exported credentials must not leak into the suite (and must not let a
 	// test reach the network).
@@ -51,6 +53,7 @@ func TestMain(m *testing.M) {
 
 	code := m.Run()
 
+	dropzone.SetLoopbackOnlyForTest(false)
 	appdir.SetConfigDirOverride("")
 	appdir.SetHomeDirOverride("")
 	_ = os.RemoveAll(tempRoot)

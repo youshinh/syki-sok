@@ -759,6 +759,19 @@ var (
 	routeLocalIP  = defaultRouteIP
 )
 
+// SetLoopbackOnlyForTest restricts dropzone listeners and advertised IPs to
+// 127.0.0.1:0 so cross-package tests stay hermetic and never trigger OS
+// firewall prompts.
+func SetLoopbackOnlyForTest(enabled bool) {
+	if enabled {
+		lanIPDetector = func() (string, error) { return "127.0.0.1", nil }
+		portListener = func() (net.Listener, error) { return net.Listen("tcp", "127.0.0.1:0") }
+		return
+	}
+	lanIPDetector = detectLANIP
+	portListener = listen
+}
+
 func listen() (net.Listener, error) {
 	if ln, err := net.Listen("tcp", fmt.Sprintf("0.0.0.0:%d", DefaultPort)); err == nil {
 		return ln, nil
