@@ -1367,7 +1367,11 @@ body[data-view="preview"] #preview-pane.html-mode {
    (the thumb moves on the compositor); the ::-webkit-scrollbar pseudo-elements would paint it by hand and turn a Mac's overlay scrollbar into a
    permanent bar. */
 #preview-pane,
-.secondary-preview-pane,
+.secondary-preview-pane {
+  scrollbar-width: thin;
+  scrollbar-color: rgb(var(--ink-rgb) / 0.5) transparent;
+}
+
 .agent-term-instance .xterm-viewport,
 .agent-mermaid-body {
   scrollbar-width: thin;
