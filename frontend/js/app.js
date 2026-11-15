@@ -3795,8 +3795,10 @@
   async function showAgentMermaidOverlay() {
     const ctrl = ensureAgentController();
     if (!ctrl || !secondaryAgentPane) return;
-    const code = ctrl.getLatestMermaid();
-    if (!code) {
+    const blocks = typeof ctrl.getLatestMermaids === 'function'
+      ? ctrl.getLatestMermaids()
+      : (ctrl.getLatestMermaid() ? [ctrl.getLatestMermaid()] : []);
+    if (blocks.length === 0) {
       if (typeof showToast === 'function') {
         showToast(t('agentNoMermaidFound', 'No Mermaid block found in recent terminal output'));
       }
@@ -3812,7 +3814,7 @@
     const bar = document.createElement('div');
     bar.className = 'agent-mermaid-bar';
     const label = document.createElement('span');
-    label.textContent = 'Mermaid Preview';
+    label.textContent = blocks.length > 1 ? `Mermaid Preview (${blocks.length})` : 'Mermaid Preview';
     bar.appendChild(label);
 
     const actions = document.createElement('div');
@@ -3821,9 +3823,12 @@
     const insertBtn = document.createElement('button');
     insertBtn.type = 'button';
     insertBtn.className = 'agent-launcher-btn primary';
-    insertBtn.textContent = t('agentInsertToNoteBtn', 'Insert to Note');
+    insertBtn.textContent = blocks.length > 1
+      ? t('agentInsertAllToNoteBtn', 'Insert All')
+      : t('agentInsertToNoteBtn', 'Insert to Note');
     insertBtn.onclick = () => {
-      if (agentBridge) agentBridge.insertTextIntoLeftNote('```mermaid\n' + code + '\n```');
+      const md = blocks.map((c) => '```mermaid\n' + c + '\n```').join('\n\n');
+      if (agentBridge) agentBridge.insertTextIntoLeftNote(md);
       if (overlay.parentElement) overlay.parentElement.removeChild(overlay);
     };
     actions.appendChild(insertBtn);
@@ -3840,20 +3845,51 @@
     overlay.appendChild(bar);
 
     const body = document.createElement('div');
-    body.className = 'agent-mermaid-body markdown-body';
+    body.className = 'agent-mermaid-body markdown-body' + (blocks.length > 1 ? ' multi' : '');
     overlay.appendChild(body);
     secondaryAgentPane.appendChild(overlay);
 
-    try {
-      if (window.mermaid && typeof window.mermaid.render === 'function') {
-        applyMermaidTone();
-        const res = await window.mermaid.render('agent-mmd-' + Date.now(), code);
-        body.innerHTML = res && res.svg ? res.svg : String(res || '');
-      } else {
-        body.textContent = code;
+    const renderInto = async (targetEl, code, suffix) => {
+      try {
+        if (window.mermaid && typeof window.mermaid.render === 'function') {
+          applyMermaidTone();
+          const res = await window.mermaid.render('agent-mmd-' + Date.now() + '-' + suffix, code);
+          targetEl.innerHTML = res && res.svg ? res.svg : String(res || '');
+        } else {
+          targetEl.textContent = code;
+        }
+      } catch (err) {
+        targetEl.textContent = (t('mermaidError', 'Mermaid syntax error: ') + (err && err.message ? err.message : String(err)));
       }
-    } catch (err) {
-      body.textContent = (t('mermaidError', 'Mermaid syntax error: ') + (err && err.message ? err.message : String(err)));
+    };
+
+    if (blocks.length === 1) {
+      await renderInto(body, blocks[0], '0');
+    } else {
+      for (let i = 0; i < blocks.length; i++) {
+        const code = blocks[i];
+        const card = document.createElement('div');
+        card.className = 'agent-mermaid-card';
+        const head = document.createElement('div');
+        head.className = 'agent-mermaid-card-head';
+        const num = document.createElement('span');
+        num.textContent = `#${i + 1}`;
+        const oneInsert = document.createElement('button');
+        oneInsert.type = 'button';
+        oneInsert.className = 'agent-launcher-btn';
+        oneInsert.textContent = t('agentInsertToNoteBtn', 'Insert to Note');
+        oneInsert.onclick = () => {
+          if (agentBridge) agentBridge.insertTextIntoLeftNote('```mermaid\n' + code + '\n```');
+        };
+        head.appendChild(num);
+        head.appendChild(oneInsert);
+        const svgWrap = document.createElement('div');
+        svgWrap.className = 'agent-mermaid-card-svg';
+        card.appendChild(head);
+        card.appendChild(svgWrap);
+        body.appendChild(card);
+        await renderInto(svgWrap, code, String(i));
+      }
     }
   }
 

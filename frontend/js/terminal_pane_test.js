@@ -76,6 +76,28 @@ check('extractLastMermaidBlock extracts unfenced TUI mermaid blocks and normaliz
   ].join('\n'));
 });
 
+check('extractMermaidBlocks extracts multiple unfenced diagrams in order', () => {
+  const multi = [
+    'gantt',
+    '    title 開発スケジュール',
+    '    section 設計',
+    '    仕様確定 :a1, 2026-11-16, 3d',
+    '',
+    'stateDiagram-v2',
+    '    [*] ──> 下書き',
+    '    下書き ──> レビュー中 : 提出',
+    '',
+    'erDiagram',
+    '    USER ||──o{ ORDER : places',
+    '    ORDER ||──|{ ITEM : contains'
+  ].join('\n');
+  const blocks = TP.extractMermaidBlocks(multi);
+  assert.strictEqual(blocks.length, 3);
+  assert.ok(blocks[0].startsWith('gantt\n'));
+  assert.ok(blocks[1].includes('[*] --> 下書き'));
+  assert.ok(blocks[2].includes('USER ||--o{ ORDER : places'));
+});
+
 check('readXtermTheme falls back cleanly without DOM', () => {
   const t = TP.readXtermTheme(null, null);
   assert.deepStrictEqual(t, {});

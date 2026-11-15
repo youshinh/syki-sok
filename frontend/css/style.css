@@ -6886,14 +6886,6 @@ body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus {
   overflow: hidden;
 }
 
-body:not(.tabs-pinned)[data-view="agent"] .agent-mermaid-overlay {
-  right: calc(var(--tab-fill-w, 24px) + var(--tab-strip-gap-right, 9px) + 10px);
-}
-
-body.tabs-pinned[data-view="agent"] .agent-mermaid-overlay {
-  right: calc(var(--tab-open-w, 200px) + var(--tab-strip-gap-right, 9px) + 10px);
-}
-
 .agent-mermaid-bar {
   display: flex;
   align-items: center;
@@ -6902,6 +6894,14 @@ body.tabs-pinned[data-view="agent"] .agent-mermaid-overlay {
   border-bottom: 1px solid var(--border-color);
   font-size: 12px;
   color: var(--text-muted);
+}
+
+body:not(.tabs-pinned)[data-view="agent"] .agent-mermaid-bar {
+  padding-right: calc(var(--tab-fill-w, 24px) + var(--tab-strip-gap-right, 9px) + 10px);
+}
+
+body.tabs-pinned[data-view="agent"] .agent-mermaid-bar {
+  padding-right: calc(var(--tab-open-w, 200px) + var(--tab-strip-gap-right, 9px) + 10px);
 }
 
 .agent-mermaid-bar-actions {
@@ -6916,6 +6916,37 @@ body.tabs-pinned[data-view="agent"] .agent-mermaid-overlay {
   display: flex;
   align-items: center;
   justify-content: center;
+}
+
+.agent-mermaid-body.multi {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 16px;
+}
+
+.agent-mermaid-card {
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  overflow: hidden;
+  flex: none;
+}
+
+.agent-mermaid-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px;
+  border-bottom: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.agent-mermaid-card-svg {
+  padding: 12px;
+  display: flex;
+  justify-content: center;
+  overflow: auto;
 }
 
 .agent-mermaid-body svg {

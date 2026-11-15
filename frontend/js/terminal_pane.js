@@ -76,46 +76,48 @@
     });
   }
 
-  function extractLastMermaidBlock(text) {
-    if (!text) return '';
+  function extractMermaidBlocks(text) {
+    if (!text) return [];
     const src = String(text);
     const re = /```mermaid[ \t]*\r?\n([\s\S]*?)```/gi;
-    let last = '';
+    const fenced = [];
     let m;
     while ((m = re.exec(src)) !== null) {
-      if (m[1] && m[1].trim()) last = m[1].trim();
+      if (m[1] && m[1].trim()) fenced.push(normalizeMermaidTuiArrows(m[1].trim()));
     }
-    if (last) return normalizeMermaidTuiArrows(last);
+    if (fenced.length > 0) return fenced;
 
     // Fallback for TUIs that strip ```mermaid fences and display the diagram code block indented.
     const headerRe = /^[ \t]*((?:flowchart|graph)\s+(?:TB|TD|BT|RL|LR)\b|sequenceDiagram\b|classDiagram(?:-v2)?\b|stateDiagram(?:-v2)?\b|erDiagram\b|gantt\b|pie(?:\s+showData)?\b|journey\b|gitGraph\b|mindmap\b|timeline\b|quadrantChart\b|requirementDiagram\b|C4Context\b)/;
-    const lines = src.replace(/\r\n/g, '\n').split('\n');
-    let startIdx = -1;
-    for (let i = lines.length - 1; i >= 0; i--) {
-      if (headerRe.test(lines[i])) {
-        startIdx = i;
-        break;
-      }
-    }
-    if (startIdx < 0) return '';
-
-    const baseIndent = (lines[startIdx].match(/^[ \t]*/) || [''])[0].length;
-    const collected = [lines[startIdx].slice(baseIndent)];
     const tuiChromeRe = /^[ \t]*(?:[─━═]{4,}|>\s|\?\s+for\s+shortcuts\b|```)/;
-    for (let i = startIdx + 1; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line.trim()) break;
-      if (tuiChromeRe.test(line)) break;
-      const indent = (line.match(/^[ \t]*/) || [''])[0].length;
-      if (indent < baseIndent) break;
-      // Stop if an unindented (same-indent as header) prose line follows (not a mermaid keyword/edge).
-      if (indent === baseIndent && !/^(?:subgraph\b|end\b|classDef\b|class\b|style\b|linkStyle\b|click\b|participant\b|actor\b|note\b|loop\b|alt\b|else\b|opt\b|par\b|section\b|direction\b|%%|[A-Za-z0-9_]+\s*(?:--|\.\.|==|->|──|━|═|\[|\(|\{))/.test(line.slice(baseIndent))) {
-        break;
+    const bodyContRe = /^(?:subgraph\b|end\b|classDef\b|class\b|style\b|linkStyle\b|click\b|participant\b|actor\b|note\b|loop\b|alt\b|else\b|opt\b|par\b|section\b|direction\b|title\b|dateFormat\b|%%|\[\*\]|[A-Za-z0-9_]+\s*(?:--|\.\.|==|->|──|━|═|\[|\(|\{|\|\|))/;
+    const lines = src.replace(/\r\n/g, '\n').split('\n');
+    const blocks = [];
+    for (let startIdx = 0; startIdx < lines.length; startIdx++) {
+      if (!headerRe.test(lines[startIdx])) continue;
+      const baseIndent = (lines[startIdx].match(/^[ \t]*/) || [''])[0].length;
+      const collected = [lines[startIdx].slice(baseIndent)];
+      let i = startIdx + 1;
+      for (; i < lines.length; i++) {
+        const line = lines[i];
+        if (!line.trim()) break;
+        if (tuiChromeRe.test(line)) break;
+        const indent = (line.match(/^[ \t]*/) || [''])[0].length;
+        if (indent < baseIndent) break;
+        if (indent === baseIndent && !bodyContRe.test(line.slice(baseIndent))) break;
+        collected.push(line.slice(baseIndent));
       }
-      collected.push(line.slice(baseIndent));
+      if (collected.length >= 2) {
+        blocks.push(normalizeMermaidTuiArrows(collected.join('\n').trim()));
+      }
+      startIdx = i;
     }
-    if (collected.length < 2) return '';
-    return normalizeMermaidTuiArrows(collected.join('\n').trim());
+    return blocks;
+  }
+
+  function extractLastMermaidBlock(text) {
+    const blocks = extractMermaidBlocks(text);
+    return blocks.length > 0 ? blocks[blocks.length - 1] : '';
   }
 
   function parsePtyLink(href) {
@@ -1819,11 +1821,11 @@
       return extractRecentOutput(lines, maxLines || 60);
     }
 
-    function getLatestMermaid() {
+    function getLatestMermaids() {
       const s = getActiveSession();
-      if (!s || !s.term) return '';
+      if (!s || !s.term) return [];
       const buf = s.term.buffer && s.term.buffer.active;
-      if (!buf || typeof buf.getLine !== 'function') return '';
+      if (!buf || typeof buf.getLine !== 'function') return [];
       const lines = [];
       for (let i = 0; i < buf.length; i++) {
         const line = buf.getLine(i);
@@ -1831,7 +1833,12 @@
           lines.push(line.translateToString(true));
         }
       }
-      return extractLastMermaidBlock(lines.join('\n'));
+      return extractMermaidBlocks(lines.join('\n'));
+    }
+
+    function getLatestMermaid() {
+      const blocks = getLatestMermaids();
+      return blocks.length > 0 ? blocks[blocks.length - 1] : '';
     }
 
     async function dispatchMakerRound(loop) {
@@ -2290,6 +2297,7 @@
       sendTextToActive,
       readActiveOutput,
       getLatestMermaid,
+      getLatestMermaids,
       syncTheme,
       fitActive,
       renderRightTabs,
@@ -3394,6 +3402,7 @@
     decodeUtf8Base64ToString,
     stripAnsi,
     extractRecentOutput,
+    extractMermaidBlocks,
     extractLastMermaidBlock,
     readXtermTheme,
     parsePtyLink,
