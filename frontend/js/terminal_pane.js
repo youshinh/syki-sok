@@ -530,8 +530,8 @@
       `検証コマンド: ${gateCmd || 'git status --short'}`,
       '手順:',
       '1. 上記条件を満たす最小かつ正確な変更を実装し、必要に応じて自動テストを追加する。',
-      `2. 検証コマンド \`${gateCmd || 'git status --short'}\` を自分で実行し、Exit Code 0 を確認する。`,
-      '3. 作業と検証の成功を確認したら、最後の1行として単独で「STAGE_DONE」の直後に「: READY」を繋げた文字列のみを出力して報告する。'
+      `2. 検証コマンド \`${gateCmd || 'git status --short'}\` を自分で実行し、Exit Code 0 を確認する（-run 等で通るテストだけに絞って成功扱いにしないこと）。`,
+      '3. 環境制約等で検証を通せない場合は STAGE_DONE: READY を出さず、失敗したテスト名と原因をそのまま報告する。作業と検証の成功を確認したら、最後の1行として単独で「STAGE_DONE」の直後に「: READY」を繋げた文字列のみを出力して報告する。'
     );
     return lines.join('\n');
   }
@@ -567,7 +567,7 @@
       '1. git diff を確認し、仕様・評価軸の漏れや副作用がないか点検する。',
       `2. 必ずあなた自身で検証コマンド \`${gateCmd || 'git status --short'}\` を実行し、Exit Code 0 になるか確認する。`,
       '3. 判定結果として、最終行に「VERDICT」に続けて「: PASS」（合格時）または「VERDICT」に続けて「: FAIL」（不合格時）を単独行で出力する。',
-      '4. FAIL の場合は、その次の行に「REASON」に続けて「: 具体的な問題点（1行要約）」を必ず出力する。'
+      '4. FAIL の場合は、その次の行に「REASON」に続けて「: <失敗したテスト名/ファイル名と原因の1行要約>」を省略せず出力する（例: REASON: TestFoo (app_slot.go) が exitCode=130 で不一致）。'
     ];
     const baseLen = lines.join('\n').length + tailLines.join('\n').length + 40;
     const maxExcerptLen = Math.max(0, Math.min(320, 880 - baseLen));
@@ -935,7 +935,7 @@
         if (sig.verdict === 'FAIL') {
           const delay = typeof checkerLoop.verdictDebounceMs === 'number'
             ? checkerLoop.verdictDebounceMs
-            : (typeof d.verdictDebounceMs === 'number' ? d.verdictDebounceMs : 200);
+            : (typeof d.verdictDebounceMs === 'number' ? d.verdictDebounceMs : 1500);
           if (delay <= 0 || hasExplicitReasonAfterFail(s.stepBuffer)) {
             s.stepRaw = '';
             s.stepBuffer = '';

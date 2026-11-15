@@ -807,6 +807,46 @@ function makeMockEnv() {
 
     passed++;
     console.log('PASS: TUI cursor-move verdict detection and no-AI-preset error guard');
+
+    // 6. Default verdictDebounceMs waits past 350ms so streamed REASON lines are not truncated mid-sentence
+    const envStream = makeMockEnv();
+    let seqStream = 0;
+    const streamBackend = {
+      ptyAvailablePresets: async () => JSON.stringify(['cc', 'codex']),
+      ptyPrepareWorktree: async (dir, id) => JSON.stringify({ ok: true, worktreePath: dir + '/.worktrees/' + id, isWorktree: true }),
+      ptyDetectGate: async () => 'npm test',
+      ptyStartWithOptions: async (explicitId, preset, dir, label) => {
+        seqStream += 1;
+        return JSON.stringify({ id: 'pty-stream-' + seqStream, preset, dir, label });
+      },
+      ptyWrite: async () => {},
+      ptyResize: async () => {},
+      ptyKill: async () => {}
+    };
+    const ctrlStream = TP.createController({ doc: envStream.doc, win: envStream.win, backend: streamBackend, submitDelayMs: 0 });
+    const streamLoop = await ctrlStream.startLoop({ title: 'StreamReason', criteria: [] }, { workDir: '/repo', container: envStream.root });
+    await new Promise((r) => setTimeout(r, 10));
+    envStream.win.__onPtyData(streamLoop.makerSessionId, TP.encodeUtf8Base64('\nSTAGE_DONE: READY\n'));
+    await new Promise((r) => setTimeout(r, 20));
+    const midStream = ctrlStream.getLoopsMeta()[0];
+    assert.strictEqual(midStream.phase, 'checker', 'expected checker phase, got ' + midStream.phase + ' status=' + midStream.statusText);
+    const checkerIdStream = midStream.checkerSessionId;
+    assert.ok(checkerIdStream, 'expected checkerSessionId');
+    envStream.win.__onPtyData(checkerIdStream, TP.encodeUtf8Base64('\nVERDICT: FAIL\nREASON: TestFoo'));
+    await new Promise((r) => setTimeout(r, 350));
+    envStream.win.__onPtyData(checkerIdStream, TP.encodeUtf8Base64(' (app_slot.go) failed\n'));
+    await new Promise((r) => setTimeout(r, 30));
+    const afterStream = ctrlStream.getLoopsMeta()[0];
+    assert.strictEqual(afterStream.round, 2, 'expected round 2, got phase=' + afterStream.phase + ' status=' + afterStream.statusText);
+    assert.strictEqual(afterStream.failedMemory[0], '[1回目NG] TestFoo (app_slot.go) failed');
+
+    const makerPromptText = TP.buildMakerPrompt({ title: 'T', criteria: ['C'] }, 'go test ./...', 1, 3);
+    assert.ok(makerPromptText.includes('-run 等で通るテストだけに絞って成功扱いにしない'));
+    const checkerPromptText = TP.buildCheckerPrompt({ title: 'T', criteria: ['C'] }, 'go test ./...', 'out', 1, 3);
+    assert.ok(checkerPromptText.includes('失敗したテスト名/ファイル名と原因の1行要約'));
+
+    passed++;
+    console.log('PASS: streamed REASON survives chunk delay and prompts enforce strict test reporting');
   }
 
   console.log('\n' + passed + ' passed, 0 failed');
