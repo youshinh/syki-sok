@@ -1367,7 +1367,9 @@ body[data-view="preview"] #preview-pane.html-mode {
    (the thumb moves on the compositor); the ::-webkit-scrollbar pseudo-elements would paint it by hand and turn a Mac's overlay scrollbar into a
    permanent bar. */
 #preview-pane,
-.secondary-preview-pane {
+.secondary-preview-pane,
+.agent-term-instance .xterm-viewport,
+.agent-mermaid-body {
   scrollbar-width: thin;
   scrollbar-color: rgb(var(--ink-rgb) / 0.5) transparent;
 }
@@ -6582,10 +6584,6 @@ body.tabs-top[data-view="agent"] #workspace .tab-index[data-side="right"] {
   top: calc(var(--ov-inset-top, var(--ov-top)) + var(--pane-band-h, 28px) + 6px);
 }
 
-body:not(.tabs-pinned)[data-view="agent"] .agent-terminal-stage {
-  padding-right: calc(var(--tab-fill-w, 24px) + var(--tab-strip-gap-right, 9px) + 6px);
-}
-
 body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
   padding-right: calc(var(--tab-open-w, 200px) + var(--tab-strip-gap-right, 9px));
 }
@@ -6613,7 +6611,7 @@ body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
   position: relative;
   flex: 1 1 0;
   min-height: 0;
-  padding: 6px 10px 8px 12px;
+  padding: 6px 0 8px 12px;
   overflow: hidden;
 }
 
@@ -6875,7 +6873,7 @@ body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus {
 
 .agent-mermaid-overlay {
   position: absolute;
-  inset: calc(var(--agent-top-inset, 66px) + 6px) 10px calc(var(--ov-inset-bottom, 24px) + 8px) 10px;
+  inset: calc(var(--agent-top-inset, 66px) + 6px) 0 calc(var(--ov-inset-bottom, 24px) + 8px) 10px;
   z-index: 9;
   display: flex;
   flex-direction: column;

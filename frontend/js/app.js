@@ -1224,6 +1224,9 @@
     savePersistentConfig();
     renderPreview();
     renderSecondaryPreview();
+    if (secondaryAgentPane && secondaryAgentPane.querySelector('.agent-mermaid-overlay')) {
+      showAgentMermaidOverlay();
+    }
   }
 
   // The SVG to export. Mermaid draws labels as HTML inside <foreignObject>; the webview marks a canvas that an SVG with a
@@ -3850,16 +3853,47 @@
     secondaryAgentPane.appendChild(overlay);
 
     const renderInto = async (targetEl, code, suffix) => {
+      const pre = document.createElement('pre');
+      pre.className = 'mermaid-card';
+      targetEl.appendChild(pre);
+      const id = 'agent-mmd-' + Date.now() + '-' + suffix;
       try {
         if (window.mermaid && typeof window.mermaid.render === 'function') {
-          applyMermaidTone();
-          const res = await window.mermaid.render('agent-mmd-' + Date.now() + '-' + suffix, code);
-          targetEl.innerHTML = res && res.svg ? res.svg : String(res || '');
+          const tone = applyMermaidTone();
+          let drawn = code;
+          let svg;
+          try {
+            const res = await window.mermaid.render(id, drawn);
+            svg = res && res.svg ? res.svg : String(res || '');
+          } catch (firstErr) {
+            removeMermaidLeftovers(id);
+            const fixed = window.MermaidRepair ? window.MermaidRepair.repair(code).code : code;
+            if (fixed === code) throw firstErr;
+            drawn = fixed;
+            try {
+              const res2 = await window.mermaid.render(id + 'r', drawn);
+              svg = res2 && res2.svg ? res2.svg : String(res2 || '');
+            } catch (secondErr) {
+              removeMermaidLeftovers(id + 'r');
+              throw firstErr;
+            }
+          }
+          pre.dataset.mermaidSrc = drawn;
+          pre.innerHTML = svg;
+          if (window.MermaidTone && typeof window.MermaidTone.decorate === 'function') {
+            window.MermaidTone.decorate(pre, tone, t('mermaidToneToggle'), flipMermaidTone, currentLook(), {
+              copyTitle: t('mermaidCopyImage'),
+              onCopy: () => copyMermaidDiagramAsPng(pre),
+              saveTitle: t('mermaidSaveImage'),
+              onSave: () => saveMermaidDiagramAsPng(pre)
+            });
+          }
         } else {
-          targetEl.textContent = code;
+          pre.textContent = code;
         }
       } catch (err) {
-        targetEl.textContent = (t('mermaidError', 'Mermaid syntax error: ') + (err && err.message ? err.message : String(err)));
+        removeMermaidLeftovers(id);
+        pre.innerHTML = '<div class="mermaid-error" style="color:var(--coral);">' + escapeHtml(t('mermaidError', 'Mermaid syntax error: ')) + escapeHtml(err && err.message ? err.message : String(err)) + '</div>';
       }
     };
 
