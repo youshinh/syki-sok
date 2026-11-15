@@ -6886,6 +6886,14 @@ body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus {
   overflow: hidden;
 }
 
+body:not(.tabs-pinned)[data-view="agent"] .agent-mermaid-overlay {
+  right: calc(var(--tab-fill-w, 24px) + var(--tab-strip-gap-right, 9px) + 10px);
+}
+
+body.tabs-pinned[data-view="agent"] .agent-mermaid-overlay {
+  right: calc(var(--tab-open-w, 200px) + var(--tab-strip-gap-right, 9px) + 10px);
+}
+
 .agent-mermaid-bar {
   display: flex;
   align-items: center;

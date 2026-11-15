@@ -3802,7 +3802,7 @@
       }
       return;
     }
-    await ensureRendererLibraries();
+    await ensureMermaidLibraries();
     const prev = secondaryAgentPane.querySelector('.agent-mermaid-overlay');
     if (prev && prev.parentElement) prev.parentElement.removeChild(prev);
 
@@ -3846,6 +3846,7 @@
 
     try {
       if (window.mermaid && typeof window.mermaid.render === 'function') {
+        applyMermaidTone();
         const res = await window.mermaid.render('agent-mmd-' + Date.now(), code);
         body.innerHTML = res && res.svg ? res.svg : String(res || '');
       } else {

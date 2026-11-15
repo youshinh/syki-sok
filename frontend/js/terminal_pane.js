@@ -2212,7 +2212,9 @@
         const d = (typeof window !== 'undefined' && window.TabStrip && typeof window.TabStrip.distanceOf === 'function')
           ? window.TabStrip.distanceOf(idx, activeIdx)
           : Math.abs(idx - activeIdx);
-        item.style.setProperty('--d', String(d));
+        if (item.style && typeof item.style.setProperty === 'function') {
+          item.style.setProperty('--d', String(d));
+        }
         if (!item.dataset) item.dataset = {};
         item.dataset.agentSessionId = s.id;
         item.title = s.dir ? `${s.title}\n${s.dir}` : s.title;
