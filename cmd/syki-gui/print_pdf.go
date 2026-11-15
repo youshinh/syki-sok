@@ -21,6 +21,7 @@ import (
 
 	"syki-sok/pkg/atomicfile"
 	"syki-sok/pkg/dialog"
+	"syki-sok/pkg/lazyre"
 )
 
 // Printing the preview to PDF with the app's own print panel (frontend/js/print_panel.js). The page is printed by WebView2's own
@@ -68,7 +69,7 @@ var paperInches = map[string][2]float64{
 	"letter": {8.5, 11},
 }
 
-var pagesSyntax = regexp.MustCompile(`^[0-9 ,\-]{0,100}$`)
+var pagesSyntax = lazyre.New(`^[0-9 ,\-]{0,100}$`)
 
 // margins in inches: top, right, bottom, left. Normal is 20 mm all round (14 mm looked as if there were none on a Japanese document),
 // narrow 10 mm. A header or footer needs room: at least 11.4 mm above and below.
@@ -163,12 +164,14 @@ func oneLinePrint(s string, n int) string {
 	return s
 }
 
-var pagesCountRE = regexp.MustCompile(`/Count\s+(\d+)`)
+var pagesCountRE = sync.OnceValue(func() *regexp.Regexp {
+	return regexp.MustCompile(`/Count\s+(\d+)`)
+})
 
 // pdfPageCount is the number of pages of a PDF made by the engine: the largest /Count of its page tree (0 when it cannot tell).
 func pdfPageCount(pdf []byte) int {
 	best := 0
-	for _, m := range pagesCountRE.FindAllSubmatch(pdf, -1) {
+	for _, m := range pagesCountRE().FindAllSubmatch(pdf, -1) {
 		if n, err := strconv.Atoi(string(m[1])); err == nil && n > best && n < 100000 {
 			best = n
 		}

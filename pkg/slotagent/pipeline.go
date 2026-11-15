@@ -26,6 +26,7 @@ type PipelineStepResult struct {
 	Status      PipelineStatus `json:"status"`
 	SuspendGate string         `json:"suspendGate,omitempty"`
 	ErrorMsg    string         `json:"errorMsg,omitempty"`
+	ExitCode    int            `json:"exitCode"`
 }
 
 // PipelineEngine executes recipe pipelines with Human-in-the-loop gates and Evaluator-Optimizer refinement.
@@ -45,6 +46,13 @@ func cancellationMessage(err error) string {
 		return "⚠ エラー: タイムアウト (再試行: Ctrl+Enter)"
 	}
 	return "⚠ キャンセルされました"
+}
+
+func cancellationExitCode(err error) int {
+	if err == context.DeadlineExceeded {
+		return 124
+	}
+	return 130
 }
 
 // ExecuteRecipe runs the recipe pipeline up to the next approval gate or completion.
@@ -91,6 +99,7 @@ func (p *PipelineEngine) ExecuteRecipe(
 				StepPrompt: recipe.Steps[stepIdx],
 				Status:     PipelineStatusFailed,
 				ErrorMsg:   cancellationMessage(err),
+				ExitCode:   cancellationExitCode(err),
 			}
 		}
 
@@ -111,6 +120,7 @@ func (p *PipelineEngine) ExecuteRecipe(
 					StepPrompt: stepInstruction,
 					Status:     PipelineStatusFailed,
 					ErrorMsg:   res.ErrorMsg,
+					ExitCode:   res.ExitCode,
 				}
 			}
 			stepOutput = res.Output
@@ -123,6 +133,7 @@ func (p *PipelineEngine) ExecuteRecipe(
 					StepPrompt: stepInstruction,
 					Status:     PipelineStatusFailed,
 					ErrorMsg:   res.ErrorMsg,
+					ExitCode:   res.ExitCode,
 				}
 			}
 			stepOutput = res.Output
@@ -171,10 +182,21 @@ func (p *PipelineEngine) executeSelfRefineLoop(
 
 	// Loop up to 2 refinement passes
 	for pass := 1; pass <= 2; pass++ {
+		if err := ctx.Err(); err != nil {
+			return &AgentExecutionResult{
+				ErrorMsg: cancellationMessage(err),
+				ExitCode: cancellationExitCode(err),
+				TimedOut: err == context.DeadlineExceeded,
+			}
+		}
+
 		// 2. Evaluator Phase
 		evalPrompt := fmt.Sprintf("【直前ドラフト】:\n%s\n\n上記の直前ドラフトに対する事実誤認、論理の飛躍、セキュリティ脆弱性、ボトルネックを批判的に検証・反証してください。", currentDraft)
 		evalRes := p.runner.Execute(ctx, reqID, agentDef, filePath, evalPrompt, "批判的検証フェーズ (Evaluator)")
 		if evalRes.ErrorMsg != "" {
+			if ctx.Err() != nil {
+				return evalRes
+			}
 			break
 		}
 
@@ -184,10 +206,21 @@ func (p *PipelineEngine) executeSelfRefineLoop(
 			break
 		}
 
+		if err := ctx.Err(); err != nil {
+			return &AgentExecutionResult{
+				ErrorMsg: cancellationMessage(err),
+				ExitCode: cancellationExitCode(err),
+				TimedOut: err == context.DeadlineExceeded,
+			}
+		}
+
 		// 3. Optimizer Phase
 		optPrompt := fmt.Sprintf("【直前ドラフト】:\n%s\n\n【検証指摘事項】:\n%s\n\n上記の指摘事項を反映し、修正した完成成果物のみを出力してください。", currentDraft, critique)
 		optRes := p.runner.Execute(ctx, reqID, agentDef, filePath, optPrompt, "改善フェーズ (Optimizer)")
 		if optRes.ErrorMsg != "" {
+			if ctx.Err() != nil {
+				return optRes
+			}
 			break
 		}
 		if strings.TrimSpace(optRes.Output) != "" {
@@ -202,10 +235,13 @@ func (p *PipelineEngine) executeSelfRefineLoop(
 }
 
 func sanitizeGateDesc(desc string) string {
-	desc = strings.TrimSpace(desc)
-	if len(desc) > 30 {
-		desc = desc[:30] + "..."
-	}
+	desc = strings.ReplaceAll(desc, "\r\n", " ")
 	desc = strings.ReplaceAll(desc, "\n", " ")
+	desc = strings.ReplaceAll(desc, "\r", " ")
+	desc = strings.TrimSpace(desc)
+	runes := []rune(desc)
+	if len(runes) > 30 {
+		desc = string(runes[:30]) + "..."
+	}
 	return desc
 }

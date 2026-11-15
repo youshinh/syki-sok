@@ -19,7 +19,7 @@ import (
 
 // GetActiveSlotConfigJSON returns active resolved slot configuration as JSON string.
 func (a *App) GetActiveSlotConfigJSON() string {
-	cfg := a.resolveActiveSlotConfig("")
+	cfg := a.resolveActiveSlotConfigReadOnly("")
 	if cfg.Snippets == nil {
 		cfg.Snippets = []slotagent.SnippetDef{}
 	}
@@ -385,6 +385,16 @@ func cloneSlotConfig(cfg slotagent.SlotConfig) slotagent.SlotConfig {
 // time. Any actual change on disk (different mtime/size) or to configJSON is still picked up on
 // the very next call, exactly as before caching was added.
 func (a *App) resolveActiveSlotConfig(configJSON string) slotagent.SlotConfig {
+	return a.resolveActiveSlotConfigWithClone(configJSON, true)
+}
+
+// resolveActiveSlotConfigReadOnly returns the cached SlotConfig without defensive cloning.
+// Callers MUST NOT mutate any map or slice inside the returned value.
+func (a *App) resolveActiveSlotConfigReadOnly(configJSON string) slotagent.SlotConfig {
+	return a.resolveActiveSlotConfigWithClone(configJSON, false)
+}
+
+func (a *App) resolveActiveSlotConfigWithClone(configJSON string, defensiveClone bool) slotagent.SlotConfig {
 	cfgPath := getConfigFilePath()
 	var cfgModTime time.Time
 	var cfgSize int64
@@ -432,7 +442,10 @@ func (a *App) resolveActiveSlotConfig(configJSON string) slotagent.SlotConfig {
 		cached.key.agentsPath == extFile &&
 		cached.key.agentsModTime.Equal(agentsModTime) &&
 		cached.key.agentsSize == agentsSize {
-		return cloneSlotConfig(cached.result)
+		if defensiveClone {
+			return cloneSlotConfig(cached.result)
+		}
+		return cached.result
 	}
 
 	result := a.buildActiveSlotConfig(configJSON, extFile)
@@ -447,12 +460,15 @@ func (a *App) resolveActiveSlotConfig(configJSON string) slotagent.SlotConfig {
 			agentsSize:    agentsSize,
 		},
 		scrapDir: scrapDir,
-		result:   cloneSlotConfig(result),
+		result:   result,
 	}
 	a.slotCfgMu.Lock()
 	a.slotCfgCache = newEntry
 	a.slotCfgMu.Unlock()
 
+	if defensiveClone {
+		return cloneSlotConfig(result)
+	}
 	return result
 }
 
@@ -546,7 +562,7 @@ func (a *App) buildActiveSlotConfig(configJSON, extFile string) slotagent.SlotCo
 // cursorUTF16 is a UTF-16 index (textarea selectionStart) and every offset in the response is
 // UTF-16 too; the parser itself works on byte offsets.
 func (a *App) ParseSlotsRPC(fullText string, cursorUTF16 int, configJSON string) (*SlotParseResponse, error) {
-	cfg := a.resolveActiveSlotConfig(configJSON)
+	cfg := a.resolveActiveSlotConfigReadOnly(configJSON)
 	slots := slotagent.ParseSlots(fullText, cfg)
 	gates := slotagent.FindApprovalGates(fullText)
 	cursorOffset := utf16ToByte(fullText, cursorUTF16)
@@ -644,7 +660,7 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 	slotRunner, pipelineEngine := a.slotEngine()
 
 	go func() {
-		cfg := a.resolveActiveSlotConfig(configJSON)
+		cfg := a.resolveActiveSlotConfigReadOnly(configJSON)
 		slots := slotagent.ParseSlots(fullText, cfg)
 		gates := slotagent.FindApprovalGates(fullText)
 		cursorOffset := utf16ToByte(fullText, cursorUTF16)
@@ -783,20 +799,13 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 			}
 
 			finalStatus := "completed"
+			exitCode := pipeRes.ExitCode
 			if pipeRes.Status == slotagent.PipelineStatusWaitingApproval {
 				finalStatus = "suspended"
 			} else if pipeRes.Status == slotagent.PipelineStatusFailed {
 				finalStatus = "failed"
-				if pipeRes.ErrorMsg != "" {
-					openDelim := rec.TriggerOpen
-					closeDelim := rec.TriggerClose
-					if openDelim == "" {
-						openDelim = "{{"
-					}
-					if closeDelim == "" {
-						closeDelim = "}}"
-					}
-					newContent = fmt.Sprintf("%s %s %s", openDelim, pipeRes.ErrorMsg, closeDelim)
+				if pipeRes.ErrorMsg != "" || exitCode != 0 {
+					newContent = formatSlotErrorContent(pipeRes.ErrorMsg, exitCode, rec.TriggerOpen, rec.TriggerClose)
 				}
 			}
 
@@ -807,6 +816,7 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 			if pipeCtx.Err() == context.Canceled {
 				finalStatus = "canceled"
 				newContent = oldContent
+				exitCode = 0
 			}
 
 			result := SlotExecutionResult{
@@ -822,6 +832,7 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 				OutputMode:   slotagent.OutputModeReplace,
 				IsInline:     isInline,
 				ErrorMsg:     pipeRes.ErrorMsg,
+				ExitCode:     exitCode,
 				Status:       finalStatus,
 				ApprovalGate: pipeRes.SuspendGate,
 			}
@@ -989,22 +1000,7 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 				}
 			} else if execRes.ExitCode != 0 || execRes.ErrorMsg != "" {
 				// Format error using target slot's own delimiters
-				errText := execRes.ErrorMsg
-				if errText == "" {
-					errText = fmt.Sprintf("Exit Code %d", execRes.ExitCode)
-				}
-				if !strings.HasPrefix(errText, "⚠") {
-					errText = "⚠ エラー: " + errText
-				}
-				openDelim := targetSlot.OpenDelimiter
-				closeDelim := targetSlot.CloseDelim
-				if openDelim == "" {
-					openDelim = "{{"
-				}
-				if closeDelim == "" {
-					closeDelim = "}}"
-				}
-				newContent = fmt.Sprintf("%s %s (再試行: Ctrl+Enter) %s", openDelim, errText, closeDelim)
+				newContent = formatSlotErrorContent(execRes.ErrorMsg, execRes.ExitCode, targetSlot.OpenDelimiter, targetSlot.CloseDelim)
 			} else {
 				if targetSlot.IsInline {
 					// Inline expansion: strip extra newlines to keep on one line
@@ -1041,6 +1037,24 @@ func (a *App) RunSlotAgentAsync(reqID, filePath, fullText string, cursorUTF16 in
 			a.dispatchSlotResult(reqID, &result)
 		}
 	}()
+}
+
+// formatSlotErrorContent formats a failed slot or recipe error with its delimiters and retry hint.
+func formatSlotErrorContent(errMsg string, exitCode int, openDelim, closeDelim string) string {
+	errText := errMsg
+	if errText == "" {
+		errText = fmt.Sprintf("Exit Code %d", exitCode)
+	}
+	if !strings.HasPrefix(errText, "⚠") {
+		errText = "⚠ エラー: " + errText
+	}
+	if openDelim == "" {
+		openDelim = "{{"
+	}
+	if closeDelim == "" {
+		closeDelim = "}}"
+	}
+	return fmt.Sprintf("%s %s (再試行: Ctrl+Enter) %s", openDelim, errText, closeDelim)
 }
 
 func (a *App) dispatchSlotResult(reqID string, res *SlotExecutionResult) {
@@ -1142,7 +1156,7 @@ func (a *App) CheckAgentAvailability(agentName string) AgentAvailability {
 	if strings.TrimSpace(agentName) == "" {
 		return AgentAvailability{}
 	}
-	cfg := a.resolveActiveSlotConfig("")
+	cfg := a.resolveActiveSlotConfigReadOnly("")
 	key, ok := slotagent.ResolveAgentName(cfg, agentName)
 	if !ok {
 		return AgentAvailability{}

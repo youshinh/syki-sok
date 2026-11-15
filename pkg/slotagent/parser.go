@@ -164,9 +164,6 @@ func DetermineIsInline(content string, startOffset, endOffset int) bool {
 
 // ParseSlots finds all valid slots and recipe invocations in content according to cfg.
 func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
-	var matches []SlotMatch
-	excluded := FindExcludedRanges(content)
-
 	// Collect delimiters to search
 	type delimiterInfo struct {
 		open    string
@@ -175,11 +172,14 @@ func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
 		profile *SlotProfile
 		recipe  *Recipe
 	}
-	var delims []delimiterInfo
+	delims := make([]delimiterInfo, 0, len(cfg.Recipes)+len(cfg.SlotProfiles))
 
 	// Recipes take precedence
 	for i := range cfg.Recipes {
 		r := &cfg.Recipes[i]
+		if r.TriggerOpen == "" || r.TriggerClose == "" {
+			continue
+		}
 		delims = append(delims, delimiterInfo{
 			open:   r.TriggerOpen,
 			close:  r.TriggerClose,
@@ -191,6 +191,9 @@ func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
 	// Slot profiles
 	for i := range cfg.SlotProfiles {
 		p := &cfg.SlotProfiles[i]
+		if p.TriggerOpen == "" || p.TriggerClose == "" {
+			continue
+		}
 		delims = append(delims, delimiterInfo{
 			open:    p.TriggerOpen,
 			close:   p.TriggerClose,
@@ -198,6 +201,34 @@ func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
 			profile: p,
 		})
 	}
+
+	if len(delims) == 0 {
+		return nil
+	}
+
+	// Pre-scan for opening delimiters before calling FindExcludedRanges: notes without any
+	// slot/recipe delimiter skip 4 regex scans, HTML-comment scanning, and result-block scanning.
+	var nextPosBuf [16]int
+	nextPos := nextPosBuf[:0]
+	if len(delims) <= len(nextPosBuf) {
+		nextPos = nextPosBuf[:len(delims)]
+	} else {
+		nextPos = make([]int, len(delims))
+	}
+	foundAny := false
+	for i, d := range delims {
+		pos := strings.Index(content, d.open)
+		nextPos[i] = pos
+		if pos != -1 {
+			foundAny = true
+		}
+	}
+	if !foundAny {
+		return nil
+	}
+
+	var matches []SlotMatch
+	excluded := FindExcludedRanges(content)
 
 	// Search text for matches
 	contentLen := len(content)
@@ -208,16 +239,25 @@ func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
 		var matchedDelim delimiterInfo
 		earliestStart := -1
 
-		// Find earliest delimiter at current or future offset
-		for _, d := range delims {
-			pos := strings.Index(content[idx:], d.open)
-			if pos != -1 {
-				absPos := idx + pos
-				if earliestStart == -1 || absPos < earliestStart {
-					earliestStart = absPos
-					matchedDelim = d
-					foundOpen = true
+		// Find earliest delimiter at current or future offset using cached next positions
+		for i, d := range delims {
+			pos := nextPos[i]
+			if pos == -1 {
+				continue
+			}
+			if pos < idx {
+				rel := strings.Index(content[idx:], d.open)
+				if rel == -1 {
+					nextPos[i] = -1
+					continue
 				}
+				pos = idx + rel
+				nextPos[i] = pos
+			}
+			if earliestStart == -1 || pos < earliestStart {
+				earliestStart = pos
+				matchedDelim = d
+				foundOpen = true
 			}
 		}
 
@@ -348,6 +388,9 @@ func ParseSlots(content string, cfg SlotConfig) []SlotMatch {
 // URL in its description, and the frontend's own gate lookup (runSlotTrigger in slot_agent.js) applies exactly the
 // comment rule, so both sides pick the same gate. A gate written inside a code fence still counts, as it always has.
 func FindApprovalGates(content string) []ApprovalGate {
+	if !strings.Contains(content, "approve") {
+		return nil
+	}
 	var gates []ApprovalGate
 	matches := getParserRegexes().approvalGate.FindAllStringSubmatchIndex(content, -1)
 	var comments []ExcludedRange

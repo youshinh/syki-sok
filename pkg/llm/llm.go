@@ -7,9 +7,10 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"regexp"
 	"strings"
 	"time"
+
+	"syki-sok/pkg/lazyre"
 )
 
 // ErrNotConfigured is matched (errors.Is) by every "this feature has no usable API setup" error:
@@ -81,7 +82,7 @@ var fastClient = &http.Client{
 	Timeout: 30 * time.Second,
 }
 
-var reThinkTags = regexp.MustCompile(`(?s)<think>.*?</think>`)
+var reThinkTags = lazyre.New(`(?s)<think>.*?</think>`)
 
 // geminiAPIBase reduces a configured Gemini base URL to the bare host, so callers can append
 // "/v1beta/..." to it whether the user typed it with a version suffix or not.

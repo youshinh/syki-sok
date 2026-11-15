@@ -121,7 +121,11 @@ func (p *PipelineRunner) executeDeterministic(ctx context.Context, c Candidate) 
 	if waitErr != nil {
 		errMsg := waitErr.Error()
 		if ctx.Err() == context.DeadlineExceeded {
-			errMsg = fmt.Sprintf("実行がタイムアウトしました (15秒超過): %v", waitErr)
+			timeoutLabel := fmt.Sprintf("%d秒超過", int(p.timeout.Seconds()))
+			if p.timeout < time.Second {
+				timeoutLabel = fmt.Sprintf("%s超過", p.timeout.Round(time.Millisecond))
+			}
+			errMsg = fmt.Sprintf("実行がタイムアウトしました (%s): %v", timeoutLabel, waitErr)
 		}
 		return JevExecuteResult{
 			Success:    false,

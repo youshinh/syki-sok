@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"regexp"
 	"strings"
 
 	"syki-sok/pkg/appdir"
+	"syki-sok/pkg/lazyre"
 
 	"gopkg.in/yaml.v3"
 )
@@ -74,21 +74,24 @@ func parseAgentConfig(content []byte, ext string, keepDisabled bool) (SlotConfig
 	return complementSlotConfigKeep(parsed, keepDisabled), nil
 }
 
+var (
+	mdYAMLBlockRe  = lazyre.New("(?s)```(?:yaml|yml)\\r?\\n(.*?)\\r?\\n```")
+	mdJSONBlockRe  = lazyre.New("(?s)```json\\r?\\n(.*?)\\r?\\n```")
+	mdPlainBlockRe = lazyre.New("(?s)```\\r?\\n(.*?)\\r?\\n```")
+)
+
 // extractMarkdownCodeBlock searches for ```yaml, ```yml, or ```json blocks in a markdown string.
 func extractMarkdownCodeBlock(md string) (string, string) {
-	yamlRe := regexp.MustCompile("(?s)```(?:yaml|yml)\\r?\\n(.*?)\\r?\\n```")
-	if m := yamlRe.FindStringSubmatch(md); len(m) > 1 {
+	if m := mdYAMLBlockRe.FindStringSubmatch(md); len(m) > 1 {
 		return strings.TrimSpace(m[1]), "yaml"
 	}
 
-	jsonRe := regexp.MustCompile("(?s)```json\\r?\\n(.*?)\\r?\\n```")
-	if m := jsonRe.FindStringSubmatch(md); len(m) > 1 {
+	if m := mdJSONBlockRe.FindStringSubmatch(md); len(m) > 1 {
 		return strings.TrimSpace(m[1]), "json"
 	}
 
 	// Plain code fence containing "version:" or "agents:"
-	plainRe := regexp.MustCompile("(?s)```\\r?\\n(.*?)\\r?\\n```")
-	matches := plainRe.FindAllStringSubmatch(md, -1)
+	matches := mdPlainBlockRe.FindAllStringSubmatch(md, -1)
 	for _, m := range matches {
 		if len(m) > 1 {
 			content := strings.TrimSpace(m[1])
