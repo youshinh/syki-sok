@@ -4911,6 +4911,31 @@ ping 128.1.33.254 | syki</code></pre>
                 <td><code>{"agent": "claude"}</code></td>
                 <td>失敗した実行のあとに残した<a href="#lessons" style="color: var(--accent);">教訓</a>（人がアプリで承認した短い規則。次の実行から、そのエージェントへの指示の前に付きます）を返します。<code>agent</code>（キーまたは別名）を渡すと <code>{agent, path, exists, count, applied, skipped, disabled}</code>、渡さないと教訓のフォルダにあるファイルごとの一覧です（なければ <code>[]</code>）。<code>count</code> はファイルにある規則の数、<code>applied</code> は次の実行で付く数（新しいほうから最大30件、合計4000文字）、<code>skipped</code> はそれより古くて付けない数、<code>disabled</code> は <code>agents.yaml</code> の <code>lessons: false</code> です。<code>syki lessons list</code> と同じ答えです。<strong>読み取り専用で、規則を書くメソッドはありません</strong>（エージェントが、人の承認なしに、自分の将来の指示を書き換えられてしまうためです）。1回の呼び出しは5秒までです。トークンが必要です。</td>
               </tr>
+              <tr>
+                <td><code>pty.list</code></td>
+                <td><code>{}</code></td>
+                <td>起動中の PTY セッション一覧（<code>{sessions: [...]}</code>）を返します。CLI では <code>syki pty list</code> です。トークンが必要です。</td>
+              </tr>
+              <tr>
+                <td><code>pty.start</code></td>
+                <td><code>{"preset": "agy", "dir": "...", "label": "..."}</code></td>
+                <td>PTY セッションを起動します（既定プリセット <code>"agy"</code>）。CLI では <code>syki pty start</code> です。トークンが必要です。</td>
+              </tr>
+              <tr>
+                <td><code>pty.write</code></td>
+                <td><code>{"id": "agy-1", "text": "...", "submit": true}</code></td>
+                <td>PTY セッションへテキストまたは <code>base64</code> データを書き込みます（<code>submit: true</code> で <code>\r</code> を送信）。CLI では <code>syki pty write</code> です。トークンが必要です。</td>
+              </tr>
+              <tr>
+                <td><code>pty.read</code></td>
+                <td><code>{"id": "agy-1", "since_offset": -1, "strip_ansi": true}</code></td>
+                <td><code>since_offset</code> 以降のバッファ済み PTY 出力を読み取ります（既定 <code>-1</code> で末尾）。CLI では <code>syki pty read</code> です。トークンが必要です。</td>
+              </tr>
+              <tr>
+                <td><code>pty.close</code></td>
+                <td><code>{"id": "agy-1"}</code></td>
+                <td>起動中の PTY セッションを終了します。CLI では <code>syki pty close</code> です。トークンが必要です。</td>
+              </tr>
             </tbody>
           </table>
         </div>

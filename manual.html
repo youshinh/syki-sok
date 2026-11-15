@@ -4740,6 +4740,31 @@ ping 128.1.33.254 | syki</code></pre>
                 <td><code>{"agent": "claude"}</code></td>
                 <td>The <a href="#lessons" style="color: var(--accent);">Lessons</a> kept for agents (rules a person approved in the app after a run went wrong; each time that agent runs a task they are put in front of its instruction). With <code>agent</code> (a key or an alias): <code>{agent, path, exists, count, applied, skipped, disabled}</code>, where <code>count</code> is the rules in the file, <code>applied</code> how many the next run is given (the newest, at most 30 and 4,000 characters in all), <code>skipped</code> the older ones left out for that, and <code>disabled</code> is true for <code>lessons: false</code> in agents.yaml (then <code>applied</code> and <code>skipped</code> are 0). An agent with no file answers <code>exists: false</code>. Without <code>agent</code>: a list of those, one per file of the lessons folder (<code>[]</code> when there is none). The same answer as <code>syki lessons list</code>; agents.yaml is read the way the app reads it, and a name that is not in it is used as it is. Read-only: no method writes a rule, because an agent could then rewrite its own future instructions. Token required.</td>
               </tr>
+              <tr>
+                <td><code>pty.list</code></td>
+                <td><code>{}</code></td>
+                <td>List running PTY agent sessions (<code>{sessions: [...]}</code>). Also via <code>syki pty list</code>. Token required.</td>
+              </tr>
+              <tr>
+                <td><code>pty.start</code></td>
+                <td><code>{"preset": "agy", "dir": "...", "label": "..."}</code></td>
+                <td>Start a PTY agent session (default preset <code>"agy"</code>). Also via <code>syki pty start</code>. Token required.</td>
+              </tr>
+              <tr>
+                <td><code>pty.write</code></td>
+                <td><code>{"id": "agy-1", "text": "...", "submit": true}</code></td>
+                <td>Write text or <code>base64</code> bytes to a PTY session (<code>submit: true</code> appends <code>\r</code>). Also via <code>syki pty write</code>. Token required.</td>
+              </tr>
+              <tr>
+                <td><code>pty.read</code></td>
+                <td><code>{"id": "agy-1", "since_offset": -1, "strip_ansi": true}</code></td>
+                <td>Read buffered PTY output from <code>since_offset</code> (default <code>-1</code> for tail). Also via <code>syki pty read</code>. Token required.</td>
+              </tr>
+              <tr>
+                <td><code>pty.close</code></td>
+                <td><code>{"id": "agy-1"}</code></td>
+                <td>Close a running PTY session. Also via <code>syki pty close</code>. Token required.</td>
+              </tr>
             </tbody>
           </table>
         </div>
