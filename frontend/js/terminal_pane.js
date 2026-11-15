@@ -2201,11 +2201,18 @@
     function renderRightTabs(listEl) {
       if (!listEl || !doc) return;
       listEl.innerHTML = '';
-      sessions.forEach((s) => {
+      const activeIdx = Math.max(0, sessions.findIndex((x) => x.id === activeId));
+      sessions.forEach((s, idx) => {
         const item = doc.createElement('div');
-        item.className = 'tab-item' + (s.id === activeId ? ' active' : '');
+        const isActive = s.id === activeId;
+        item.className = 'tab-item' + (isActive ? ' active' : '');
         item.setAttribute('role', 'tab');
-        item.setAttribute('aria-selected', s.id === activeId ? 'true' : 'false');
+        item.setAttribute('aria-selected', isActive ? 'true' : 'false');
+        item.setAttribute('tabindex', isActive ? '0' : '-1');
+        const d = (typeof window !== 'undefined' && window.TabStrip && typeof window.TabStrip.distanceOf === 'function')
+          ? window.TabStrip.distanceOf(idx, activeIdx)
+          : Math.abs(idx - activeIdx);
+        item.style.setProperty('--d', String(d));
         if (!item.dataset) item.dataset = {};
         item.dataset.agentSessionId = s.id;
         item.title = s.dir ? `${s.title}\n${s.dir}` : s.title;

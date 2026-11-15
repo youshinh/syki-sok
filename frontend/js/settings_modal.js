@@ -239,6 +239,19 @@
           tabHideDelayEl.addEventListener('input', showDelay);
         }
       }
+      const tabHideDurEl = byId('cfg-tab-hide-duration');
+      if (tabHideDurEl) {
+        const rawDur = config.general && config.general.tabHideDurationMs;
+        const dur = typeof rawDur === 'number' && isFinite(rawDur) ? rawDur : 250;
+        tabHideDurEl.value = String(Math.max(100, Math.min(2000, Math.round(dur / 50) * 50)));
+        const durOut = byId('cfg-tab-hide-duration-value');
+        const showDur = () => { if (durOut) durOut.textContent = tabHideDurEl.value + 'ms'; };
+        showDur();
+        if (!tabHideDurEl.dataset.wired) {
+          tabHideDurEl.dataset.wired = '1';
+          tabHideDurEl.addEventListener('input', showDur);
+        }
+      }
       const tabDockOsEl = byId('cfg-tab-dock-follow-os');
       if (tabDockOsEl) tabDockOsEl.checked = !!(config.general && config.general.tabDockFollowOs);
       const tabDockStrengthEl = byId('cfg-tab-dock-strength');

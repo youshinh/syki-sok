@@ -136,7 +136,7 @@ function styleProblems(f) {
 
   need(prop(decls(style, 'body[data-view="pair"] .secondary-editor-pane'), '--pad-top-extra') === 'var(--pane-band-h)', 'the secondary editor pane keeps room at the top for the band');
   const band = decls(style, '.pane-header');
-  need(band !== null && prop(band, 'position') === 'absolute' && prop(band, 'top') === 'var(--ov-top)' && prop(band, 'height') === 'var(--pane-band-h)', 'the right page\'s name band floats under the header bar, as tall as the room kept for it');
+  need(band !== null && prop(band, 'position') === 'absolute' && prop(band, 'top') === 'var(--ov-inset-top, var(--ov-top))' && prop(band, 'height') === 'var(--pane-band-h)', 'the right page\'s name band floats under the header bar (and top tab bar when tabs-top), as tall as the room kept for it');
   need(band !== null && /rgb\(var\(--page-rgb\) \/ 0\.9\)/.test(prop(band, 'background') || ''), 'on the page colour at 90%, so the text that scrolls under it does not show through');
   need(prop(decls(style, 'body[data-view="side"] .pane-header'), 'background') === 'rgb(var(--page-rgb) / 0.85)', 'and on the sheet colour when the page beside the editor is a sheet');
   need(prop(decls(style, ':root'), '--pane-band-h') === '28px' && prop(decls(style, ':root'), '--grip-w') === '6px', 'the band is 28px and the grip 6px (lengths to be set by looking at the window)');

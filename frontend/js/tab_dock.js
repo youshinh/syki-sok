@@ -87,6 +87,16 @@
     return 1 - Math.exp(-Math.min(Math.max(dt, 0), MAX_DT) / tau);
   }
 
+  // Time constants for retracting (`!hover`): scaled from the configured animation duration so 250ms matches TAU_ALL / TAU_ROW.
+  const DEFAULT_HIDE_DURATION = 250;
+  function hideTaus(durationMs) {
+    const d = Number(durationMs);
+    if (!isFinite(d)) return { all: TAU_ALL, row: TAU_ROW };
+    if (d <= 0) return { all: 0, row: 0 };
+    const all = d / 2.6;
+    return { all, row: all * (TAU_ROW / TAU_ALL) };
+  }
+
   // ---- DOM ----------------------------------------------------------------------------------------------------------------------
 
   // opts: { strips: [{ el, listEl, footEl?, scrollEl? }], hitWidth (px, or a function giving it), fullWidth(): px, strength?(): 20..100 (the share of the full magnification,
@@ -164,8 +174,15 @@
         let stBusy = false;
         const dt = st.prevTs ? ts - st.prevTs : 16.7;
         st.prevTs = ts;
-        const easeAll = instant ? 1 : easeShare(dt, TAU_ALL);
-        const easeRow = instant ? 1 : easeShare(dt, TAU_ROW);
+        let tauAll = TAU_ALL;
+        let tauRow = TAU_ROW;
+        if (!st.hover && opts.hideDuration) {
+          const taus = hideTaus(opts.hideDuration());
+          tauAll = taus.all;
+          tauRow = taus.row;
+        }
+        const easeAll = instant ? 1 : easeShare(dt, tauAll);
+        const easeRow = instant ? 1 : easeShare(dt, tauRow);
         const rows = rowsOf(st);
         if (!st.centres || st.count !== rows.length) { st.centres = measure(st, rows, extraH); st.count = rows.length; }
         const hTarget = st.hover ? 1 : 0;
@@ -278,7 +295,7 @@
     };
   }
 
-  const api = { BASE_W, SIGMA, EXTRA_H, MIN_STRENGTH, strengthOf, toUnmagnified, bell, rowWidth, textShare, fillShare, easeShare, create };
+  const api = { BASE_W, SIGMA, EXTRA_H, MIN_STRENGTH, TAU_ALL, TAU_ROW, DEFAULT_HIDE_DURATION, strengthOf, toUnmagnified, bell, rowWidth, textShare, fillShare, easeShare, hideTaus, create };
   global.TabDock = api;
   if (typeof module !== 'undefined' && module.exports) module.exports = api;
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -82,11 +82,11 @@ function styleProblems({ style, chrome, print }) {
   if (prop(strip, 'pointer-events') !== 'none') p.push('.tab-index takes pointer events over its empty length (the text under it could not be pressed)');
   if (!/layout paint/.test(prop(strip, 'contain') || '')) p.push('.tab-index has no `contain: layout paint` (its widening may not reach the text)');
   if (prop(strip, 'overflow') !== 'hidden') p.push('.tab-index does not clip to its width');
-  if (!/^width var\(--tab-open-ms\) ease var\(--tab-delay\)/.test(prop(strip, 'transition') || '')) p.push('.tab-index widens with a transition of width and --tab-delay');
+  if (!/^width var\(--tab-dur\) ease var\(--tab-delay\)/.test(prop(strip, 'transition') || '')) p.push('.tab-index widens with a transition of width (--tab-dur) and --tab-delay');
   const hover = declarations(style, '.tab-index:hover');
   const focus = declarations(style, '.tab-index:focus-within');
-  if (prop(hover, 'width') !== 'var(--tab-open-w)' || prop(hover, '--tab-delay') !== 'var(--tab-open-delay)') p.push('a strip under the mouse widens to --tab-open-w after --tab-open-delay');
-  if (prop(focus, 'width') !== 'var(--tab-open-w)' || prop(focus, '--tab-delay') !== '0s') p.push('a strip with the keyboard in it widens at once');
+  if (prop(hover, 'width') !== 'var(--tab-open-w)' || prop(hover, '--tab-delay') !== 'var(--tab-open-delay)' || prop(hover, '--tab-dur') !== 'var(--tab-open-ms)') p.push('a strip under the mouse widens to --tab-open-w after --tab-open-delay in --tab-open-ms');
+  if (prop(focus, 'width') !== 'var(--tab-open-w)' || prop(focus, '--tab-delay') !== '0s' || prop(focus, '--tab-dur') !== 'var(--tab-open-ms)') p.push('a strip with the keyboard in it widens at once in --tab-open-ms');
   if (css.indexOf('.tab-index:focus-within {') < css.indexOf('.tab-index:hover {')) p.push(':focus-within comes after :hover, so a focused strip under the mouse does not wait either');
 
   // the shading: the fill is a pseudo-element, its opacity max(floor, base - step x --d), the selected tab is 1
@@ -105,8 +105,10 @@ function styleProblems({ style, chrome, print }) {
   // square corners everywhere on tabs: the only border-radius of the strip is the round mark
   const block = css.slice(css.indexOf('.tab-index {'), css.indexOf('.tab-list-panel {')); // the strip's rules; the All tabs list's follow
   const radii = [...block.matchAll(/([^{}]*)\{[^{}]*border-radius:\s*([^;]+);/g)].map((m) => m[1].trim() + ' ' + m[2].trim());
-  const allowed = ['.tab-item.is-dirty::after,\n.tab-item.has-conflict::after 50%', '.tab-item .tab-dirty-dot 50%', '.tab-item.has-conflict::after 0'];
+  const allowed = ['.tab-item.is-dirty::after,\n.tab-item.has-conflict::after 50%', '.tab-item .tab-dirty-dot 50%', '.tab-item.has-conflict::after 0', '.tab-item .tab-close 50%'];
   for (const r of radii) if (!allowed.some((a) => r.replace(/\s+/g, ' ') === a.replace(/\s+/g, ' '))) p.push('a rounded corner in the strip: ' + r);
+  const closeDecl = declarations(style, '.tab-item .tab-close');
+  if (prop(closeDecl, 'width') !== '20px' || prop(closeDecl, 'height') !== '20px' || prop(closeDecl, 'border-radius') !== '50%') p.push('the close button hover target is not a 20px circle');
   if (/color-mix\(|@container/.test(block)) p.push('color-mix() or @container in the strip (macOS 10.15 / Safari 15.6 has neither)');
   if (/[^{}]\{[^{}]*\{/.test(block.replace(/@media[^{]*\{/g, '').replace(/:root \{/g, ''))) p.push('CSS nesting in the strip');
   if (/will-change|backdrop-filter/.test(block)) p.push('a layer or a blur for the strip (it is a few small boxes; nothing here may cost the 80,000-line note a frame)');

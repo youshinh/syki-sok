@@ -158,6 +158,7 @@
       tabStripWidth: 24, // 12..48 (px): the width of the fill of a collapsed index tab strip; its hit area is half as wide again (css --tab-fill-w, --tab-hit-w). The layout does not move with it: a wider strip covers the line numbers
       tabDockStrength: 100, // 20..100: the share of the full magnification (js/tab_dock.js)
       tabHideDelayMs: 300, // 0..1500 (ms): how long the index tabs stay open after the pointer leaves them
+      tabHideDurationMs: 250, // 100..2000 (ms): how long the retract animation takes when the index tabs close
       rewriteHistoryDir: 'history',
       rewriteHistoryLink: true,
       welcomeShown: false, // the Welcome note was shown (first_run.js): written on the very first start only; false / absent = not yet
@@ -568,6 +569,10 @@
       const n = (raw !== undefined && raw !== null && raw !== '') ? Number(raw) : 300;
       const ms = Math.max(0, Math.min(1500, Math.round(isFinite(n) ? n : 300)));
       root.style.setProperty('--tab-hide-delay', ms + 'ms');
+      const rawDur = config.general && config.general.tabHideDurationMs;
+      const nDur = (rawDur !== undefined && rawDur !== null && rawDur !== '') ? Number(rawDur) : 250;
+      const durMs = Math.max(100, Math.min(2000, Math.round(isFinite(nDur) ? nDur : 250)));
+      root.style.setProperty('--tab-hide-ms', durMs + 'ms');
     }
   }
 
@@ -7404,7 +7409,7 @@
         if (tabDock || tabDockLoading || isTabsPinned || (config.general && config.general.tabBarTop) || e.pointerType === 'touch') return;
         if (config.general && config.general.tabDock === false) return;
         tabDockLoading = true;
-        loadScript('js/tab_dock.js?v=1.0.1').then(() => {
+        loadScript('js/tab_dock.js?v=1.0.2').then(() => {
           tabDock = window.TabDock.create({
             strips: [
               { el: tabIndexLeft, listEl: tabsListEl, footEl: tabIndexLeft.querySelector('.tab-index-foot') },
@@ -7416,6 +7421,10 @@
             hideDelay: () => {
               const v = config.general && config.general.tabHideDelayMs;
               return typeof v === 'number' && isFinite(v) ? v : 300;
+            },
+            hideDuration: () => {
+              const v = config.general && config.general.tabHideDurationMs;
+              return typeof v === 'number' && isFinite(v) ? v : 250;
             },
             fullWidth: () => (isTabsPinned ? 0 : parseFloat(getComputedStyle(tabIndexLeft).getPropertyValue('--tab-open-w')) || 200)
           });
@@ -15743,6 +15752,11 @@ OUTPUT FORMAT:
       if (saveHideDelayEl) {
         const v = parseInt(saveHideDelayEl.value, 10);
         config.general.tabHideDelayMs = Math.max(0, Math.min(1500, isFinite(v) ? v : 300));
+      }
+      const saveHideDurEl = document.getElementById('cfg-tab-hide-duration');
+      if (saveHideDurEl) {
+        const v = parseInt(saveHideDurEl.value, 10);
+        config.general.tabHideDurationMs = Math.max(100, Math.min(2000, isFinite(v) ? v : 250));
       }
       applyTabDock();
     }

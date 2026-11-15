@@ -1054,6 +1054,12 @@
                 <output id="cfg-tab-hide-delay-value" for="cfg-tab-hide-delay">300ms</output>
               </div>
               <small data-i18n="tabHideDelayHint">How long the index tabs stay open after the pointer leaves them. A longer delay prevents accidental closing when moving the mouse.</small>
+              <div class="settings-slider-row">
+                <label for="cfg-tab-hide-duration" data-i18n="tabHideDurationLabel">Retract animation duration</label>
+                <input type="range" id="cfg-tab-hide-duration" min="100" max="2000" step="50" value="250">
+                <output id="cfg-tab-hide-duration-value" for="cfg-tab-hide-duration">250ms</output>
+              </div>
+              <small data-i18n="tabHideDurationHint">How long the retract animation takes when the index tabs return to the edge. Longer values slow down the retraction.</small>
             </div>
             <div class="settings-subhead" data-i18n="subheadStartup">Language &amp; start-up</div>
             <div class="form-group">

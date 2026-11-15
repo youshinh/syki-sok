@@ -114,9 +114,21 @@ assert.ok(/\.settings-slider-row > input\[type="range"\],[^{]*\{[^}]*padding: 0;
   const i18nSrc = fs.readFileSync(new URL('../frontend/js/i18n.js', import.meta.url), 'utf8');
   assert.ok(!/aiCorrectionLabel: "[^"]*\(Alt\+C\)/.test(i18nSrc), 'a shortcut that Settings > Shortcuts can change is not written into a label');
   assert.ok(!/commentStyleHint: "[^"]*\(Ctrl\+\/\)/.test(i18nSrc), 'nor into a hint');
-  for (const key of ['subheadCursor', 'subheadIndexTabs', 'subheadStartup', 'subheadRewrite', 'subheadIme', 'subheadPaste', 'tabDockFollowOsHint']) {
+  for (const key of ['subheadCursor', 'subheadIndexTabs', 'subheadStartup', 'subheadRewrite', 'subheadIme', 'subheadPaste', 'tabDockFollowOsHint', 'tabHideDurationLabel', 'tabHideDurationHint']) {
     assert.strictEqual((i18nSrc.match(new RegExp('\n    ' + key + ': ', 'g')) || []).length, 2, key + ' exists in both languages');
   }
+}
+
+// 12. retract animation duration scales the closing time constants and wires --tab-hide-ms
+{
+  const def = D.hideTaus(250);
+  assert.ok(Math.abs(def.all - D.TAU_ALL) < 2 && Math.abs(def.row - D.TAU_ROW) < 2, 'default 250ms matches TAU_ALL / TAU_ROW');
+  const slow = D.hideTaus(1500);
+  assert.ok(slow.all > def.all * 5 && slow.row > def.row * 5, 'longer retract duration slows down the closing time constants');
+  assert.deepStrictEqual(D.hideTaus(0), { all: 0, row: 0 }, '0ms means instant close');
+  assert.deepStrictEqual(D.hideTaus('x'), { all: D.TAU_ALL, row: D.TAU_ROW }, 'bad value falls back to default taus');
+  assert.ok(/id="cfg-tab-hide-duration" min="100" max="2000"/.test(html), 'Settings has the retract animation duration slider');
+  assert.ok(/tabHideDurationMs: 250,/.test(app) && /--tab-hide-ms/.test(app) && /--tab-hide-ms: 250ms;/.test(css), 'tabHideDurationMs wires to --tab-hide-ms');
 }
 
 console.log('tab dock tests passed');

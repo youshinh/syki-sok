@@ -71,6 +71,7 @@ body.dark-theme {
   --tab-open-ms: 220ms;
   --tab-open-delay: 120ms;
   --tab-hide-delay: 300ms;
+  --tab-hide-ms: 250ms;
   --tab-text-lag: 60ms;
   --tab-mix-floor: 0.2;
   --tab-mix-base: 0.68;
@@ -94,7 +95,8 @@ body.dark-theme {
   overflow: hidden;
   contain: layout paint;
   pointer-events: none;
-  transition: width var(--tab-open-ms) ease var(--tab-delay), opacity 0.2s ease;
+  --tab-dur: var(--tab-hide-ms, var(--tab-open-ms));
+  transition: width var(--tab-dur) ease var(--tab-delay), opacity 0.2s ease;
 }
 
 .tab-index[hidden] {
@@ -104,11 +106,13 @@ body.dark-theme {
 /* Opening. A rest of --tab-open-delay under the mouse (the mouse passing by the edge does not open it), at once for the keyboard. */
 .tab-index:hover {
   --tab-delay: var(--tab-open-delay);
+  --tab-dur: var(--tab-open-ms);
   width: var(--tab-open-w);
 }
 
 .tab-index:focus-within {
   --tab-delay: 0s;
+  --tab-dur: var(--tab-open-ms);
   width: var(--tab-open-w);
 }
 
@@ -173,7 +177,7 @@ body.dark-theme {
   pointer-events: var(--tab-hit, auto);
   user-select: none;
   -webkit-user-select: none;
-  transition: background-color var(--tab-open-ms) ease var(--tab-delay);
+  transition: background-color var(--tab-dur) ease var(--tab-delay);
 }
 
 .tab-item.active {
@@ -197,7 +201,7 @@ body.dark-theme {
   opacity: var(--tab-o);
   box-shadow: inset 0 -1px 0 var(--tab-hair);
   pointer-events: none;
-  transition: width var(--tab-open-ms) ease var(--tab-delay);
+  transition: width var(--tab-dur) ease var(--tab-delay);
 }
 
 /* A mark in the strip itself for a note with unsaved text (a dot) or in conflict (a square): the strip is too narrow for a glyph.
@@ -301,23 +305,29 @@ body.dark-theme {
 .tab-item .tab-close {
   position: relative;
   flex: none;
-  align-self: stretch;
+  align-self: center;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 20px;
-  margin-right: 2px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  margin-right: 4px;
   font-size: 14px;
-  line-height: 14px;
+  line-height: 1;
   color: inherit;
+  cursor: pointer;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease var(--tab-delay);
+  transition: opacity 0.15s ease var(--tab-delay), background-color 0.12s ease, color 0.12s ease;
 }
 .tab-item .tab-close::before {
   content: '';
   position: absolute;
-  inset: 0 -4px;
+  inset: -4px;
 }
 .tab-index:is(:hover, :focus-within) .tab-item:is(:hover, :focus-visible, .active) .tab-close {
   opacity: 1;
@@ -366,7 +376,7 @@ body.dark-theme {
   cursor: pointer;
   overflow: hidden;
   pointer-events: var(--tab-hit, auto);
-  transition: background-color var(--tab-open-ms) ease var(--tab-delay);
+  transition: background-color var(--tab-dur) ease var(--tab-delay);
 }
 /* The tint of the tabs: an open row is the wall colour under the accent at --tab-o, and the three buttons wear the same accent at the strength of
    the farthest tab (0.2), so they follow the look (ink or paper) and the accent like the tabs above them, instead of the bare wall colour
@@ -383,7 +393,7 @@ body.dark-theme {
   background: var(--tab-accent);
   opacity: 0;
   pointer-events: none;
-  transition: opacity var(--tab-open-ms) ease var(--tab-delay);
+  transition: opacity var(--tab-dur) ease var(--tab-delay);
 }
 .tab-index:is(:hover, :focus-within) .tab-index-btn::before {
   opacity: 0.2;
@@ -449,7 +459,7 @@ body.dark-theme {
   margin: 0 0 0 6px;
 }
 .tab-index[data-side="right"] .tab-item .tab-close {
-  margin: 0 0 0 2px;
+  margin: 0 0 0 4px;
 }
 
 /* The text keeps its place: the number gutter and the text of the left page start after the strip, so the strip never covers a
@@ -991,7 +1001,7 @@ body[data-view="side"] #secondary-pane {
    behind it keeps the text that scrolls under it from showing through. css/chrome.css fades it with the bars. */
 .pane-header {
   position: absolute;
-  top: var(--ov-top);
+  top: var(--ov-inset-top, var(--ov-top));
   right: 20px;
   z-index: 8;
   display: flex;
@@ -6800,36 +6810,32 @@ body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
 }
 
 body.tabs-pinned .tab-index[data-side="right"] .tab-loop-badge,
-body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus,
-.tab-index[data-side="right"].dock-live .agent-tab-plus {
+body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus {
   opacity: 1;
 }
 
+.tab-index[data-side="right"].dock-live .agent-tab-plus {
+  opacity: var(--st, 0);
+  transition: none;
+}
+
 .agent-tab-add {
+  --tab-o: var(--tab-mix-floor);
   width: 100%;
   justify-content: flex-end;
-  border: 1px dashed var(--border-color);
+  border: 0;
   background: transparent;
-  color: var(--text-muted);
+  color: var(--tab-ink);
   cursor: pointer;
-  margin-top: 4px;
+  margin-top: 0;
   padding: 0;
-  transition: border-color var(--tab-open-ms) ease var(--tab-delay), color 0.15s ease;
-}
-
-.tab-index[data-side="right"]:not(:hover):not(:focus-within):not(.dock-live) .agent-tab-add {
-  border-color: transparent;
-}
-
-body.tabs-pinned .tab-index[data-side="right"] .agent-tab-add {
-  border-color: var(--border-color);
 }
 
 .agent-tab-plus {
   flex: none;
   width: var(--tab-fill-w, 24px);
   text-align: center;
-  font-size: 13px;
+  font-size: 14px;
   line-height: 1;
   position: relative;
   z-index: 2;
@@ -6841,8 +6847,8 @@ body.tabs-pinned .tab-index[data-side="right"] .agent-tab-add {
 }
 
 .agent-tab-add:hover {
-  color: var(--text-main);
-  border-color: var(--accent-color);
+  --tab-o: var(--tab-mix-base);
+  color: var(--tab-ink-hi);
 }
 
 #btn-agent-side {
