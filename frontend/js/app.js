@@ -562,6 +562,13 @@
     const off = !!(config.general && config.general.tabDock === false);
     document.body.classList.toggle('tab-dock-off', off);
     if (off && tabDock) { tabDock.destroy(); tabDock = null; tabDockLoading = false; }
+    const root = document.documentElement;
+    if (root && root.style && typeof root.style.setProperty === 'function') {
+      const raw = config.general && config.general.tabHideDelayMs;
+      const n = (raw !== undefined && raw !== null && raw !== '') ? Number(raw) : 300;
+      const ms = Math.max(0, Math.min(1500, Math.round(isFinite(n) ? n : 300)));
+      root.style.setProperty('--tab-hide-delay', ms + 'ms');
+    }
   }
 
   function applyTheme() {

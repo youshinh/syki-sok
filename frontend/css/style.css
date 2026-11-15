@@ -70,6 +70,7 @@ body.dark-theme {
   --tab-dot: 5px;
   --tab-open-ms: 220ms;
   --tab-open-delay: 120ms;
+  --tab-hide-delay: 300ms;
   --tab-text-lag: 60ms;
   --tab-mix-floor: 0.2;
   --tab-mix-base: 0.68;
@@ -81,7 +82,7 @@ body.dark-theme {
 }
 
 .tab-index {
-  --tab-delay: 0s;
+  --tab-delay: var(--tab-hide-delay, 0s);
   position: absolute;
   top: var(--tab-strip-top);
   bottom: var(--tab-strip-bottom);
@@ -555,6 +556,7 @@ body.tabs-pinned #header #header-title {
    every row each frame: the tab under the pointer is the widest, its neighbours follow on a bell curve, and all of them are wide enough to
    read. Without the script (touch, the keyboard, Settings off) none of this applies and the strip opens as before. */
 .tab-index.dock-live {
+  --tab-delay: 0s;
   width: var(--tab-open-w);
   transition: none;
 }

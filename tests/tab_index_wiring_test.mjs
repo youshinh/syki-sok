@@ -260,7 +260,7 @@ check('mutation check: broken copies of the sources are caught', () => {
   caught(s('opacity: var(--tab-o);', 'opacity: 0.5;'), /fill is not the ::before/, 'a fixed fill is caught');
   caught(s('--tab-mix-step: 0.12;', '--tab-mix-step: 0.2;'), /--tab-mix-\* differ/, 'shading numbers that drifted from tab_strip.js are caught');
   caught(s('position: absolute;\n  z-index: -1;', 'position: absolute;\n  z-index: 1;'), /not behind the name/, 'a fill above the name is caught');
-  caught(s('.tab-index {\n  --tab-delay: 0s;\n  position: absolute;', '.tab-index {\n  --tab-delay: 0s;\n  position: relative;'), /not position: absolute/, 'a strip that takes room is caught');
+  caught(s('.tab-index {\n  --tab-delay: var(--tab-hide-delay, 0s);\n  position: absolute;', '.tab-index {\n  --tab-delay: var(--tab-hide-delay, 0s);\n  position: relative;'), /not position: absolute/, 'a strip that takes room is caught');
   caught(s('  contain: layout paint;\n', ''), /contain/, 'a strip without containment is caught');
   caught(s('  right: max(var(--tab-strip-gap-right), var(--tab-scrollbar-w, 0px));', '  right: 0;'), /left of the scrollbar/, 'a right strip over the scrollbar is caught');
   caught(s('  flex-direction: row-reverse;', '  flex-direction: row;'), /not mirrored/, 'tabs that are not mirrored on the right are caught');
