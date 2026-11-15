@@ -6400,7 +6400,7 @@ body.tabs-top #header {
 body.tabs-top #workspace #editor-pane {
   padding-left: 0;
 }
-body.tabs-top #tab-index-right {
+body.tabs-top:not([data-view="agent"]) #tab-index-right {
   display: none !important;
 }
 body.tabs-top #tab-index-left {
@@ -6557,16 +6557,16 @@ body[data-view="agent"] #workspace .tab-index[data-side="right"] {
   top: calc(var(--tab-strip-top) + var(--pane-band-h, 28px) + 6px);
 }
 
-body:not(.tabs-pinned):not(.tabs-top)[data-view="agent"] .agent-terminal-stage {
+body.tabs-top[data-view="agent"] #workspace .tab-index[data-side="right"] {
+  top: calc(var(--ov-inset-top, var(--ov-top)) + var(--pane-band-h, 28px) + 6px);
+}
+
+body:not(.tabs-pinned)[data-view="agent"] .agent-terminal-stage {
   padding-right: calc(var(--tab-fill-w, 24px) + var(--tab-strip-gap-right, 9px) + 6px);
 }
 
-body.tabs-pinned:not(.tabs-top)[data-view="agent"] .secondary-agent-pane {
+body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
   padding-right: calc(var(--tab-open-w, 200px) + var(--tab-strip-gap-right, 9px));
-}
-
-body.tabs-top[data-view="agent"] #workspace[data-tabs="both"] #tab-index-right {
-  padding-right: 260px;
 }
 
 #tab-index-right:focus-within .tab-title {
@@ -6771,19 +6771,52 @@ body.tabs-top[data-view="agent"] #workspace[data-tabs="both"] #tab-index-right {
   opacity: 0.45;
 }
 
+.tab-index[data-side="right"] .agent-tab-dot {
+  position: absolute;
+  right: calc((var(--tab-fill-w, 24px) - 6px) / 2);
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+}
+
 .agent-tab-dot.running {
   background: var(--accent-color);
   opacity: 1;
 }
 
+.tab-index[data-side="right"]:not(:hover):not(:focus-within) .tab-loop-badge {
+  opacity: 0;
+  pointer-events: none;
+}
+
+body.tabs-pinned .tab-index[data-side="right"] .tab-loop-badge {
+  opacity: 1;
+}
+
 .agent-tab-add {
   width: 100%;
-  justify-content: center;
+  justify-content: flex-end;
   border: 1px dashed var(--border-color);
   background: transparent;
   color: var(--text-muted);
   cursor: pointer;
   margin-top: 4px;
+  padding: 0;
+}
+
+.agent-tab-plus {
+  flex: none;
+  width: var(--tab-fill-w, 24px);
+  text-align: center;
+  font-size: 13px;
+  line-height: 1;
+  position: relative;
+  z-index: 2;
+}
+
+.agent-tab-add .tab-title {
+  margin: 0 4px 0 6px;
+  text-align: right;
 }
 
 .agent-tab-add:hover {

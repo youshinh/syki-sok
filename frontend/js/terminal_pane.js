@@ -2211,7 +2211,14 @@
       addBtn.type = 'button';
       addBtn.className = 'tab-item agent-tab-add';
       addBtn.title = t('agentNewTabTitle', 'New Agent Terminal');
-      addBtn.textContent = t('agentNewTabShort', '+ New');
+      const addLabel = doc.createElement('span');
+      addLabel.className = 'tab-title';
+      addLabel.textContent = t('agentNewTabShort', '+ New').replace(/^\+\s*/, '') || 'New';
+      const addPlus = doc.createElement('span');
+      addPlus.className = 'agent-tab-plus';
+      addPlus.textContent = '+';
+      addBtn.appendChild(addLabel);
+      addBtn.appendChild(addPlus);
       addBtn.onclick = () => showLauncher(rootEl);
       listEl.appendChild(addBtn);
     }
