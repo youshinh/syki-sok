@@ -55,6 +55,27 @@ check('extractLastMermaidBlock returns the last mermaid fenced block', () => {
   assert.strictEqual(TP.extractLastMermaidBlock('no diagram here'), '');
 });
 
+check('extractLastMermaidBlock extracts unfenced TUI mermaid blocks and normalizes unicode arrows', () => {
+  const tuiOutput = [
+    '  Diagram exceeds terminal width (186 > 95 cols)',
+    '  Displayed as code block. Widen terminal to view inline.',
+    '',
+    '  flowchart TD',
+    '      A["メモ・アイデアの発生"] ──> B{"すぐ対応できる？<br>(2分以内)"}',
+    '      B ── "はい" ──> C["その場で実行して完了"]',
+    '      E ──> I["実行・完了"]',
+    '',
+    '  特定の業務やシステムのフロー図を作成したい場合は、対象を教えていただければ書き直します。'
+  ].join('\n');
+  const got = TP.extractLastMermaidBlock(tuiOutput);
+  assert.strictEqual(got, [
+    'flowchart TD',
+    '    A["メモ・アイデアの発生"] --> B{"すぐ対応できる？<br>(2分以内)"}',
+    '    B -- "はい" --> C["その場で実行して完了"]',
+    '    E --> I["実行・完了"]'
+  ].join('\n'));
+});
+
 check('readXtermTheme falls back cleanly without DOM', () => {
   const t = TP.readXtermTheme(null, null);
   assert.deepStrictEqual(t, {});

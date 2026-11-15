@@ -66,15 +66,56 @@
     return out;
   }
 
+  function normalizeMermaidTuiArrows(code) {
+    // Some agent TUIs (e.g. Antigravity CLI) render `--` / `-->` / `==>` using Unicode box-drawing dashes (`─`, `━`, `═`).
+    // Restore them to ASCII outside quoted labels so mermaid.render() parses them.
+    return String(code || '').replace(/"(?:\\.|[^"\\])*"|'(?:\\.|[^'\\])*'|[\u2500\u2501]+|[\u2550]+/g, (tok) => {
+      if (tok[0] === '"' || tok[0] === "'") return tok;
+      if (tok[0] === '\u2550') return '='.repeat(tok.length);
+      return '-'.repeat(tok.length);
+    });
+  }
+
   function extractLastMermaidBlock(text) {
     if (!text) return '';
+    const src = String(text);
     const re = /```mermaid[ \t]*\r?\n([\s\S]*?)```/gi;
     let last = '';
     let m;
-    while ((m = re.exec(String(text))) !== null) {
+    while ((m = re.exec(src)) !== null) {
       if (m[1] && m[1].trim()) last = m[1].trim();
     }
-    return last;
+    if (last) return normalizeMermaidTuiArrows(last);
+
+    // Fallback for TUIs that strip ```mermaid fences and display the diagram code block indented.
+    const headerRe = /^[ \t]*((?:flowchart|graph)\s+(?:TB|TD|BT|RL|LR)\b|sequenceDiagram\b|classDiagram(?:-v2)?\b|stateDiagram(?:-v2)?\b|erDiagram\b|gantt\b|pie(?:\s+showData)?\b|journey\b|gitGraph\b|mindmap\b|timeline\b|quadrantChart\b|requirementDiagram\b|C4Context\b)/;
+    const lines = src.replace(/\r\n/g, '\n').split('\n');
+    let startIdx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) {
+      if (headerRe.test(lines[i])) {
+        startIdx = i;
+        break;
+      }
+    }
+    if (startIdx < 0) return '';
+
+    const baseIndent = (lines[startIdx].match(/^[ \t]*/) || [''])[0].length;
+    const collected = [lines[startIdx].slice(baseIndent)];
+    const tuiChromeRe = /^[ \t]*(?:[─━═]{4,}|>\s|\?\s+for\s+shortcuts\b|```)/;
+    for (let i = startIdx + 1; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line.trim()) break;
+      if (tuiChromeRe.test(line)) break;
+      const indent = (line.match(/^[ \t]*/) || [''])[0].length;
+      if (indent < baseIndent) break;
+      // Stop if an unindented (same-indent as header) prose line follows (not a mermaid keyword/edge).
+      if (indent === baseIndent && !/^(?:subgraph\b|end\b|classDef\b|class\b|style\b|linkStyle\b|click\b|participant\b|actor\b|note\b|loop\b|alt\b|else\b|opt\b|par\b|section\b|direction\b|%%|[A-Za-z0-9_]+\s*(?:--|\.\.|==|->|──|━|═|\[|\(|\{))/.test(line.slice(baseIndent))) {
+        break;
+      }
+      collected.push(line.slice(baseIndent));
+    }
+    if (collected.length < 2) return '';
+    return normalizeMermaidTuiArrows(collected.join('\n').trim());
   }
 
   function parsePtyLink(href) {
