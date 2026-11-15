@@ -246,7 +246,7 @@ body.dark-theme {
   margin: 0 6px 0 calc(var(--tab-fill-w) + 8px);
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease var(--tab-delay);
 }
 .tab-index:is(:hover, :focus-within) .tab-title {
   opacity: 1;
@@ -312,6 +312,7 @@ body.dark-theme {
   color: inherit;
   opacity: 0;
   pointer-events: none;
+  transition: opacity 0.15s ease var(--tab-delay);
 }
 .tab-item .tab-close::before {
   content: '';
@@ -321,6 +322,7 @@ body.dark-theme {
 .tab-index:is(:hover, :focus-within) .tab-item:is(:hover, :focus-visible, .active) .tab-close {
   opacity: 1;
   pointer-events: auto;
+  transition-delay: 0s;
 }
 .tab-item .tab-close:hover {
   background: var(--tab-close-hover-bg);
@@ -391,7 +393,7 @@ body.dark-theme {
   margin: 0 auto;
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.15s ease;
+  transition: opacity 0.15s ease var(--tab-delay);
 }
 .tab-index:is(:hover, :focus-within) .tab-index-btn {
   background-color: var(--tab-base);
@@ -6786,6 +6788,11 @@ body.tabs-pinned[data-view="agent"] .secondary-agent-pane {
   opacity: 1;
 }
 
+.tab-index[data-side="right"] .tab-loop-badge,
+.tab-index[data-side="right"] .agent-tab-plus {
+  transition: opacity 0.15s ease var(--tab-delay);
+}
+
 .tab-index[data-side="right"]:not(:hover):not(:focus-within) .tab-loop-badge,
 .tab-index[data-side="right"]:not(:hover):not(:focus-within) .agent-tab-plus {
   opacity: 0;
@@ -6807,6 +6814,7 @@ body.tabs-pinned .tab-index[data-side="right"] .agent-tab-plus,
   cursor: pointer;
   margin-top: 4px;
   padding: 0;
+  transition: border-color var(--tab-open-ms) ease var(--tab-delay), color 0.15s ease;
 }
 
 .tab-index[data-side="right"]:not(:hover):not(:focus-within):not(.dock-live) .agent-tab-add {
