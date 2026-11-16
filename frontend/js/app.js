@@ -5014,6 +5014,8 @@
     const end = editorEl.selectionStart;
     const start = end - committed.length;
     if (editorEl.selectionEnd !== end || start < 0 || editorEl.value.substring(start, end) !== committed) return;
+    currentAutocompleteReqId = '';
+    pendingAutocomplete = null;
     activeImeSuggestion = { reverse: true, startPos: start, endPos: end, committed: committed, english: english };
     renderGhostText(editorEl.value.substring(0, end), ` [Tab: ${english}]`);
   }
@@ -5085,6 +5087,8 @@
 
     const suggestion = guardian.getRomajiSuggestion(editorEl.value, cursor, isImeEnabled);
     if (suggestion) {
+      currentAutocompleteReqId = '';
+      pendingAutocomplete = null;
       activeImeSuggestion = suggestion;
       const textBefore = editorEl.value.substring(0, cursor);
       renderGhostText(textBefore, ` [Tab: ${suggestion.hiragana}]`);
@@ -5226,7 +5230,7 @@
     pendingAutocomplete = null;
 
     if (errMsg) {
-      clearGhostText();
+      if (!activeImeSuggestion) clearGhostText();
       // In words (the same sorting as the ask bar's failure), not the Go client's raw line: that one is Japanese, cut at 160
       // characters in the tooltip and shown to someone who never asked the AI for anything. The model asked is the prediction's own.
       setPredictStatus('error', describeLlmFailure(errMsg, config.autocomplete).summary);
@@ -5234,6 +5238,8 @@
     }
 
     setPredictStatus('ok');
+
+    if (activeImeSuggestion) return;
 
     if (!suggestion || isPreviewMode) {
       clearGhostText();
