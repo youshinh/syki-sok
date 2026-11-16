@@ -3722,6 +3722,7 @@
       },
       getDefaultAgent: () => (config && config.default_agent) || '',
       t,
+      copyTextToClipboard,
       onSessionsChanged: () => {
         syncAgentRunningBadge();
         if (isSplitMode && secondaryViewMode === 'agent') {

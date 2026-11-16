@@ -2319,6 +2319,11 @@ span.katex-error {
   color: var(--text-active);
 }
 
+.menu-item.disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .menu-icon {
   width: 14px;
   height: 14px;

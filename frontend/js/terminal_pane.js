@@ -714,6 +714,26 @@
     const loops = new Map();
     let loopsSeq = 0;
 
+    async function copyText(text) {
+      if (!text) return false;
+      if (typeof d.copyTextToClipboard === 'function') return !!(await d.copyTextToClipboard(text));
+      if (win && win.navigator && win.navigator.clipboard && typeof win.navigator.clipboard.writeText === 'function') {
+        try {
+          await win.navigator.clipboard.writeText(text);
+          return true;
+        } catch (_) {}
+      }
+      return false;
+    }
+
+    async function readClipboardText() {
+      if (typeof d.readTextFromClipboard === 'function') return String((await d.readTextFromClipboard()) || '');
+      if (win && win.navigator && win.navigator.clipboard && typeof win.navigator.clipboard.readText === 'function') {
+        try { return String((await win.navigator.clipboard.readText()) || ''); } catch (_) {}
+      }
+      return '';
+    }
+
     function normalizeAgentPreset(raw) {
       const p = String(raw || '').trim().toLowerCase();
       if (p === 'cc' || p === 'claude' || p === 'claude-code') return 'cc';
@@ -1513,6 +1533,45 @@
         backend.ptyWrite(session.id, encodeUtf8Base64(str));
       });
 
+      if (typeof term.attachCustomKeyEventHandler === 'function') {
+        term.attachCustomKeyEventHandler((e) => {
+          if (!e || e.type !== 'keydown') return true;
+          const key = String(e.key || '').toLowerCase();
+          const isCopyCombo =
+            (e.ctrlKey && !e.altKey && !e.metaKey && key === 'c') ||
+            (!e.ctrlKey && !e.altKey && e.metaKey && !e.shiftKey && key === 'c');
+          if (isCopyCombo) {
+            const hasSel = typeof term.hasSelection === 'function' && term.hasSelection();
+            if (e.ctrlKey && e.shiftKey) {
+              if (hasSel && typeof term.getSelection === 'function') copyText(term.getSelection());
+              return false;
+            }
+            if (hasSel && typeof term.getSelection === 'function') {
+              copyText(term.getSelection());
+              return false;
+            }
+            return true;
+          }
+          const isPasteCombo =
+            (e.ctrlKey && !e.altKey && !e.metaKey && key === 'v') ||
+            (!e.ctrlKey && !e.altKey && e.metaKey && !e.shiftKey && key === 'v');
+          if (isPasteCombo) {
+            const hasAsyncRead =
+              typeof d.readTextFromClipboard === 'function' ||
+              (win && win.navigator && win.navigator.clipboard && typeof win.navigator.clipboard.readText === 'function');
+            if (!hasAsyncRead) return true;
+            if (typeof e.preventDefault === 'function') e.preventDefault();
+            readClipboardText().then((text) => {
+              if (text && session.running) {
+                backend.ptyWrite(session.id, encodeUtf8Base64(bracketedPaste(text)));
+              }
+            }).catch(() => {});
+            return false;
+          }
+          return true;
+        });
+      }
+
       selectSession(session.id, { preserveFocus: !!o.preserveFocus });
       if (!o.preserveFocus && term && typeof term.focus === 'function') term.focus();
       notifyChange();
@@ -1655,6 +1714,7 @@
       input.onkeydown = (e) => {
         e.stopPropagation();
         if (e.key === 'Enter') {
+          if (e.isComposing || e.keyCode === 229) return;
           if (typeof e.preventDefault === 'function') e.preventDefault();
           commit();
         } else if (e.key === 'Escape') {
@@ -2808,9 +2868,19 @@
     }
 
     function syncAgentContextMenuItems(targetSessionId) {
+      const copyEl = getById('agent-ctx-copy');
+      const pasteEl = getById('agent-ctx-paste');
       const startEl = getById('agent-ctx-loop-start');
       const stopEl = getById('agent-ctx-loop-stop');
       const ctrl = getCtrl();
+      const target = (ctrl && ctrl.getSessionById && targetSessionId)
+        ? ctrl.getSessionById(targetSessionId)
+        : (ctrl && ctrl.getActiveSession ? ctrl.getActiveSession() : null);
+      const act = ctrl && ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+      const termSession = (act && (!target || act.id === target.id)) ? act : null;
+      const hasSel = !!(termSession && termSession.term && typeof termSession.term.hasSelection === 'function' && termSession.term.hasSelection());
+      if (copyEl) copyEl.classList.toggle('disabled', !hasSel);
+      if (pasteEl) pasteEl.classList.toggle('disabled', !(target && target.running));
       const loop = (ctrl && ctrl.getLoopForSession && targetSessionId) ? ctrl.getLoopForSession(targetSessionId) : null;
       const running = !!(loop && (loop.phase === 'maker' || loop.phase === 'checker'));
       if (startEl) startEl.classList.toggle('hidden', running);
@@ -2938,6 +3008,38 @@
           const el = getById(id);
           if (el) el.onclick = handler;
         };
+        bindAgentCtx('agent-ctx-copy', async () => {
+          hideMenus();
+          const { ctrl, target } = resolveTarget();
+          agentContextMenuTargetId = null;
+          const act = ctrl && ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+          const termSession = (act && (!target || act.id === target.id)) ? act : null;
+          if (!termSession || !termSession.term || typeof termSession.term.getSelection !== 'function') return;
+          const sel = termSession.term.getSelection();
+          if (sel && typeof cfg.copyTextToClipboard === 'function') {
+            await cfg.copyTextToClipboard(sel);
+          } else if (sel && win && win.navigator && win.navigator.clipboard && typeof win.navigator.clipboard.writeText === 'function') {
+            try { await win.navigator.clipboard.writeText(sel); } catch (_) {}
+          }
+          if (typeof termSession.term.focus === 'function') termSession.term.focus();
+        });
+        bindAgentCtx('agent-ctx-paste', async () => {
+          hideMenus();
+          const { ctrl, target } = resolveTarget();
+          agentContextMenuTargetId = null;
+          if (!ctrl || !target || !target.running) return;
+          let text = '';
+          if (win && win.navigator && win.navigator.clipboard && typeof win.navigator.clipboard.readText === 'function') {
+            try { text = await win.navigator.clipboard.readText(); } catch (_) { text = ''; }
+          }
+          if (text && typeof ctrl.sendToSession === 'function') {
+            ctrl.sendToSession(target.id, text, { submit: false });
+          }
+          const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
+          if (act && act.id === target.id && act.term && typeof act.term.focus === 'function') {
+            act.term.focus();
+          }
+        });
         bindAgentCtx('agent-ctx-new', () => {
           hideMenus();
           agentContextMenuTargetId = null;

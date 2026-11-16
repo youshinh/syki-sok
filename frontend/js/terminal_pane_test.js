@@ -235,6 +235,10 @@ function makeMockEnv() {
     assert.ok(floatWrap, 'floating rename container mounted when tab strip querySelectorAll unavailable');
     const renameInput = floatWrap.children[0];
     renameInput.value = 'gamma';
+    await renameInput.onkeydown({ key: 'Enter', isComposing: true, stopPropagation() {}, preventDefault() {} });
+    await renameInput.onkeydown({ key: 'Enter', keyCode: 229, stopPropagation() {}, preventDefault() {} });
+    assert.strictEqual(ctrl.getSessionById(s1.id).label, 'alpha');
+    assert.deepStrictEqual(renamedCalls, []);
     await renameInput.onkeydown({ key: 'Enter', stopPropagation() {}, preventDefault() {} });
     assert.strictEqual(ctrl.getSessionById(s1.id).label, 'gamma');
     assert.deepStrictEqual(renamedCalls, [['cc-1', 'gamma']]);
@@ -947,6 +951,125 @@ function makeMockEnv() {
 
     passed++;
     console.log('PASS: workspaceBridge harness loop RPC methods (list/start/stop)');
+  }
+
+  // Test: terminal copy/paste keyboard shortcuts and context menu actions
+  {
+    const envCp = makeMockEnv();
+    const copied = [];
+    const ptyWrites = [];
+    let clipboardText = 'hello pasted';
+    let selText = 'selected terminal text';
+    let keyHandler = null;
+
+    const BaseTerm = envCp.win.Terminal;
+    envCp.win.Terminal = function () {
+      const t = new BaseTerm();
+      t.hasSelection = () => !!selText;
+      t.getSelection = () => selText;
+      t.attachCustomKeyEventHandler = (fn) => { keyHandler = fn; };
+      return t;
+    };
+    envCp.win.navigator = {
+      clipboard: {
+        writeText: async (txt) => { copied.push(txt); },
+        readText: async () => clipboardText
+      }
+    };
+
+    const menuItems = {};
+    const makeMenuItem = () => {
+      const cls = new Set();
+      return {
+        classList: {
+          add: (c) => cls.add(c),
+          remove: (c) => cls.delete(c),
+          toggle: (c, force) => (force === undefined ? (cls.has(c) ? cls.delete(c) : cls.add(c)) : (force ? cls.add(c) : cls.delete(c))),
+          contains: (c) => cls.has(c)
+        },
+        onclick: null
+      };
+    };
+    menuItems['agent-ctx-copy'] = makeMenuItem();
+    menuItems['agent-ctx-paste'] = makeMenuItem();
+    const origGetById = envCp.doc.getElementById;
+    envCp.doc.getElementById = (id) => menuItems[id] || (typeof origGetById === 'function' ? origGetById(id) : null);
+
+    const backend = {
+      ptyStartWithOptions: async (id, preset, dir) => JSON.stringify({ id: id || 'cc-cp', title: 'cc', preset, dir }),
+      ptyClose: async () => {},
+      ptyRename: async () => {},
+      ptyWrite: async (id, b64) => { ptyWrites.push([id, Buffer.from(b64, 'base64').toString('utf8')]); },
+      ptyResize: async () => {}
+    };
+
+    const ctrlCp = TP.createController({
+      doc: envCp.doc,
+      win: envCp.win,
+      backend,
+      copyTextToClipboard: async (txt) => { copied.push(txt); return true; }
+    });
+    await ctrlCp.openPane(envCp.root);
+    const sCp = await ctrlCp.startSession('cc', '/repo', { explicitId: 'cc-cp' });
+    assert.strictEqual(typeof keyHandler, 'function');
+
+    // Ctrl+C with selection copies and consumes key (does not send SIGINT)
+    assert.strictEqual(keyHandler({ type: 'keydown', key: 'c', ctrlKey: true }), false);
+    // Ctrl+C without selection passes through for SIGINT
+    selText = '';
+    assert.strictEqual(keyHandler({ type: 'keydown', key: 'c', ctrlKey: true }), true);
+    // Ctrl+Shift+C with selection copies and consumes key
+    selText = 'shift copied';
+    assert.strictEqual(keyHandler({ type: 'keydown', key: 'C', ctrlKey: true, shiftKey: true }), false);
+    // Ctrl+V and Ctrl+Shift+V paste via bracketedPaste
+    assert.strictEqual(keyHandler({ type: 'keydown', key: 'v', ctrlKey: true, preventDefault() {} }), false);
+    assert.strictEqual(keyHandler({ type: 'keydown', key: 'V', ctrlKey: true, shiftKey: true, preventDefault() {} }), false);
+    await new Promise((r) => setTimeout(r, 10));
+
+    assert.deepStrictEqual(copied, ['selected terminal text', 'shift copied']);
+    assert.strictEqual(ptyWrites.length, 2);
+    assert.strictEqual(ptyWrites[0][0], sCp.id);
+    assert.strictEqual(ptyWrites[0][1], '\x1b[200~hello pasted\x1b[201~');
+
+    // Context menu sync + copy/paste clicks
+    const agentMenuEl = makeMenuItem();
+    const bridgeCp = TP.createWorkspaceBridge({
+      doc: envCp.doc,
+      win: envCp.win,
+      editorEl: { value: '', selectionStart: 0, selectionEnd: 0 },
+      secondaryAgentPane: envCp.root,
+      agentTabContextMenu: agentMenuEl,
+      getController: () => ctrlCp,
+      ensureController: () => ctrlCp,
+      copyTextToClipboard: async (txt) => { copied.push(txt); return true; },
+      hideAllContextMenus: () => {}
+    });
+
+    selText = '';
+    bridgeCp.openAgentTabContextMenu({
+      clientX: 10,
+      clientY: 20,
+      target: { closest: (sel) => (sel.includes('#secondary-agent-pane') ? envCp.root : null) }
+    }, () => {});
+    assert.strictEqual(menuItems['agent-ctx-copy'].classList.contains('disabled'), true);
+    assert.strictEqual(menuItems['agent-ctx-paste'].classList.contains('disabled'), false);
+
+    selText = 'ctx copied';
+    bridgeCp.openAgentTabContextMenu({
+      clientX: 10,
+      clientY: 20,
+      target: { closest: (sel) => (sel.includes('#secondary-agent-pane') ? envCp.root : null) }
+    }, () => {});
+    assert.strictEqual(menuItems['agent-ctx-copy'].classList.contains('disabled'), false);
+
+    await menuItems['agent-ctx-copy'].onclick();
+    clipboardText = 'ctx pasted';
+    await menuItems['agent-ctx-paste'].onclick();
+    assert.strictEqual(copied[copied.length - 1], 'ctx copied');
+    assert.strictEqual(ptyWrites[ptyWrites.length - 1][1], '\x1b[200~ctx pasted\x1b[201~');
+
+    passed++;
+    console.log('PASS: agent pane copy/paste keyboard shortcuts and context menu actions');
   }
 
   console.log('\n' + passed + ' passed, 0 failed');
