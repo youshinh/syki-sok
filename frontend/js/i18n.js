@@ -69,6 +69,7 @@ const I18N = {
     agentCtxCopy: "Copy",
     agentCtxPaste: "Paste",
     agentCtxNew: "New Agent Session...",
+    agentCtxNewWindow: "Open in New Window (Note + Terminal)",
     agentCtxRename: "Rename Session",
     agentCtxLinkNote: "Insert Link into Left Note",
     agentCtxDoneNext: "Record Done / Next to Note",
@@ -251,6 +252,8 @@ const I18N = {
     ctxSaveAs: "Save As / Rename...",
     ctxZenMode: "Zen Mode",
     ctxFullscreen: "Full Screen",
+    ctxNewWindow: "New Window",
+    tabCtxNewWindow: "Open in New Window",
     ctxHarnessTemplate: "Insert Harness Task Template",
     ctxHarnessStart: "Start Autonomous Harness Loop",
     ctxHarnessStop: "Stop Autonomous Loop",
@@ -1019,6 +1022,8 @@ const I18N = {
     zenModeDisabled: "Zen Mode OFF",
     zenShortcutMoved: "Zen Mode is now {sc}. Ctrl+Shift+Z is Redo again.",
     confirmCloseUnsaved: 'Do you want to save changes to "{title}"?',
+    unsavedCloseWindowConfirm: "There are unsaved changes in this window. Close without saving?",
+    closeWindowAction: "Close",
 
     // Command Palette
     cmdPalettePlaceholder: "Type a command or search notes... (Esc to close)",
@@ -1721,6 +1726,7 @@ const I18N = {
     agentCtxCopy: "コピー",
     agentCtxPaste: "貼り付け",
     agentCtxNew: "新しいエージェントセッション...",
+    agentCtxNewWindow: "新しいウィンドウで開く（メモ＋ターミナル）",
     agentCtxRename: "セッション名を変更",
     agentCtxLinkNote: "左ノートへリンク挿入",
     agentCtxDoneNext: "完了 / 次をノートに記録",
@@ -1903,6 +1909,8 @@ const I18N = {
     ctxSaveAs: "名前を変更 / 別名で保存...",
     ctxZenMode: "集中(Zen)モード",
     ctxFullscreen: "全画面表示",
+    ctxNewWindow: "新しいウィンドウで開く",
+    tabCtxNewWindow: "新しいウィンドウで開く",
     ctxHarnessTemplate: "自律ループ雛形を挿入",
     ctxHarnessStart: "自律ループを開始",
     ctxHarnessStop: "自律ループを停止",
@@ -2672,6 +2680,8 @@ const I18N = {
     zenModeDisabled: "集中（Zen）モード OFF",
     zenShortcutMoved: "集中（Zen）モードのキーを {sc} に変更しました。Ctrl+Shift+Z は「やり直し」に戻ります。",
     confirmCloseUnsaved: '"{title}" への変更内容を保存しますか？',
+    unsavedCloseWindowConfirm: "このウィンドウには未保存の変更があります。保存せずに閉じますか？",
+    closeWindowAction: "閉じる",
 
     // Command Palette
     cmdPalettePlaceholder: "コマンド実行またはメモ検索... (Escで閉じる)",

@@ -13,6 +13,53 @@
     agentNoticeDelayMs: 4000
   }, (typeof window !== 'undefined' && window.__SYKI_BOOT_POLICY && typeof window.__SYKI_BOOT_POLICY === 'object') ? window.__SYKI_BOOT_POLICY : {}));
 
+  const urlParams = (typeof window !== 'undefined' && window.location) ? new URLSearchParams(window.location.search) : null;
+  const isSecondaryWindow = !!(urlParams && urlParams.has('win'));
+  const initialWindowSplitAgent = !!(urlParams && urlParams.get('split') === 'agent');
+  const initialWindowFile = (urlParams && urlParams.get('file')) || '';
+
+  function openNewWindow(opts) {
+    const o = opts || {};
+    if (platformCapabilities && platformCapabilities.multiWindow === false) return;
+    if (window.backend && typeof window.backend.openNewWindow === 'function') {
+      window.backend.openNewWindow(JSON.stringify({
+        filePath: o.filePath || '',
+        splitAgent: !!o.splitAgent
+      })).catch((err) => {
+        if (typeof showMessage === 'function') {
+          showMessage(String((err && err.message) || err || 'Failed to open window'), 3500, { important: true });
+        }
+      });
+    }
+  }
+
+  let secondaryClosePromptOpen = false;
+  if (typeof window !== 'undefined') {
+    window.__sykiRequestCloseWindow = async function () {
+      if (secondaryClosePromptOpen) return;
+      const dirtyTabs = tabs.filter((tab) => tab && tab.isDirty);
+      if (dirtyTabs.length > 0 && typeof showConfirmModal === 'function') {
+        secondaryClosePromptOpen = true;
+        try {
+          const ok = await showConfirmModal({
+            title: t('confirmTitle', 'Confirm'),
+            message: t('unsavedCloseWindowConfirm', 'There are unsaved changes in this window. Close without saving?'),
+            okLabel: t('closeWindowAction', 'Close'),
+            safeDefault: true
+          });
+          if (!ok) return;
+        } finally {
+          secondaryClosePromptOpen = false;
+        }
+      }
+      if (typeof window.backend_forceQuit === 'function') {
+        window.backend_forceQuit();
+      } else if (window.backend && typeof window.backend.forceQuit === 'function') {
+        window.backend.forceQuit();
+      }
+    };
+  }
+
   // State
   let tabs = [];
   let activeTabId = null;
@@ -12626,6 +12673,10 @@ OUTPUT FORMAT:
       // Last in the chain: a binding the user chose for another action before this default existed still wins.
       e.preventDefault();
       if (!isDialogOpen()) { openCommandBar(); }
+    } else if (isCtrl && e.shiftKey && !e.altKey && e.code === 'KeyN') {
+      if (platformCapabilities && platformCapabilities.multiWindow === false) return;
+      e.preventDefault();
+      openNewWindow({});
     } else if (isCtrl && e.key === 'Tab') {
       e.preventDefault();
       if (tabs.length > 1) {
@@ -12860,6 +12911,7 @@ OUTPUT FORMAT:
           updateSecondaryPane();
           renderTabs();
         },
+        openNewWindow,
         showMessage,
         copyTextToClipboard,
         renderMermaidOverlay: showAgentMermaidOverlay
@@ -13011,6 +13063,17 @@ OUTPUT FORMAT:
         const targetId = contextMenuTargetTabId || activeTabId;
         contextMenuTargetTabId = null;
         openSplitEditor(targetId);
+      };
+    }
+
+    const btnTabNewWindow = document.getElementById('tab-ctx-new-window');
+    if (btnTabNewWindow) {
+      btnTabNewWindow.onclick = () => {
+        hideAllContextMenus();
+        const targetId = contextMenuTargetTabId || activeTabId;
+        contextMenuTargetTabId = null;
+        const tab = getTab(targetId);
+        openNewWindow({ filePath: (tab && tab.path) || '' });
       };
     }
 
@@ -13273,6 +13336,13 @@ OUTPUT FORMAT:
       contextMenu.classList.add('hidden');
       toggleFullscreen();
       refocusEditor();
+    };
+  }
+  const ctxNewWindow = document.getElementById('ctx-new-window');
+  if (ctxNewWindow) {
+    ctxNewWindow.onclick = () => {
+      contextMenu.classList.add('hidden');
+      openNewWindow({});
     };
   }
   const ctxVoiceInput = document.getElementById('ctx-voice-input');
@@ -16585,6 +16655,12 @@ OUTPUT FORMAT:
       console.warn('Failed to fetch platform capabilities:', e);
     }
     applyImeGuardianCapabilityDefault();
+    if (platformCapabilities && platformCapabilities.multiWindow === false) {
+      ['ctx-new-window', 'tab-ctx-new-window', 'agent-ctx-new-window'].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.classList.add('hidden');
+      });
+    }
     applyTrayCapabilityUI();
   }
 
@@ -16759,7 +16835,7 @@ OUTPUT FORMAT:
   }
 
   async function savePersistentSession() {
-    if (config.general.restoreSession === false) return;
+    if (isSecondaryWindow || config.general.restoreSession === false) return;
     const jsonStr = getSessionDataJson();
 
     try {
@@ -16868,6 +16944,7 @@ OUTPUT FORMAT:
   }
 
   function loadLocalSessionSync() {
+    if (isSecondaryWindow) return false;
     try {
       const str = localStorage.getItem('syki_session_v1') || localStorage.getItem('md_notepad_session_v1');
       if (str) {
@@ -16881,7 +16958,7 @@ OUTPUT FORMAT:
 
   // Save session on window close or tab visibility change
   window.addEventListener('beforeunload', () => {
-    if (config.general.restoreSession !== false) {
+    if (!isSecondaryWindow && config.general.restoreSession !== false) {
       const jsonStr = getSessionDataJson();
       try {
         localStorage.setItem('syki_session_v1', jsonStr);
@@ -17398,15 +17475,17 @@ OUTPUT FORMAT:
     }
 
     // 2. Background Asynchronous Verification & Sync:
-    setTimeout(announceAgentIssues, BOOT_POLICY.agentNoticeDelayMs); // well after the first paint and the config sync
+    if (!isSecondaryWindow) {
+      setTimeout(announceAgentIssues, BOOT_POLICY.agentNoticeDelayMs); // well after the first paint and the config sync
+    }
     const runBackgroundStartupSync = () => {
       loadPlatformCapabilities();
       (async () => {
       // Check if a file path was passed via CLI argument or double-clicked from Explorer / Finder
       // The file is opened as one more tab AFTER the session, the workspace and the settings are restored (below): a start with a
       // file is still a normal start, it only adds a tab.
-      const startupFilePromise = (window.backend && window.backend.getStartupFile) ? Promise.resolve().then(() => window.backend.getStartupFile()) : null;
-      const sessionPromise = (config.general.restoreSession !== false && window.backend && window.backend.getSession) ? Promise.resolve().then(() => window.backend.getSession()) : null;
+      const startupFilePromise = (!isSecondaryWindow && window.backend && window.backend.getStartupFile) ? Promise.resolve().then(() => window.backend.getStartupFile()) : null;
+      const sessionPromise = (!isSecondaryWindow && config.general.restoreSession !== false && window.backend && window.backend.getSession) ? Promise.resolve().then(() => window.backend.getSession()) : null;
       if (window.backend && window.backend.getConfig) {
         window.backend.__preloadedConfig = Promise.resolve().then(() => window.backend.getConfig());
         window.backend.__preloadedConfig.catch(() => {});
@@ -17466,6 +17545,27 @@ OUTPUT FORMAT:
         // Go's message names the file; say what was being done as well, so a failed start-up file is not a silent blank note.
         showMessage(t('startupFileFailed', { err: startupError }), 8000, { important: true });
       }
+      if (isSecondaryWindow) {
+        if (initialWindowFile && window.backend && typeof window.backend.readFileByPath === 'function') {
+          try {
+            const res = await window.backend.readFileByPath(initialWindowFile);
+            if (res && res.path) {
+              const first = tabs.length === 1 ? tabs[0] : null;
+              const FR = window.FirstRun;
+              const emptyFirstNote = !!first && !first.path && !first.isDirty &&
+                (FR ? FR.isUntouchedNewTab(first, first.id === activeTabId ? editorEl.value : undefined) : String(first.content == null ? '' : first.content).trim() === '');
+              createTab(res.title || String(initialWindowFile).split(/[\\/]/).pop(), res.content, res.path, res.encoding || 'UTF-8');
+              if (emptyFirstNote && tabs.length > 1 && getTab(first.id)) removeTab(first.id);
+              editorEl.focus();
+            }
+          } catch (e) {
+            console.warn('Failed to open file in secondary window:', e);
+          }
+        }
+        if (initialWindowSplitAgent && (!isSplitMode || secondaryViewMode !== 'agent')) {
+          toggleAgentPane();
+        }
+      }
       // A session that could not be read is replaced by the next save about a second from now, and nothing else says it ever existed:
       // tell the person, and where the old file is kept (the Go side copies it to session.json.bak). Not when the page's own copy
       // of the session was restored: then nothing is missing.
@@ -17492,7 +17592,7 @@ OUTPUT FORMAT:
 
       // Check for app updates asynchronously in background (deferred 2.5s to keep startup 0ms smooth)
       // (general.checkUpdates = false: no timer and no request; About syki::sok > Check now still works)
-      if (updateCheckAtStartup()) {
+      if (!isSecondaryWindow && updateCheckAtStartup()) {
         setTimeout(() => {
           if (updateCheckAtStartup()) checkForAppUpdates();
         }, BOOT_POLICY.updateCheckDelayMs);
@@ -17505,7 +17605,9 @@ OUTPUT FORMAT:
       runBackgroundStartupSync();
     }
 
-    setTimeout(checkPendingVoiceCaches, BOOT_POLICY.voiceRecoveryDelayMs);
+    if (!isSecondaryWindow) {
+      setTimeout(checkPendingVoiceCaches, BOOT_POLICY.voiceRecoveryDelayMs);
+    }
   }
 
   // Asynchronous background update checker (Zero impact on startup)

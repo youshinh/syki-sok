@@ -3046,6 +3046,11 @@
           const ctrl = ensureCtrl();
           if (ctrl && cfg.secondaryAgentPane) ctrl.showLauncher(cfg.secondaryAgentPane);
         });
+        bindAgentCtx('agent-ctx-new-window', () => {
+          hideMenus();
+          agentContextMenuTargetId = null;
+          if (typeof cfg.openNewWindow === 'function') cfg.openNewWindow({ splitAgent: true });
+        });
         bindAgentCtx('agent-ctx-rename', () => {
           hideMenus();
           const { ctrl, target } = resolveTarget();

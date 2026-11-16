@@ -74,8 +74,9 @@ type App struct {
 	cfgCache   *configCacheEntry
 	sessionSaveMu sync.Mutex
 
-	ptyMgr *ptyterm.Manager
-	ptyMu  sync.Mutex
+	ptyMgr    *ptyterm.Manager
+	ptyMu     sync.Mutex
+	ptyOwners sync.Map // sessionID -> WebViewInstance
 
 	// ReceptorOrganelles encapsulates Ring 2 detachable background receptors
 	// (Mobile Drop HTTP server, Cloudflare Bridge poller, and Hot-folder Inbox watcher).
@@ -86,6 +87,9 @@ type App struct {
 	nativeLookMu    sync.Mutex
 	nativeLookPaper bool
 	nativeLookApply func(nativeLook)
+
+	newWindowMu sync.Mutex
+	newWindowFn func(openWindowOpts) error
 }
 
 // AppVersion is the version the app reports (About, the update check, the exported settings) and that build_mac.sh puts in Info.plist. It is a var, not
@@ -230,6 +234,7 @@ type PlatformCapabilities struct {
 	NativeImeSwitch bool   `json:"nativeImeSwitch"`
 	Tray            bool   `json:"tray"`
 	GlobalHotkey    bool   `json:"globalHotkey"`
+	MultiWindow     bool   `json:"multiWindow"`
 }
 
 // platformCapabilitiesFor is the pure, GOOS-parameterised body of GetPlatformCapabilities.
@@ -242,6 +247,7 @@ func platformCapabilitiesFor(goos string) PlatformCapabilities {
 			OS:              "windows",
 			NativeImeSwitch: true,
 			Tray:            true,
+			MultiWindow:     true,
 			GlobalHotkey:    true,
 		}
 	case "darwin":

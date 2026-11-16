@@ -52,6 +52,29 @@ func (a *App) PtyStart(preset, dir string, cols, rows int) (string, error) {
 
 // PtyStartWithOptions launches or resumes a PTY session with optional explicit ID, label, and CLI session ID.
 func (a *App) PtyStartWithOptions(explicitID, preset, dir, label, cliSessionID string, resume bool, cols, rows int) (string, error) {
+	return a.ptyStartForView(nil, explicitID, preset, dir, label, cliSessionID, resume, cols, rows)
+}
+
+func (a *App) closePTYsForView(owner WebViewInstance) {
+	if owner == nil {
+		return
+	}
+	var ids []string
+	a.ptyOwners.Range(func(k, v interface{}) bool {
+		if v == owner {
+			if sid, ok := k.(string); ok {
+				ids = append(ids, sid)
+			}
+		}
+		return true
+	})
+	for _, sid := range ids {
+		a.ptyOwners.Delete(sid)
+		_ = a.PtyClose(sid)
+	}
+}
+
+func (a *App) ptyStartForView(owner WebViewInstance, explicitID, preset, dir, label, cliSessionID string, resume bool, cols, rows int) (string, error) {
 	mgr := a.ensurePTYManager()
 	explicitID = sanitizePTYToken(explicitID)
 	cliSessionID = sanitizePTYToken(cliSessionID)
@@ -74,6 +97,9 @@ func (a *App) PtyStartWithOptions(explicitID, preset, dir, label, cliSessionID s
 	}
 
 	sid := mgr.AllocateID(normPreset, explicitID)
+	if owner != nil {
+		a.ptyOwners.Store(sid, owner)
+	}
 	upsertPTYLedger(ptyLedgerEntry{
 		ID:           sid,
 		Label:        label,
@@ -88,7 +114,7 @@ func (a *App) PtyStartWithOptions(explicitID, preset, dir, label, cliSessionID s
 			return
 		}
 		b64 := base64.StdEncoding.EncodeToString(chunk)
-		a.dispatchEval(fmt.Sprintf("if (window.__onPtyData) { window.__onPtyData(%q, %q); }", sid, b64))
+		a.dispatchEvalTo(owner, fmt.Sprintf("if (window.__onPtyData) { window.__onPtyData(%q, %q); }", sid, b64))
 	})
 
 	info, err := mgr.Start(normPreset, normPreset, title, ptyterm.Options{
@@ -109,11 +135,13 @@ func (a *App) PtyStartWithOptions(explicitID, preset, dir, label, cliSessionID s
 			if exitErr != nil {
 				errMsg = exitErr.Error()
 			}
+			a.ptyOwners.Delete(sid)
 			updatePTYLedgerFields(sid, "closed", "", false)
-			a.dispatchEval(fmt.Sprintf("if (window.__onPtyExit) { window.__onPtyExit(%q, %d, %q); }", sid, code, errMsg))
+			a.dispatchEvalTo(owner, fmt.Sprintf("if (window.__onPtyExit) { window.__onPtyExit(%q, %d, %q); }", sid, code, errMsg))
 		},
 	})
 	if err != nil {
+		a.ptyOwners.Delete(sid)
 		removePTYLedger(sid)
 		return "", err
 	}

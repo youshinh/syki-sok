@@ -34,6 +34,8 @@ const (
 	ActionOpen = "open"
 	// ActionNewTab opens a new blank tab and fronts the window for instantaneous memo capture.
 	ActionNewTab = "new-tab"
+	// ActionNewWindow opens an additional GUI window in the running instance.
+	ActionNewWindow = "new-window"
 )
 
 // Message represents a legacy IPC payload passed between CLI and running instance.

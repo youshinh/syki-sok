@@ -20,6 +20,7 @@ type binder interface {
 // handle at runtime.
 func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_getAppVersion", app.GetAppVersion)
+	_ = w.Bind("backend_openNewWindow", app.OpenNewWindow)
 	_ = w.Bind("backend_getAppInfo", app.GetAppInfo)
 	_ = w.Bind("backend_getPlatformCapabilities", app.GetPlatformCapabilities)
 	_ = w.Bind("backend_getConfig", app.GetConfig)
@@ -413,7 +414,8 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 			ptySuggestDirs: (activeFilePath) => window.backend_ptySuggestDirs(activeFilePath || ""),
 			ptyDetectGate: (dir) => window.backend_ptyDetectGate(dir || ""),
 			ptyPrepareWorktree: (dir, loopId) => window.backend_ptyPrepareWorktree(dir || "", loopId || ""),
-			ptyAvailablePresets: () => window.backend_ptyAvailablePresets()` + extras.String() + `
+			ptyAvailablePresets: () => window.backend_ptyAvailablePresets(),
+			openNewWindow: (optsJSON) => window.backend_openNewWindow(optsJSON || "{}")` + extras.String() + `
 		};
 	`
 }

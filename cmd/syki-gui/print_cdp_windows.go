@@ -42,6 +42,12 @@ func utf16At(p uintptr) string {
 
 // coreWebView2Of is the window's ICoreWebView2 (the caller releases it).
 func coreWebView2Of(w interface{}) (uintptr, error) {
+	if mw, ok := w.(*multiWebView); ok {
+		w = mw.activeOrPrimary()
+	}
+	if bw, ok := w.(*batchedBinderWebView); ok {
+		w = bw.WebView
+	}
 	type ifaceHeader struct {
 		itab uintptr
 		data unsafe.Pointer

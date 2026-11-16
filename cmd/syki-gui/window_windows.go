@@ -6,9 +6,11 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -162,6 +164,7 @@ const (
 	ID_TRAY_QUIT         = 1002
 	ID_TRAY_QUICKCAPTURE = 1003
 	ID_TRAY_OPEN_INBOX   = 1004
+	ID_TRAY_NEW_WINDOW   = 1005
 )
 
 type POINT struct {
@@ -563,11 +566,13 @@ func handleTrayMenu(hwnd windows.Handle) {
 	}
 
 	openText, _ := windows.UTF16PtrFromString("Open syki")
+	newWinText, _ := windows.UTF16PtrFromString("New Window")
 	quickText, _ := windows.UTF16PtrFromString(quickLabel)
 	inboxText, _ := windows.UTF16PtrFromString("Open inbox folder")
 	quitText, _ := windows.UTF16PtrFromString("Quit")
 
 	_, _, _ = procAppendMenuW.Call(hMenu, MF_STRING, ID_TRAY_OPEN, uintptr(unsafe.Pointer(openText)))
+	_, _, _ = procAppendMenuW.Call(hMenu, MF_STRING, ID_TRAY_NEW_WINDOW, uintptr(unsafe.Pointer(newWinText)))
 	_, _, _ = procAppendMenuW.Call(hMenu, MF_STRING, ID_TRAY_QUICKCAPTURE, uintptr(unsafe.Pointer(quickText)))
 	if inboxEnabled {
 		_, _, _ = procAppendMenuW.Call(hMenu, MF_STRING, ID_TRAY_OPEN_INBOX, uintptr(unsafe.Pointer(inboxText)))
@@ -581,6 +586,10 @@ func handleTrayMenu(hwnd windows.Handle) {
 	switch cmd {
 	case ID_TRAY_OPEN:
 		showAndRestoreWindow(hwnd)
+	case ID_TRAY_NEW_WINDOW:
+		if globalApp != nil {
+			_ = globalApp.OpenNewWindow("{}")
+		}
 	case ID_TRAY_QUICKCAPTURE:
 		openQuickCapture(false)
 	case ID_TRAY_OPEN_INBOX:
@@ -623,6 +632,11 @@ func trayWndProc(hwnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr
 		} else if wParam == HOTKEY_ID_QUICKCAPTURE {
 			showQuickCapturePopup()
 			return 0
+		}
+
+	case 0x0006: // WM_ACTIVATE
+		if wParam&0xFFFF != 0 && globalMultiWebView != nil {
+			globalMultiWebView.setActive(nil)
 		}
 
 	case WM_SIZE:
@@ -1111,7 +1125,15 @@ func runPlatformWindow(app *App, serverURL string) {
 	globalHwnd = hwnd
 
 	// A look chosen in the settings while the app runs reaches the window through SaveConfig (nativelook.go).
-	app.setNativeLookApplier(app.uiNativeLookApplier(func(l nativeLook) { setNativeLook(w, l) }))
+	app.setNativeLookApplier(app.uiNativeLookApplier(func(l nativeLook) {
+		setNativeLook(w, l)
+		secondaryViewMap.Range(func(_, v interface{}) bool {
+			if entry, ok := v.(*secondaryViewEntry); ok && entry.w != nil {
+				setNativeLook(entry.w, l)
+			}
+			return true
+		})
+	}))
 
 	// File dialogs are owned by this window: they stay in front of it and it is disabled while one is open.
 	dialog.SetOwner(uintptr(hwnd))
@@ -1133,13 +1155,186 @@ func runPlatformWindow(app *App, serverURL string) {
 	// Bind Go RPC methods. bindCommonBackend (bind_common.go) covers every backend_X -> app.Y
 	// bind that is identical on Windows and macOS; only the Windows-specific and inline-closure
 	// binds are listed here.
-	w = &batchedBinderWebView{WebView: w, names: make([]string, 0, 148)}
-	app.w = w
-	bindCommonBackend(w, app)
+	bw := &batchedBinderWebView{WebView: w, names: make([]string, 0, 148)}
+	mw := newMultiWebView(bw)
+	globalMultiWebView = mw
+	app.w = mw
+	bindCommonBackend(bw, app)
+	bindWindowsSpecificBackend(bw, app, hwnd, true)
+
+	app.setOpenNewWindowHandler(func(opts openWindowOpts) error {
+		if atomic.LoadInt32(&app.isDestroyed) != 0 {
+			return nil
+		}
+		mw.Dispatch(func() {
+			if atomic.LoadInt32(&app.isDestroyed) != 0 {
+				return
+			}
+			openSecondaryWindow(app, mw, serverURL, webViewDataPath, app.startupNativeLook(), opts)
+		})
+		return nil
+	})
+
+	bw.Navigate(serverURL)
+
+	go func() {
+		waitUIReady(uiReadyFallback)
+		time.Sleep(120 * time.Millisecond)
+		bw.Dispatch(func() {
+			// Add system tray icon
+			if globalHIcon != 0 {
+				addTrayIcon(hwnd, globalHIcon)
+			}
+
+			// Register global shortcut to restore/bring to front (reads from config, fallback to Ctrl+Alt+M)
+			updateGlobalHotKeyNative(getInitialGlobalShortcut())
+
+			// Register the fixed Ctrl+Shift+Q quick-capture hotkey (distinct from the
+			// user-configurable one above; see quickcapture_windows.go).
+			registerQuickCaptureWindowsHotkey(hwnd)
+		})
+	}()
+
+	bw.Run()
+}
+
+var (
+	globalMultiWebView    *multiWebView
+	secondaryWindowSeq    int64
+	secondaryOrigWndProcs sync.Map // windows.Handle -> uintptr
+	secondaryViewMap      sync.Map // windows.Handle -> *secondaryViewEntry
+)
+
+type secondaryViewEntry struct {
+	mw           *multiWebView
+	w            webview2.WebView
+	view         WebViewInstance
+	forceClosing int32
+}
+
+var secondaryWndProcCallback = windows.NewCallback(secondaryWndProc)
+
+func secondaryWndProc(hwnd windows.Handle, msg uint32, wParam uintptr, lParam uintptr) uintptr {
+	const (
+		WM_DESTROY  = 0x0002
+		WM_ACTIVATE = 0x0006
+		WM_CLOSE    = 0x0010
+	)
+	if msg == WM_ACTIVATE && wParam&0xFFFF != 0 {
+		if v, ok := secondaryViewMap.Load(hwnd); ok {
+			if entry, ok2 := v.(*secondaryViewEntry); ok2 && entry.mw != nil {
+				entry.mw.setActive(entry.view)
+			}
+		}
+	}
+	if msg == WM_CLOSE {
+		if v, ok := secondaryViewMap.Load(hwnd); ok {
+			if entry, ok2 := v.(*secondaryViewEntry); ok2 && atomic.LoadInt32(&entry.forceClosing) == 0 && entry.mw != nil && entry.view != nil {
+				target := entry.view
+				entry.mw.Dispatch(func() {
+					target.Eval("if (window.__sykiRequestCloseWindow) { window.__sykiRequestCloseWindow(); } else if (window.backend_forceQuit) { window.backend_forceQuit(); }")
+				})
+				return 0
+			}
+		}
+		_, _, _ = procDestroyWindow.Call(uintptr(hwnd))
+		return 0
+	}
+	if msg == WM_DESTROY {
+		if v, ok := secondaryViewMap.LoadAndDelete(hwnd); ok {
+			if entry, ok2 := v.(*secondaryViewEntry); ok2 {
+				if entry.mw != nil {
+					entry.mw.remove(entry.view)
+				}
+				if globalApp != nil {
+					globalApp.closePTYsForView(entry.view)
+				}
+			}
+		}
+		secondaryOrigWndProcs.Delete(hwnd)
+		ret, _, _ := procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
+		return ret
+	}
+	if orig, ok := secondaryOrigWndProcs.Load(hwnd); ok {
+		if origPtr, ok2 := orig.(uintptr); ok2 && origPtr != 0 {
+			ret, _, _ := procCallWindowProcW.Call(origPtr, uintptr(hwnd), uintptr(msg), wParam, lParam)
+			return ret
+		}
+	}
+	ret, _, _ := procDefWindowProcW.Call(uintptr(hwnd), uintptr(msg), wParam, lParam)
+	return ret
+}
+
+func openSecondaryWindow(app *App, mw *multiWebView, serverURL string, dataPath string, look nativeLook, opts openWindowOpts) {
+	id := atomic.AddInt64(&secondaryWindowSeq, 1) + 1
+	q := url.Values{}
+	q.Set("win", strconv.FormatInt(id, 10))
+	if opts.SplitAgent {
+		q.Set("split", "agent")
+	}
+	if opts.FilePath != "" {
+		q.Set("file", opts.FilePath)
+	}
+	targetURL := serverURL + "?" + q.Encode()
+
+	w2 := webview2.NewWithOptions(webview2.WebViewOptions{
+		Debug:     false,
+		AutoFocus: true,
+		DataPath:  dataPath,
+		WindowOptions: webview2.WindowOptions{
+			Title:  "syki",
+			Width:  1050,
+			Height: 720,
+			IconId: 1,
+		},
+	})
+	if w2 == nil {
+		return
+	}
+
+	applyNativeLook(w2, look)
+	configureWebViewSettings(w2)
+
+	hwnd2 := windows.Handle(w2.Window())
+	if globalHwnd != 0 && procGetWindowRect.Find() == nil && procSetWindowPos.Find() == nil {
+		var rc windows.Rect
+		if ok, _, _ := procGetWindowRect.Call(uintptr(globalHwnd), uintptr(unsafe.Pointer(&rc))); ok != 0 {
+			offset := int32(((id - 1) % 6) * 30)
+			if offset == 0 {
+				offset = 30
+			}
+			const SWP_NOSIZE = 0x0001
+			const SWP_NOZORDER = 0x0004
+			_, _, _ = procSetWindowPos.Call(uintptr(hwnd2), 0, uintptr(rc.Left+offset), uintptr(rc.Top+offset), 0, 0, SWP_NOSIZE|SWP_NOZORDER)
+		}
+	}
+
+	bw2 := &batchedBinderWebView{WebView: w2, names: make([]string, 0, 148)}
+	bindCommonBackend(bw2, app)
+	_ = bw2.Bind("backend_ptyStart", func(preset, dir string, cols, rows int) (string, error) {
+		return app.ptyStartForView(bw2, "", preset, dir, "", "", false, cols, rows)
+	})
+	_ = bw2.Bind("backend_ptyStartWithOptions", func(explicitID, preset, dir, label, cliSessionId string, resume bool, cols, rows int) (string, error) {
+		return app.ptyStartForView(bw2, explicitID, preset, dir, label, cliSessionId, resume, cols, rows)
+	})
+	bindWindowsSpecificBackend(bw2, app, hwnd2, false)
+
+	entry := &secondaryViewEntry{mw: mw, w: w2, view: bw2}
+	secondaryViewMap.Store(hwnd2, entry)
+	ret, _, _ := procSetWindowLongPtrW.Call(uintptr(hwnd2), GWLP_WNDPROC, secondaryWndProcCallback)
+	if ret != 0 {
+		secondaryOrigWndProcs.Store(hwnd2, ret)
+	}
+
+	mw.add(bw2)
+	bw2.Navigate(targetURL)
+}
+
+func bindWindowsSpecificBackend(w webview2.WebView, app *App, hwnd windows.Handle, isPrimary bool) {
 	_ = w.Bind("backend_openQuickCapture", app.OpenQuickCapture)
 	_ = w.Bind("backend_updateQuickCaptureShortcut", app.UpdateQuickCaptureShortcut)
 	_ = w.Bind("backend_minimizeWindow", func() error {
-		if isResidentConfigEnabled() {
+		if isPrimary && isResidentConfigEnabled() {
 			hideWindowToTray(hwnd)
 		} else {
 			_, _, _ = procShowWindow.Call(uintptr(hwnd), uintptr(windows.SW_MINIMIZE))
@@ -1155,10 +1350,19 @@ func runPlatformWindow(app *App, serverURL string) {
 		return nil
 	})
 	_ = w.Bind("backend_forceQuit", func() error {
-		saveCurrentWindowPlacement(hwnd)
-		atomic.StoreInt32(&isForceQuit, 1)
-		removeTrayIcon(hwnd)
-		return app.CloseWindow()
+		if isPrimary {
+			saveCurrentWindowPlacement(hwnd)
+			atomic.StoreInt32(&isForceQuit, 1)
+			removeTrayIcon(hwnd)
+			return app.CloseWindow()
+		}
+		if v, ok := secondaryViewMap.Load(hwnd); ok {
+			if entry, ok2 := v.(*secondaryViewEntry); ok2 {
+				atomic.StoreInt32(&entry.forceClosing, 1)
+			}
+		}
+		_, _, _ = procDestroyWindow.Call(uintptr(hwnd))
+		return nil
 	})
 	_ = w.Bind("backend_setIMEMode", func(enableJapanese bool) error {
 		// 1. Identify target window with input focus (WebView2 child control)
@@ -1220,28 +1424,6 @@ func runPlatformWindow(app *App, serverURL string) {
 		`openQuickCapture: () => window.backend_openQuickCapture()`,
 		`updateQuickCaptureShortcut: (shortcut) => window.backend_updateQuickCaptureShortcut(shortcut || "")`,
 	}))
-
-	w.Navigate(serverURL)
-
-	go func() {
-		waitUIReady(uiReadyFallback)
-		time.Sleep(120 * time.Millisecond)
-		w.Dispatch(func() {
-			// Add system tray icon
-			if globalHIcon != 0 {
-				addTrayIcon(hwnd, globalHIcon)
-			}
-
-			// Register global shortcut to restore/bring to front (reads from config, fallback to Ctrl+Alt+M)
-			updateGlobalHotKeyNative(getInitialGlobalShortcut())
-
-			// Register the fixed Ctrl+Shift+Q quick-capture hotkey (distinct from the
-			// user-configurable one above; see quickcapture_windows.go).
-			registerQuickCaptureWindowsHotkey(hwnd)
-		})
-	}()
-
-	w.Run()
 }
 
 func parseShortcut(sc string) (uintptr, uintptr, bool) {

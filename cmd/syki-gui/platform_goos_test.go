@@ -20,7 +20,7 @@ func TestPlatformCapabilitiesFor(t *testing.T) {
 		goos string
 		want PlatformCapabilities
 	}{
-		{"windows", PlatformCapabilities{OS: "windows", NativeImeSwitch: true, Tray: true, GlobalHotkey: true}},
+		{"windows", PlatformCapabilities{OS: "windows", NativeImeSwitch: true, Tray: true, GlobalHotkey: true, MultiWindow: true}},
 		{"darwin", PlatformCapabilities{OS: "darwin", NativeImeSwitch: false, Tray: false, GlobalHotkey: true}},
 		{"linux", PlatformCapabilities{OS: "linux"}},
 	}

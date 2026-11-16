@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -123,6 +124,17 @@ func main() {
 			Action:    ipc.ActionNewTab,
 			Timestamp: time.Now().Format(time.RFC3339),
 		}
+	} else if !isPipe && len(args) >= 1 && (args[0] == "--new-window" || args[0] == "--new-agent-window") {
+		mode := ""
+		if args[0] == "--new-agent-window" {
+			mode = "agent"
+		}
+		ipcMsg = &ipc.Message{
+			Action:    ipc.ActionNewWindow,
+			Command:   mode,
+			Path:      resolveStartupFileArg(args[1:]),
+			Timestamp: time.Now().Format(time.RFC3339),
+		}
 	} else if !isPipe {
 		// `syki notes.md` while an instance is already running. Until now no IPC message
 		// was built for this case at all, so on Windows the single-instance mutex stopped the
@@ -225,6 +237,12 @@ func main() {
 				// process, whose working directory this one does not share).
 				_ = app.OpenPathInNewTab(msg.Path)
 				activatePlatformWindow()
+			case ipc.ActionNewWindow:
+				optsJSON, _ := json.Marshal(openWindowOpts{
+					FilePath:   msg.Path,
+					SplitAgent: msg.Command == "agent",
+				})
+				_ = app.OpenNewWindow(string(optsJSON))
 			}
 		})
 		if err == nil && srv != nil {
