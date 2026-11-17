@@ -95,7 +95,7 @@ jobs:
           exit 0
 
       - name: Upload Windows build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: syki-windows-${{ github.sha }}
           path: |
@@ -174,7 +174,7 @@ jobs:
         run: ditto -c -k --sequesterRsrc --keepParent "syki-sok.app" syki-macos.zip
 
       - name: Upload macOS build artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: syki-macos-${{ github.sha }}
           path: syki-macos.zip
