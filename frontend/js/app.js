@@ -14856,7 +14856,7 @@ OUTPUT FORMAT:
       const endpoint = endpointEl ? endpointEl.value.trim() : '';
       const token = tokenEl ? tokenEl.value.trim() : '';
       if (!endpoint) {
-        alert(t('cfBridgeTestFailed', { err: 'Endpoint URLを入力してください' }));
+        showMessage(t('cfBridgeTestFailed', { err: 'Endpoint URLを入力してください' }), 4000, { important: true });
         return;
       }
       if (!window.backend || !window.backend.getCFBridgePairingQR) return;
@@ -14870,7 +14870,7 @@ OUTPUT FORMAT:
         if (urlEl) urlEl.textContent = targetUrl;
         if (modal) modal.classList.remove('hidden');
       } catch (e) {
-        alert((e && e.message) || String(e));
+        showMessage((e && e.message) || String(e), 4000, { important: true });
       }
     });
   }
@@ -17639,7 +17639,7 @@ OUTPUT FORMAT:
       if (btnClose) btnClose.onclick = hideBar;
 
       btnDiscard.onclick = async () => {
-        if (!confirm(`未処理の録音 ${count} 件を破棄（削除）しますか？`)) return;
+        if (!(await customConfirm(`未処理の録音 ${count} 件を破棄（削除）しますか？`))) return;
         try {
           if (window.backend.discardAllVoiceCaches) {
             await window.backend.discardAllVoiceCaches();
