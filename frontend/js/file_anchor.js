@@ -468,7 +468,18 @@
     // being dragged), and the layer has to give up exactly that much width to keep wrapping like it.
     if (typeof global.ResizeObserver === 'function') {
       try {
-        new global.ResizeObserver(() => { if (layer.text !== null) syncLayerScroll(editor, layer); }).observe(editor);
+        let syncScheduled = false;
+        new global.ResizeObserver(() => {
+          if (layer.text === null || syncScheduled) return;
+          syncScheduled = true;
+          const raf = typeof global.requestAnimationFrame === 'function'
+            ? global.requestAnimationFrame
+            : (fn) => setTimeout(fn, 16);
+          raf(() => {
+            syncScheduled = false;
+            if (layer.text !== null) syncLayerScroll(editor, layer);
+          });
+        }).observe(editor);
       } catch (e) { /* the gutter is still refreshed on every scroll and update */ }
     }
     return layer;
@@ -503,9 +514,17 @@
   // Follows the textarea's scroll, and reserves the width of its scrollbar (a textarea with a
   // scrollbar wraps that much narrower than a box without one).
   function syncLayerScroll(editor, layer) {
-    layer.inner.style.transform = 'translate(' + (-(editor.scrollLeft || 0)) + 'px, ' + (-(editor.scrollTop || 0)) + 'px)';
+    const nextTransform = 'translate(' + (-(editor.scrollLeft || 0)) + 'px, ' + (-(editor.scrollTop || 0)) + 'px)';
+    if (layer.lastTransform !== nextTransform) {
+      layer.inner.style.transform = nextTransform;
+      layer.lastTransform = nextTransform;
+    }
     const gutter = (editor.offsetWidth || 0) - (editor.clientWidth || 0);
-    layer.el.style.right = (gutter > 0 ? gutter : 0) + 'px';
+    const nextRight = (gutter > 0 ? gutter : 0) + 'px';
+    if (layer.lastRight !== nextRight) {
+      layer.el.style.right = nextRight;
+      layer.lastRight = nextRight;
+    }
   }
 
   function updateMarks(editor) {

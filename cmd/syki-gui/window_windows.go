@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strconv"
 	"strings"
@@ -50,6 +51,8 @@ var (
 	procGetCursorPos           = modUser32.NewProc("GetCursorPos")
 	procDestroyWindow          = modUser32.NewProc("DestroyWindow")
 	procPostQuitMessage        = modUser32.NewProc("PostQuitMessage")
+	procGetAncestor            = modUser32.NewProc("GetAncestor")
+	procIsDialogMessageW       = modUser32.NewProc("IsDialogMessageW")
 
 	modPsapi            = windows.NewLazySystemDLL("psapi.dll")
 	procEmptyWorkingSet = modPsapi.NewProc("EmptyWorkingSet")
@@ -890,6 +893,7 @@ type webviewBindingsLayout struct {
 	minsz     struct{ X, Y int32 }
 	m         sync.Mutex
 	bindings  map[string]interface{}
+	dispatchq []func()
 }
 
 func (bb *batchedBinderWebView) Bind(name string, f interface{}) error {
@@ -1195,7 +1199,105 @@ func runPlatformWindow(app *App, serverURL string) {
 		})
 	}()
 
-	bw.Run()
+	runWindowsMessageLoop(bw)
+}
+
+type win32Msg struct {
+	Hwnd    uintptr
+	Message uint32
+	WParam  uintptr
+	LParam  uintptr
+	Time    uint32
+	Pt      struct{ X, Y int32 }
+}
+
+func drainWebViewDispatchQueue(w webview2.WebView) {
+	if w == nil {
+		return
+	}
+	wl := (*webviewBindingsLayout)(reflectValPointer(w))
+	if wl == nil {
+		return
+	}
+	wl.m.Lock()
+	if len(wl.dispatchq) == 0 {
+		wl.m.Unlock()
+		return
+	}
+	q := append([]func(){}, wl.dispatchq...)
+	wl.dispatchq = wl.dispatchq[:0]
+	wl.m.Unlock()
+	for _, fn := range q {
+		if fn != nil {
+			fn()
+		}
+	}
+}
+
+func verifyWebViewLayout(w webview2.WebView) bool {
+	if w == nil {
+		return false
+	}
+	if bb, ok := w.(*batchedBinderWebView); ok && bb != nil {
+		w = bb.WebView
+	}
+	rv := reflect.ValueOf(w)
+	if rv.Kind() != reflect.Ptr || rv.IsNil() {
+		return false
+	}
+	elemType := rv.Elem().Type()
+	mField, okM := elemType.FieldByName("m")
+	dqField, okDQ := elemType.FieldByName("dispatchq")
+	if !okM || !okDQ {
+		return false
+	}
+	return mField.Offset == unsafe.Offsetof(webviewBindingsLayout{}.m) &&
+		dqField.Offset == unsafe.Offsetof(webviewBindingsLayout{}.dispatchq)
+}
+
+// runWindowsMessageLoop replaces w.Run() so WM_APP drains dispatch queues of both
+// the primary window and all open secondary windows (go-webview2's built-in Run only
+// drains its own receiver's dispatchq, leaving secondary RPC promises unresolved).
+func runWindowsMessageLoop(primary webview2.WebView) {
+	if !verifyWebViewLayout(primary) {
+		log.Printf("warning: go-webview2 struct layout mismatch; falling back to primary.Run()")
+		primary.Run()
+		return
+	}
+	const (
+		wmQuit  = 0x0012
+		wmApp   = 0x8000
+		gaRoot  = 2
+	)
+	var msg win32Msg
+	for {
+		ret, _, _ := procGetMessageW.Call(uintptr(unsafe.Pointer(&msg)), 0, 0, 0)
+		if int32(ret) <= 0 {
+			return
+		}
+		if msg.Message == wmApp {
+			drainWebViewDispatchQueue(primary)
+			// Closed secondary windows are removed from secondaryViewMap on WM_DESTROY,
+			// so any queued callbacks for a closed window are intentionally dropped rather
+			// than executed against a destroyed WebView2 instance.
+			secondaryViewMap.Range(func(_, v interface{}) bool {
+				if entry, ok := v.(*secondaryViewEntry); ok && entry.w != nil {
+					drainWebViewDispatchQueue(entry.w)
+				}
+				return true
+			})
+			continue
+		}
+		if msg.Message == wmQuit {
+			return
+		}
+		root, _, _ := procGetAncestor.Call(msg.Hwnd, gaRoot)
+		if isDlg, _, _ := procIsDialogMessageW.Call(root, uintptr(unsafe.Pointer(&msg))); isDlg != 0 {
+			continue
+		}
+		_, _, _ = procTranslateMessage.Call(uintptr(unsafe.Pointer(&msg)))
+		_, _, _ = procDispatchMessageW.Call(uintptr(unsafe.Pointer(&msg)))
+	}
 }
 
 var (
