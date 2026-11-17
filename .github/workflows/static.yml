@@ -51,7 +51,7 @@ jobs:
           cp -r img _site/
           cp index.html index_ja.html manual.html manual_ja.html app.png app.ico llms.txt .nojekyll _site/
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with:
           path: '_site'
       - name: Deploy to GitHub Pages
