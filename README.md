@@ -1,5 +1,13 @@
 # syki::sok
 
+<p align="center">
+  <a href="https://github.com/youshinh/syki-sok/releases/latest"><img src="https://img.shields.io/github/v/release/youshinh/syki-sok?style=flat-square" alt="Latest Release"></a>
+  <a href="https://github.com/youshinh/syki-sok/actions/workflows/ci.yml"><img src="https://img.shields.io/github/actions/workflow/status/youshinh/syki-sok/ci.yml?branch=main&style=flat-square&label=CI" alt="CI Status"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/youshinh/syki-sok?style=flat-square" alt="License"></a>
+  <img src="https://img.shields.io/badge/platform-Windows%20%7C%20macOS-blue?style=flat-square" alt="Platforms">
+  <img src="https://img.shields.io/badge/privacy-local--first-brightgreen?style=flat-square" alt="Local-First Privacy">
+</p>
+
 An instant, featherweight Markdown scratchpad with AI right at your cursor.  
 
 <p align="center">
