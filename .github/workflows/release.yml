@@ -104,7 +104,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: gh release upload "$RELEASE_TAG" syki-windows-x64.zip --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          sha256sum syki-windows-x64.zip > syki-windows-x64.zip.sha256
+          gh release upload "$RELEASE_TAG" syki-windows-x64.zip syki-windows-x64.zip.sha256 --repo "$GITHUB_REPOSITORY" --clobber
 
   build-macos:
     name: Build macOS App
@@ -173,7 +175,9 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
-        run: gh release upload "$RELEASE_TAG" syki-macos.zip --repo "$GITHUB_REPOSITORY" --clobber
+        run: |
+          shasum -a 256 syki-macos.zip > syki-macos.zip.sha256
+          gh release upload "$RELEASE_TAG" syki-macos.zip syki-macos.zip.sha256 --repo "$GITHUB_REPOSITORY" --clobber
 
       - name: Automatically Update Homebrew Tap
         env:

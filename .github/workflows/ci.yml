@@ -30,6 +30,9 @@ jobs:
         # across the rest of the codebase still fail CI.
         run: go vet -unsafeptr=false ./...
 
+      - name: govulncheck
+        run: go run golang.org/x/vuln/cmd/govulncheck@latest ./...
+
       - name: go build (compile gate)
         run: go build ./...
 
