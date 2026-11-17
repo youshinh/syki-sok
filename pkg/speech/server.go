@@ -54,14 +54,7 @@ func (m *ServerManager) EnsureServer(ctx context.Context, exe, modelPath, vadMod
 		return "", "", fmt.Errorf("空きポートを取得できません: %w", err)
 	}
 
-	args := []string{"serve", modelPath}
-	if vadModelPath != "" {
-		args = append(args, vadModelPath)
-	}
-	args = append(args, "--port", strconv.Itoa(port), "--device", "cpu", "--cors-origin", "*", "--no-warmup")
-	if threads > 0 {
-		args = append(args, "--threads", strconv.Itoa(threads))
-	}
+	args := buildSpeechServerArgs(modelPath, vadModelPath, port, threads)
 
 	cmd := exec.CommandContext(context.Background(), exe, args...)
 	cmd.Dir = filepath.Dir(exe)
@@ -97,6 +90,20 @@ func (m *ServerManager) EnsureServer(ctx context.Context, exe, modelPath, vadMod
 	}
 
 	return m.baseURL, m.wsURL, nil
+}
+
+func buildSpeechServerArgs(modelPath, vadModelPath string, port, threads int) []string {
+	args := []string{"serve", modelPath}
+	if vadModelPath != "" {
+		args = append(args, vadModelPath)
+	}
+	// Do not pass --cors-origin *; the GUI connects over 127.0.0.1 WebSocket and wildcard CORS
+	// would let arbitrary websites read responses from the local transcription server.
+	args = append(args, "--port", strconv.Itoa(port), "--device", "cpu", "--no-warmup")
+	if threads > 0 {
+		args = append(args, "--threads", strconv.Itoa(threads))
+	}
+	return args
 }
 
 func (m *ServerManager) isHealthyLocked() bool {

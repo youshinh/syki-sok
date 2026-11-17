@@ -180,6 +180,9 @@ func FindSkillInstruction(rootDir, skillName string) (*SkillInfo, error) {
 	if cleanName == "" {
 		return nil, fmt.Errorf("skill name is empty")
 	}
+	if cleanName == "." || cleanName == ".." || strings.ContainsAny(cleanName, `/\`) || strings.Contains(cleanName, "..") || filepath.IsAbs(cleanName) {
+		return nil, fmt.Errorf("invalid skill name: %q", skillName)
+	}
 
 	candidates := []string{
 		filepath.Join(rootDir, "skills", cleanName, "SKILL.md"),

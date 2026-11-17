@@ -64,6 +64,8 @@ func (a *App) rpcPrintPdf(req *ipc.RPCRequest) *ipc.RPCResponse {
 	switch {
 	case out == "":
 		return errorResponse(req.ID, ipc.ErrCodeInvalidParams, "out is required: the .pdf file to write")
+	case isRemoteSharePath(out):
+		return errorResponse(req.ID, ipc.ErrCodeInvalidParams, "out must be a local path, not a network share")
 	case !filepath.IsAbs(out):
 		return errorResponse(req.ID, ipc.ErrCodeInvalidParams, "out must be an absolute path")
 	case strings.ToLower(filepath.Ext(out)) != ".pdf":

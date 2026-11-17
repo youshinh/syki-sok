@@ -320,7 +320,7 @@ func pathFromFileURL(raw string) (string, error) {
 	}
 	p := u.Path
 	if u.Host != "" && !strings.EqualFold(u.Host, "localhost") {
-		p = "//" + u.Host + p
+		return "", fmt.Errorf("リモート共有パスは開けません")
 	}
 	if len(p) >= 3 && p[0] == '/' && p[2] == ':' {
 		p = p[1:] // "/C:/..." -> "C:/..."
@@ -341,6 +341,10 @@ func resolveTargetPath(target, baseDir string) (string, error) {
 			return "", fmt.Errorf("許可されていないスキームです: %s", scheme)
 		}
 		return pathFromFileURL(target)
+	}
+
+	if isRemoteSharePath(target) {
+		return "", fmt.Errorf("リモート共有パスは開けません")
 	}
 
 	if !filepath.IsAbs(target) {
@@ -398,6 +402,9 @@ func (a *App) OpenPath(target, baseDir string) error {
 	if err != nil {
 		return fmt.Errorf("パスの解決に失敗しました: %w", err)
 	}
+	if isRemoteSharePath(abs) {
+		return fmt.Errorf("リモート共有パスは開けません")
+	}
 	if _, err := os.Stat(abs); err != nil {
 		return fmt.Errorf("ファイルが見つかりません: %w", err)
 	}
@@ -418,6 +425,9 @@ func (a *App) RevealPath(target, baseDir string) error {
 	abs, err := filepath.Abs(p)
 	if err != nil {
 		return fmt.Errorf("パスの解決に失敗しました: %w", err)
+	}
+	if isRemoteSharePath(abs) {
+		return fmt.Errorf("リモート共有パスは開けません")
 	}
 	if _, err := os.Stat(abs); err != nil {
 		return fmt.Errorf("ファイルが見つかりません: %w", err)

@@ -988,3 +988,24 @@ func TestListVoiceCaches_CleansTinyAndListsValid(t *testing.T) {
 		t.Errorf("expected valid file in results, got: %+v", items)
 	}
 }
+
+func TestOpenAndRevealPath_RejectRemoteShares(t *testing.T) {
+	calls := withStubbedStartProcess(t)
+	app := &App{}
+	remoteTargets := []string{
+		`\\evil.example\share\note.md`,
+		`//evil.example/share/note.md`,
+		`file://evil.example/share/note.md`,
+	}
+	for _, target := range remoteTargets {
+		if err := app.OpenPath(target, ""); err == nil {
+			t.Errorf("OpenPath(%q) should reject remote share path", target)
+		}
+		if err := app.RevealPath(target, ""); err == nil {
+			t.Errorf("RevealPath(%q) should reject remote share path", target)
+		}
+	}
+	if len(*calls) != 0 {
+		t.Errorf("no process should have been started, got %v", *calls)
+	}
+}
