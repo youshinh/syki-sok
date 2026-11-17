@@ -1022,6 +1022,7 @@ const I18N = {
     zenModeDisabled: "Zen Mode OFF",
     zenShortcutMoved: "Zen Mode is now {sc}. Ctrl+Shift+Z is Redo again.",
     confirmCloseUnsaved: 'Do you want to save changes to "{title}"?',
+    confirmTitle: "Confirm",
     unsavedCloseWindowConfirm: "There are unsaved changes in this window. Close without saving?",
     closeWindowAction: "Close",
 
@@ -2680,6 +2681,7 @@ const I18N = {
     zenModeDisabled: "集中（Zen）モード OFF",
     zenShortcutMoved: "集中（Zen）モードのキーを {sc} に変更しました。Ctrl+Shift+Z は「やり直し」に戻ります。",
     confirmCloseUnsaved: '"{title}" への変更内容を保存しますか？',
+    confirmTitle: "確認",
     unsavedCloseWindowConfirm: "このウィンドウには未保存の変更があります。保存せずに閉じますか？",
     closeWindowAction: "閉じる",
 

@@ -313,7 +313,7 @@ check('I2: the timer is not even armed when the setting is off, and is checked a
   const start = appCode.indexOf('// Check for app updates asynchronously in background');
   assert.ok(start > 0);
   const block = appCode.slice(start, appCode.indexOf('})();', start));
-  assert.ok(/if \(updateCheckAtStartup\(\)\) \{\s*setTimeout\(\(\) => \{\s*if \(updateCheckAtStartup\(\)\) checkForAppUpdates\(\);\s*\}, (?:2500|BOOT_POLICY\.updateCheckDelayMs)\);\s*\}/.test(block), block);
+  assert.ok(/if \((?:!isSecondaryWindow && )?updateCheckAtStartup\(\)\) \{\s*setTimeout\(\(\) => \{\s*if \(updateCheckAtStartup\(\)\) checkForAppUpdates\(\);\s*\}, (?:2500|BOOT_POLICY\.updateCheckDelayMs)\);\s*\}/.test(block), block);
   const fetches = appCode.match(/fetch\(/g) || [];
   const gh = appCode.split('\n').filter((l) => l.includes('api.github.com') && !l.trim().startsWith('//'));
   assert.equal(gh.length, 1, 'the URL is written once: ' + gh.join(' | '));
