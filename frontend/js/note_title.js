@@ -38,7 +38,7 @@
   const RESERVED = /^(?:CON|PRN|AUX|NUL|COM[1-9]|LPT[1-9])\s*(?:\..*)?$/i;
   const SPACE = /\s/;
   // What may not end a cut summary: whitespace and the connectors that would dangle ("Foo, bar," -> "Foo, bar").
-  const CUT_TAIL = /[\s,;\u3001\uFF0C\uFF1B\-\u2013\u2014]+$/;
+  const CUT_TAIL = /[\s,;\u3001\u3002\uFF0C\uFF0E\uFF1B\-\u2013\u2014]+$/;
 
   // A line that carries only a date: "# 2026-09-25 07:51", "2026/09/11 18:28:30", "2026-09-11".
   const DATE_ONLY = /^(?:#+[ \t\u3000]*)?(\d{4})[-/](\d{2})[-/](\d{2})(?:[ \t\u3000]+(\d{2}):(\d{2})(?::(\d{2}))?)?$/;
@@ -48,7 +48,7 @@
   const FENCE = /^(`{3,}|~{3,})(.*)$/;
   // Rules and separators: "---", "***", "___", "====", "|---|:--:|", "+---+", box-drawing lines.
   const SEPARATOR = /^[-=*_~+:|\s\u2013\u2014\u2015\u2500-\u257F\uFF0D\uFF1D]+$/;
-  // A line that is nothing but slot / task notation (see auto_selector.js and slot_agent.js for the syntax).
+  // A line that is nothing but slot / task notation or transient status anchors (voice recording, AI correcting).
   const SLOT_ONLY = [
     /^\{\{.*\}\}$/,
     /^\[\?.*\]$/,
@@ -56,7 +56,9 @@
     /^\[!.*!\]$/,
     /^\[>>.*\]$/,
     /^\[\[[ \t\u3000].*\]\]$/,
-    /^\[\[(?:@llm|\$).*\]\]$/
+    /^\[\[(?:@llm|\$).*\]\]$/,
+    /^⦅.*⦆$/,
+    /^\[(?:AI\s*(?:補正中|生成中|画像生成中|Correcting|Generating)|Mermaid図生成中|Generating Diagram|画像生成プロンプト構築中|Building Image Prompt|画像マークダウン変換中|Transcribing Image)[^\]]*\]$/i
   ];
   // Front matter lines look like YAML: "key: value", "- item", an indented continuation, a comment or a blank.
   const YAML_LINE = /^(?:[ \t]|#|-(?:[ \t]|$)|[^\s:][^:]*:(?:[ \t]|$))/;
@@ -65,7 +67,7 @@
 
   function isSlotOnly(s) {
     const c = s.charCodeAt(0);
-    if (c !== 0x7B && c !== 0x5B && c !== 0x3010) return false; // { [ 【
+    if (c !== 0x7B && c !== 0x5B && c !== 0x3010 && c !== 0x2985) return false; // { [ 【 ⦅
     for (let i = 0; i < SLOT_ONLY.length; i++) {
       if (SLOT_ONLY[i].test(s)) return true;
     }
@@ -98,7 +100,7 @@
 
   // The inline Markdown of one line: images and links keep their text, emphasis, code ticks, HTML tags and comments go.
   function stripInline(s) {
-    s = s.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '');
+    s = s.replace(/[\u200B-\u200D\u2060\uFEFF]/g, '').replace(/⦅[^⦆]*⦆/g, ' ');
     if (s.indexOf('<!--') !== -1) s = removeComments(s)[0];
     s = s.replace(/!\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, '$1');
     s = s.replace(/\[([^\]]*)\]\((?:[^()]|\([^()]*\))*\)/g, '$1');
@@ -208,10 +210,21 @@
     return chars.slice(0, cut).join('').replace(CUT_TAIL, '');
   }
 
+  const FILLER_PREFIX = /^(?:(?:はい|ええと|えーと|えっと|あのー|あの|うーん|まぁ|ま|で|それで|あと)[、。，．.\s\u3000]+)+/;
+
+  function trimSpokenSentence(s) {
+    const stripped = s.replace(FILLER_PREFIX, '').trim();
+    if (stripped.length >= 4) s = stripped;
+    const periodIdx = s.search(/[。．]/);
+    if (periodIdx >= 4) s = s.slice(0, periodIdx).trim();
+    return s.replace(/[、。，．]+$/, '').trim();
+  }
+
   // One line body (containers and heading mark already removed) -> the finished summary, or '' when nothing usable is left.
   function summarize(body, maxChars) {
-    const s = sanitizeCore(stripInline(fitBody(body)));
-    if (!s) return '';
+    const raw = sanitizeCore(stripInline(fitBody(body)));
+    if (!raw) return '';
+    const s = trimSpokenSentence(raw) || raw;
     return truncateTitle(s, maxChars).replace(/[. ]+$/, '');
   }
 

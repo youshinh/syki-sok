@@ -184,3 +184,79 @@ console.log('PASS: Dynamic agent options populated correctly with custom agents.
   assert.ok(appJs.includes('renderAgentDisabledNote(slotCfg);\n          renderAgentIssues(slotCfg);') || /renderAgentDisabledNote\(slotCfg\);\s*renderAgentIssues\(slotCfg\);/.test(appJs), 'it is rendered with the list');
   console.log('PASS: The Settings line names the disabled agents (en / ja), only when there are any.');
 }
+
+// Checkboxes in Settings > Agent toggle disabled_agents across config, dropdown, SlotAgent, and backend
+{
+  const visMatch = appJs.match(/function renderAgentVisibilityList\(slotCfg\) \{[\s\S]*?\n  \}/);
+  assert.ok(visMatch, 'renderAgentVisibilityList must exist in app.js');
+  const container = { innerHTML: '', children: [], appendChild(ch) { this.children.push(ch); } };
+  const selectEl = new MockElement('cfg-default-agent');
+  Object.defineProperty(selectEl, 'innerHTML', {
+    get() { return ''; },
+    set(v) { if (v === '') this.options = []; }
+  });
+  const makeNode = (tag) => {
+    const listeners = {};
+    return {
+      tagName: tag.toUpperCase(),
+      style: {},
+      children: [],
+      type: '',
+      checked: false,
+      disabled: false,
+      appendChild(ch) { this.children.push(ch); },
+      addEventListener(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); },
+      trigger(evt) { (listeners[evt] || []).forEach((fn) => fn()); }
+    };
+  };
+  const doc = {
+    getElementById: (id) => (id === 'agent-visibility-list' ? container : id === 'cfg-default-agent' ? selectEl : null),
+    createElement: (tag) => (tag === 'option' ? new MockOption() : makeNode(tag)),
+    createTextNode: (txt) => ({ textContent: txt })
+  };
+  const conf = { default_agent: 'claude-code', disabled_agents: [] };
+  const known = {
+    'claude-code': { command: 'claude', description: 'Claude Code' },
+    hermes: { command: 'ollama', description: 'Hermes 3' },
+    codex: { command: 'codex', description: 'Codex' },
+    agy: { command: 'agy', description: 'Antigravity' }
+  };
+  const slotUpdates = [];
+  const backendUpdates = [];
+  let saved = 0;
+  const win = {
+    backend: { updateActiveAgentsConfigDisabledAgents: async (dir, list) => { backendUpdates.push({ dir, list }); } },
+    SlotAgent: { updateConfig: (cfg) => { slotUpdates.push(cfg); } }
+  };
+  const slotCfg = {
+    default_agent: 'claude-code',
+    disabled_agents: [],
+    agents: {
+      'claude-code': { command: 'claude', description: 'Claude Code' },
+      hermes: { command: 'ollama', description: 'Hermes 3' },
+      codex: { command: 'codex', description: 'Codex' },
+      agy: { command: 'agy', description: 'Antigravity' }
+    }
+  };
+  const runVis = new Function(
+    'slotCfg', 'config', 'document', 'window', 'knownAgentDefinitions',
+    'savePersistentConfig', 'renderAgentDisabledNote', 'updateAgentAutoApproveWarning', 'updateAgentAvailabilityBadge',
+    `${fnMatch[0]}\n${visMatch[0]}\nreturn renderAgentVisibilityList(slotCfg);`
+  );
+  runVis(slotCfg, conf, doc, win, known, async () => { saved++; }, () => {}, () => {}, () => {});
+  assert.strictEqual(container.children.length, 4, 'renders checkboxes for all 4 built-in agents');
+  // Uncheck agy and codex
+  for (const label of container.children) {
+    const key = label.children[1].textContent;
+    if (key === 'agy' || key === 'codex') {
+      label.children[0].checked = false;
+      label.children[0].trigger('change');
+    }
+  }
+  assert.deepStrictEqual(conf.disabled_agents, ['agy', 'codex']);
+  assert.deepStrictEqual(selectEl.options.map((o) => o.value), ['claude-code', 'hermes']);
+  assert.ok(saved >= 2);
+  assert.deepStrictEqual(backendUpdates[backendUpdates.length - 1].list, ['agy', 'codex']);
+  assert.deepStrictEqual(slotUpdates[slotUpdates.length - 1].disabled_agents, ['agy', 'codex']);
+  console.log('PASS: Settings > Agent visibility checkboxes update config, dropdown, SlotAgent, and backend.');
+}

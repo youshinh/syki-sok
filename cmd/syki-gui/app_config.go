@@ -46,6 +46,7 @@ var (
 	timeoutSecondsLineRE = lazyre.New(`(?m)^(\s*timeout_seconds\s*:\s*)[^\r\n#]+`)
 	hoverPeekLineRE      = lazyre.New(`(?m)^(\s*hover_peek_enabled\s*:\s*)[^\r\n#]+`)
 	ghostDiffLineRE      = lazyre.New(`(?m)^(\s*ghost_diff_duration_ms\s*:\s*)[^\r\n#]+`)
+	disabledAgentsLineRE = lazyre.New(`(?m)^(\s*disabled_agents\s*:\s*)\[[^\r\n]*\][ \t]*(?:\r?\n)?`)
 )
 
 type generalConfigSnapshot struct {
@@ -390,6 +391,47 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 			content = verRe.ReplaceAllString(content, fmt.Sprintf("${1}\ndefault_agent: %s", agentName))
 		} else {
 			content = fmt.Sprintf("default_agent: %s\n", agentName) + content
+		}
+	}
+
+	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+		return err
+	}
+	a.invalidateSlotConfigCache()
+	return nil
+}
+
+// UpdateActiveAgentsConfigDisabledAgents updates the disabled_agents list in active external agents.yaml if present.
+func (a *App) UpdateActiveAgentsConfigDisabledAgents(scrapDir string, disabled []string) error {
+	foundPath := slotagent.FindAgentConfigFile(scrapDir)
+	if foundPath == "" {
+		a.invalidateSlotConfigCache()
+		return nil
+	}
+
+	data, err := os.ReadFile(foundPath)
+	if err != nil {
+		return err
+	}
+
+	var clean []string
+	for _, d := range disabled {
+		if s := strings.TrimSpace(d); s != "" {
+			clean = append(clean, s)
+		}
+	}
+
+	content := string(data)
+	if len(clean) == 0 {
+		content = disabledAgentsLineRE.ReplaceAllString(content, "")
+	} else {
+		val := "[" + strings.Join(clean, ", ") + "]"
+		if disabledAgentsLineRE.MatchString(content) {
+			content = disabledAgentsLineRE.ReplaceAllString(content, fmt.Sprintf("${1}%s\n", val))
+		} else if versionLineRE.MatchString(content) {
+			content = versionLineRE.ReplaceAllString(content, fmt.Sprintf("${1}\ndisabled_agents: %s", val))
+		} else {
+			content = fmt.Sprintf("disabled_agents: %s\n", val) + content
 		}
 	}
 

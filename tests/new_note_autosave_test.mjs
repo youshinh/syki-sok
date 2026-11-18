@@ -41,6 +41,11 @@ env.window.backend = {};
 assert.equal(arm({ id: 'n1', path: '' }), 0, 'a backend that cannot make files leaves the old behaviour');
 env.window.backend = { createNoteInFolder: () => {} };
 assert.equal(arm({ id: 'n1', path: 'C:/x/a.md' }), 1, 'a note with a file is autosaved as before');
+env.texts.v1 = '# 2026-10-09 08:00\n⦅音声入力中... [id:uppq]⦆';
+assert.equal(arm({ id: 'v1', path: '' }), 0, 'a note holding a recording anchor does not auto-create a file');
+env.window.VoiceInput = { isRecording: () => true };
+assert.equal(arm({ id: 'n1', path: '' }), 0, 'during active voice recording no new file is auto-created');
+delete env.window.VoiceInput;
 
 // The save of a note with no file: the folder setting is sent, no dialog is involved, and a failure marks the note.
 const save = fn('saveTabNow');

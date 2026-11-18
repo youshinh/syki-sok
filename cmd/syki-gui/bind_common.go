@@ -107,6 +107,7 @@ func bindCommonBackend(w binder, app *App) {
 	_ = w.Bind("backend_checkAgentAvailability", app.CheckAgentAvailability)
 	_ = w.Bind("backend_detectLLMProvider", app.DetectLLMProvider)
 	_ = w.Bind("backend_updateActiveAgentsConfigDefaultAgent", app.UpdateActiveAgentsConfigDefaultAgent)
+	_ = w.Bind("backend_updateActiveAgentsConfigDisabledAgents", app.UpdateActiveAgentsConfigDisabledAgents)
 	_ = w.Bind("backend_exportAgentsConfigFile", app.ExportAgentsConfigFile)
 	_ = w.Bind("backend_importAgentsConfigFile", app.ImportAgentsConfigFile)
 	_ = w.Bind("backend_openAgentsConfigFile", app.OpenAgentsConfigFile)
@@ -362,6 +363,7 @@ func buildCommonBridgeInitJS(extraMethodsJS []string) string {
 			checkAgentAvailability: (agentName) => window.backend_checkAgentAvailability(agentName || ""),
 			detectLLMProvider: (baseUrl, apiKey) => window.backend_detectLLMProvider(baseUrl || "", apiKey || ""),
 			updateActiveAgentsConfigDefaultAgent: (scrapDir, agentName) => window.backend_updateActiveAgentsConfigDefaultAgent(scrapDir || "", agentName || ""),
+			updateActiveAgentsConfigDisabledAgents: (scrapDir, disabled) => window.backend_updateActiveAgentsConfigDisabledAgents(scrapDir || "", Array.isArray(disabled) ? disabled : []),
 			exportAgentsConfigFile: (format) => window.backend_exportAgentsConfigFile(format || "yaml"),
 			importAgentsConfigFile: () => window.backend_importAgentsConfigFile(),
 			openAgentsConfigFile: (scrapDir) => window.backend_openAgentsConfigFile(scrapDir || ""),

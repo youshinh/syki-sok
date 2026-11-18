@@ -477,6 +477,12 @@ const DATE = '# 2026-09-25 07:51\n\n'; // what a new note starts with
   // the tab label stays the plain summary
   assert.strictEqual(title(DATE + 'Weekly plan'), 'Weekly plan');
   assert.ok(!/^\d{4}-\d{2}-\d{2}_/.test(title('Weekly plan')));
+  // transient voice recording & AI correcting anchors (and numbered / EN / inline variants) are skipped
+  assert.strictEqual(n('# 2026-10-09 08:00\n⦅音声入力中... [id uppq]⦆\n', '2026-10-09'), '2026-10-09 08-00.md');
+  assert.strictEqual(n('[AI補正中...]\n実際のメモ内容', '2026-10-09'), '2026-10-09_実際のメモ内容.md');
+  assert.strictEqual(n('[AI補正中... 2]\n[AI Correcting...]\n[AI 生成中: 要約...]\n[Transcribing Image (Gemini)...]\n実際のタイトル', '2026-10-09'), '2026-10-09_実際のタイトル.md');
+  assert.strictEqual(n('⦅録音中⦆ メモ開始', '2026-10-09'), '2026-10-09_メモ開始.md');
+  assert.strictEqual(n('はい。で、えっと、紙ってあれやんな。次の文です', '2026-10-09'), '2026-10-09_紙ってあれやんな.md');
 })();
 
 console.log('note_title tests passed');

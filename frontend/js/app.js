@@ -6279,7 +6279,8 @@
       suggestedName.startsWith('無題') ||
       /^\d{4}[-/]\d{2}/.test(suggestedName);
     if (isDefaultUntitled) {
-      const derived = window.NoteTitle ? window.NoteTitle.defaultSaveName(tab.content, new Date()) : '';
+      const clean = typeof persistedContent === 'function' ? persistedContent(tab) : tab.content;
+      const derived = window.NoteTitle ? (clean !== tab.content ? window.NoteTitle.defaultSaveName(clean, new Date()) : window.NoteTitle.defaultSaveName(tab.content, new Date())) : '';
       suggestedName = derived || (tab.title || `${t('untitled')}.md`);
     }
     return suggestedName;
@@ -6297,8 +6298,13 @@
   function canAutoCreate(tab) {
     if (!tab || tab.path || tab.noAutoCreate) return false;
     if (!(window.backend && window.backend.createNoteInFolder)) return false;
+    if (window.VoiceInput && typeof window.VoiceInput.isRecording === 'function' && window.VoiceInput.isRecording()) return false;
     const text = getTabText(tab.id);
-    return String(text == null ? tab.content : text).trim() !== '';
+    const raw = String(text == null ? tab.content : text).trim();
+    if (raw === '' || /⦅[^⦆]*⦆/.test(raw)) return false;
+    if (typeof holdsWaitingAnchor === 'function' && holdsWaitingAnchor(tab.id, raw)) return false;
+    if (window.NoteTitle && typeof window.NoteTitle.analyze === 'function' && !window.NoteTitle.analyze(raw).title) return false;
+    return true;
   }
 
   async function saveTabNow(tab, forceSaveAs, opts) {
@@ -8499,6 +8505,7 @@
         return;
       }
       const baseline = { content: editor.value, dirty: !!curTab.isDirty };
+      const preRewriteTitle = (curTab.isAutoTitle && !curTab.path && window.NoteTitle ? window.NoteTitle.deriveTitle(baseline.content) : '') || curTab.title || 'untitled';
 
       editor.setSelectionRange(span.start, span.end);
       insertTextWithUndo(anchorId, editor);
@@ -8515,7 +8522,7 @@
       registerPendingLLMRequest(reqId, {
         tabId: curTab.id,
         tabPath: curTab.path || '',
-        tabTitle: curTab.title || 'untitled',
+        tabTitle: preRewriteTitle,
         tabEncoding: curTab.encoding || 'UTF-8',
         scrapDir: rewriteScrapDir,
         anchorId: anchorId,
@@ -13626,6 +13633,12 @@ OUTPUT FORMAT:
   // look up the selected agent's command/args without a fresh RPC.
   let lastLoadedSlotConfig = null;
   let agentAvailabilityReqToken = 0;
+  const knownAgentDefinitions = {
+    'claude-code': { command: 'claude', args: ['-p', '対象ノート: {file}\n指示: {instruction}'], description: 'Claude Code (高知能・CLI操作・Web調査)', aliases: ['claude', 'cc'] },
+    hermes: { command: 'ollama', args: ['run', 'hermes3', '{instruction}'], description: 'Hermes 3 (完全ローカル・機密保護)' },
+    codex: { command: 'codex', args: ['exec', '{instruction}'], description: 'Codex (高速コード補完・リファクタリング)' },
+    agy: { command: 'agy', args: ['-p', '対象ノート: {file}\n指示: {instruction}'], description: 'Google Antigravity 2.0 (自律リポジトリ開発)', aliases: ['antigravity', 'gemini'] }
+  };
 
   function populateAgentSelectOptions(slotCfg) {
     const defaultAgentEl = document.getElementById('cfg-default-agent');
@@ -13633,16 +13646,21 @@ OUTPUT FORMAT:
     if (!slotCfg || !slotCfg.agents) return;
 
     lastLoadedSlotConfig = slotCfg;
+    if (typeof knownAgentDefinitions === 'object' && knownAgentDefinitions) {
+      Object.keys(slotCfg.agents).forEach((k) => {
+        if (slotCfg.agents[k]) knownAgentDefinitions[k] = slotCfg.agents[k];
+      });
+    }
 
     const currentSelected = defaultAgentEl.value || config.default_agent || slotCfg.default_agent || 'claude-code';
     defaultAgentEl.innerHTML = '';
 
-    // An agent that is switched off (agents.yaml: enabled: false / disabled_agents) is not offered. The Go side already leaves
-    // it out; an entry that still says enabled: false is skipped as well.
-    const agentKeys = Object.keys(slotCfg.agents).filter((key) => !(slotCfg.agents[key] && slotCfg.agents[key].enabled === false));
+    // An agent that is switched off (agents.yaml: enabled: false / disabled_agents) or unchecked in UI (config.disabled_agents) is not offered.
+    const uiDisabled = new Set(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []);
+    const agentKeys = Object.keys(slotCfg.agents).filter((key) => !(slotCfg.agents[key] && slotCfg.agents[key].enabled === false) && !uiDisabled.has(key));
     if (agentKeys.length === 0) {
       const opt = document.createElement('option');
-      const allOff = Array.isArray(slotCfg.disabled_agents) && slotCfg.disabled_agents.length > 0;
+      const allOff = (Array.isArray(slotCfg.disabled_agents) && slotCfg.disabled_agents.length > 0) || uiDisabled.size > 0;
       opt.value = allOff ? '' : 'claude-code';
       opt.textContent = allOff ? (typeof t === 'function' ? t('agentNoneEnabled') : 'No agent is enabled') : 'Claude Code';
       defaultAgentEl.appendChild(opt);
@@ -13681,6 +13699,62 @@ OUTPUT FORMAT:
     const list = slotCfg && Array.isArray(slotCfg.disabled_agents) ? slotCfg.disabled_agents.filter((key) => typeof key === 'string' && key) : [];
     el.textContent = list.length ? t('agentDisabledNote', { agents: list.join(', ') }) : '';
     el.classList.toggle('hidden', list.length === 0);
+  }
+
+  // Settings > Agent: checkboxes to toggle which agents are visible/selectable in UI (saved to config.disabled_agents).
+  function renderAgentVisibilityList(slotCfg) {
+    const container = document.getElementById('agent-visibility-list');
+    if (!container || !slotCfg || !slotCfg.agents) return;
+    const builtinKeys = ['claude-code', 'hermes', 'codex', 'agy'];
+    const yamlDisabled = new Set(Array.isArray(slotCfg.disabled_agents) ? slotCfg.disabled_agents : []);
+    const uiDisabled = new Set(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []);
+    const allKeys = Array.from(new Set([...builtinKeys, ...Object.keys(slotCfg.agents), ...yamlDisabled])).sort();
+    container.innerHTML = '';
+    allKeys.forEach((key) => {
+      const isExplicitDisabledInEntry = !!(slotCfg.agents[key] && slotCfg.agents[key].enabled === false);
+      const isChecked = !isExplicitDisabledInEntry && !yamlDisabled.has(key) && !uiDisabled.has(key);
+      const label = document.createElement('label');
+      label.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:2px 6px;border:1px solid var(--border-color);border-radius:4px;';
+      const cb = document.createElement('input');
+      cb.type = 'checkbox';
+      cb.checked = isChecked;
+      cb.disabled = isExplicitDisabledInEntry;
+      cb.addEventListener('change', () => {
+        const next = new Set([
+          ...(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []),
+          ...(Array.isArray(slotCfg.disabled_agents) ? slotCfg.disabled_agents : [])
+        ]);
+        if (cb.checked) {
+          next.delete(key);
+          if (!slotCfg.agents[key] && knownAgentDefinitions[key]) {
+            slotCfg.agents[key] = knownAgentDefinitions[key];
+          }
+        } else {
+          next.add(key);
+        }
+        config.disabled_agents = Array.from(next).sort();
+        slotCfg.disabled_agents = config.disabled_agents.slice();
+        populateAgentSelectOptions(slotCfg);
+        renderAgentDisabledNote(slotCfg);
+        updateAgentAutoApproveWarning();
+        updateAgentAvailabilityBadge();
+        savePersistentConfig().catch(() => {});
+        const scrapDir = (document.getElementById('cfg-scrap-dir') && document.getElementById('cfg-scrap-dir').value.trim()) || '';
+        if (window.backend && window.backend.updateActiveAgentsConfigDisabledAgents) {
+          window.backend.updateActiveAgentsConfigDisabledAgents(scrapDir, config.disabled_agents).catch(() => {});
+        }
+        if (window.SlotAgent && window.SlotAgent.updateConfig) {
+          window.SlotAgent.updateConfig({
+            agents: Object.assign({}, knownAgentDefinitions, slotCfg.agents),
+            disabled_agents: config.disabled_agents,
+            default_agent: config.default_agent
+          });
+        }
+      });
+      label.appendChild(cb);
+      label.appendChild(document.createTextNode(key));
+      container.appendChild(label);
+    });
   }
 
   // The selected agent skips its CLI's permission prompts: the same flag list the run-time confirmation uses
@@ -13772,6 +13846,7 @@ OUTPUT FORMAT:
           populateAgentSelectOptions(slotCfg);
           renderAgentDisabledNote(slotCfg);
           renderAgentIssues(slotCfg);
+          renderAgentVisibilityList(slotCfg);
         }
       } catch (e) {
         console.warn('Failed to load active slot config JSON:', e);
