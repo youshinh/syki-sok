@@ -41,11 +41,12 @@ check('pwsh steps use $env:RELEASE_TAG instead of bare $RELEASE_TAG', () => {
   }
 });
 
-check('both build-windows and build-macos run Go tests and JS tests', () => {
+check('both build-windows and build-macos run Go -race tests, modern setup-go, and JS tests', () => {
   const winSection = yml.split(/\n  build-macos:/)[0];
   const macSection = yml.split(/\n  build-macos:/)[1] || '';
-  assert.ok(/go test\b/.test(winSection) && /node tools\/run_js_tests\.mjs/.test(winSection), 'Windows release runs Go + JS tests');
-  assert.ok(/go test\b/.test(macSection) && /node tools\/run_js_tests\.mjs/.test(macSection), 'macOS release runs Go + JS tests');
+  assert.ok(/go test -race\b/.test(winSection) && /node tools\/run_js_tests\.mjs/.test(winSection), 'Windows release runs Go -race + JS tests');
+  assert.ok(/go test -race\b/.test(macSection) && /node tools\/run_js_tests\.mjs/.test(macSection), 'macOS release runs Go -race + JS tests');
+  assert.ok(!yml.includes('actions/setup-go@v5'), 'release.yml must not pin deprecated actions/setup-go@v5');
 });
 
 check('publish job flips draft to false', () => {

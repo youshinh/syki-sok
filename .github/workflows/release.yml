@@ -62,13 +62,15 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run Go Tests
-        run: go test ./...
+        env:
+          CGO_ENABLED: 1
+        run: go test -race ./...
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
@@ -120,13 +122,13 @@ jobs:
           ref: ${{ needs.prepare.outputs.tag }}
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v7
         with:
           go-version-file: go.mod
           cache: true
 
       - name: Run Go Tests
-        run: go test -v ./...
+        run: go test -race -v ./...
 
       - name: Set up Node.js
         uses: actions/setup-node@v7
