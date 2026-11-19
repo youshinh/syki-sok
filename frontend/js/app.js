@@ -4309,7 +4309,46 @@
   }
 
   // Core Markdown & Diagram Renderer (Reusable for both Primary and Secondary panes)
-  function renderMarkdownContentTo(rawContent, targetPane, tabObj) {
+  const PREVIEW_RESPONSIVE_CHAR_LIMIT = 250000;
+
+  function formatPreviewSize(chars) {
+    return Number(chars || 0).toLocaleString('en-US');
+  }
+
+  function slicePreviewForResponsiveness(text, maxChars) {
+    const s = text || '';
+    const limit = maxChars > 0 ? maxChars : PREVIEW_RESPONSIVE_CHAR_LIMIT;
+    if (s.length <= limit) {
+      return { text: s, truncated: false, shownChars: s.length, totalChars: s.length };
+    }
+    let cut = s.lastIndexOf('\n', limit);
+    if (cut <= 0) cut = limit;
+    let out = s.slice(0, cut);
+    let openFence = '';
+    let pos = 0;
+    while (pos < out.length) {
+      let end = out.indexOf('\n', pos);
+      if (end === -1) end = out.length;
+      let line = out.slice(pos, end);
+      if (line.endsWith('\r')) line = line.slice(0, -1);
+      const m = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line);
+      if (m) {
+        const marker = m[1];
+        if (!openFence) {
+          if (!(marker[0] === '`' && m[2].indexOf('`') !== -1)) openFence = marker;
+        } else if (marker[0] === openFence[0] && marker.length >= openFence.length && /^\s*$/.test(m[2])) {
+          openFence = '';
+        }
+      }
+      pos = end + 1;
+    }
+    if (openFence) {
+      out += '\n' + openFence;
+    }
+    return { text: out, truncated: true, shownChars: cut, totalChars: s.length };
+  }
+
+  function renderMarkdownContentTo(rawContent, targetPane, tabObj, opts) {
     if (!targetPane) return;
     const text = rawContent || '';
 
@@ -4326,7 +4365,12 @@
       return;
     }
 
-    let rawText = text;
+    let previewSlice = { text: text, truncated: false, shownChars: text.length, totalChars: text.length };
+    if (!(opts && opts.full) && !(tabObj && tabObj._fullPreviewAllowed) && text.length > PREVIEW_RESPONSIVE_CHAR_LIMIT) {
+      previewSlice = slicePreviewForResponsiveness(text, PREVIEW_RESPONSIVE_CHAR_LIMIT);
+    }
+
+    let rawText = previewSlice.text;
 
     // 0. HTML comments are not shown (html_comments.js: outside code, syki markers left for stripMarkers). Taken out
     //    before the code is set aside, so a fence inside a comment can never pair with a real one.
@@ -4339,65 +4383,76 @@
       rawText = window.FileAnchor.stripHistoryLinks(rawText);
     }
 
-    // 1. Protect fenced code blocks (```...``` / ~~~...~~~) and inline code (`...`)
+    const hasDollar = rawText.indexOf('$') !== -1;
+    const needsAutoStrip = !!(window.AutoSelector && typeof window.AutoSelector.stripMarkers === 'function' && rawText.indexOf('syki:') !== -1);
     const codeSnippets = [];
-    rawText = rawText.replace(/(`{3,}[\s\S]*?`{3,}|~{3,}[\s\S]*?~{3,}|`[^`\n]+`)/g, (match) => {
-      const token = `KATEXCODESNIPPET${codeSnippets.length}XYZ`;
-      codeSnippets.push(match);
-      return token;
-    });
-
-    // 1b. The marker lines a task run leaves in the note are bookkeeping: the preview shows the answer only
-    if (window.AutoSelector && typeof window.AutoSelector.stripMarkers === 'function') {
-      rawText = window.AutoSelector.stripMarkers(rawText);
-    }
-
-    // 2. Extract Block Math ($$...$$)
     const mathPlaceholders = [];
-    rawText = rawText.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
-      const token = `KATEXMATHBLOCK${mathPlaceholders.length}XYZ`;
-      let rendered = '';
-      try {
-        if (window.katex) {
-          rendered = '<div class="katex-block">' + window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }) + '</div>';
-        } else {
-          rendered = '<div class="katex-block">$$' + escapeHtml(math) + '$$</div>';
-        }
-      } catch (e) {
-        rendered = '<pre class="katex-error">' + escapeHtml(math) + '</pre>';
-      }
-      mathPlaceholders.push(rendered);
-      return token;
-    });
 
-    // 3. Extract Inline Math ($...$)
-    rawText = rawText.replace(/\$([^\$\s\n](?:[^\$\n]*?[^\$\s\n])?)\$/g, (_, math) => {
-      const token = `KATEXMATHINLINE${mathPlaceholders.length}XYZ`;
-      let rendered = '';
-      try {
-        if (window.katex) {
-          rendered = window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
-        } else {
-          rendered = '$' + escapeHtml(math) + '$';
-        }
-      } catch (e) {
-        rendered = '<code>' + escapeHtml(math) + '</code>';
-      }
-      mathPlaceholders.push(rendered);
-      return token;
-    });
+    if (hasDollar || needsAutoStrip) {
+      // 1. Protect fenced code blocks (```...``` / ~~~...~~~) and inline code (`...`)
+      rawText = rawText.replace(/(`{3,}[\s\S]*?`{3,}|~{3,}[\s\S]*?~{3,}|`[^`\n]+`)/g, (match) => {
+        const token = `KATEXCODESNIPPET${codeSnippets.length}XYZ`;
+        codeSnippets.push(match);
+        return token;
+      });
 
-    // 4. Restore protected code snippets
-    rawText = rawText.replace(/KATEXCODESNIPPET(\d+)XYZ/g, (_, idx) => codeSnippets[Number(idx)]);
+      // 1b. The marker lines a task run leaves in the note are bookkeeping: the preview shows the answer only
+      if (needsAutoStrip) {
+        rawText = window.AutoSelector.stripMarkers(rawText);
+      }
+
+      if (hasDollar) {
+        // 2. Extract Block Math ($$...$$)
+        rawText = rawText.replace(/\$\$([\s\S]+?)\$\$/g, (_, math) => {
+          const token = `KATEXMATHBLOCK${mathPlaceholders.length}XYZ`;
+          let rendered = '';
+          try {
+            if (window.katex) {
+              rendered = '<div class="katex-block">' + window.katex.renderToString(math.trim(), { displayMode: true, throwOnError: false }) + '</div>';
+            } else {
+              rendered = '<div class="katex-block">$$' + escapeHtml(math) + '$$</div>';
+            }
+          } catch (e) {
+            rendered = '<pre class="katex-error">' + escapeHtml(math) + '</pre>';
+          }
+          mathPlaceholders.push(rendered);
+          return token;
+        });
+
+        // 3. Extract Inline Math ($...$)
+        rawText = rawText.replace(/\$([^\$\s\n](?:[^\$\n]*?[^\$\s\n])?)\$/g, (_, math) => {
+          const token = `KATEXMATHINLINE${mathPlaceholders.length}XYZ`;
+          let rendered = '';
+          try {
+            if (window.katex) {
+              rendered = window.katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
+            } else {
+              rendered = '$' + escapeHtml(math) + '$';
+            }
+          } catch (e) {
+            rendered = '<code>' + escapeHtml(math) + '</code>';
+          }
+          mathPlaceholders.push(rendered);
+          return token;
+        });
+      }
+
+      // 4. Restore protected code snippets
+      if (codeSnippets.length > 0) {
+        rawText = rawText.replace(/KATEXCODESNIPPET(\d+)XYZ/g, (_, idx) => codeSnippets[Number(idx)]);
+      }
+    }
 
     // 5. Render Markdown
     let html = mdInstance.render(rawText);
 
-    // 6. Strip <p> tags wrapping standalone block math expressions
-    html = html.replace(/<p>\s*(KATEXMATHBLOCK\d+XYZ)\s*<\/p>/g, '$1');
+    if (mathPlaceholders.length > 0) {
+      // 6. Strip <p> tags wrapping standalone block math expressions
+      html = html.replace(/<p>\s*(KATEXMATHBLOCK\d+XYZ)\s*<\/p>/g, '$1');
 
-    // 7. Inject rendered KaTeX HTML back into placeholders
-    html = html.replace(/KATEXMATH(?:BLOCK|INLINE)(\d+)XYZ/g, (_, idx) => mathPlaceholders[Number(idx)]);
+      // 7. Inject rendered KaTeX HTML back into placeholders
+      html = html.replace(/KATEXMATH(?:BLOCK|INLINE)(\d+)XYZ/g, (_, idx) => mathPlaceholders[Number(idx)]);
+    }
 
     targetPane.innerHTML = html;
 
@@ -4465,6 +4520,27 @@
 
     // 8. Linkify file paths to VS Code URI (Feature 5)
     linkifyVsCodePaths(targetPane, tabObj);
+
+    if (previewSlice.truncated) {
+      const notice = document.createElement('div');
+      notice.className = 'preview-large-notice';
+      const msg = document.createElement('span');
+      msg.textContent = t('previewLargeNotice', {
+        shown: formatPreviewSize(previewSlice.shownChars),
+        total: formatPreviewSize(previewSlice.totalChars)
+      });
+      const fullBtn = document.createElement('button');
+      fullBtn.type = 'button';
+      fullBtn.className = 'btn-secondary';
+      fullBtn.textContent = t('previewRenderFullBtn');
+      fullBtn.onclick = () => {
+        if (tabObj) tabObj._fullPreviewAllowed = true;
+        renderMarkdownContentTo(text, targetPane, tabObj, { full: true });
+      };
+      notice.appendChild(msg);
+      notice.appendChild(fullBtn);
+      targetPane.appendChild(notice);
+    }
   }
 
   // Feature 5: Detect path/to/file.ext:line and convert to vscode:// URI links
@@ -18499,25 +18575,8 @@ OUTPUT FORMAT:
   // Semantic search is on), with the query typed in and the search started. Only a search: the Deep search button stays the person's to
   // press (its dialog says what would be sent and where). Without query and mode it is the plain opening. Resolves the mode shown.
   function openScrapsSearchForRpc(opts) {
-    const query = opts && typeof opts.query === 'string' ? opts.query.trim() : '';
-    const mode = opts && (opts.mode === 'exact' || opts.mode === 'meaning') ? opts.mode : '';
-    if (mode === 'meaning' && !scrapsSemanticEnabled()) {
-      rpcFail('invalid_params', 'the meaning search is off: turn it on in Settings > AI Models > Semantic search first');
-    }
-    openScrapsSearchModal();
-    if (!query && !mode) return null;
-    if (mode && mode !== scrapsSearchMode) {
-      if (scrapsSearchInput) scrapsSearchInput.value = query; // setScrapsSearchMode runs the search for what the box holds
-      setScrapsSearchMode(mode);
-      if (query) return mode;
-    }
-    if (query && scrapsSearchInput) {
-      scrapsSearchInput.value = query;
-      scrapsSearchStale = true;
-      updateScrapsDeepButton();
-      runScrapsSearch(query);
-    }
-    return scrapsMeaningMode() ? 'meaning' : 'exact';
+    const wb = ensureSearchWorkbench();
+    return wb ? wb.openForRpc(opts, rpcFail) : null;
   }
 
   // Resolves when the pane has no diagram left to draw (a mermaid block is a <pre><code class="language-mermaid"> until it is drawn), or

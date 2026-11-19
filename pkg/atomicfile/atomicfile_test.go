@@ -1,11 +1,15 @@
 package atomicfile
 
 import (
+	"fmt"
 	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func leftovers(t *testing.T, dir string) []string {
@@ -120,5 +124,56 @@ func TestWriteFailureLeavesTheOldFileAndNoTemp(t *testing.T) {
 	}
 	if left := leftovers(t, dir); len(left) != 0 {
 		t.Errorf("temporary files left behind after a failure: %v", left)
+	}
+}
+
+func TestWriteHandlesConcurrentReadersOnSameFile(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "concurrent.md")
+	if err := Write(path, []byte("seed"), ".t-*.tmp"); err != nil {
+		t.Fatal(err)
+	}
+
+	// Simulate a transient external read lock (e.g. AV scanner / sync client) released after 25ms.
+	held, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		time.Sleep(25 * time.Millisecond)
+		_ = held.Close()
+	}()
+	if err := Write(path, []byte("after-transient-lock"), ".t-*.tmp"); err != nil {
+		t.Fatalf("Write failed across transient reader handle: %v", err)
+	}
+
+	var stop atomic.Bool
+	var wg sync.WaitGroup
+	for r := 0; r < 4; r++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			for !stop.Load() {
+				_, _ = os.ReadFile(path)
+				time.Sleep(2 * time.Millisecond)
+			}
+		}()
+	}
+
+	for w := 0; w < 20; w++ {
+		if err := Write(path, []byte(fmt.Sprintf("iteration-%02d-payload", w)), ".t-*.tmp"); err != nil {
+			stop.Store(true)
+			wg.Wait()
+			t.Fatalf("Write iteration %d failed under concurrent readers: %v", w, err)
+		}
+	}
+	stop.Store(true)
+	wg.Wait()
+
+	if got, err := os.ReadFile(path); err != nil || string(got) != "iteration-19-payload" {
+		t.Fatalf("final read=%q err=%v", string(got), err)
+	}
+	if left := leftovers(t, dir); len(left) != 0 {
+		t.Errorf("temporary files left behind: %v", left)
 	}
 }

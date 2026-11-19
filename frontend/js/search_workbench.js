@@ -27,6 +27,13 @@
     const rememberCloudConsent = deps.rememberCloudConsent;
     const onDeepDialogChange = deps.onDeepDialogChange || function () {};
     const dom = deps.dom || {};
+    const isMac = typeof deps.isMac === 'function'
+      ? !!deps.isMac()
+      : (deps.isMac !== undefined
+        ? !!deps.isMac
+        : ((typeof window !== 'undefined' && window.SykiPlatform)
+          ? !!window.SykiPlatform.isMac
+          : (typeof navigator !== 'undefined' && /Mac|iPhone|iPod|iPad/i.test(navigator.platform || navigator.userAgent))));
     const scrapsSearchModal = dom.scrapsSearchModal || null;
     const scrapsSearchInput = dom.scrapsSearchInput || null;
     const scrapsSearchResults = dom.scrapsSearchResults || null;
@@ -1130,10 +1137,36 @@
       }, 60);
     }
 
+    function openForRpc(opts, failFn) {
+      const query = opts && typeof opts.query === 'string' ? opts.query.trim() : '';
+      const mode = opts && (opts.mode === 'exact' || opts.mode === 'meaning') ? opts.mode : '';
+      if (mode === 'meaning' && !scrapsSemanticEnabled()) {
+        if (typeof failFn === 'function') {
+          failFn('invalid_params', 'the meaning search is off: turn it on in Settings > AI Models > Semantic search first');
+        }
+        return null;
+      }
+      openScrapsSearchModal();
+      if (!query && !mode) return null;
+      if (mode && mode !== scrapsSearchMode) {
+        if (scrapsSearchInput) scrapsSearchInput.value = query; // setScrapsSearchMode runs the search for what the box holds
+        setScrapsSearchMode(mode);
+        if (query) return mode;
+      }
+      if (query && scrapsSearchInput) {
+        scrapsSearchInput.value = query;
+        scrapsSearchStale = true;
+        updateScrapsDeepButton();
+        runScrapsSearch(query);
+      }
+      return scrapsMeaningMode() ? 'meaning' : 'exact';
+    }
+
     return {
       open: openScrapsSearchModal,
       close: closeScrapsSearchModal,
       setMode: setScrapsSearchMode,
+      openForRpc: openForRpc,
       isDeepDialogOpen: function () { return !!deepDialogOpen; },
       jumpToScrap: jumpToScrap
     };

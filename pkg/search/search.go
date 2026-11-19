@@ -251,6 +251,13 @@ func searchFile(ctx context.Context, filePath string, queryLower []byte, fileLim
 
 // searchFileKeep is searchFile that asks keep (when set) about the 1-based number of every matching line: a line it rejects is not a
 // match and does not count against fileLimit, so the limit is spent on the lines that stay.
+var searchScannerBufPool = sync.Pool{
+	New: func() any {
+		b := make([]byte, 64*1024)
+		return &b
+	},
+}
+
 func searchFileKeep(ctx context.Context, filePath string, queryLower []byte, fileLimit int, headings bool, keep func(line int) bool) []SearchMatch {
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -260,8 +267,9 @@ func searchFileKeep(ctx context.Context, filePath string, queryLower []byte, fil
 
 	// Read lines with bufio.Scanner (max 10MB per line safety)
 	scanner := bufio.NewScanner(f)
-	buf := make([]byte, 64*1024)
-	scanner.Buffer(buf, 10*1024*1024)
+	bp := searchScannerBufPool.Get().(*[]byte)
+	defer searchScannerBufPool.Put(bp)
+	scanner.Buffer((*bp)[:cap(*bp)], 10*1024*1024)
 
 	query := string(queryLower)
 

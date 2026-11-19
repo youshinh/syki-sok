@@ -184,6 +184,7 @@ func main() {
 
 	app := &App{}
 	defer app.closeAllPTYs()
+	defer app.ShutdownOrganelles()
 	go func() {
 		defer func() {
 			if r := recover(); r != nil {

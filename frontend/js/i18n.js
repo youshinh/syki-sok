@@ -95,6 +95,8 @@ const I18N = {
     editorSecondaryPlaceholder: "Type markdown here...",
     rendererLoading: "Loading renderer...",
     mermaidError: "Mermaid syntax error: ",
+    previewLargeNotice: "Showing the first {shown} of {total} characters to keep scrolling and typing responsive.",
+    previewRenderFullBtn: "Render full preview",
 
     // Status Bar
     lineCol: "Ln {line}, Col {col}",
@@ -1753,6 +1755,8 @@ const I18N = {
     editorSecondaryPlaceholder: "ここにマークダウンを入力...",
     rendererLoading: "レンダラー読み込み中...",
     mermaidError: "Mermaid構文エラー: ",
+    previewLargeNotice: "快適な動作を保つため、全 {total} 文字のうち先頭 {shown} 文字を表示しています。",
+    previewRenderFullBtn: "全文をプレビュー",
 
     // Status Bar
     lineCol: "行 {line}, 列 {col}",

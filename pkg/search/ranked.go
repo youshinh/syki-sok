@@ -323,21 +323,48 @@ func Entries(data []byte) []Entry {
 	return out
 }
 
+func toLowerInto(buf, src []byte) (out, nextBuf []byte) {
+	for i := 0; i < len(src); i++ {
+		if src[i] >= 0x80 {
+			return bytes.ToLower(src), buf
+		}
+	}
+	if cap(buf) < len(src) {
+		buf = make([]byte, len(src))
+	} else {
+		buf = buf[:len(src)]
+	}
+	for i := 0; i < len(src); i++ {
+		b := src[i]
+		if b >= 'A' && b <= 'Z' {
+			b += 'a' - 'A'
+		}
+		buf[i] = b
+	}
+	return buf, buf
+}
+
 // scanEntries is the first pass over one file: it counts the words in each entry (the text itself is not kept) and returns the
 // entries that hold at least one of them.
 //
 // entries is Entries(data) when the caller has cut the file already (nil: cut it here). keep, when set, says whether entry i takes part
 // at all (the tag filter): an entry it rejects is not scored and does not count in the statistics of the ranking.
 func scanEntries(data []byte, fi int, termBytes [][]byte, phrase []byte, entries []Entry, keep func(i int) bool) []entryStat {
+	res, _ := scanEntriesBuf(data, fi, termBytes, phrase, entries, keep, nil)
+	return res
+}
+
+func scanEntriesBuf(data []byte, fi int, termBytes [][]byte, phrase []byte, entries []Entry, keep func(i int) bool, lowBuf []byte) ([]entryStat, []byte) {
 	var out []entryStat
 	if entries == nil {
 		entries = Entries(data)
 	}
+	var low []byte
 	for i, e := range entries {
 		if keep != nil && !keep(i) {
 			continue
 		}
-		low := bytes.ToLower(data[e.StartOff:e.EndOff])
+		low, lowBuf = toLowerInto(lowBuf, data[e.StartOff:e.EndOff])
 		st := entryStat{file: fi, start: e.StartLine, end: e.EndLine, counts: make([]int32, len(termBytes)), length: len(low)}
 		for ti, tb := range termBytes {
 			if c := bytes.Count(low, tb); c > 0 {
@@ -353,7 +380,7 @@ func scanEntries(data []byte, fi int, termBytes [][]byte, phrase []byte, entries
 		}
 		out = append(out, st)
 	}
-	return out
+	return out, lowBuf
 }
 
 func splitLines(data []byte) [][]byte {
@@ -422,17 +449,14 @@ func SearchScrapsRanked(ctx context.Context, scrapDir, query string, maxResults 
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
+			var lowBuf []byte
 			for {
 				fi := int(atomic.AddInt64(&next, 1))
 				if fi >= len(files) || ctx.Err() != nil {
 					return
 				}
-				path := files[fi]
-				if info, err := os.Stat(path); err != nil || info.Size() > maxRankedFileBytes {
-					continue
-				}
-				data, err := os.ReadFile(path)
-				if err != nil {
+				data, ok := readBoundedFile(files[fi], maxRankedFileBytes)
+				if !ok {
 					continue
 				}
 				var entries []Entry
@@ -445,7 +469,7 @@ func SearchScrapsRanked(ctx context.Context, scrapDir, query string, maxResults 
 					entries = tm.entries
 					keep = func(i int) bool { return tm.HasEntry(i, opts.Tags) }
 				}
-				perFile[fi] = scanEntries(data, fi, termBytes, phraseLower, entries, keep)
+				perFile[fi], lowBuf = scanEntriesBuf(data, fi, termBytes, phraseLower, entries, keep, lowBuf)
 			}
 		}()
 	}

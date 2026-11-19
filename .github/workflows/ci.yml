@@ -39,6 +39,11 @@ jobs:
       - name: go test
         run: go test ./...
 
+      - name: go test -race
+        env:
+          CGO_ENABLED: 1
+        run: go test -race ./...
+
       - name: Cross-check macOS build (no cgo)
         # window_darwin.go / hotkey_darwin.go / openfile_darwin.go all use cgo and only actually
         # compile on the macOS runner below. This step catches a pure-Go regression (a symbol the
@@ -130,7 +135,7 @@ jobs:
         continue-on-error: true
 
       - name: go test
-        run: go test ./...
+        run: go test -race ./...
 
       - name: Build syki-sok.app (universal, with graceful native-only fallback)
         run: |

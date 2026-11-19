@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"syki-sok/pkg/appdir"
+	"syki-sok/pkg/atomicfile"
 	"syki-sok/pkg/dialog"
 	"syki-sok/pkg/encoding"
 	"syki-sok/pkg/lazyre"
@@ -94,7 +95,10 @@ type configCacheEntry struct {
 //
 // A missing or unreadable file yields "" - exactly what the previous direct implementation
 // returned - so first-run behaviour is unchanged.
-func (a *App) readConfigCached() string {
+func (a *App) readConfigEntryCached() *configCacheEntry {
+	a.configIOMu.RLock()
+	defer a.configIOMu.RUnlock()
+
 	path := getConfigFilePath()
 
 	var modTime time.Time
@@ -109,37 +113,45 @@ func (a *App) readConfigCached() string {
 	a.cfgCacheMu.Lock()
 	cached := a.cfgCache
 	if cached != nil && cached.exists == exists && cached.size == size && cached.modTime.Equal(modTime) {
-		content := cached.content
 		a.cfgCacheMu.Unlock()
-		return content
+		return cached
 	}
 	a.cfgCacheMu.Unlock()
 
 	content := ""
 	if exists {
-		if data, err := os.ReadFile(path); err == nil {
-			content = string(data)
+		data, err := os.ReadFile(path)
+		if err != nil {
+			// Return a fallback without caching so transient read errors don't poison cfgCache.
+			return &configCacheEntry{general: generalConfigSnapshot{trayResident: true, webView: parseWebViewSettings("")}}
 		}
+		content = string(data)
+	}
+
+	entry := &configCacheEntry{
+		exists:  exists,
+		modTime: modTime,
+		size:    size,
+		content: content,
+		general: parseGeneralConfigSnapshot(content),
 	}
 
 	a.cfgCacheMu.Lock()
-	a.cfgCache = &configCacheEntry{exists: exists, modTime: modTime, size: size, content: content, general: parseGeneralConfigSnapshot(content)}
+	a.cfgCache = entry
 	a.cfgCacheMu.Unlock()
 
-	return content
+	return entry
+}
+
+func (a *App) readConfigCached() string {
+	return a.readConfigEntryCached().content
 }
 
 // invalidateConfigCache drops the memoised config.json contents so the next read re-derives
 // them from disk, rather than relying on a stat comparison a fast successive write could in
 // principle race.
 func (a *App) readGeneralConfigCached() generalConfigSnapshot {
-	_ = a.readConfigCached()
-	a.cfgCacheMu.Lock()
-	defer a.cfgCacheMu.Unlock()
-	if a.cfgCache != nil {
-		return a.cfgCache.general
-	}
-	return generalConfigSnapshot{trayResident: true, webView: parseWebViewSettings("")}
+	return a.readConfigEntryCached().general
 }
 
 func (a *App) invalidateConfigCache() {
@@ -260,12 +272,15 @@ func diffConfigSettings(a *App, prevScrap *ScrapSettings, prevJev *jevRelevantSe
 // round-trips, etc.) triggered a redundant `git pull --rebase` and Jev client rebuild.
 func (a *App) SaveConfig(configJSON string) (bool, error) {
 	path := getConfigFilePath()
-	if err := os.WriteFile(path, []byte(configJSON), 0600); err != nil {
+	a.configIOMu.Lock()
+	if err := atomicfile.WriteMode(path, []byte(configJSON), ".config-*.tmp", 0o600); err != nil {
+		a.configIOMu.Unlock()
 		return false, fmt.Errorf("設定ファイルの書き込みに失敗しました: %w", err)
 	}
 	// Everything below (and every later GetConfig) must see the new contents, not a copy
 	// memoised from a stat that a same-tick rewrite could make look unchanged.
 	a.invalidateConfigCache()
+	a.configIOMu.Unlock()
 
 	// The window's OS-drawn colours follow the saved look (nativelook.go); nothing happens unless it changed.
 	a.noteNativeLook(configJSON)
@@ -368,6 +383,9 @@ func (a *App) GetActiveAgentsConfigStatus(scrapDir string) map[string]interface{
 
 // UpdateActiveAgentsConfigDefaultAgent updates the default_agent in active external agents.yaml.
 func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) error {
+	a.agentsCfgMu.Lock()
+	defer a.agentsCfgMu.Unlock()
+
 	foundPath := slotagent.FindAgentConfigFile(scrapDir)
 	if foundPath == "" {
 		foundPath = slotagent.GetDefaultAgentConfigPath()
@@ -394,7 +412,7 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 		}
 	}
 
-	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+	if err := atomicfile.Write(foundPath, []byte(content), ".agents-*.tmp"); err != nil {
 		return err
 	}
 	a.invalidateSlotConfigCache()
@@ -403,6 +421,9 @@ func (a *App) UpdateActiveAgentsConfigDefaultAgent(scrapDir, agentName string) e
 
 // UpdateActiveAgentsConfigDisabledAgents updates the disabled_agents list in active external agents.yaml if present.
 func (a *App) UpdateActiveAgentsConfigDisabledAgents(scrapDir string, disabled []string) error {
+	a.agentsCfgMu.Lock()
+	defer a.agentsCfgMu.Unlock()
+
 	foundPath := slotagent.FindAgentConfigFile(scrapDir)
 	if foundPath == "" {
 		a.invalidateSlotConfigCache()
@@ -435,7 +456,7 @@ func (a *App) UpdateActiveAgentsConfigDisabledAgents(scrapDir string, disabled [
 		}
 	}
 
-	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+	if err := atomicfile.Write(foundPath, []byte(content), ".agents-*.tmp"); err != nil {
 		return err
 	}
 	a.invalidateSlotConfigCache()
@@ -446,6 +467,9 @@ func (a *App) UpdateActiveAgentsConfigDisabledAgents(scrapDir string, disabled [
 
 // UpdateActiveAgentsConfigSlotSettings updates timeout, hover peek, and ghost diff in active external agents.yaml.
 func (a *App) UpdateActiveAgentsConfigSlotSettings(scrapDir string, timeoutSec int, hoverPeek bool, ghostDiffMs int) error {
+	a.agentsCfgMu.Lock()
+	defer a.agentsCfgMu.Unlock()
+
 	foundPath := slotagent.FindAgentConfigFile(scrapDir)
 	if foundPath == "" {
 		foundPath = slotagent.GetDefaultAgentConfigPath()
@@ -480,7 +504,7 @@ func (a *App) UpdateActiveAgentsConfigSlotSettings(scrapDir string, timeoutSec i
 		updateOrAppend(ghostDiffRE(), "ghost_diff_duration_ms", fmt.Sprintf("%d", ghostDiffMs))
 	}
 
-	if err := os.WriteFile(foundPath, []byte(content), 0644); err != nil {
+	if err := atomicfile.Write(foundPath, []byte(content), ".agents-*.tmp"); err != nil {
 		return err
 	}
 	a.invalidateSlotConfigCache()

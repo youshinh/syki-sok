@@ -491,6 +491,31 @@ check('position-based callers are hardened for estimated coordinates', () => {
   assert.ok(appCode.includes('dockPanelBar(cliFilterBar, editor,'), 'Command Bar');
 });
 
+check('slicePreviewForResponsiveness keeps small notes whole, snaps to newline, and closes open code fences', () => {
+  const { slicePreviewForResponsiveness } = load(['slicePreviewForResponsiveness'], { PREVIEW_RESPONSIVE_CHAR_LIMIT: 100 });
+  const small = slicePreviewForResponsiveness('hello\nworld', 100);
+  assert.equal(small.truncated, false);
+  assert.equal(small.text, 'hello\nworld');
+
+  const lineSnap = slicePreviewForResponsiveness('alpha\nbeta\ngamma\ndelta', 12);
+  assert.equal(lineSnap.truncated, true);
+  assert.equal(lineSnap.text, 'alpha\nbeta');
+  assert.equal(lineSnap.shownChars, 10);
+
+  const openBacktick = slicePreviewForResponsiveness('intro\n```js\nconst a = 1;\nconst b = 2;\n```', 22);
+  assert.equal(openBacktick.truncated, true);
+  assert.ok(openBacktick.text.endsWith('\n```'), `expected closing backtick fence, got ${JSON.stringify(openBacktick.text)}`);
+
+  const openTilde = slicePreviewForResponsiveness('intro\n~~~~\ncode here\nmore\n~~~~', 19);
+  assert.equal(openTilde.truncated, true);
+  assert.ok(openTilde.text.endsWith('\n~~~~'), `expected closing tilde fence, got ${JSON.stringify(openTilde.text)}`);
+
+  const singleGiant = slicePreviewForResponsiveness('x'.repeat(250), 100);
+  assert.equal(singleGiant.truncated, true);
+  assert.equal(singleGiant.shownChars, 100);
+  assert.equal(singleGiant.text.length, 100);
+});
+
 if (failures > 0) {
   console.error(`\n${failures} huge-note test(s) FAILED.`);
   process.exit(1);

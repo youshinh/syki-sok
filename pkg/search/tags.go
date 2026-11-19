@@ -4,12 +4,16 @@ import (
 	"bytes"
 	"context"
 	"errors"
+	"io"
 	"math"
 	"os"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"unicode"
 	"unicode/utf8"
 )
@@ -504,14 +508,54 @@ func tagMapFor(data []byte, want []string) *TagMap {
 	return m
 }
 
-// readTaggedFile reads a file for a tag-filtered search (a file larger than the ranked search's bound is left out, as there).
-func readTaggedFile(path string) ([]byte, bool) {
-	info, err := os.Stat(path)
-	if err != nil || info.Size() > maxRankedFileBytes {
+// readBoundedFile reads a regular file once while enforcing maxBytes without a separate os.Stat syscall.
+func readBoundedFile(path string, maxBytes int64) ([]byte, bool) {
+	f, err := os.Open(path)
+	if err != nil {
 		return nil, false
 	}
-	data, err := os.ReadFile(path)
-	return data, err == nil
+	defer f.Close()
+
+	info, err := f.Stat()
+	if err != nil || info.IsDir() || info.Size() > maxBytes {
+		return nil, false
+	}
+
+	size := info.Size()
+	if size == 0 {
+		data, err := io.ReadAll(io.LimitReader(f, maxBytes+1))
+		if err != nil || int64(len(data)) > maxBytes {
+			return nil, false
+		}
+		return data, true
+	}
+
+	buf := make([]byte, size)
+	n, err := io.ReadFull(f, buf)
+	if err != nil && !errors.Is(err, io.EOF) && !errors.Is(err, io.ErrUnexpectedEOF) {
+		return nil, false
+	}
+	buf = buf[:n]
+	if int64(n) == size {
+		var extra [1]byte
+		if m, _ := f.Read(extra[:]); m > 0 {
+			rest, rerr := io.ReadAll(io.LimitReader(f, maxBytes-int64(len(buf))))
+			if rerr != nil {
+				return nil, false
+			}
+			buf = append(buf, extra[0])
+			buf = append(buf, rest...)
+			if int64(len(buf)) > maxBytes {
+				return nil, false
+			}
+		}
+	}
+	return buf, true
+}
+
+// readTaggedFile reads a file for a tag-filtered search (a file larger than the ranked search's bound is left out, as there).
+func readTaggedFile(path string) ([]byte, bool) {
+	return readBoundedFile(path, maxRankedFileBytes)
 }
 
 // ScanTagsFile is ScanTags of the file at path: nil when the file cannot be read (or is too large for the searches to read), or
@@ -537,73 +581,144 @@ func CollectTags(ctx context.Context, scrapDir string) ([]TagCount, error) {
 	return CollectTagsVisit(ctx, scrapDir, nil)
 }
 
+func accumulateFileTags(data []byte, bump func(tag string, entries int)) {
+	m := ScanTags(data)
+	if m == nil {
+		return
+	}
+	for _, t := range m.file {
+		bump(t, len(m.entries))
+	}
+	// A tag that only some entries carry reaches those entries and everything under their headings (a tag the whole file carries
+	// already counts them all). A subtree is a run of entries, and two subtrees are nested or apart, so walking the entries in
+	// order and skipping one that an earlier subtree with the same tag already covers counts each entry once.
+	type reach struct{ n, until int } // entries counted so far; the last entry the latest counted subtree covers
+	var perTag map[string]*reach
+	var lasts []int32
+	for i, own := range m.own {
+		for _, t := range own {
+			if hasTag(m.file, t) {
+				continue
+			}
+			if perTag == nil {
+				perTag = map[string]*reach{}
+			}
+			r := perTag[t]
+			if r == nil {
+				r = &reach{until: -1}
+				perTag[t] = r
+			}
+			if r.until < i {
+				if lasts == nil {
+					lasts = m.ol.lasts()
+				}
+				last := int(lasts[i])
+				r.n += last - i + 1
+				r.until = last
+			}
+		}
+	}
+	for t, r := range perTag {
+		bump(t, r.n)
+	}
+}
+
 // CollectTagsVisit is CollectTags that also tells visit (when set) the path of every markdown file it walks, so that a caller who
 // wants to count the files too does not walk the folder a second time.
 func CollectTagsVisit(ctx context.Context, scrapDir string, visit func(path string)) ([]TagCount, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	counts := map[string]*TagCount{}
-	bump := func(tag string, entries int) {
-		c := counts[tag]
-		if c == nil {
-			c = &TagCount{Tag: tag}
-			counts[tag] = c
+	files := collectMarkdownFiles(filepath.Clean(scrapDir))
+	if visit != nil {
+		for _, path := range files {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			visit(path)
 		}
-		c.Files++
-		c.Entries += entries
 	}
-	for _, path := range collectMarkdownFiles(filepath.Clean(scrapDir)) {
+
+	counts := map[string]*TagCount{}
+	if len(files) < 16 {
+		bump := func(tag string, entries int) {
+			c := counts[tag]
+			if c == nil {
+				c = &TagCount{Tag: tag}
+				counts[tag] = c
+			}
+			c.Files++
+			c.Entries += entries
+		}
+		for _, path := range files {
+			if err := ctx.Err(); err != nil {
+				return nil, err
+			}
+			data, ok := readTaggedFile(path)
+			if !ok {
+				continue
+			}
+			accumulateFileTags(data, bump)
+		}
+	} else {
+		workers := runtime.NumCPU()
+		if workers > 8 {
+			workers = 8
+		}
+		if workers > len(files) {
+			workers = len(files)
+		}
+		if workers < 1 {
+			workers = 1
+		}
+		perWorker := make([]map[string]*TagCount, workers)
+		var next int64 = -1
+		var wg sync.WaitGroup
+		for w := 0; w < workers; w++ {
+			wg.Add(1)
+			go func(wid int) {
+				defer wg.Done()
+				local := map[string]*TagCount{}
+				bump := func(tag string, entries int) {
+					c := local[tag]
+					if c == nil {
+						c = &TagCount{Tag: tag}
+						local[tag] = c
+					}
+					c.Files++
+					c.Entries += entries
+				}
+				for {
+					idx := int(atomic.AddInt64(&next, 1))
+					if idx >= len(files) || ctx.Err() != nil {
+						perWorker[wid] = local
+						return
+					}
+					data, ok := readTaggedFile(files[idx])
+					if !ok {
+						continue
+					}
+					accumulateFileTags(data, bump)
+				}
+			}(w)
+		}
+		wg.Wait()
 		if err := ctx.Err(); err != nil {
 			return nil, err
 		}
-		if visit != nil {
-			visit(path)
-		}
-		data, ok := readTaggedFile(path)
-		if !ok {
-			continue
-		}
-		m := ScanTags(data)
-		if m == nil {
-			continue
-		}
-		for _, t := range m.file {
-			bump(t, len(m.entries))
-		}
-		// A tag that only some entries carry reaches those entries and everything under their headings (a tag the whole file carries
-		// already counts them all). A subtree is a run of entries, and two subtrees are nested or apart, so walking the entries in
-		// order and skipping one that an earlier subtree with the same tag already covers counts each entry once.
-		type reach struct{ n, until int } // entries counted so far; the last entry the latest counted subtree covers
-		var perTag map[string]*reach
-		var lasts []int32
-		for i, own := range m.own {
-			for _, t := range own {
-				if hasTag(m.file, t) {
-					continue
+		for _, local := range perWorker {
+			for tag, lc := range local {
+				c := counts[tag]
+				if c == nil {
+					c = &TagCount{Tag: tag}
+					counts[tag] = c
 				}
-				if perTag == nil {
-					perTag = map[string]*reach{}
-				}
-				r := perTag[t]
-				if r == nil {
-					r = &reach{until: -1}
-					perTag[t] = r
-				}
-				if r.until < i {
-					if lasts == nil {
-						lasts = m.ol.lasts()
-					}
-					last := int(lasts[i])
-					r.n += last - i + 1
-					r.until = last
-				}
+				c.Files += lc.Files
+				c.Entries += lc.Entries
 			}
 		}
-		for t, r := range perTag {
-			bump(t, r.n)
-		}
 	}
+
 	if err := ctx.Err(); err != nil {
 		return nil, err
 	}

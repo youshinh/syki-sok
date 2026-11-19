@@ -3,8 +3,12 @@
 package atomicfile
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
+	"runtime"
+	"strings"
+	"time"
 )
 
 // Write writes data to a temporary file in the folder of path and renames it over path.
@@ -45,9 +49,44 @@ func WriteMode(path string, data []byte, tmpPattern string, newMode os.FileMode)
 		mode = fi.Mode().Perm()
 	}
 	_ = os.Chmod(tmpName, mode)
-	if err := os.Rename(tmpName, path); err != nil {
+	if err := renameReplacing(tmpName, path); err != nil {
 		_ = os.Remove(tmpName)
 		return err
 	}
 	return nil
+}
+
+func isTransientWindowsRenameErr(err error, dst string) bool {
+	if err == nil || runtime.GOOS != "windows" {
+		return false
+	}
+	if fi, serr := os.Stat(dst); serr == nil && fi.IsDir() {
+		return false
+	}
+	if errors.Is(err, os.ErrPermission) {
+		return true
+	}
+	msg := strings.ToLower(err.Error())
+	return strings.Contains(msg, "being used by another process") || strings.Contains(msg, "access is denied")
+}
+
+func renameReplacing(tmpName, path string) error {
+	err := os.Rename(tmpName, path)
+	if !isTransientWindowsRenameErr(err, path) {
+		return err
+	}
+	for _, backoff := range []time.Duration{
+		5 * time.Millisecond,
+		10 * time.Millisecond,
+		20 * time.Millisecond,
+		40 * time.Millisecond,
+		80 * time.Millisecond,
+	} {
+		time.Sleep(backoff)
+		err = os.Rename(tmpName, path)
+		if err == nil || !isTransientWindowsRenameErr(err, path) {
+			return err
+		}
+	}
+	return err
 }

@@ -71,8 +71,14 @@ type App struct {
 	// cfgCacheMu guards cfgCache, the memoised contents of config.json (see
 	// readConfigCached). Invalidated by SaveConfig and re-validated by a stat on every read.
 	cfgCacheMu sync.Mutex
+	// configIOMu serializes atomic config.json writes against concurrent reads (readConfigCached)
+	// so readers never see a truncated/partial file and Windows os.Rename never collides with os.ReadFile.
+	configIOMu sync.RWMutex
 	cfgCache   *configCacheEntry
 	sessionSaveMu sync.Mutex
+	agentsCfgMu   sync.Mutex
+	fileSaveMu    sync.Mutex
+	fileSaveLocks map[string]*pathLockEntry
 
 	ptyMgr    *ptyterm.Manager
 	ptyMu     sync.Mutex

@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"time"
 
@@ -330,6 +331,8 @@ func (a *App) ReadFileByPath(path string) (*FileResult, error) {
 	if path == "" {
 		return nil, fmt.Errorf("パスが空です")
 	}
+	unlock := a.rlockFilePath(path)
+	defer unlock()
 	raw, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("ファイルの読み込みに失敗しました: %w", err)
@@ -462,12 +465,86 @@ func (a *App) ScanFolderFiles(rootPath string) ([]FolderEntry, error) {
 	return entries, nil
 }
 
-// SaveFile writes text to the existing path using specified encoding (as-is original).
+type pathLockEntry struct {
+	mu   sync.RWMutex
+	refs int
+}
+
+func normalizeSaveLockKey(p string) string {
+	clean := filepath.Clean(p)
+	if runtime.GOOS == "windows" {
+		clean = strings.ToLower(clean)
+	}
+	return clean
+}
+
+// acquireFilePathLock serializes writes/conflict-checks (Lock) and reads (RLock) targeting the
+// same path while freeing idle entries so distinct files never grow fileSaveLocks unboundedly.
+func (a *App) acquireFilePathLock(p string, write bool) func() {
+	key := normalizeSaveLockKey(p)
+	a.fileSaveMu.Lock()
+	if a.fileSaveLocks == nil {
+		a.fileSaveLocks = make(map[string]*pathLockEntry)
+	}
+	entry := a.fileSaveLocks[key]
+	if entry == nil {
+		entry = &pathLockEntry{}
+		a.fileSaveLocks[key] = entry
+	}
+	entry.refs++
+	a.fileSaveMu.Unlock()
+
+	if write {
+		entry.mu.Lock()
+	} else {
+		entry.mu.RLock()
+	}
+	return func() {
+		if write {
+			entry.mu.Unlock()
+		} else {
+			entry.mu.RUnlock()
+		}
+		a.fileSaveMu.Lock()
+		entry.refs--
+		if entry.refs == 0 {
+			delete(a.fileSaveLocks, key)
+		}
+		a.fileSaveMu.Unlock()
+	}
+}
+
+func (a *App) lockFilePath(p string) func() {
+	return a.acquireFilePathLock(p, true)
+}
+
+func (a *App) rlockFilePath(p string) func() {
+	return a.acquireFilePathLock(p, false)
+}
+
+func writeFileAtomicFollowSymlink(path string, data []byte, tmpPattern string) error {
+	target := path
+	if fi, err := os.Lstat(path); err == nil && fi.Mode()&os.ModeSymlink != 0 {
+		resolved, err := filepath.EvalSymlinks(path)
+		if err != nil {
+			return err
+		}
+		target = resolved
+	}
+	return atomicfile.Write(target, data, tmpPattern)
+}
+
+// SaveFile writes text to the existing path using specified encoding (atomically via temp-file rename).
 func (a *App) SaveFile(path, content, enc string) (*SaveResult, error) {
 	if path == "" {
 		return a.SaveFileAs(content, enc, "")
 	}
+	unlock := a.lockFilePath(path)
+	defer unlock()
+	return a.saveFileLocked(path, content, enc)
+}
 
+func (a *App) saveFileLocked(path, content, enc string) (*SaveResult, error) {
 	encoded, err := encoding.Encode(content, enc)
 	if err != nil {
 		return nil, fmt.Errorf("エンコードエラー: %w", err)
@@ -478,7 +555,7 @@ func (a *App) SaveFile(path, content, enc string) (*SaveResult, error) {
 		_ = os.MkdirAll(dir, 0755)
 	}
 
-	if err := os.WriteFile(path, encoded, 0644); err != nil {
+	if err := writeFileAtomicFollowSymlink(path, encoded, ".syki-save-*.tmp"); err != nil {
 		return nil, fmt.Errorf("ファイルの保存に失敗しました: %w", err)
 	}
 
@@ -498,10 +575,15 @@ func (a *App) SaveFile(path, content, enc string) (*SaveResult, error) {
 // written: the result has Conflict set and the page asks. An empty expectSig (a tab that never learned the file's text), a file that
 // is gone, and one that cannot be read or decoded all save as before: a check that cannot be made must not stop a save.
 func (a *App) SaveFileChecked(path, content, enc, expectSig string) (*SaveResult, error) {
-	if path != "" && expectSig != "" && diskTextChanged(path, expectSig) {
+	if path == "" {
+		return a.SaveFileAs(content, enc, "")
+	}
+	unlock := a.lockFilePath(path)
+	defer unlock()
+	if expectSig != "" && diskTextChanged(path, expectSig) {
 		return &SaveResult{Path: path, Title: filepath.Base(path), Conflict: true}, nil
 	}
-	return a.SaveFile(path, content, enc)
+	return a.saveFileLocked(path, content, enc)
 }
 
 // SaveFileAsync writes the note off the UI thread so disk / cloud-drive I/O does not stall typing.
@@ -589,7 +671,10 @@ func (a *App) SaveFileAs(content, enc, defaultName string) (*SaveResult, error) 
 		return nil, fmt.Errorf("エンコードエラー: %w", err)
 	}
 
-	if err := os.WriteFile(path, encoded, 0644); err != nil {
+	unlock := a.lockFilePath(path)
+	defer unlock()
+
+	if err := writeFileAtomicFollowSymlink(path, encoded, ".syki-save-*.tmp"); err != nil {
 		return nil, fmt.Errorf("ファイルの保存に失敗しました: %w", err)
 	}
 
@@ -626,7 +711,10 @@ func (a *App) ExportPlainTextAs(content, enc, defaultName string) (*SaveResult, 
 		return nil, fmt.Errorf("エンコードエラー: %w", err)
 	}
 
-	if err := os.WriteFile(path, encoded, 0644); err != nil {
+	unlock := a.lockFilePath(path)
+	defer unlock()
+
+	if err := writeFileAtomicFollowSymlink(path, encoded, ".syki-save-*.tmp"); err != nil {
 		return nil, fmt.Errorf("テキストエクスポートに失敗しました: %w", err)
 	}
 
