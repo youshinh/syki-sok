@@ -35,13 +35,16 @@ func (f *fakeMeetingSource) Start(push func([]int16)) error {
 	if f.fail != nil {
 		return f.fail
 	}
-	f.stop = make(chan struct{})
+	stop := make(chan struct{})
+	f.mu.Lock()
+	f.stop = stop
+	f.mu.Unlock()
 	go func() {
 		t := time.NewTicker(20 * time.Millisecond)
 		defer t.Stop()
 		for {
 			select {
-			case <-f.stop:
+			case <-stop:
 				return
 			case <-t.C:
 				b := make([]int16, sysaudio.SampleRate/50) // 20 ms
@@ -55,6 +58,8 @@ func (f *fakeMeetingSource) Start(push func([]int16)) error {
 	return nil
 }
 func (f *fakeMeetingSource) Stop() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
 	if f.stop != nil {
 		close(f.stop)
 		f.stop = nil

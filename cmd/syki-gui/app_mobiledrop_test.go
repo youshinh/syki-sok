@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -63,10 +64,13 @@ func stubMobileDropVision(t *testing.T, reply string, err error) *struct {
 		prompt, imageBase64, mime string
 		calls                     int
 	}{}
+	var mu sync.Mutex
 	orig := mobileDropQueryVision
 	mobileDropQueryVision = func(prompt, imageBase64, mimeType string, _ llm.VisionConfig) (string, error) {
+		mu.Lock()
 		got.prompt, got.imageBase64, got.mime = prompt, imageBase64, mimeType
 		got.calls++
+		mu.Unlock()
 		return reply, err
 	}
 	t.Cleanup(func() { mobileDropQueryVision = orig })
@@ -85,10 +89,13 @@ func stubMobileDropTranscribe(t *testing.T, reply string, err error) *struct {
 		mime  string
 		calls int32
 	}{}
+	var mu sync.Mutex
 	orig := mobileDropTranscribe
 	mobileDropTranscribe = func(audio []byte, mimeType string, _ llm.VoiceConfig) (string, error) {
 		atomic.AddInt32(&got.calls, 1)
+		mu.Lock()
 		got.audio, got.mime = audio, mimeType
+		mu.Unlock()
 		return reply, err
 	}
 	t.Cleanup(func() { mobileDropTranscribe = orig })

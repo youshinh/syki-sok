@@ -131,9 +131,10 @@ func correctQuickCaptureWithLLM(text string, cfg llm.Config, japanese bool, time
 		out string
 		err error
 	}
+	query := quickCaptureLLMQuery
 	ch := make(chan result, 1)
 	go func() {
-		out, err := quickCaptureLLMQuery(prompt, cfg)
+		out, err := query(prompt, cfg)
 		ch <- result{out, err}
 	}()
 

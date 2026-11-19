@@ -11,17 +11,30 @@ import (
 )
 
 type dummyWebView struct {
+	mu         sync.Mutex
 	dispatched []func()
 	evals      []string
 }
 
 func (d *dummyWebView) Dispatch(f func()) {
+	d.mu.Lock()
 	d.dispatched = append(d.dispatched, f)
+	d.mu.Unlock()
 	f()
 }
 
 func (d *dummyWebView) Eval(js string) {
+	d.mu.Lock()
 	d.evals = append(d.evals, js)
+	d.mu.Unlock()
+}
+
+func (d *dummyWebView) snapshotEvals() []string {
+	d.mu.Lock()
+	defer d.mu.Unlock()
+	out := make([]string, len(d.evals))
+	copy(out, d.evals)
+	return out
 }
 
 func TestApp_ParseSlotsRPC(t *testing.T) {
@@ -88,7 +101,7 @@ func TestApp_RunSlotAgentAsync_SimulatedAgent(t *testing.T) {
 	deadline := time.Now().Add(3 * time.Second)
 	foundResult := false
 	for time.Now().Before(deadline) {
-		for _, ev := range dw.evals {
+		for _, ev := range dw.snapshotEvals() {
 			if strings.Contains(ev, "__onSlotAgentResult") && strings.Contains(ev, "Slot Result 42") {
 				foundResult = true
 				break
@@ -101,7 +114,7 @@ func TestApp_RunSlotAgentAsync_SimulatedAgent(t *testing.T) {
 	}
 
 	if !foundResult {
-		t.Fatalf("did not receive __onSlotAgentResult callback with expected output. Evals: %v", dw.evals)
+		t.Fatalf("did not receive __onSlotAgentResult callback with expected output. Evals: %v", dw.snapshotEvals())
 	}
 }
 
