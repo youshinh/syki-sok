@@ -17,6 +17,7 @@
   const TRANSCRIBE_GRACE_MS = 20000;
   const DEFAULT_REQUEST_TIMEOUT_SEC = 120;
   const LOCAL_REQUEST_TIMEOUT_SEC = 300; // the on-device engine: loading the model, waiting for its turn, then the recognition itself
+  const MEETING_REQUEST_TIMEOUT_SEC = LOCAL_REQUEST_TIMEOUT_SEC;
   const MAX_KEPT_AUDIO = 5;
   // Second stage (tidying the transcript, or applying it to a selection as an edit instruction).
   const DEFAULT_REFINE_MODEL = 'gemini-flash-lite-latest';
@@ -248,13 +249,17 @@
     const voice = cfg.voice || {};
     const vision = cfg.vision || {};
     const baseUrl = voice.baseUrl || vision.baseUrl || DEFAULT_BASE_URL;
-    const profile = profileOf(voice, opts && opts.profile === 'batch' ? 'batch' : 'realtime');
+    const isBatch = !!(opts && opts.profile === 'batch');
+    const profile = profileOf(voice, isBatch ? 'batch' : 'realtime');
+    const apiStyle = profile.apiStyle || 'auto';
+    const isOpenAI = String(apiStyle).trim().toLowerCase() === 'openai';
+    const defaultTimeout = (isBatch || isOpenAI) ? LOCAL_REQUEST_TIMEOUT_SEC : 30;
     return {
       refine: resolveRefineConfig(voice),
       baseUrl: baseUrl,
       apiKey: voice.apiKey || (apiHost(baseUrl) === apiHost(vision.baseUrl) ? (vision.apiKey || '') : ''),
       model: profile.model || DEFAULT_MODEL,
-      apiStyle: profile.apiStyle || 'auto',
+      apiStyle: apiStyle,
       engine: profile.engine,
       whisper: profile.whisper,
       prompt: voice.prompt || DEFAULT_PROMPT,
@@ -265,7 +270,7 @@
       systemAudio: voice.includeSystemAudio === true,
       silence_timeout_sec: (typeof voice.silence_timeout_sec === 'number' && voice.silence_timeout_sec > 0)
         ? voice.silence_timeout_sec : DEFAULT_SILENCE_SEC,
-      timeout: (opts && typeof opts.timeout === 'number' && opts.timeout >= 0) ? opts.timeout : 30
+      timeout: (opts && typeof opts.timeout === 'number' && opts.timeout >= 0) ? opts.timeout : defaultTimeout
     };
   }
 
@@ -296,6 +301,10 @@
     if (typeof reqId !== 'string') return null;
     const idx = reqId.lastIndexOf('_');
     return idx === -1 ? null : reqId.slice(idx + 1);
+  }
+
+  function isMeetingCachePath(p) {
+    return typeof p === 'string' && /(?:^|[/\\])meeting[/\\][^/\\]+_\d{3,}\.wav$/i.test(p);
   }
 
   // ---- i18n / toast (falls back to a built-in JA/EN table when bridge.t doesn't know the key) --
@@ -456,7 +465,9 @@
   function watchdogMs(cfg, job) {
     let sec = (cfg && typeof cfg.timeout === 'number' && cfg.timeout > 0) ? cfg.timeout : DEFAULT_REQUEST_TIMEOUT_SEC;
     // on this PC the model is loaded for every recording and recognitions take turns (one at a time), so the cloud's wait is too short
-    if (cfg && cfg.engine === 'whisper-local') sec = Math.max(sec, LOCAL_REQUEST_TIMEOUT_SEC);
+    if (cfg && (cfg.engine === 'whisper-local' || String(cfg.apiStyle || '').trim().toLowerCase() === 'openai')) {
+      sec = Math.max(sec, LOCAL_REQUEST_TIMEOUT_SEC);
+    }
     const refineSec = (job && job.refine && cfg && cfg.refine) ? cfg.refine.timeoutSec : 0;
     return (sec + refineSec) * 1000 + TRANSCRIBE_GRACE_MS;
   }
@@ -754,7 +765,7 @@
     }
     pending.set(id, tabId);
     const backend = global.backend;
-    const cfg = resolveVoiceConfig(bridge && bridge.getConfig ? bridge.getConfig() : {}, { profile: 'batch' }); // a meeting is the batch profile
+    const cfg = resolveVoiceConfig(bridge && bridge.getConfig ? bridge.getConfig() : {}, { profile: 'batch', timeout: MEETING_REQUEST_TIMEOUT_SEC }); // a meeting is the batch profile
     let result;
     try {
       result = backend.stopMeetingRecordingAsync('voice_' + id, requestConfigJSON(cfg, null));
@@ -1078,15 +1089,21 @@
     const rescueAnchor = buildRescueAnchor(id);
     const waitingAnchor = (entry && entry.timedOut) ? rescueAnchor : buildTranscribingAnchor(id);
     const failedJob = jobs.get(id);
-    if (err && failedJob && failedJob.meeting) {
-      if (tabId != null && bridge && typeof bridge.replaceAnchor === 'function') bridge.replaceAnchor(tabId, waitingAnchor, '');
-      jobs.delete(id);
-      toast(bridge, 'voiceTranscribeFailed', { error: err }, ERROR_TOAST_MS * 2);
-      return;
-    }
     if (err) {
-      if (tabId != null && bridge && typeof bridge.replaceAnchor === 'function' && waitingAnchor !== rescueAnchor) {
-        bridge.replaceAnchor(tabId, waitingAnchor, rescueAnchor);
+      const partial = String(text || '').trim();
+      const hasRecovery = !!(cachePath || (entry && entry.base64));
+      if (failedJob && failedJob.meeting && !hasRecovery) {
+        if (tabId != null && bridge && typeof bridge.replaceAnchor === 'function') {
+          bridge.replaceAnchor(tabId, waitingAnchor, partial);
+        }
+        jobs.delete(id);
+        dropInflight(id);
+        toast(bridge, 'voiceTranscribeFailed', { error: err }, ERROR_TOAST_MS * 2);
+        return;
+      }
+      const nextAnchor = partial ? (partial + '\n\n' + rescueAnchor) : rescueAnchor;
+      if (tabId != null && bridge && typeof bridge.replaceAnchor === 'function' && (waitingAnchor !== rescueAnchor || partial)) {
+        bridge.replaceAnchor(tabId, waitingAnchor, nextAnchor);
       }
       setCachePath(id, cachePath);
       if (cachePath) {
@@ -1095,7 +1112,7 @@
         clearInflightTimer(entry); // it could not: keep the copy in memory so [Retry] (再試行) still has something to send
         entry.timedOut = true;
       }
-      toast(bridge, 'voiceTranscribeFailed', { error: err });
+      toast(bridge, 'voiceTranscribeFailed', { error: err }, (failedJob && failedJob.meeting) ? ERROR_TOAST_MS * 2 : undefined);
     } else {
       // A plain dictation whose second stage failed keeps the transcript. A spoken rewrite has nothing
       // useful to insert then (the transcript is an instruction), so the selection is put back.
@@ -1133,10 +1150,30 @@
         toast(bridge, 'voiceTranscribeUnavailable');
         return;
       }
-      const cfg = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {});
+      const existingJob = jobs.get(id);
+      const isMeetingRetry = !!((existingJob && existingJob.meeting) || isMeetingCachePath(cachePath));
+      const cfg = resolveVoiceConfig(bridge.getConfig ? bridge.getConfig() : {}, isMeetingRetry ? { profile: 'batch', timeout: MEETING_REQUEST_TIMEOUT_SEC } : undefined);
       if (fromMemory) {
         memory.tabId = tabId;
         sendForTranscription(id, memory, cfg);
+        return;
+      }
+      if (isMeetingRetry) {
+        rememberJob(id, { refine: false, line: '', selection: '', meeting: true });
+        let result;
+        try { result = backend.retryVoiceCacheAsync('voice_' + id, cachePath, requestConfigJSON(cfg, null)); } catch (e) {
+          pending.delete(id);
+          bridge.replaceAnchor(tabId, transcribing, buildRescueAnchor(id));
+          toast(bridge, 'voiceTranscribeUnavailable');
+          return;
+        }
+        if (result && typeof result.catch === 'function') {
+          result.catch(() => {
+            pending.delete(id);
+            bridge.replaceAnchor(tabId, transcribing, buildRescueAnchor(id));
+            toast(bridge, 'voiceTranscribeUnavailable');
+          });
+        }
         return;
       }
       // The audio is in the backend's cache: only a marker entry is kept here, so the watchdog still applies
@@ -1159,6 +1196,7 @@
         const target = (res && (res.relPath || res.fileUrl)) || '';
         if (tabId != null && target) bridge.replaceAnchor(tabId, anchorText, `[audio](${target})`);
         clearCacheEntry(id);
+        jobs.delete(id);
       } catch (e) {
         toast(bridge, 'voiceKeepFailed', { error: String((e && e.message) || e) });
       }

@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -22,6 +24,9 @@ import (
 // meetingSegmentSeconds: four minutes of 16 kHz mono 16-bit audio are about 7.7 MB (10 MB as base64), well inside what the
 // transcription services take in one request.
 const meetingSegmentSeconds = 240
+
+// meetingDefaultTimeoutSec gives each segment enough time for local LLMs / batch transcription.
+const meetingDefaultTimeoutSec = 300
 
 // meetingSubdir is under the voice cache folder.
 const meetingSubdir = "meeting"
@@ -177,18 +182,90 @@ func meetingShutdown() {
 	}
 }
 
-func removeMeetingFiles(files []string) {
+func removeMeetingFilesOnly(files []string) {
 	for _, f := range files {
-		os.Remove(f)
+		_ = os.Remove(f)
 	}
+}
+
+func removeMeetingFiles(files []string) {
+	removeMeetingFilesOnly(files)
 	if len(files) > 0 {
-		os.Remove(filepath.Dir(files[0])) // only succeeds when empty
+		_ = os.Remove(filepath.Dir(files[0])) // only succeeds when empty
 	}
+}
+
+func parseMeetingSegmentName(name string) (prefix string, num int, ok bool) {
+	ext := filepath.Ext(name)
+	if !strings.EqualFold(ext, ".wav") {
+		return "", 0, false
+	}
+	stem := name[:len(name)-len(ext)]
+	idx := strings.LastIndex(stem, "_")
+	if idx <= 0 {
+		return "", 0, false
+	}
+	digits := stem[idx+1:]
+	if len(digits) < 3 {
+		return "", 0, false
+	}
+	for i := 0; i < len(digits); i++ {
+		if digits[i] < '0' || digits[i] > '9' {
+			return "", 0, false
+		}
+	}
+	n, err := strconv.Atoi(digits)
+	if err != nil {
+		return "", 0, false
+	}
+	return stem[:idx+1], n, true
+}
+
+// meetingSessionFiles returns safePath and all subsequent segments of the same meeting session, sorted by segment number.
+func meetingSessionFiles(safePath string) ([]string, bool) {
+	dir := filepath.Dir(safePath)
+	if filepath.Base(dir) != meetingSubdir {
+		return nil, false
+	}
+	prefix, targetNum, ok := parseMeetingSegmentName(filepath.Base(safePath))
+	if !ok {
+		return nil, false
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil, false
+	}
+	type seg struct {
+		path string
+		num  int
+	}
+	var segs []seg
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		p, n, matched := parseMeetingSegmentName(e.Name())
+		if !matched || p != prefix || n < targetNum {
+			continue
+		}
+		segs = append(segs, seg{path: filepath.Join(dir, e.Name()), num: n})
+	}
+	if len(segs) == 0 {
+		return nil, false
+	}
+	sort.Slice(segs, func(i, j int) bool {
+		return segs[i].num < segs[j].num
+	})
+	out := make([]string, len(segs))
+	for i, s := range segs {
+		out[i] = s.path
+	}
+	return out, true
 }
 
 // StopMeetingRecordingAsync ends the recording and transcribes it piece by piece in the background; the text arrives through
 // the same __onVoiceResult callback as a dictation (reqID). Nothing is refined: a meeting is not a line to be fitted.
-// On success the recording is deleted; on a failure it is kept and the message says where.
+// On success the recording is deleted; on a failure partial results are returned and remaining segments are kept for retry.
 func (a *App) StopMeetingRecordingAsync(reqID, voiceConfigJSON string) {
 	go func() {
 		defer func() {
@@ -208,35 +285,67 @@ func (a *App) StopMeetingRecordingAsync(reqID, voiceConfigJSON string) {
 		}
 		if res.Seconds < 1 || len(res.Files) == 0 {
 			removeMeetingFiles(res.Files)
-			a.dispatchVoiceResult(reqID, "", "", "") // too short: the UI says no speech was heard
+			a.dispatchVoiceResult(reqID, "", "録音が短すぎるため文字起こしできませんでした（1秒以上録音してください）", "")
 			return
 		}
 		cfg := parseVoiceRequestConfig(voiceConfigJSON)
-		text, err := transcribeMeetingFiles(res.Files, cfg)
-		if atomic.LoadInt32(&a.isDestroyed) != 0 {
-			return
-		}
-		if err != nil {
-			a.dispatchVoiceResult(reqID, "", fmt.Sprintf("%v（録音は %s に残っています）", err, s.dir), "")
-			return
-		}
-		removeMeetingFiles(res.Files)
-		a.dispatchVoiceResultRefined(reqID, text, "", "", "")
+		a.dispatchMeetingTranscription(reqID, res.Files, cfg)
 	}()
 }
 
-// transcribeMeetingFiles sends the segments one after another and joins the text. A failing segment stops the run, so the
-// person does not get a transcript with a hole in it that looks complete.
-func transcribeMeetingFiles(files []string, cfg voiceRequestConfig) (string, error) {
+func (a *App) dispatchMeetingTranscription(reqID string, files []string, cfg voiceRequestConfig) {
+	text, completed, err := transcribeMeetingSegments(files, cfg)
+	if atomic.LoadInt32(&a.isDestroyed) != 0 {
+		return
+	}
+	if completed > 0 && completed < len(files) {
+		removeMeetingFilesOnly(files[:completed])
+	}
+	if err != nil {
+		remaining := files[completed:]
+		cachePath, dir := "", ""
+		if len(remaining) > 0 {
+			cachePath = remaining[0]
+			dir = filepath.Dir(remaining[0])
+		}
+		a.dispatchVoiceResult(reqID, text, fmt.Sprintf("%v（録音は %s に残っています）", err, dir), cachePath)
+		return
+	}
+	if strings.TrimSpace(text) == "" {
+		cachePath, dir := "", ""
+		if len(files) > 0 {
+			cachePath = files[0]
+			dir = filepath.Dir(files[0])
+		}
+		a.dispatchVoiceResult(reqID, "", fmt.Sprintf("話し声が検出されませんでした（録音は %s に残っています）", dir), cachePath)
+		return
+	}
+	removeMeetingFiles(files)
+	a.dispatchVoiceResultRefined(reqID, text, "", "", "")
+}
+
+// transcribeMeetingSegments sends the segments one after another, returning any already-completed text and how many
+// segments succeeded so callers can preserve partial progress and keep only the remaining files for retry.
+func transcribeMeetingSegments(files []string, cfg voiceRequestConfig) (string, int, error) {
+	if cfg.Timeout <= 0 {
+		cfg.Timeout = meetingDefaultTimeoutSec
+	}
 	var parts []string
 	for i, f := range files {
 		text, err := inputsTranscribeFile(context.Background(), f, "audio/wav", cfg.VoiceConfig)
 		if err != nil {
-			return "", fmt.Errorf("文字起こしに失敗しました（%d/%d つ目の区間）: %w", i+1, len(files), err)
+			return strings.Join(parts, "\n\n"), i, fmt.Errorf("文字起こしに失敗しました（%d/%d つ目の区間）: %w", i+1, len(files), err)
 		}
 		if t := strings.TrimSpace(text); t != "" {
 			parts = append(parts, t)
 		}
 	}
-	return strings.Join(parts, "\n\n"), nil
+	return strings.Join(parts, "\n\n"), len(files), nil
+}
+
+// transcribeMeetingFiles sends the segments one after another and joins the text. A failing segment stops the run, so the
+// person does not get a transcript with a hole in it that looks complete.
+func transcribeMeetingFiles(files []string, cfg voiceRequestConfig) (string, error) {
+	text, _, err := transcribeMeetingSegments(files, cfg)
+	return text, err
 }

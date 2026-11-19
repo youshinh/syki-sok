@@ -17733,14 +17733,16 @@ OUTPUT FORMAT:
       btnTranscribe.onclick = async () => {
         hideBar();
         showMessage(count === 1 ? '録音を文字起こし中...' : `録音 ${count} 件を文字起こし中...`, 5000);
-        const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON
-          ? window.VoiceInput.configJSON(config, { timeout: 0, profile: 'realtime' })
-          : '{}';
 
         const results = [];
         let successCount = 0;
         for (const item of caches) {
           try {
+            const profile = item.kind === 'meeting' ? 'batch' : 'realtime';
+            const timeout = item.kind === 'meeting' ? 300 : 0;
+            const voiceJSON = window.VoiceInput && window.VoiceInput.configJSON
+              ? window.VoiceInput.configJSON(config, { timeout, profile })
+              : '{}';
             let text = '';
             if (window.backend.transcribeVoiceCache) {
               text = await window.backend.transcribeVoiceCache(item.path, voiceJSON);

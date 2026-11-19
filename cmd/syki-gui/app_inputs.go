@@ -18,6 +18,7 @@ import (
 
 	"syki-sok/pkg/appdir"
 	"syki-sok/pkg/llm"
+	"syki-sok/pkg/sysaudio"
 )
 
 // inputsNow lets tests pin the timestamp used for asset/voice-cache file names.
@@ -656,6 +657,11 @@ func (a *App) RetryVoiceCacheAsync(reqID, cachePath, voiceConfigJSON string) {
 			a.dispatchVoiceResult(reqID, "", err.Error(), cachePath)
 			return
 		}
+		if files, ok := meetingSessionFiles(safePath); ok {
+			cfg := parseVoiceRequestConfig(voiceConfigJSON)
+			a.dispatchMeetingTranscription(reqID, files, cfg)
+			return
+		}
 		data, err := os.ReadFile(safePath)
 		if err != nil {
 			a.dispatchVoiceResult(reqID, "", fmt.Sprintf("キャッシュの読み込みに失敗しました: %v", err), cachePath)
@@ -688,9 +694,45 @@ func (a *App) KeepVoiceCache(cachePath, baseDir string) (*AssetResult, error) {
 	if err != nil {
 		return nil, err
 	}
-	data, err := os.ReadFile(safePath)
-	if err != nil {
-		return nil, fmt.Errorf("キャッシュの読み込みに失敗しました: %w", err)
+
+	var savedBytes []byte
+	ext := "webm"
+	var cleanup func()
+
+	if files, ok := meetingSessionFiles(safePath); ok && len(files) > 0 {
+		var parts [][]byte
+		var readFiles []string
+		for i, f := range files {
+			b, rerr := os.ReadFile(f)
+			if rerr != nil {
+				if i == 0 {
+					return nil, fmt.Errorf("キャッシュの読み込みに失敗しました: %w", rerr)
+				}
+				break
+			}
+			parts = append(parts, b)
+			readFiles = append(readFiles, f)
+		}
+		savedBytes = parts[0]
+		usedFiles := readFiles[:1]
+		if len(parts) > 1 {
+			if joined, jOK := sysaudio.JoinWAVBytes(parts); jOK {
+				savedBytes = joined
+				usedFiles = readFiles
+			}
+		}
+		ext = "wav"
+		cleanup = func() { removeMeetingFiles(usedFiles) }
+	} else {
+		data, rerr := os.ReadFile(safePath)
+		if rerr != nil {
+			return nil, fmt.Errorf("キャッシュの読み込みに失敗しました: %w", rerr)
+		}
+		savedBytes = data
+		if sniffRecordingMIME(data) == "audio/wav" {
+			ext = "wav"
+		}
+		cleanup = func() { _ = os.Remove(safePath) }
 	}
 
 	root, hasBaseDir, err := resolveAssetRoot(baseDir)
@@ -702,11 +744,11 @@ func (a *App) KeepVoiceCache(cachePath, baseDir string) (*AssetResult, error) {
 		return nil, fmt.Errorf("assetsフォルダの作成に失敗しました: %w", err)
 	}
 
-	absPath, name := uniqueAssetPath(assetsDir, "voice_note", "webm")
-	if err := os.WriteFile(absPath, data, 0644); err != nil {
+	absPath, name := uniqueAssetPath(assetsDir, "voice_note", ext)
+	if err := os.WriteFile(absPath, savedBytes, 0644); err != nil {
 		return nil, fmt.Errorf("ファイルの保存に失敗しました: %w", err)
 	}
-	_ = os.Remove(safePath)
+	cleanup()
 
 	result := &AssetResult{AbsPath: absPath, FileURL: FileURLFromPath(absPath)}
 	if hasBaseDir {
@@ -720,6 +762,10 @@ func (a *App) DiscardVoiceCache(cachePath string) error {
 	safePath, err := resolveVoiceCachePath(cachePath)
 	if err != nil {
 		return err
+	}
+	if files, ok := meetingSessionFiles(safePath); ok {
+		removeMeetingFiles(files)
+		return nil
 	}
 	if err := os.Remove(safePath); err != nil && !os.IsNotExist(err) {
 		return fmt.Errorf("キャッシュの削除に失敗しました: %w", err)
@@ -840,16 +886,22 @@ func (a *App) TranscribeVoiceCache(cachePath, voiceConfigJSON string) (string, e
 	if err != nil {
 		return "", err
 	}
-	data, err := os.ReadFile(safePath)
+	f, err := os.Open(safePath)
 	if err != nil {
 		return "", fmt.Errorf("キャッシュの読み込みに失敗しました: %w", err)
 	}
+	var head [16]byte
+	n, _ := f.Read(head[:])
+	_ = f.Close()
+
 	cfg := parseVoiceRequestConfig(voiceConfigJSON)
-	audioBase64 := base64.StdEncoding.EncodeToString(data)
-	mime := sniffRecordingMIME(data)
-	text, err := inputsTranscribe(context.Background(), audioBase64, mime, cfg.VoiceConfig)
+	mime := sniffRecordingMIME(head[:n])
+	text, err := inputsTranscribeFile(context.Background(), safePath, mime, cfg.VoiceConfig)
 	if err != nil {
 		return "", err
+	}
+	if strings.TrimSpace(text) == "" {
+		return "", fmt.Errorf("話し声が検出されませんでした")
 	}
 	_ = os.Remove(safePath)
 	text, _ = refineTranscript(text, cfg)

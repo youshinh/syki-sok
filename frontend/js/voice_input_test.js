@@ -203,6 +203,9 @@ function rescueAnchor(id) {
   assert.strictEqual(cfg.apiKey, '');
   assert.strictEqual(cfg.timeout, 30);
   assert.ok(cfg.prompt.length > 0);
+  assert.strictEqual(VI.resolveVoiceConfig({ voice: { apiStyle: 'openai' } }).timeout, 300, 'openai/local LLM voice defaults to 300s timeout');
+  assert.strictEqual(VI.resolveVoiceConfig({}, { profile: 'batch' }).timeout, 300, 'batch profile defaults to 300s timeout');
+  assert.ok(VI.watchdogMs({ engine: 'gemini', apiStyle: 'openai', timeout: 30 }) >= 300 * 1000, 'openai/local LLM watchdog waits at least 5 minutes');
 })();
 
 (function testAlreadySavedModelIsRespected() {
@@ -908,6 +911,7 @@ function rescueAnchor(id) {
     assert.ok(stopCall, 'stopping hands the recording to the backend');
     assert.strictEqual(stopCall[1], calls[0][1], 'the same request id');
     assert.strictEqual(stopCall[2].refine, undefined, 'a meeting is not fitted to the current line: no second stage');
+    assert.strictEqual(stopCall[2].timeout, 300, 'meeting batch recording uses 300s timeout');
     assert.strictEqual(global.VoiceInput.isRecording(), false);
     assert.deepStrictEqual(states, [true, false]);
     assert.strictEqual(log.replaced.length, 1, 'the recording marker became the "transcribing" marker');
@@ -935,6 +939,72 @@ function rescueAnchor(id) {
     global.__onVoiceResult(failStop[1], '', '文字起こしに失敗しました（録音は C:/x に残っています）', '', '');
     assert.strictEqual(log.replaced.at(-1)[2], '', 'the transcribing marker is taken out');
     assert.ok(log.messages.length > before && /T:voiceTranscribeFailed/.test(String(log.messages.at(-1)[0])), 'and the failure is reported');
+
+    // a failed transcription with cachePath keeps partial text + rescue marker and retries using the batch profile (300s, no refine)
+    {
+      const prevBridge = global.SykiBridge;
+      const prevVP = global.VoiceProfiles;
+      global.VoiceProfiles = require('./voice_profiles.js');
+      try {
+        const retryCalls = [];
+        const editor = { value: '', selectionStart: 0, selectionEnd: 0 };
+        const partialLog = [];
+        const rescueBridge = {
+          t: (key) => 'T:' + key,
+          showMessage: () => {},
+          isEditorVisible: () => true,
+          getActiveEditor: () => editor,
+          getTabIdForEditor: () => 'tab-m',
+          insertTextWithUndo: (text) => { editor.value += text; },
+          replaceAnchor: (tabId, from, to) => {
+            partialLog.push([tabId, from, to]);
+            editor.value = editor.value.split(from).join(to);
+            return true;
+          },
+          getConfig: () => ({
+            voice: {
+              includeSystemAudio: true,
+              refine: { enabled: true },
+              realtime: { engine: 'gemini', model: 'gemini-3.5-transcribe' },
+              batch: { engine: 'gemini', model: 'qwen3-omni', apiStyle: 'openai' }
+            }
+          })
+        };
+        global.SykiBridge = rescueBridge;
+        global.backend.retryVoiceCacheAsync = (reqId, path, json) => {
+          retryCalls.push([reqId, path, JSON.parse(json)]);
+          return Promise.resolve();
+        };
+
+        await VI.start();
+        global.VoiceInput.toggle();
+        const partialStop = calls.filter((c) => c[0] === 'stop')[2];
+        const partialId = VI.idFromReqId(partialStop[1]);
+        const cachePath = 'C:/cache/meeting/2026-11-19-195000_' + partialId + '_002.wav';
+        global.__onVoiceResult(partialStop[1], '区間1の結果', '文字起こしに失敗しました（2/3 つ目の区間）', cachePath, '');
+
+        const expectedRescue = VI.buildRescueAnchor(partialId);
+        assert.strictEqual(partialLog.at(-1)[2], '区間1の結果\n\n' + expectedRescue, 'partial result and rescue marker are placed in the note');
+        assert.ok(editor.value.includes('区間1の結果\n\n' + expectedRescue));
+
+        const retryToken = '[再試行(id:' + partialId + ')]';
+        const clickPos = editor.value.indexOf(retryToken) + 2;
+        editor.selectionStart = clickPos;
+        editor.selectionEnd = clickPos;
+        assert.strictEqual(global.VoiceInput.handleEditorClick(editor), true, 'clicking [再試行] triggers meeting retry');
+        assert.strictEqual(retryCalls.length, 1, 'retryVoiceCacheAsync was called');
+        assert.strictEqual(retryCalls[0][1], cachePath);
+        assert.strictEqual(retryCalls[0][2].timeout, 300, 'meeting retry uses 300s timeout');
+        assert.strictEqual(retryCalls[0][2].refine, undefined, 'meeting retry skips second stage refine');
+        assert.strictEqual(retryCalls[0][2].apiStyle, 'openai', 'meeting retry uses batch profile settings');
+
+        global.__onVoiceResult(retryCalls[0][0], '区間2と3の結果', '', '', '');
+        assert.strictEqual(editor.value, '区間1の結果\n\n区間2と3の結果', 'remaining segments replace the retry marker after partial text');
+      } finally {
+        global.SykiBridge = prevBridge;
+        global.VoiceProfiles = prevVP;
+      }
+    }
 
     // the backend cannot start it (no device): say so, leave the note alone, stay idle
     global.backend.startMeetingRecording = () => Promise.reject(new Error('no audio device'));
