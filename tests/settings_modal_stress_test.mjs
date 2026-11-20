@@ -347,6 +347,7 @@ async function runSettingsModalUnitStress() {
     config.general.language = 'ja';
     config.general.theme = 'bamboo';
     config.default_agent = 'codex-cli';
+    config.agent_panel_disabled_presets = ['codex', 'shell'];
     config.shortcuts = { globalSummon: 'Ctrl+Alt+Z', quickCapture: 'Ctrl+Shift+X' };
     config.general.toolbarLayout = { order: ['btn-save'], hidden: ['btn-new'] };
     config.general.cloudConsent = { 'api.openai.com': true };
@@ -356,6 +357,7 @@ async function runSettingsModalUnitStress() {
     assert.strictEqual(config.general.language, 'en');
     assert.strictEqual(config.general.theme, 'olive');
     assert.strictEqual(config.default_agent, 'claude-code');
+    assert.deepStrictEqual(config.agent_panel_disabled_presets || [], []);
     assert.strictEqual(config.shortcuts.globalSummon, 'Ctrl+Alt+M');
     assert.deepStrictEqual(config.general.toolbarLayout, { order: ['btn-new', 'btn-open'], hidden: [] });
     assert.deepStrictEqual(config.general.cloudConsent, { 'generativelanguage.googleapis.com': true });

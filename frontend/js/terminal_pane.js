@@ -11,6 +11,35 @@
     { id: 'shell', label: 'Shell', short: 'shell' }
   ];
 
+  function normalizePresetId(raw) {
+    const p = String(raw || '').trim().toLowerCase();
+    if (p === 'cc' || p === 'claude' || p === 'claude-code') return 'cc';
+    if (p === 'codex') return 'codex';
+    if (p === 'agy' || p === 'antigravity' || p === 'gemini') return 'agy';
+    if (p === 'shell') return 'shell';
+    return '';
+  }
+
+  function normalizeDisabledPresets(list) {
+    const out = new Set();
+    if (!Array.isArray(list)) return out;
+    for (let i = 0; i < list.length; i++) {
+      const id = normalizePresetId(list[i]);
+      if (id) out.add(id);
+    }
+    return out;
+  }
+
+  function filterEnabledPresets(presets, disabledList) {
+    if (!Array.isArray(presets)) return [];
+    const disabled = normalizeDisabledPresets(disabledList);
+    return presets.filter((item) => {
+      const raw = item && typeof item === 'object' ? item.id : item;
+      const id = normalizePresetId(raw);
+      return !!id && !disabled.has(id);
+    });
+  }
+
   function bracketedPaste(text) {
     const s = text == null ? '' : String(text);
     return '\x1b[200~' + s + '\x1b[201~';
@@ -195,7 +224,8 @@
         : isAgy
           ? ['codex', 'cc']
           : ['codex', 'cc', 'agy'];
-    if (Array.isArray(available) && available.length > 0) {
+    if (Array.isArray(available)) {
+      if (available.length === 0) return '';
       for (let i = 0; i < candidates.length; i++) {
         if (available.indexOf(candidates[i]) >= 0) return candidates[i];
       }
@@ -205,7 +235,7 @@
         return x !== 'shell' && nx !== normP;
       });
       if (other) return other;
-      return available.find((x) => x !== 'shell') || preset || available[0] || 'shell';
+      return available.find((x) => x !== 'shell') || available[0] || '';
     }
     if (isCC) return 'codex';
     if (isCodex) return 'cc';
@@ -742,45 +772,88 @@
       return '';
     }
 
+    function getDisabledPresetSet() {
+      const raw = typeof d.getDisabledPresets === 'function' ? d.getDisabledPresets() : null;
+      return normalizeDisabledPresets(raw);
+    }
+
+    function getEnabledPresetDefs() {
+      const disabled = getDisabledPresetSet();
+      return DEFAULT_PRESETS.filter((p) => !disabled.has(p.id));
+    }
+
+    function filterAvailablePresets(avail) {
+      const disabled = getDisabledPresetSet();
+      if (Array.isArray(avail)) {
+        return avail.filter((p) => {
+          const id = normalizePresetId(p);
+          return !!id && !disabled.has(id);
+        });
+      }
+      if (disabled.size > 0) {
+        return DEFAULT_PRESETS.map((p) => p.id).filter((id) => !disabled.has(id));
+      }
+      return null;
+    }
+
     async function ensureAvailablePresets() {
-      if (Array.isArray(availablePresetsCache)) return availablePresetsCache;
-      const backend = d.backend || (win && win.backend);
-      if (backend && typeof backend.ptyAvailablePresets === 'function') {
-        try {
-          const raw = await backend.ptyAvailablePresets();
-          const parsed = typeof raw === 'string' ? JSON.parse(raw || '[]') : raw;
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            availablePresetsCache = parsed;
-            if (!userPickedPreset) {
-              const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
-              if (cfgPreset && parsed.indexOf(cfgPreset) >= 0) {
-                selectedPreset = cfgPreset;
-              } else if (parsed.indexOf(selectedPreset) < 0) {
-                selectedPreset = parsed.find((p) => p !== 'shell') || parsed[0];
-              }
+      if (!Array.isArray(availablePresetsCache)) {
+        const backend = d.backend || (win && win.backend);
+        if (backend && typeof backend.ptyAvailablePresets === 'function') {
+          try {
+            const raw = await backend.ptyAvailablePresets();
+            const parsed = typeof raw === 'string' ? JSON.parse(raw || '[]') : raw;
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              availablePresetsCache = parsed;
             }
-            return availablePresetsCache;
+          } catch (_) {}
+        }
+      }
+      const enabledAvail = filterAvailablePresets(availablePresetsCache);
+      const disabled = getDisabledPresetSet();
+      if (userPickedPreset && disabled.has(normalizePresetId(selectedPreset))) {
+        userPickedPreset = false;
+      }
+      if (Array.isArray(enabledAvail)) {
+        if (!userPickedPreset || disabled.has(normalizePresetId(selectedPreset))) {
+          const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
+          if (cfgPreset && !disabled.has(cfgPreset) && enabledAvail.indexOf(cfgPreset) >= 0) {
+            selectedPreset = cfgPreset;
+          } else if (disabled.has(normalizePresetId(selectedPreset)) || enabledAvail.indexOf(selectedPreset) < 0) {
+            selectedPreset = enabledAvail.find((p) => p !== 'shell') || enabledAvail[0] || '';
           }
-        } catch (_) {}
+        }
+        return enabledAvail;
       }
       return null;
     }
 
     async function resolvePreferredAgentPreset(explicit) {
       if (explicit) return explicit;
+      const disabled = getDisabledPresetSet();
       const avail = await ensureAvailablePresets();
       const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
-      if (userPickedPreset && selectedPreset && selectedPreset !== 'shell') {
-        if (!avail || avail.indexOf(selectedPreset) >= 0) return selectedPreset;
+      const isAllowed = (id) => {
+        const norm = normalizePresetId(id);
+        return !!norm && !disabled.has(norm) && (!Array.isArray(avail) || avail.indexOf(norm) >= 0);
+      };
+      if (userPickedPreset && selectedPreset && selectedPreset !== 'shell' && isAllowed(selectedPreset)) {
+        return selectedPreset;
       }
-      if (cfgPreset && (!avail || avail.indexOf(cfgPreset) >= 0)) {
+      if (cfgPreset && isAllowed(cfgPreset)) {
         return cfgPreset;
       }
-      if (Array.isArray(avail) && avail.length > 0) {
-        if (avail.indexOf(selectedPreset) >= 0 && selectedPreset !== 'shell') return selectedPreset;
-        return avail.find((p) => p !== 'shell') || avail[0];
+      if (Array.isArray(avail)) {
+        if (selectedPreset && selectedPreset !== 'shell' && isAllowed(selectedPreset)) return selectedPreset;
+        return avail.find((p) => p !== 'shell' && !disabled.has(normalizePresetId(p)))
+          || avail.find((p) => !disabled.has(normalizePresetId(p)))
+          || '';
       }
-      return cfgPreset || selectedPreset || 'cc';
+      if (cfgPreset && !disabled.has(cfgPreset)) return cfgPreset;
+      if (selectedPreset && !disabled.has(normalizePresetId(selectedPreset))) return selectedPreset;
+      const enabled = getEnabledPresetDefs();
+      if (enabled.length === 0) return '';
+      return (enabled.find((p) => p.id !== 'shell') || enabled[0]).id;
     }
 
     function loadRecentDirs() {
@@ -1196,10 +1269,25 @@
     async function showLauncher(container) {
       if (container) ensureDOM(container);
       if (!launcherEl) return;
+      const enabledPresets = getEnabledPresetDefs();
       const avail = await ensureAvailablePresets();
+      if (!enabledPresets.some((p) => p.id === selectedPreset)) {
+        userPickedPreset = false;
+        selectedPreset = '';
+      }
       if (!userPickedPreset) {
         const cfgPreset = normalizeAgentPreset(typeof d.getDefaultAgent === 'function' ? d.getDefaultAgent() : '');
-        if (cfgPreset && (!avail || avail.indexOf(cfgPreset) >= 0)) selectedPreset = cfgPreset;
+        if (cfgPreset && enabledPresets.some((p) => p.id === cfgPreset) && (!avail || avail.indexOf(cfgPreset) >= 0)) {
+          selectedPreset = cfgPreset;
+        } else if (Array.isArray(avail) && avail.length > 0) {
+          const firstEnabled = avail.find((p) => p !== 'shell' && enabledPresets.some((ep) => ep.id === p))
+            || avail.find((p) => enabledPresets.some((ep) => ep.id === p));
+          selectedPreset = firstEnabled || '';
+        } else if (enabledPresets.length > 0) {
+          selectedPreset = (enabledPresets.find((p) => p.id !== 'shell') || enabledPresets[0]).id;
+        } else {
+          selectedPreset = '';
+        }
       }
       const backend = d.backend || (win && win.backend);
       const activePath = typeof d.getActiveFilePath === 'function' ? d.getActiveFilePath() : '';
@@ -1244,20 +1332,27 @@
 
       const cliRow = doc.createElement('div');
       cliRow.className = 'agent-preset-grid';
-      DEFAULT_PRESETS.forEach((p) => {
-        const btn = doc.createElement('button');
-        btn.type = 'button';
-        btn.className = 'agent-preset-btn' + (selectedPreset === p.id ? ' active' : '');
-        btn.textContent = p.label;
-        btn.onclick = () => {
-          selectedPreset = p.id;
-          userPickedPreset = true;
-          const all = cliRow.querySelectorAll('.agent-preset-btn');
-          for (let i = 0; i < all.length; i++) all[i].classList.remove('active');
-          btn.classList.add('active');
-        };
-        cliRow.appendChild(btn);
-      });
+      if (enabledPresets.length === 0) {
+        const emptyMsg = doc.createElement('div');
+        emptyMsg.className = 'agent-preset-empty';
+        emptyMsg.textContent = t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.');
+        cliRow.appendChild(emptyMsg);
+      } else {
+        enabledPresets.forEach((p) => {
+          const btn = doc.createElement('button');
+          btn.type = 'button';
+          btn.className = 'agent-preset-btn' + (selectedPreset === p.id ? ' active' : '');
+          btn.textContent = p.label;
+          btn.onclick = () => {
+            selectedPreset = p.id;
+            userPickedPreset = true;
+            const all = cliRow.querySelectorAll('.agent-preset-btn');
+            for (let i = 0; i < all.length; i++) all[i].classList.remove('active');
+            btn.classList.add('active');
+          };
+          cliRow.appendChild(btn);
+        });
+      }
       card.appendChild(cliRow);
 
       const dirLabel = doc.createElement('div');
@@ -1381,7 +1476,11 @@
       startBtn.type = 'button';
       startBtn.className = 'btn-primary agent-launcher-btn primary';
       startBtn.textContent = t('agentLaunch', 'Start');
+      if (enabledPresets.length === 0 || !selectedPreset) {
+        startBtn.disabled = true;
+      }
       startBtn.onclick = async () => {
+        if (!selectedPreset || getDisabledPresetSet().has(normalizePresetId(selectedPreset))) return;
         hideLauncher();
         await startSession(selectedPreset, selectedDir);
       };
@@ -1390,6 +1489,12 @@
       card.appendChild(actions);
       launcherEl.appendChild(card);
       launcherEl.classList.remove('hidden');
+    }
+
+    async function refreshLauncherIfOpen() {
+      if (launcherEl && !launcherEl.classList.contains('hidden')) {
+        await showLauncher(rootEl);
+      }
     }
 
     function hideLauncher() {
@@ -2126,7 +2231,7 @@
         || (explicitMakerSess && explicitMakerSess.preset)
         || o.preferredPreset
         || await resolvePreferredAgentPreset();
-      if ((Array.isArray(availPresets) && !availPresets.some((p) => p !== 'shell')) || makerPreset === 'shell') {
+      if ((Array.isArray(availPresets) && !availPresets.some((p) => p !== 'shell')) || !makerPreset || makerPreset === 'shell') {
         const failedLoop = {
           id: loopId,
           notePath: o.notePath || '',
@@ -2343,6 +2448,7 @@
     return {
       openPane,
       showLauncher,
+      refreshLauncherIfOpen,
       hideLauncher,
       startSession,
       selectSession,
@@ -2913,6 +3019,10 @@
       const preset = typeof ctrl.resolvePreferredAgentPreset === 'function'
         ? await ctrl.resolvePreferredAgentPreset()
         : 'cc';
+      if (!preset) {
+        toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+        return null;
+      }
       const created = await ctrl.startSession(preset, dir, { preserveFocus: !!(opts && opts.preserveFocus) });
       return created ? { session: created, isNew: true } : null;
     }
@@ -3122,7 +3232,16 @@
           const { ctrl, target } = resolveTarget();
           agentContextMenuTargetId = null;
           if (!ctrl || !target) return;
-          const revPreset = pickCrossModelPreset(target.preset);
+          const availPresets = typeof ctrl.ensureAvailablePresets === 'function' ? await ctrl.ensureAvailablePresets() : null;
+          if (Array.isArray(availPresets) && !availPresets.some((p) => p !== 'shell')) {
+            toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+            return;
+          }
+          const revPreset = pickCrossModelPreset(target.preset, availPresets);
+          if (!revPreset) {
+            toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+            return;
+          }
           const dir = target.dir || await resolvePreferredSessionDir(typeof cfg.getActiveTab === 'function' ? cfg.getActiveTab() : null);
           const be = win.backend;
           const gateCmd = (dir && be && typeof be.ptyDetectGate === 'function')
@@ -3303,8 +3422,15 @@
           const ctrl = ensureCtrl();
           if (!ctrl) return;
           const act = ctrl.getActiveSession ? ctrl.getActiveSession() : null;
-          const preset = (act && act.preset)
-            || (typeof ctrl.resolvePreferredAgentPreset === 'function' ? await ctrl.resolvePreferredAgentPreset() : 'cc');
+          const availPresets = typeof ctrl.ensureAvailablePresets === 'function' ? await ctrl.ensureAvailablePresets() : null;
+          const actPresetOk = act && act.preset && (!Array.isArray(availPresets) || availPresets.indexOf(act.preset) >= 0);
+          const preset = actPresetOk
+            ? act.preset
+            : (typeof ctrl.resolvePreferredAgentPreset === 'function' ? await ctrl.resolvePreferredAgentPreset() : 'cc');
+          if (!preset) {
+            toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+            return;
+          }
           const dir = (act && act.dir) || await resolvePreferredSessionDir(tab);
           const fresh = await ctrl.startSession(preset, dir, { preserveFocus: true });
           if (!fresh) return;
@@ -3332,9 +3458,17 @@
             ? ctrl.getSessionById(mId)
             : (ctrl.getActiveSession ? ctrl.getActiveSession() : null);
           const availPresets = typeof ctrl.ensureAvailablePresets === 'function' ? await ctrl.ensureAvailablePresets() : null;
+          if (Array.isArray(availPresets) && !availPresets.some((p) => p !== 'shell')) {
+            toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+            return;
+          }
           const sourcePreset = (makerSess && makerSess.preset)
             || (typeof ctrl.resolvePreferredAgentPreset === 'function' ? await ctrl.resolvePreferredAgentPreset() : 'cc');
           const revPreset = pickCrossModelPreset(sourcePreset, availPresets);
+          if (!revPreset) {
+            toast(t('agentPanelNoneEnabled', 'No agent CLI is enabled in Settings.'), 4000);
+            return;
+          }
           const dir = (makerSess && makerSess.dir) || await resolvePreferredSessionDir(tab);
           const be = win.backend;
           const gateCmd = (dir && be && typeof be.ptyDetectGate === 'function')
@@ -3564,6 +3698,9 @@
 
   const api = {
     DEFAULT_PRESETS,
+    normalizePresetId,
+    normalizeDisabledPresets,
+    filterEnabledPresets,
     bracketedPaste,
     encodeUtf8Base64,
     decodeUtf8Base64ToBytes,

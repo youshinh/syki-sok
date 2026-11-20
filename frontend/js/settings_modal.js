@@ -388,6 +388,7 @@
       setChecked('cfg-slot-hover-peek', config.hover_peek_enabled !== false);
       setVal('cfg-default-agent', config.default_agent || 'claude-code');
       if (deps.checkActiveAgentsConfigStatus) deps.checkActiveAgentsConfigStatus();
+      if (deps.renderAgentVisibilityList) deps.renderAgentVisibilityList();
 
       if (deps.getAutoSelectorConfig) {
         const autoSel = deps.getAutoSelectorConfig();
@@ -482,6 +483,12 @@
         if (win.SlotAgent && win.SlotAgent.updateConfig) {
           win.SlotAgent.updateConfig(config);
         }
+      }
+      const curDisabled = Array.isArray(config.agent_panel_disabled_presets) ? config.agent_panel_disabled_presets : [];
+      const snapDisabled = Array.isArray(snap.agent_panel_disabled_presets) ? snap.agent_panel_disabled_presets : [];
+      if (JSON.stringify(curDisabled) !== JSON.stringify(snapDisabled)) {
+        config.agent_panel_disabled_presets = snapDisabled.slice();
+        if (deps.refreshAgentLauncherIfOpen) deps.refreshAgentLauncherIfOpen();
       }
       if (snap.shortcuts && JSON.stringify(config.shortcuts) !== JSON.stringify(snap.shortcuts)) {
         config.shortcuts = Object.assign({}, snap.shortcuts);

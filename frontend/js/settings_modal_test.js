@@ -74,11 +74,13 @@ function makeEl(initialClasses = []) {
 {
   const config = {
     default_agent: 'gemini-cli',
+    agent_panel_disabled_presets: ['codex', 'shell'],
     general: { language: 'en', theme: 'dark', toolbarLayout: { order: ['b'], hidden: [] } },
     shortcuts: { save: 'Ctrl+K' },
   };
   const snap = {
     default_agent: 'claude-code',
+    agent_panel_disabled_presets: ['codex'],
     general: { language: 'ja', theme: 'light', toolbarLayout: { order: ['a'], hidden: [] } },
     shortcuts: { save: 'Ctrl+S' },
   };
@@ -97,6 +99,7 @@ function makeEl(initialClasses = []) {
     applyLanguage: () => calls.push('applyLang'),
     applyTheme: () => calls.push('applyTheme'),
     applyChromeLayout: () => calls.push('applyChrome'),
+    refreshAgentLauncherIfOpen: () => calls.push('refreshLauncher'),
     getActiveEditor: () => editor,
   });
 
@@ -104,6 +107,7 @@ function makeEl(initialClasses = []) {
   assert.strictEqual(config.general.language, 'ja');
   assert.strictEqual(config.general.theme, 'light');
   assert.strictEqual(config.default_agent, 'claude-code');
+  assert.deepStrictEqual(config.agent_panel_disabled_presets, ['codex']);
   assert.strictEqual(config.shortcuts.save, 'Ctrl+S');
   assert.deepStrictEqual(config.general.toolbarLayout.order, ['a']);
   assert.strictEqual(settingsModal.classList.contains('hidden'), true);
@@ -111,6 +115,7 @@ function makeEl(initialClasses = []) {
   assert.ok(calls.includes('applyLang'));
   assert.ok(calls.includes('applyTheme'));
   assert.ok(calls.includes('applyChrome'));
+  assert.ok(calls.includes('refreshLauncher'));
 }
 
 // 3. Stale provider detection response is ignored

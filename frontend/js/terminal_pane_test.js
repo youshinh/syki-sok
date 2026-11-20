@@ -1072,6 +1072,204 @@ function makeMockEnv() {
     console.log('PASS: agent pane copy/paste keyboard shortcuts and context menu actions');
   }
 
+  // Pure preset normalization & filtering helpers + pickCrossModelPreset edge cases
+  check('normalizePresetId, normalizeDisabledPresets, filterEnabledPresets, and pickCrossModelPreset respect disabled presets', () => {
+    assert.strictEqual(TP.normalizePresetId('claude-code'), 'cc');
+    assert.strictEqual(TP.normalizePresetId('CC'), 'cc');
+    assert.strictEqual(TP.normalizePresetId('codex'), 'codex');
+    assert.strictEqual(TP.normalizePresetId('antigravity'), 'agy');
+    assert.strictEqual(TP.normalizePresetId('shell'), 'shell');
+    assert.strictEqual(TP.normalizePresetId('unknown'), '');
+    assert.deepStrictEqual(
+      Array.from(TP.normalizeDisabledPresets(['claude-code', 'AGY', '', null, 'unknown'])).sort(),
+      ['agy', 'cc']
+    );
+    assert.deepStrictEqual(
+      TP.filterEnabledPresets(TP.DEFAULT_PRESETS, ['codex', 'shell']).map((p) => p.id),
+      ['cc', 'agy']
+    );
+    assert.strictEqual(TP.pickCrossModelPreset('agy', ['shell']), 'shell');
+    assert.strictEqual(TP.pickCrossModelPreset('cc', []), '');
+  });
+
+  // Launcher visibility, live refresh, auto-selection exclusion, startLoop & workspace bridge review exclusion
+  {
+    function makeRichEl(tag) {
+      const classes = new Set();
+      let _inner = '';
+      const el = {
+        tagName: String(tag || 'div').toUpperCase(),
+        children: [],
+        parentElement: null,
+        _attrs: {},
+        textContent: '',
+        disabled: false,
+        setAttribute(k, v) { el._attrs[k] = v; },
+        get className() { return Array.from(classes).join(' '); },
+        set className(v) { classes.clear(); String(v || '').split(/\s+/).filter(Boolean).forEach((c) => classes.add(c)); },
+        classList: {
+          add: (...cs) => cs.forEach((c) => classes.add(c)),
+          remove: (...cs) => cs.forEach((c) => classes.delete(c)),
+          toggle: (c, f) => (f === undefined ? (classes.has(c) ? classes.delete(c) : classes.add(c)) : (f ? classes.add(c) : classes.delete(c))),
+          contains: (c) => classes.has(c)
+        },
+        get innerHTML() { return _inner; },
+        set innerHTML(v) { _inner = v; if (v === '') el.children = []; },
+        appendChild(c) { c.parentElement = el; el.children.push(c); return c; },
+        removeChild(c) {
+          const i = el.children.indexOf(c);
+          if (i >= 0) el.children.splice(i, 1);
+          c.parentElement = null;
+        },
+        querySelectorAll(sel) {
+          const cls = sel && sel.startsWith('.') ? sel.slice(1) : '';
+          const out = [];
+          const walk = (node) => {
+            if (!node || !Array.isArray(node.children)) return;
+            for (const ch of node.children) {
+              if (!cls || String(ch.className || '').split(/\s+/).includes(cls) || (ch.classList && ch.classList.contains(cls))) {
+                out.push(ch);
+              }
+              walk(ch);
+            }
+          };
+          walk(el);
+          return out;
+        },
+        querySelector(sel) {
+          return el.querySelectorAll(sel)[0] || null;
+        }
+      };
+      return el;
+    }
+    const byId = {};
+    const doc = {
+      createElement: (t) => makeRichEl(t),
+      getElementById: (id) => byId[id] || null,
+      body: makeRichEl('body')
+    };
+    function MockTerm() {
+      this.cols = 80; this.rows = 24;
+      this.loadAddon = () => {}; this.open = () => {}; this.onData = () => {};
+      this.focus = () => {}; this.write = () => {}; this.dispose = () => {};
+    }
+    function MockFit() { this.fit = () => {}; }
+    const win = { Terminal: MockTerm, FitAddon: MockFit };
+    const root = makeRichEl('div');
+    let disabledPresets = ['codex', 'shell'];
+    let defaultAgent = 'codex'; // disabled in Agent Panel; must NOT be selected
+    const started = [];
+    const toasts = [];
+    const backend = {
+      ptyAvailablePresets: async () => JSON.stringify(['cc', 'codex', 'agy', 'shell']),
+      ptySuggestDirs: async () => JSON.stringify([{ path: '/repo', label: 'repo', reason: 'git' }]),
+      ptyPrepareWorktree: async (dir) => JSON.stringify({ dir, isolated: false }),
+      ptyDetectGate: async () => 'echo ok',
+      ptyStartWithOptions: async (_e, preset, dir, label) => {
+        started.push({ preset, dir, label });
+        return JSON.stringify({ id: `${preset}-${started.length}`, preset, dir, label });
+      },
+      ptyWrite: async () => {},
+      ptyResize: async () => {},
+      ptyClose: async () => {}
+    };
+    win.backend = backend;
+
+    const ctrl = TP.createController({
+      doc,
+      win,
+      backend,
+      startupReadyDelayMs: 0,
+      submitDelayMs: 0,
+      getDefaultAgent: () => defaultAgent,
+      getDisabledPresets: () => disabledPresets
+    });
+
+    // 1) showLauncher renders only enabled presets and skips disabled defaultAgent ('codex')
+    await ctrl.openPane(root);
+    const launcher = root.children.find((c) => c.classList && c.classList.contains('agent-launcher'));
+    assert.ok(launcher && !launcher.classList.contains('hidden'));
+    let presetBtns = launcher.querySelectorAll('.agent-preset-btn');
+    assert.deepStrictEqual(presetBtns.map((b) => b.textContent), ['Claude Code', 'Agy']);
+    assert.strictEqual(presetBtns[0].className.includes('active'), true, 'falls back from disabled codex to cc');
+
+    // 2) User picks Agy, then disables Agy and refreshes open launcher -> Agy disappears and selection falls back to cc
+    presetBtns[1].onclick();
+    assert.strictEqual(await ctrl.resolvePreferredAgentPreset(), 'agy');
+    disabledPresets = ['agy', 'codex', 'shell'];
+    await ctrl.refreshLauncherIfOpen();
+    presetBtns = launcher.querySelectorAll('.agent-preset-btn');
+    assert.deepStrictEqual(presetBtns.map((b) => b.textContent), ['Claude Code']);
+    assert.strictEqual(await ctrl.resolvePreferredAgentPreset(), 'cc', 'disabled userPickedPreset is excluded from auto-selection');
+
+    // 3) Disabling all 4 presets renders empty state and disables Start button
+    disabledPresets = ['cc', 'codex', 'agy', 'shell'];
+    await ctrl.refreshLauncherIfOpen();
+    assert.strictEqual(launcher.querySelectorAll('.agent-preset-btn').length, 0);
+    const emptyEl = launcher.querySelector('.agent-preset-empty');
+    assert.ok(emptyEl && emptyEl.textContent.length > 0, 'empty state message rendered when all presets are off');
+    const startBtn = launcher.querySelector('.primary');
+    assert.strictEqual(startBtn.disabled, true, 'Start button disabled when all presets are off');
+    assert.strictEqual(await ctrl.resolvePreferredAgentPreset(), '', 'resolvePreferredAgentPreset returns empty string when all presets are off');
+
+    // 4) startLoop fails cleanly without spawning when all AI presets are disabled (only shell enabled)
+    disabledPresets = ['cc', 'codex', 'agy'];
+    const failedLoop = await ctrl.startLoop({ heading: '## [ ] Disabled loop', title: 'Disabled loop', criteria: [] }, {
+      workDir: '/repo',
+      container: root
+    });
+    assert.strictEqual(failedLoop.phase, 'failed');
+    assert.strictEqual(started.length, 0, 'must not spawn shell or disabled AI agent for loop');
+
+    // 5) startLoop & agent-ctx-review exclude disabled codex (Maker=cc -> Checker=agy instead of codex)
+    disabledPresets = ['codex'];
+    defaultAgent = 'claude-code';
+    const okLoop = await ctrl.startLoop({ heading: '## [ ] Active loop', title: 'Active loop', criteria: [] }, {
+      workDir: '/repo',
+      container: root
+    });
+    assert.strictEqual(okLoop.makerPreset, 'cc');
+    assert.strictEqual(okLoop.checkerPreset, 'agy', 'checker excludes disabled codex and picks agy');
+    ctrl.stopLoop(okLoop.id, true);
+
+    // 6) Workspace bridge agent-ctx-review excludes disabled codex and spawns agy
+    const makeCtxItem = () => ({ classList: makeRichEl('div').classList, onclick: null });
+    byId['agent-ctx-review'] = makeCtxItem();
+    const bridge = TP.createWorkspaceBridge({
+      doc,
+      win,
+      editorEl: { value: '', selectionStart: 0, selectionEnd: 0 },
+      secondaryAgentPane: root,
+      agentTabContextMenu: makeRichEl('div'),
+      getController: () => ctrl,
+      ensureController: () => ctrl,
+      showToast: (m) => toasts.push(m),
+      hideAllContextMenus: () => {}
+    });
+    const beforeReviewCount = started.length;
+    const sCc = await ctrl.startSession('cc', '/repo', { explicitId: 'cc-rev' });
+    assert.ok(sCc);
+    // Close any pre-existing agy session so agent-ctx-review spawns a fresh Checker
+    for (const m of ctrl.getSessionsMeta()) {
+      if (m.preset === 'agy') await ctrl.closeSession(m.id);
+    }
+    const spawnBeforeClick = started.length;
+    await byId['agent-ctx-review'].onclick();
+    assert.strictEqual(started.length, spawnBeforeClick + 1);
+    assert.strictEqual(started[started.length - 1].preset, 'agy', 'agent-ctx-review must exclude disabled codex');
+    assert.ok(beforeReviewCount >= 1);
+
+    // When all AI presets are disabled, agent-ctx-review shows toast and spawns nothing
+    disabledPresets = ['cc', 'codex', 'agy'];
+    const spawnBeforeBlocked = started.length;
+    await byId['agent-ctx-review'].onclick();
+    assert.strictEqual(started.length, spawnBeforeBlocked);
+    assert.ok(toasts.length >= 1);
+
+    passed++;
+    console.log('PASS: Agent Panel visibility toggles filter launcher, live refresh, auto-selection, loops, and review');
+  }
+
   console.log('\n' + passed + ' passed, 0 failed');
 })().catch((e) => {
   console.error(e);

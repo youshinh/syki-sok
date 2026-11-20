@@ -239,6 +239,7 @@
       enabled: true,
       agentConfirm: true
     },
+    agent_panel_disabled_presets: [],
     shortcuts: {}
   };
 
@@ -3757,6 +3758,28 @@
     }
   }
 
+  function normalizeAgentPanelDisabledPresets(list) {
+    if (window.TerminalPane && typeof window.TerminalPane.normalizeDisabledPresets === 'function') {
+      return Array.from(window.TerminalPane.normalizeDisabledPresets(list)).sort();
+    }
+    const out = new Set();
+    if (!Array.isArray(list)) return [];
+    for (let i = 0; i < list.length; i++) {
+      const p = String(list[i] || '').trim().toLowerCase();
+      if (p === 'cc' || p === 'claude' || p === 'claude-code') out.add('cc');
+      else if (p === 'codex') out.add('codex');
+      else if (p === 'agy' || p === 'antigravity' || p === 'gemini') out.add('agy');
+      else if (p === 'shell') out.add('shell');
+    }
+    return Array.from(out).sort();
+  }
+
+  function refreshAgentLauncherIfOpen() {
+    if (agentController && typeof agentController.refreshLauncherIfOpen === 'function') {
+      agentController.refreshLauncherIfOpen();
+    }
+  }
+
   function ensureAgentController() {
     if (agentController) return agentController;
     if (!window.TerminalPane || typeof window.TerminalPane.createController !== 'function') return null;
@@ -3768,6 +3791,7 @@
         return tTab ? tTab.path : '';
       },
       getDefaultAgent: () => (config && config.default_agent) || '',
+      getDisabledPresets: () => (Array.isArray(config && config.agent_panel_disabled_presets) ? config.agent_panel_disabled_presets : []),
       t,
       copyTextToClipboard,
       onSessionsChanged: () => {
@@ -13709,12 +13733,6 @@ OUTPUT FORMAT:
   // look up the selected agent's command/args without a fresh RPC.
   let lastLoadedSlotConfig = null;
   let agentAvailabilityReqToken = 0;
-  const knownAgentDefinitions = {
-    'claude-code': { command: 'claude', args: ['-p', '対象ノート: {file}\n指示: {instruction}'], description: 'Claude Code (高知能・CLI操作・Web調査)', aliases: ['claude', 'cc'] },
-    hermes: { command: 'ollama', args: ['run', 'hermes3', '{instruction}'], description: 'Hermes 3 (完全ローカル・機密保護)' },
-    codex: { command: 'codex', args: ['exec', '{instruction}'], description: 'Codex (高速コード補完・リファクタリング)' },
-    agy: { command: 'agy', args: ['-p', '対象ノート: {file}\n指示: {instruction}'], description: 'Google Antigravity 2.0 (自律リポジトリ開発)', aliases: ['antigravity', 'gemini'] }
-  };
 
   function populateAgentSelectOptions(slotCfg) {
     const defaultAgentEl = document.getElementById('cfg-default-agent');
@@ -13722,21 +13740,16 @@ OUTPUT FORMAT:
     if (!slotCfg || !slotCfg.agents) return;
 
     lastLoadedSlotConfig = slotCfg;
-    if (typeof knownAgentDefinitions === 'object' && knownAgentDefinitions) {
-      Object.keys(slotCfg.agents).forEach((k) => {
-        if (slotCfg.agents[k]) knownAgentDefinitions[k] = slotCfg.agents[k];
-      });
-    }
 
     const currentSelected = defaultAgentEl.value || config.default_agent || slotCfg.default_agent || 'claude-code';
     defaultAgentEl.innerHTML = '';
 
-    // An agent that is switched off (agents.yaml: enabled: false / disabled_agents) or unchecked in UI (config.disabled_agents) is not offered.
-    const uiDisabled = new Set(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []);
-    const agentKeys = Object.keys(slotCfg.agents).filter((key) => !(slotCfg.agents[key] && slotCfg.agents[key].enabled === false) && !uiDisabled.has(key));
+    // An agent that is switched off (agents.yaml: enabled: false / disabled_agents) is not offered. The Go side already leaves
+    // it out; an entry that still says enabled: false is skipped as well.
+    const agentKeys = Object.keys(slotCfg.agents).filter((key) => !(slotCfg.agents[key] && slotCfg.agents[key].enabled === false));
     if (agentKeys.length === 0) {
       const opt = document.createElement('option');
-      const allOff = (Array.isArray(slotCfg.disabled_agents) && slotCfg.disabled_agents.length > 0) || uiDisabled.size > 0;
+      const allOff = Array.isArray(slotCfg.disabled_agents) && slotCfg.disabled_agents.length > 0;
       opt.value = allOff ? '' : 'claude-code';
       opt.textContent = allOff ? (typeof t === 'function' ? t('agentNoneEnabled') : 'No agent is enabled') : 'Claude Code';
       defaultAgentEl.appendChild(opt);
@@ -13777,58 +13790,38 @@ OUTPUT FORMAT:
     el.classList.toggle('hidden', list.length === 0);
   }
 
-  // Settings > Agent: checkboxes to toggle which agents are visible/selectable in UI (saved to config.disabled_agents).
-  function renderAgentVisibilityList(slotCfg) {
+  // Settings > Agent: checkboxes to toggle which CLIs appear in the Agent Terminal panel (and automatic selection).
+  function renderAgentVisibilityList() {
     const container = document.getElementById('agent-visibility-list');
-    if (!container || !slotCfg || !slotCfg.agents) return;
-    const builtinKeys = ['claude-code', 'hermes', 'codex', 'agy'];
-    const yamlDisabled = new Set(Array.isArray(slotCfg.disabled_agents) ? slotCfg.disabled_agents : []);
-    const uiDisabled = new Set(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []);
-    const allKeys = Array.from(new Set([...builtinKeys, ...Object.keys(slotCfg.agents), ...yamlDisabled])).sort();
+    if (!container) return;
+    const presets = (window.TerminalPane && Array.isArray(window.TerminalPane.DEFAULT_PRESETS) && window.TerminalPane.DEFAULT_PRESETS.length > 0)
+      ? window.TerminalPane.DEFAULT_PRESETS
+      : [
+          { id: 'cc', label: 'Claude Code', short: 'cc' },
+          { id: 'codex', label: 'Codex', short: 'codex' },
+          { id: 'agy', label: 'Agy', short: 'agy' },
+          { id: 'shell', label: 'Shell', short: 'shell' }
+        ];
+    const disabled = new Set(normalizeAgentPanelDisabledPresets(config && config.agent_panel_disabled_presets));
     container.innerHTML = '';
-    allKeys.forEach((key) => {
-      const isExplicitDisabledInEntry = !!(slotCfg.agents[key] && slotCfg.agents[key].enabled === false);
-      const isChecked = !isExplicitDisabledInEntry && !yamlDisabled.has(key) && !uiDisabled.has(key);
+    presets.forEach((p) => {
       const label = document.createElement('label');
       label.style.cssText = 'display:inline-flex;align-items:center;gap:4px;font-size:12px;cursor:pointer;padding:2px 6px;border:1px solid var(--border-color);border-radius:4px;';
       const cb = document.createElement('input');
       cb.type = 'checkbox';
-      cb.checked = isChecked;
-      cb.disabled = isExplicitDisabledInEntry;
+      if (cb.dataset) cb.dataset.preset = p.id;
+      else cb.dataset = { preset: p.id };
+      if (typeof cb.setAttribute === 'function') cb.setAttribute('data-preset', p.id);
+      cb.checked = !disabled.has(p.id);
       cb.addEventListener('change', () => {
-        const next = new Set([
-          ...(Array.isArray(config && config.disabled_agents) ? config.disabled_agents : []),
-          ...(Array.isArray(slotCfg.disabled_agents) ? slotCfg.disabled_agents : [])
-        ]);
-        if (cb.checked) {
-          next.delete(key);
-          if (!slotCfg.agents[key] && knownAgentDefinitions[key]) {
-            slotCfg.agents[key] = knownAgentDefinitions[key];
-          }
-        } else {
-          next.add(key);
-        }
-        config.disabled_agents = Array.from(next).sort();
-        slotCfg.disabled_agents = config.disabled_agents.slice();
-        populateAgentSelectOptions(slotCfg);
-        renderAgentDisabledNote(slotCfg);
-        updateAgentAutoApproveWarning();
-        updateAgentAvailabilityBadge();
-        savePersistentConfig().catch(() => {});
-        const scrapDir = (document.getElementById('cfg-scrap-dir') && document.getElementById('cfg-scrap-dir').value.trim()) || '';
-        if (window.backend && window.backend.updateActiveAgentsConfigDisabledAgents) {
-          window.backend.updateActiveAgentsConfigDisabledAgents(scrapDir, config.disabled_agents).catch(() => {});
-        }
-        if (window.SlotAgent && window.SlotAgent.updateConfig) {
-          window.SlotAgent.updateConfig({
-            agents: Object.assign({}, knownAgentDefinitions, slotCfg.agents),
-            disabled_agents: config.disabled_agents,
-            default_agent: config.default_agent
-          });
-        }
+        const next = new Set(normalizeAgentPanelDisabledPresets(config && config.agent_panel_disabled_presets));
+        if (cb.checked) next.delete(p.id);
+        else next.add(p.id);
+        config.agent_panel_disabled_presets = Array.from(next).sort();
+        refreshAgentLauncherIfOpen();
       });
       label.appendChild(cb);
-      label.appendChild(document.createTextNode(key));
+      label.appendChild(document.createTextNode(p.label));
       container.appendChild(label);
     });
   }
@@ -13922,7 +13915,6 @@ OUTPUT FORMAT:
           populateAgentSelectOptions(slotCfg);
           renderAgentDisabledNote(slotCfg);
           renderAgentIssues(slotCfg);
-          renderAgentVisibilityList(slotCfg);
         }
       } catch (e) {
         console.warn('Failed to load active slot config JSON:', e);
@@ -14049,6 +14041,8 @@ OUTPUT FORMAT:
       renderShortcutsTable: () => renderShortcutsTable(),
       updateOllamaStatus: () => updateOllamaStatus(),
       checkActiveAgentsConfigStatus: () => checkActiveAgentsConfigStatus(),
+      renderAgentVisibilityList: () => renderAgentVisibilityList(),
+      refreshAgentLauncherIfOpen: () => refreshAgentLauncherIfOpen(),
       checkGitInstalledStatusUI: () => checkGitInstalledStatusUI(),
       updateGitRepoStatusUI: (dir) => updateGitRepoStatusUI(dir),
       syncTextProviderSelect: () => syncTextProviderSelect(),
@@ -16250,6 +16244,23 @@ OUTPUT FORMAT:
     if (saveDefaultAgentEl) {
       config.default_agent = saveDefaultAgentEl.value || config.default_agent || 'claude-code'; // empty: every agent is disabled
     }
+    const visContainer = document.getElementById('agent-visibility-list');
+    if (visContainer && typeof visContainer.querySelectorAll === 'function') {
+      const cbs = visContainer.querySelectorAll('input[type="checkbox"][data-preset]');
+      if (cbs && cbs.length > 0) {
+        const disabled = [];
+        for (let i = 0; i < cbs.length; i++) {
+          const presetId = (cbs[i].dataset && cbs[i].dataset.preset) || (typeof cbs[i].getAttribute === 'function' ? cbs[i].getAttribute('data-preset') : '');
+          if (!cbs[i].checked && presetId) disabled.push(presetId);
+        }
+        config.agent_panel_disabled_presets = normalizeAgentPanelDisabledPresets(disabled);
+      } else {
+        config.agent_panel_disabled_presets = normalizeAgentPanelDisabledPresets(config.agent_panel_disabled_presets);
+      }
+    } else {
+      config.agent_panel_disabled_presets = normalizeAgentPanelDisabledPresets(config.agent_panel_disabled_presets);
+    }
+    refreshAgentLauncherIfOpen();
     if (!config.autoSelector || typeof config.autoSelector !== 'object') config.autoSelector = {};
     const saveAutoSelEnabledEl = document.getElementById('cfg-autosel-enabled');
     if (saveAutoSelEnabledEl) config.autoSelector.enabled = saveAutoSelEnabledEl.checked;
@@ -16510,6 +16521,12 @@ OUTPUT FORMAT:
       });
     }
     syncQuickCaptureShortcut(prevQuickCapture);
+    if (typeof normalizeAgentPanelDisabledPresets === 'function') {
+      config.agent_panel_disabled_presets = normalizeAgentPanelDisabledPresets(config.agent_panel_disabled_presets);
+    }
+    if (typeof refreshAgentLauncherIfOpen === 'function') {
+      refreshAgentLauncherIfOpen();
+    }
     return saved;
   }
 
@@ -16626,6 +16643,11 @@ OUTPUT FORMAT:
           Object.assign(config.action, parsed.action);
         }
         if (parsed.autoSelector && typeof parsed.autoSelector === 'object') config.autoSelector = Object.assign({}, config.autoSelector, parsed.autoSelector);
+        if (Array.isArray(parsed.agent_panel_disabled_presets)) {
+          config.agent_panel_disabled_presets = typeof normalizeAgentPanelDisabledPresets === 'function'
+            ? normalizeAgentPanelDisabledPresets(parsed.agent_panel_disabled_presets)
+            : parsed.agent_panel_disabled_presets.slice();
+        }
         // The look, accent and editor font (js/appearance.js). A group that is not read here is lost with the next save, which writes
         // the whole config back (the same trap as config.semantic): so it is copied as it is, keys this version does not know included.
         loadAppearanceGroup(parsed);
@@ -16759,6 +16781,12 @@ OUTPUT FORMAT:
           if (fileConfig.agents) config.agents = fileConfig.agents;
           if (fileConfig.slot_profiles) config.slot_profiles = fileConfig.slot_profiles;
           if (fileConfig.recipes) config.recipes = fileConfig.recipes;
+          config.agent_panel_disabled_presets = Array.isArray(fileConfig.agent_panel_disabled_presets)
+            ? (typeof normalizeAgentPanelDisabledPresets === 'function'
+                ? normalizeAgentPanelDisabledPresets(fileConfig.agent_panel_disabled_presets)
+                : fileConfig.agent_panel_disabled_presets.slice())
+            : [];
+          if (typeof refreshAgentLauncherIfOpen === 'function') refreshAgentLauncherIfOpen();
 
           if (window.SlotAgent && window.SlotAgent.updateConfig) {
             window.SlotAgent.updateConfig(fileConfig);

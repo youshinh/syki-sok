@@ -185,9 +185,11 @@ console.log('PASS: Dynamic agent options populated correctly with custom agents.
   console.log('PASS: The Settings line names the disabled agents (en / ja), only when there are any.');
 }
 
-// Checkboxes in Settings > Agent toggle disabled_agents across config, dropdown, SlotAgent, and backend
+// Checkboxes in Settings > Agent toggle agent_panel_disabled_presets for the Agent Panel only (never touching SlotAgent / agents.yaml / #cfg-default-agent)
 {
-  const visMatch = appJs.match(/function renderAgentVisibilityList\(slotCfg\) \{[\s\S]*?\n  \}/);
+  const normMatch = appJs.match(/function normalizeAgentPanelDisabledPresets\(list\) \{[\s\S]*?\n  \}/);
+  const visMatch = appJs.match(/function renderAgentVisibilityList\(\) \{[\s\S]*?\n  \}/);
+  assert.ok(normMatch, 'normalizeAgentPanelDisabledPresets must exist in app.js');
   assert.ok(visMatch, 'renderAgentVisibilityList must exist in app.js');
   const container = { innerHTML: '', children: [], appendChild(ch) { this.children.push(ch); } };
   const selectEl = new MockElement('cfg-default-agent');
@@ -200,10 +202,12 @@ console.log('PASS: Dynamic agent options populated correctly with custom agents.
     return {
       tagName: tag.toUpperCase(),
       style: {},
+      dataset: {},
       children: [],
       type: '',
       checked: false,
       disabled: false,
+      setAttribute(k, v) { if (k === 'data-preset') this.dataset.preset = v; },
       appendChild(ch) { this.children.push(ch); },
       addEventListener(evt, fn) { (listeners[evt] = listeners[evt] || []).push(fn); },
       trigger(evt) { (listeners[evt] || []).forEach((fn) => fn()); }
@@ -214,17 +218,28 @@ console.log('PASS: Dynamic agent options populated correctly with custom agents.
     createElement: (tag) => (tag === 'option' ? new MockOption() : makeNode(tag)),
     createTextNode: (txt) => ({ textContent: txt })
   };
-  const conf = { default_agent: 'claude-code', disabled_agents: [] };
-  const known = {
-    'claude-code': { command: 'claude', description: 'Claude Code' },
-    hermes: { command: 'ollama', description: 'Hermes 3' },
-    codex: { command: 'codex', description: 'Codex' },
-    agy: { command: 'agy', description: 'Antigravity' }
-  };
+  const conf = { default_agent: 'claude-code', disabled_agents: ['hermes'], agent_panel_disabled_presets: [] };
   const slotUpdates = [];
   const backendUpdates = [];
-  let saved = 0;
+  let launcherRefreshes = 0;
   const win = {
+    TerminalPane: {
+      DEFAULT_PRESETS: [
+        { id: 'cc', label: 'Claude Code', short: 'cc' },
+        { id: 'codex', label: 'Codex', short: 'codex' },
+        { id: 'agy', label: 'Agy', short: 'agy' },
+        { id: 'shell', label: 'Shell', short: 'shell' }
+      ],
+      normalizeDisabledPresets: (list) => {
+        const s = new Set();
+        for (const item of (list || [])) {
+          const v = String(item || '').trim().toLowerCase();
+          if (v === 'cc' || v === 'claude' || v === 'claude-code') s.add('cc');
+          else if (v === 'codex' || v === 'agy' || v === 'shell') s.add(v);
+        }
+        return s;
+      }
+    },
     backend: { updateActiveAgentsConfigDisabledAgents: async (dir, list) => { backendUpdates.push({ dir, list }); } },
     SlotAgent: { updateConfig: (cfg) => { slotUpdates.push(cfg); } }
   };
@@ -239,24 +254,34 @@ console.log('PASS: Dynamic agent options populated correctly with custom agents.
     }
   };
   const runVis = new Function(
-    'slotCfg', 'config', 'document', 'window', 'knownAgentDefinitions',
-    'savePersistentConfig', 'renderAgentDisabledNote', 'updateAgentAutoApproveWarning', 'updateAgentAvailabilityBadge',
-    `${fnMatch[0]}\n${visMatch[0]}\nreturn renderAgentVisibilityList(slotCfg);`
+    'config', 'document', 'window', 'refreshAgentLauncherIfOpen',
+    `${normMatch[0]}\n${visMatch[0]}\nreturn renderAgentVisibilityList();`
   );
-  runVis(slotCfg, conf, doc, win, known, async () => { saved++; }, () => {}, () => {}, () => {});
-  assert.strictEqual(container.children.length, 4, 'renders checkboxes for all 4 built-in agents');
-  // Uncheck agy and codex
+  runVis(conf, doc, win, () => { launcherRefreshes++; });
+  assert.strictEqual(container.children.length, 4, 'renders checkboxes for all 4 Agent Panel presets (Claude Code, Codex, Agy, Shell)');
+  assert.deepStrictEqual(
+    container.children.map((lbl) => lbl.children[1].textContent),
+    ['Claude Code', 'Codex', 'Agy', 'Shell']
+  );
+
+  // Uncheck Codex and Shell
   for (const label of container.children) {
-    const key = label.children[1].textContent;
-    if (key === 'agy' || key === 'codex') {
+    const text = label.children[1].textContent;
+    if (text === 'Codex' || text === 'Shell') {
       label.children[0].checked = false;
       label.children[0].trigger('change');
     }
   }
-  assert.deepStrictEqual(conf.disabled_agents, ['agy', 'codex']);
-  assert.deepStrictEqual(selectEl.options.map((o) => o.value), ['claude-code', 'hermes']);
-  assert.ok(saved >= 2);
-  assert.deepStrictEqual(backendUpdates[backendUpdates.length - 1].list, ['agy', 'codex']);
-  assert.deepStrictEqual(slotUpdates[slotUpdates.length - 1].disabled_agents, ['agy', 'codex']);
-  console.log('PASS: Settings > Agent visibility checkboxes update config, dropdown, SlotAgent, and backend.');
+  assert.deepStrictEqual(conf.agent_panel_disabled_presets, ['codex', 'shell']);
+  assert.strictEqual(launcherRefreshes, 2);
+  // Note command invocation settings & backend agents.yaml must remain untouched
+  assert.deepStrictEqual(conf.disabled_agents, ['hermes']);
+  assert.strictEqual(backendUpdates.length, 0);
+  assert.strictEqual(slotUpdates.length, 0);
+
+  // populateAgentSelectOptions ignores both config.disabled_agents and config.agent_panel_disabled_presets
+  conf.disabled_agents = ['codex', 'agy'];
+  new Function('slotCfg', 'config', 'document', `${fnMatch[0]}; return populateAgentSelectOptions(slotCfg);`)(slotCfg, conf, doc);
+  assert.deepStrictEqual(selectEl.options.map((o) => o.value), ['claude-code', 'hermes', 'codex', 'agy']);
+  console.log('PASS: Settings > Agent visibility checkboxes control Agent Panel presets only without touching SlotAgent or agents.yaml.');
 }

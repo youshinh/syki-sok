@@ -607,6 +607,9 @@ const I18N = {
     agentsConfigLoadedSuccess: "Opened agents.yaml: {path}",
     agentsConfigError: "Failed to open agents.yaml: {err}",
     lblDefaultAgent: "Agent:",
+    agentPanelVisibilityLabel: "Agent panel CLIs:",
+    agentPanelVisibilityHint: "Choose which CLIs appear in the Agent Terminal panel. Turned-off CLIs are also excluded from automatic selection.",
+    agentPanelNoneEnabled: "No agent CLI is enabled in Settings.",
     runningTasksTitle: "Active Tasks",
 
     // AI CLI Pane
@@ -2268,6 +2271,9 @@ const I18N = {
     agentsConfigLoadedSuccess: "agents.yaml を開きました: {path}",
     agentsConfigError: "agents.yaml を開けませんでした: {err}",
     lblDefaultAgent: "エージェント:",
+    agentPanelVisibilityLabel: "エージェントパネル表示:",
+    agentPanelVisibilityHint: "エージェントパネルに表示するCLIを切り替えます。オフにしたCLIは自動選択からも除外されます。",
+    agentPanelNoneEnabled: "設定で有効なエージェントCLIがありません。",
     runningTasksTitle: "実行中タスク",
 
     // AI CLI Pane
